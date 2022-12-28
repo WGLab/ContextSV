@@ -1,4 +1,19 @@
-# Project structure
+# ContextSV Outline
+
+## External dependencies
+
+| Dependency | Use                             |
+|------------|---------------------------------|
+| HTSLib     | Reading BAM files.              |
+| Tensorflow | Importing the SV scoring model. |
+
+## SV scoring model
+The SV scoring model is trained and saved as a Tensorflow weighted graph in PB file format. It can be trained via the [Python API](https://www.tensorflow.org/api_docs/python/tf). The [C++ API](https://www.tensorflow.org/api_docs/cc) is used to import and utilize this model for scoring SVs.
+
+### Training the model
+
+## Project structure
+
 ```
 ContextSV
 ├── include
@@ -12,7 +27,7 @@ ContextSV
 │   ├── CallerTests.cpp
 │   └── IntegratorTests.cpp
 └── lib
-    ├── hdf5-1_12_1
+    ├── tensorflow
     │   ├── include
     │   │   └── ...
     │   ├── src
@@ -23,3 +38,4 @@ ContextSV
         ├── include
         │   └── sam.h
 ```
+
