@@ -5,7 +5,7 @@ set(CMAKE_CXX_STANDARD 14)
 
 # Set directories
 set(INCL_DIR ./include)
-set(SRC_DIR ./include)
+set(SRC_DIR ./src)
 
 # Include the directories and now your cpp files will recognize your headers
 include_directories(${INCL_DIR})
