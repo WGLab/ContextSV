@@ -26,14 +26,19 @@ ContextSV
 │   └── ScoringModelTests.cpp
 └── lib
     ├── tensorflow
+    |   ├── LICENSE
     │   ├── include
     │   │   └── ...
     │   └── lib
     │       └── ...
     └── htslib
+        ├── LICENSE
         ├── include
         │   └── ...
         └── lib
             └── ...
 ```
 
+## Tasks by order
+- [x] Draft project structure
+- [ ] CLI with BAM file input
