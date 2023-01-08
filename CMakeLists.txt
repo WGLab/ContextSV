@@ -13,19 +13,10 @@ include_directories(${INCL_DIR})
 # Set source files
 set(
         SOURCE_FILES
-        ${INCL_DIR}/CLI.h
+        ${INCL_DIR}/cli.h
+        ${INCL_DIR}/bam_reader.h
         ${SRC_DIR}/main.cpp
-        ${SRC_DIR}/CLI.cpp)
-#[[
-set(
-        SOURCE_FILES
-        main.cpp
-        ${APP_DOMAIN}/person.h
-        ${APP_DOMAIN}/person.cpp
-        ${APP_CALC}/add.h
-        ${APP_CALC}/add.cpp
-)
-]]
-#add_executable(contextsv ContextSV.cpp)
+        ${SRC_DIR}/cli.cpp
+        ${SRC_DIR}/bam_reader.cpp)
 
 add_executable(contextsv ${SOURCE_FILES})

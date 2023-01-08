@@ -8,12 +8,12 @@
 
 #include <string>
 
-class CLI {
+class cli {
     private:
         std::string input_filepath{};
 
     public:
-        CLI();
+        cli();
         void parse(int argc, char** argv);
         std::string getInputFilepath();
         static void printHelpText();

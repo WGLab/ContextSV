@@ -2,20 +2,20 @@
 // Created by jperdomo on 1/8/2023.
 //
 
-#include "CLI.h"
+#include "cli.h"
 
 #include <string>
 #include <cstring>
 #include <iostream>
 #include <iomanip>
 
-CLI::CLI() = default;
+cli::cli() = default;
 
-std::string CLI::getInputFilepath() {
+std::string cli::getInputFilepath() {
     return input_filepath;
 }
 
-void CLI::parse(int argc, char **argv) {
+void cli::parse(int argc, char **argv) {
     // Print help text
     if (argc == 1) {
         // No arguments specified
@@ -34,7 +34,7 @@ void CLI::parse(int argc, char **argv) {
     }
 }
 
-void CLI::printHelpText() {
+void cli::printHelpText() {
     int width = 20;
     std::ios_base::fmtflags flags = std::cout.flags();
 
@@ -51,7 +51,7 @@ void CLI::printHelpText() {
     std::cout.flags(flags);
 }
 
-bool CLI::file_exists(const std::string &name) {
+bool cli::file_exists(const std::string &name) {
     if (FILE *file = fopen(name.c_str(), "r")) {
         fclose(file);
         return true;
