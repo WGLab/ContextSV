@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(SampleProject)
+project(ContextSV)
 
 set(CMAKE_CXX_STANDARD 14)
 
@@ -13,9 +13,9 @@ include_directories(${INCL_DIR})
 # Set source files
 set(
         SOURCE_FILES
-        ${INCL_DIR}/ContextSV.h
-        ${SRC_DIR}/ContextSV.cpp
-)
+        ${INCL_DIR}/CLI.h
+        ${SRC_DIR}/main.cpp
+        ${SRC_DIR}/CLI.cpp)
 #[[
 set(
         SOURCE_FILES
