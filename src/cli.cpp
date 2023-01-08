@@ -51,7 +51,7 @@ void cli::printHelpText() {
     std::cout.flags(flags);
 }
 
-bool cli::file_exists(const std::string &name) {
+bool cli::fileExists(const std::string &name) {
     if (FILE *file = fopen(name.c_str(), "r")) {
         fclose(file);
         return true;

@@ -17,7 +17,7 @@ class cli {
         void parse(int argc, char** argv);
         std::string getInputFilepath();
         static void printHelpText();
-        static bool file_exists(const std::__cxx11::basic_string<char> &name);
+        static bool fileExists(const std::__cxx11::basic_string<char> &name);
 };
 
 
