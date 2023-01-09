@@ -10,7 +10,7 @@
 
 class cli {
     private:
-        std::string input_filepath{};
+        std::string input_filepath;
 
     public:
         cli();

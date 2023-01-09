@@ -7,8 +7,9 @@ set(CMAKE_CXX_STANDARD 14)
 set(INCL_DIR ./include)
 set(SRC_DIR ./src)
 
-# Include the directories and now your cpp files will recognize your headers
-include_directories(${INCL_DIR})
+# Specify project and external library directories
+include_directories(${INCL_DIR} /usr/local/include)
+link_directories(usr/local/lib)
 
 # Set source files
 set(
@@ -20,3 +21,5 @@ set(
         ${SRC_DIR}/bam_reader.cpp)
 
 add_executable(contextsv ${SOURCE_FILES})
+
+target_link_libraries(contextsv PUBLIC hts)  # Link HTS

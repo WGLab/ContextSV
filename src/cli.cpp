@@ -3,6 +3,10 @@
 //
 
 #include "cli.h"
+#include "bam_reader.h"
+
+#include <htslib/sam.h>
+#include "htslib/sam.h"
 
 #include <algorithm>
 #include <string>
@@ -58,6 +62,13 @@ void cli::parse(int argc, char **argv) {
 		if (fileExists(filename)) {
 			this->input_filepath = filename;
 			std::cout << "Input BAM = " << this->input_filepath << std::endl;
+
+			// Read the file
+			samFile * in_bam;
+			bam_hdr_t * hdr;
+			in_bam = sam_open(filename.c_str(), "rb");
+			hdr = sam_hdr_read(in_bam);
+			std::cout << "SAMTools succeeded" << std::endl;
 		} else {
 			std::cerr << "Input BAM does not exist: " << filename << std::endl;
 		}

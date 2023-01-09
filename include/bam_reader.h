@@ -6,8 +6,13 @@
 #define CONTEXTSV_BAM_READER_H
 
 
+#include <string>
 class bam_reader {
+	private:
 
+	public:
+		bam_reader();
+		void read(std::__cxx11::basic_string<char> filepath);
 };
 
 
