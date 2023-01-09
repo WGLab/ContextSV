@@ -15,6 +15,8 @@ class cli {
     public:
         cli();
         void parse(int argc, char** argv);
+		static char* getCmdOption(char ** begin, char ** end, const std::string & option);
+		static bool cmdOptionExists(char** begin, char** end, const std::string& option);
         std::string getInputFilepath();
         static void printHelpText();
         static bool fileExists(const std::__cxx11::basic_string<char> &name);

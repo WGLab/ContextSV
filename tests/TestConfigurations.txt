@@ -1,0 +1,2 @@
+--bam "C:/Users/perdomoj/Documents/GitHub/ContextSV/SampleData/guppy.bam"
+

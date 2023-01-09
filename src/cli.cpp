@@ -4,36 +4,67 @@
 
 #include "cli.h"
 
+#include <algorithm>
 #include <string>
-#include <cstring>
 #include <iostream>
 #include <iomanip>
 
 cli::cli() = default;
 
+// Check if a file exists
+bool cli::fileExists(const std::string &name) {
+	if (FILE *file = fopen(name.c_str(), "r")) {
+		fclose(file);
+		return true;
+	} else {
+		return false;
+	}
+}
+
+// Get the argument option
+char* cli::getCmdOption(char** begin, char** end, const std::string& option)
+{
+	char ** itr = std::find(begin, end, option);
+	if (itr != end && ++itr != end)
+	{
+		return *itr;
+	}
+	return nullptr;
+}
+
+// Check if the option was provided
+bool cli::cmdOptionExists(char** begin, char** end, const std::string& option)
+{
+	return std::find(begin, end, option) != end;
+}
+
+// Get input filepath
 std::string cli::getInputFilepath() {
     return input_filepath;
 }
 
+// Parse arguments
 void cli::parse(int argc, char **argv) {
-    // Print help text
-    if (argc == 1) {
-        // No arguments specified
-        printHelpText();
 
-    } else if (argc == 2) {
-        // Option specified
-        if (strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "--help") == 0) {
-            printHelpText();
-        } else if (strcmp(argv[1], "-i") == 0 || strcmp(argv[1], "--input") == 0) {
-            // Input filepath provided
-            input_filepath = "test";
-        } else {
-            // Other arguments
-        }
-    }
+    // Print help text
+	if (argc == 1 || cmdOptionExists(argv, argv+argc, "-h") || cmdOptionExists(argv, argv+argc, "--help"))
+	{
+		// No arguments specified
+		printHelpText();
+	} else
+	{
+		// Get the input BAM file
+		std::string filename = getCmdOption(argv, argv + argc, "--bam");
+		if (fileExists(filename)) {
+			this->input_filepath = filename;
+			std::cout << "Input BAM = " << this->input_filepath << std::endl;
+		} else {
+			std::cerr << "Input BAM does not exist: " << filename << std::endl;
+		}
+	}
 }
 
+// Print help text
 void cli::printHelpText() {
     int width = 20;
     std::ios_base::fmtflags flags = std::cout.flags();
@@ -49,13 +80,4 @@ void cli::printHelpText() {
               << std::endl;
 
     std::cout.flags(flags);
-}
-
-bool cli::fileExists(const std::string &name) {
-    if (FILE *file = fopen(name.c_str(), "r")) {
-        fclose(file);
-        return true;
-    } else {
-        return false;
-    }
 }
