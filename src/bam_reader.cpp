@@ -5,7 +5,6 @@
 #include "bam_reader.h"
 
 #include <htslib/sam.h>
-//#include "htslib/sam.h"
 #include <string>
 
 
