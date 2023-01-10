@@ -23,3 +23,4 @@ set(
 add_executable(contextsv ${SOURCE_FILES})
 
 target_link_libraries(contextsv PUBLIC hts)  # Link HTS
+# For Linux development: export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:HTSInstallPath
