@@ -41,3 +41,6 @@
 /.vs
 /.vscode
 CMakeSettings.json
+
+# Doxygen
+doc/doxygen

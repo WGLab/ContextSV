@@ -73,6 +73,10 @@ void cli::parse(int argc, char **argv) {
 	}
 }
 
+void cli::read()
+{
+}
+
 // Print help text
 void cli::printHelpText() {
     int width = 20;

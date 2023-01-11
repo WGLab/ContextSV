@@ -14,7 +14,15 @@ class cli {
 
     public:
         cli();
+        
+        /// @brief 
+        /// @param argc 
+        /// @param argv 
         void parse(int argc, char** argv);
+
+        /// @brief 
+        void read();
+
 		static char* getCmdOption(char ** begin, char ** end, const std::string & option);
 		static bool cmdOptionExists(char** begin, char** end, const std::string& option);
         std::string getInputFilepath();
