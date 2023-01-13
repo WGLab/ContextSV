@@ -5,7 +5,7 @@
 #ifndef CONTEXTSV_CLI_H
 #define CONTEXTSV_CLI_H
 
-
+#include <htslib/sam.h>
 #include <string>
 
 class cli {
@@ -14,20 +14,26 @@ class cli {
 
     public:
         cli();
-        
-        /// @brief 
-        /// @param argc 
-        /// @param argv 
-        void parse(int argc, char** argv);
 
-        /// @brief 
-        void read();
+        // Parse input arguments
+        int parse(int argc, char** argv);
 
-		static char* getCmdOption(char ** begin, char ** end, const std::string & option);
+        // Run the CLI
+        void run();
+
+		// Get the command argument input
+		static std::string getCmdOption(char ** begin, char ** end, const std::string & option);
+
+        // Check if the input argument is provided
 		static bool cmdOptionExists(char** begin, char** end, const std::string& option);
+
+        // Check if the filepath exists
+        static bool fileExists(const std::string &name);
+
         std::string getInputFilepath();
+
         static void printHelpText();
-        static bool fileExists(const std::__cxx11::basic_string<char> &name);
+
 };
 
 
