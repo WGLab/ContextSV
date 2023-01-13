@@ -30,3 +30,17 @@
 *.exe
 *.out
 *.app
+/out
+/deps
+/build
+/cmake-build-debug/
+/cmake-build-debug-docker/
+
+# IDE
+/.idea
+/.vs
+/.vscode
+CMakeSettings.json
+
+# Doxygen
+doc/doxygen
