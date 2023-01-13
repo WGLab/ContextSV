@@ -12,7 +12,7 @@ class bam_reader {
 
 	public:
 		bam_reader();
-		void read(std::__cxx11::basic_string<char> filepath);
+		int read(std::string filepath);
 };
 
 

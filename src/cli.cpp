@@ -31,7 +31,6 @@ std::string cli::getCmdOption(char** begin, char** end, const std::string& optio
 	if (itr != end && ++itr != end)
 	{
 		result = *itr;
-		//return *itr;
 	}
 	return result;
 }
@@ -48,6 +47,7 @@ std::string cli::getInputFilepath() {
 
 // Parse input arguments
 int cli::parse(int argc, char **argv) {
+
 	// Exit code 0 indicates parameters were successfully set
 	int exit_code(1);
 
@@ -79,15 +79,23 @@ int cli::parse(int argc, char **argv) {
 }
 
 // Run the CLI with input arguments
-void cli::run()
+int cli::run()
 {
-	// Read the file
+	// Read the BAM file
 	std::string filepath = getInputFilepath();
-	samFile * in_bam;
-	bam_hdr_t * hdr;
-	in_bam = sam_open(filepath.c_str(), "rb");
-	hdr = sam_hdr_read(in_bam);
-	std::cout << "SAMTools succeeded" << std::endl;
+	bam_reader bam_obj;
+	try
+	{
+		bam_obj.read(filepath);
+	}
+
+    catch (std::exception& e)
+    {
+        std::cerr << e.what() << std::endl;
+        return -1;
+    }
+
+	return 0;
 }
 
 void cli::printHelpText() {
@@ -96,7 +104,7 @@ void cli::printHelpText() {
 
     std::cout << std::left
               << std::setw(width) << "\nPositional arguments:\n"
-              << std::setw(width) << "-i, --input" << std::setw(20) << "BAM file input"
+              << std::setw(width) << "--bam" << std::setw(20) << "BAM file input"
               << std::endl
               << std::setw(width) << "-o, --output" << std::setw(20) << "Output file directory"
               << std::endl

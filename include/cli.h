@@ -19,7 +19,7 @@ class cli {
         int parse(int argc, char** argv);
 
         // Run the CLI
-        void run();
+        int run();
 
 		// Get the command argument input
 		static std::string getCmdOption(char ** begin, char ** end, const std::string & option);
