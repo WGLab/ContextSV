@@ -18,7 +18,6 @@ int bam_reader::read(std::string filepath)
 	samFile *fp_in = hts_open(filepath.c_str(), "r");  // Open BAM file
 	bam_hdr_t *bamHdr = sam_hdr_read(fp_in);  // Read header
     bam1_t *aln = bam_init1();  // Initialize alignment record
-	int comp ;
 	
     int read_count = 0;
     int primary_count = 0;
