@@ -11,10 +11,10 @@
 #include <iomanip>
 #include <stdexcept>
 
-cli::cli() = default;
+CLI::CLI() = default;
 
 // Check if the filepath exists
-bool cli::fileExists(const std::string &name) {
+bool CLI::fileExists(const std::string &name) {
 	if (FILE *file = fopen(name.c_str(), "r")) {
 		fclose(file);
 		return true;
@@ -24,7 +24,7 @@ bool cli::fileExists(const std::string &name) {
 }
 
 // Get the command argument input
-std::string cli::getCmdOption(char** begin, char** end, const std::string& option)
+std::string CLI::getCmdOption(char** begin, char** end, const std::string& option)
 {
 	std::string result("");
 	char ** itr = std::find(begin, end, option);
@@ -36,17 +36,17 @@ std::string cli::getCmdOption(char** begin, char** end, const std::string& optio
 }
 
 // Check if the input argument is provided
-bool cli::cmdOptionExists(char** begin, char** end, const std::string& option)
+bool CLI::cmdOptionExists(char** begin, char** end, const std::string& option)
 {
 	return std::find(begin, end, option) != end;
 }
 
-std::string cli::getInputFilepath() {
+std::string CLI::getInputFilepath() {
     return input_filepath;
 }
 
 // Parse input arguments
-int cli::parse(int argc, char **argv) {
+int CLI::parse(int argc, char **argv) {
 
 	// Exit code 0 indicates parameters were successfully set
 	int exit_code(1);
@@ -79,14 +79,14 @@ int cli::parse(int argc, char **argv) {
 }
 
 // Run the CLI with input arguments
-int cli::run()
+int CLI::run()
 {
 	// Read the BAM file
 	std::string filepath = getInputFilepath();
-	bam_reader bam_obj;
+	BamReader bam_obj;
 	try
 	{
-		bam_obj.read(filepath);
+		bam_obj.readFile(filepath);
 	}
 
     catch (std::exception& e)
@@ -98,7 +98,7 @@ int cli::run()
 	return 0;
 }
 
-void cli::printHelpText() {
+void CLI::printHelpText() {
     int width = 20;
     std::ios_base::fmtflags flags = std::cout.flags();
 

@@ -16,9 +16,11 @@ set(
         SOURCE_FILES
         ${INCL_DIR}/cli.h
         ${INCL_DIR}/bam_reader.h
+        ${INCL_DIR}/lrr.h
         ${SRC_DIR}/main.cpp
         ${SRC_DIR}/cli.cpp
-        ${SRC_DIR}/bam_reader.cpp)
+        ${SRC_DIR}/bam_reader.cpp
+        ${SRC_DIR}/lrr.cpp)
 
 add_executable(contextsv ${SOURCE_FILES})
 

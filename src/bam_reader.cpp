@@ -1,8 +1,6 @@
-//
-// Created by jperdomo on 1/8/2023.
-//
 
 #include "bam_reader.h"
+#include "lrr.h"
 
 #include <htslib/sam.h>
 #include <iostream>
@@ -10,10 +8,10 @@
 #include <string>
 
 
-bam_reader::bam_reader()
+BamReader::BamReader()
 = default;
 
-int bam_reader::read(std::string filepath)
+int BamReader::readFile(std::string filepath)
 {
 	samFile *fp_in = hts_open(filepath.c_str(), "r");  // Open BAM file
 	bam_hdr_t *bamHdr = sam_hdr_read(fp_in);  // Read header
@@ -26,6 +24,8 @@ int bam_reader::read(std::string filepath)
 		int32_t pos = aln->core.pos +1; //left most position of alignment in zero based coordianate (+1)
         
 		char *chr = bamHdr->target_name[aln->core.tid] ; //contig name (chromosome)
+        //std::cout << "Chrom = " << chr << std::endl;
+
 		uint32_t len = aln->core.l_qseq; //length of the read
         
         int map_flag = aln->core.flag;  // Alignment type flag
@@ -43,7 +43,7 @@ int bam_reader::read(std::string filepath)
         //printf("%s\t%d\t%d\t%s\t%s\t%d\n",chr,pos,len,qseq,q,q2);
         // Note: Read count = 106, thus it includes primary + secondary, supplementary alignments as separate records (see: LRS issue)
         int read_length(len);
-        printf("Read length = %d\n", read_length);
+        //printf("Read length = %d\n", read_length);
         if (read_length > 0) {
             read_count++;
 
@@ -61,6 +61,12 @@ int bam_reader::read(std::string filepath)
 	sam_close(fp_in);
 
 	std::cout << "SAMTools succeeded" << std::endl;
+
+    // Calculate coverage
+    LogRRatio lrr_obj ;
+    lrr_obj.getNthReadCoverage(0, filepath);
+
+    std::cout << "Coverage calculated" << std::endl;
 
     return 0;
 }

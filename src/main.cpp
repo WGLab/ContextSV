@@ -9,7 +9,7 @@
 
 int main(int argc, char *argv[]){
     // Run the command line interface
-    cli cli_obj;
+    CLI cli_obj;
     try
     {
         int exit_code;

@@ -67,6 +67,7 @@ void tumorVit_CHMM (CHMM hmm, int T, double *O1, double *O2, double *pfb, int *s
 	free_dmatrix(delta, 1, T, 1, hmm.N);
 }
 
+// Entrypoint for estimating parameters via the Baum-Welch algorithm (ctrainCHMM function in detect_cnv.pl)
 void estHMMFromFile_CHMM (CHMM hmm, int T, FILE *fp, int *niter, double *logprobinit, double *logprobfinal)
 {
 	double 	**alpha; 
@@ -94,6 +95,7 @@ void estHMMFromFile_CHMM (CHMM hmm, int T, FILE *fp, int *niter, double *logprob
 		if (fscanf(fp, "%i\n", &(snpdist[i])) != 1) kcerror ("ERROR: cannot read SNPDIST from file");
 	}
 
+	// Estimate HMM parameters (and update the HMM model object)
 	BaumWelchNP_CHMM (&hmm, T, O1, O2, pfb, snpdist, alpha, beta, gamma, niter, logprobinit, logprobfinal);
 
 	free_dmatrix(alpha, 1, T, 1, hmm.N);
@@ -105,13 +107,21 @@ void estHMMFromFile_CHMM (CHMM hmm, int T, FILE *fp, int *niter, double *logprob
 	free_ivector(snpdist, 1, T);
 }
 
+// Emission probability: Calculate the state observationn likelihood b_j(O_t) of the observation symbol O_t given the current state j
 double b1iot (int state, double *mean, double *sd, double uf, double o)
 {
+	// UF = previous alpha
 	double p = 0;
 	p = uf;
+
+	// PDF normal is the transition probability distrubution a_ij (initialized as pi_n) from state i to j
+	// P += (1-alpha_t-1) * 
 	p += (1-uf) * pdf_normal (o, mean[state], sd[state]);
 
+	// Prevent divide by zero error
 	if (p==0) p=FLOAT_MINIMUM;
+
+	// Return the log probability
 	return log(p);
 }
 
@@ -329,7 +339,7 @@ void GetStateProb_CHMM(CHMM *phmm, int T, double *O1, double *O2, double *pfb, i
 	free_dmatrix (A1, 1, phmm->N, 1, phmm->N);
 }	
 
-// Main HMM function
+// SV calling with the HMM via the Viterbi algorithm
 void ViterbiLogNP_CHMM(CHMM *phmm, int T, double *O1, double *O2, double *pfb, int *snpdist, double **delta, int **psi, int *q, double *pprob)
 {
         int     i, j;   /* state indices */
@@ -361,16 +371,29 @@ void ViterbiLogNP_CHMM(CHMM *phmm, int T, double *O1, double *O2, double *pfb, i
 		phmm->pi[i] = log(phmm->pi[i]);
 	}
 
-	// 
+	// Bi(Ot) is an NxT matrix of emission probabilities (observation likelihoods)
+	// expressing the probability of an observation Ot being generated from a state i
 	biot = dmatrix(1, phmm->N, 1, T);
+
+	// Loop through each state N
 	for (i = 1; i <= phmm->N; i++) {
+	
+		// Loop through each probe T
 		for (t = 1; t <= T; t++) {
+			// If it's non-polymorphic (BAF > 1)
 			if (O2[t] > 1) {					/*normally BAF>=0 and BAF<=1; we use BAF>1 to indicate a Non-Polymorphic marker*/
 				if (!phmm->NP_flag) nrerror ("FATAL ERROR: CN probe detected but HMM model does not contain parameters for them\n");
+
+				// Update emissions based on LRR
 				biot[i][t] = b1iot (i, phmm->B3_mean, phmm->B3_sd, phmm->B3_uf, O1[t]);
 				cn_count++;
+
+			// If it's a regular SNP
 			} else {						/*a regular SNP marker; we use both LRR and BAF information to calculate logProb for the marker*/
+				// Update emissions based on LRR (O1)
 				biot[i][t] = b1iot (i, phmm->B1_mean, phmm->B1_sd, phmm->B1_uf, O1[t]);
+
+				// Update emissions based on BAF (O2)
 				biot[i][t] += b2iot (i, phmm->B2_mean, phmm->B2_sd, phmm->B2_uf, pfb[t], O2[t]);
 				snp_count++;
 			}
@@ -1022,6 +1045,7 @@ void CopyCHMM(CHMM *phmm1, CHMM *phmm2)
 	}
 }
 
+// Save the HMM model parameters out to a file
 void PrintCHMM(FILE *fp, CHMM *phmm)
 {
         int i, j, k;

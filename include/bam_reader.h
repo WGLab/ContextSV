@@ -1,5 +1,6 @@
 //
-// Created by jperdomo on 1/8/2023.
+// bam_reader.h:
+// Read and perform operations on BAM files.
 //
 
 #ifndef CONTEXTSV_BAM_READER_H
@@ -7,12 +8,14 @@
 
 
 #include <string>
-class bam_reader {
+class BamReader {
 	private:
 
 	public:
-		bam_reader();
-		int read(std::string filepath);
+		BamReader();
+
+		/// Read the BAM file
+		int readFile(std::string filepath);
 };
 
 
