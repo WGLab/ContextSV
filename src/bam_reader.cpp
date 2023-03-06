@@ -62,11 +62,11 @@ int BamReader::readFile(std::string filepath)
 
 	std::cout << "SAMTools succeeded" << std::endl;
 
-    // Calculate coverage
+    // Calculate the Log R Ratio
     LogRRatio lrr_obj ;
-    lrr_obj.getNthReadCoverage(0, filepath);
+    lrr_obj.run(filepath);
 
-    std::cout << "Coverage calculated" << std::endl;
+    std::cout << "LRR calculated" << std::endl;
 
     return 0;
 }

@@ -14,8 +14,11 @@ class LogRRatio {
     public:
         LogRRatio();
 
-        /// Get the Nth read coverage
-		std::vector<int> getNthReadCoverage(int read_index, std::string input_filepath);
+        /// Calculate the Log R Ratio
+		std::vector<int> run(std::string input_filepath);
+
+        /// Calculate per-position coverage using 'samtools depth'
+		std::vector<int> getCoverage(std::string input_filepath);
 };
 
 

@@ -12,7 +12,15 @@
 LogRRatio::LogRRatio()
 = default;
 
-std::vector<int> LogRRatio::getNthReadCoverage(int read_index, std::string input_filepath)
+std::vector<int> LogRRatio::run(std::string input_filepath)
+{
+    std::vector<int> coverage;
+    coverage = getCoverage(input_filepath);
+
+    return coverage;
+}
+
+std::vector<int> LogRRatio::getCoverage(std::string input_filepath)
 {
     char cmd[BUFFER_SIZE];
     FILE *fp;
