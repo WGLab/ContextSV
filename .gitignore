@@ -40,8 +40,9 @@
 /.idea
 /.vs
 /.vscode
-/*.code-workspace
+*.code-workspace
 CMakeSettings.json
 
 # Doxygen
 doc/doxygen
+*.code-workspace
