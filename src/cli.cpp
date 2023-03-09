@@ -3,7 +3,7 @@
 //
 
 #include "cli.h"
-#include "bam_reader.h"
+#include "integrative_caller.h"
 
 #include <algorithm>
 #include <string>
@@ -65,7 +65,7 @@ int CLI::parse(int argc, char **argv) {
 
 		if (fileExists(filename)) {
 			this->input_filepath = filename;
-			std::cout << "Input BAM = " << this->input_filepath << std::endl;
+			std::cout << "Alignment file = " << this->input_filepath << std::endl;
 			
 			// Set the success code
 			exit_code = 0;
@@ -83,10 +83,10 @@ int CLI::run()
 {
 	// Read the BAM file
 	std::string filepath = getInputFilepath();
-	BamReader bam_obj;
+	IntegrativeCaller caller_obj;
 	try
 	{
-		bam_obj.readFile(filepath);
+		caller_obj.run(filepath);
 	}
 
     catch (std::exception& e)

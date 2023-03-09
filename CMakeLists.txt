@@ -15,12 +15,14 @@ link_directories(usr/local/lib)
 set(
         SOURCE_FILES
         ${INCL_DIR}/cli.h
-        ${INCL_DIR}/bam_reader.h
-        ${INCL_DIR}/lrr.h
+        ${INCL_DIR}/integrative_caller.h
+        ${INCL_DIR}/cnv_caller.h
+        ${INCL_DIR}/snv_caller.h
         ${SRC_DIR}/main.cpp
         ${SRC_DIR}/cli.cpp
-        ${SRC_DIR}/bam_reader.cpp
-        ${SRC_DIR}/lrr.cpp)
+        ${SRC_DIR}/integrative_caller.cpp
+        ${SRC_DIR}/cnv_caller.cpp
+        ${SRC_DIR}/snv_caller.cpp)
 
 add_executable(contextsv ${SOURCE_FILES})
 
