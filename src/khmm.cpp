@@ -3,7 +3,7 @@
 #include <math.h>
 
 #include "khmm.h"
-#include "kc.h"
+//#include "kc.h"
 
 #define STATE_CHANGE 100000.0			/*this is the expected changes (D value) in the transition matrix*/
 #define VITHUGE  100000000000.0

@@ -22,6 +22,9 @@ std::vector<double> CNVCaller::run(std::string input_filepath, SNVCaller snv_obj
     std::vector<double> log_r_ratios;
     log_r_ratios = calculateLogRRatios(input_filepath);
 
+    // Run the HMM
+    
+
     return log_r_ratios;
 }
 
