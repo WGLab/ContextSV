@@ -2,7 +2,10 @@
 
 #include "cnv_caller.h"
 
+#include "khmm.h"
+
 #include <iostream>
+#include <fstream>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -30,17 +33,27 @@ std::vector<double> CNVCaller::run(std::string input_filepath, SNVCaller snv_obj
 
 std::vector<double> CNVCaller::calculateLogRRatios(std::string input_filepath)
 {
-    char target_chr[] = "chr1";
+    // char target_chr[] = "chr1";
+    char target_chr[] = "1";
     std::vector<double> chr_lrr;
     
     // Calculate mean chromosome coverage
-    RegionCoverage chr_cov = getMeanCoverage(input_filepath, target_chr);
+    fprintf(stdout, "\nCalculating coverage for chromosome: %s\n", target_chr);
+    RegionCoverage chr_cov = getMeanCoverage(input_filepath, target_chr, 0,0, true);
+
+    // Set up the output CSV
+    std::ofstream lrr_output;
+    lrr_output.open ("lrr_output.csv");
+
+    // Write headers
+    lrr_output << "start,end,lrr\n";
 
     // Calculate Log R ratios
     int start_pos = this->align_start, end_pos = (start_pos + window_size - 1);
     while (end_pos < this->align_end) {
 
         // Calculate window mean coverage
+        // fprintf(stdout, "\nCalculating coverage for region %s:%d-%d\n", target_chr, start_pos, end_pos);
         RegionCoverage region_cov = getMeanCoverage(input_filepath, target_chr, start_pos, end_pos);
         
         if (region_cov.valid) {
@@ -49,19 +62,23 @@ std::vector<double> CNVCaller::calculateLogRRatios(std::string input_filepath)
             chr_lrr.push_back(region_lrr);
             fprintf(stdout, "%.3f/%.3f\n", region_cov.mean, chr_cov.mean);
             fprintf(stdout, "LRR=%.3f\n", region_lrr);
+
+            // Print start, end, and LRR
+            lrr_output << start_pos << "," << end_pos << "," << region_lrr << "\n";
         }
 
         // Update indexes
         start_pos = (end_pos + 1);
         end_pos += window_size;
     }
-
+    
+    lrr_output.close();
     std::cout << "CNVs calculated" << std::endl;
 
     return chr_lrr;
 }
 
-RegionCoverage CNVCaller::getMeanCoverage(std::string input_filepath, char* chr, int start_pos, int end_pos)
+RegionCoverage CNVCaller::getMeanCoverage(std::string input_filepath, char* chr, int start_pos, int end_pos, bool entire_chr)
 {
     char cmd[BUFFER_SIZE];
     FILE *fp;
@@ -71,7 +88,7 @@ RegionCoverage CNVCaller::getMeanCoverage(std::string input_filepath, char* chr,
 
     // Open a SAMtools process to calculate cumulative read depth and position
     // counts (non-zero depths only) for a single chromosome
-    if (end_pos == 1) {
+    if (entire_chr) {
         // Run the entire chromosome
         log_debug = true;
         snprintf(cmd, BUFFER_SIZE,\
@@ -96,15 +113,18 @@ RegionCoverage CNVCaller::getMeanCoverage(std::string input_filepath, char* chr,
     // Parse the outputs
     int pos_count, cum_depth;
     if (fgets(line, BUFFER_SIZE, fp) != NULL)
-    {
+    {           
         if (sscanf(line, "%d%d", &pos_count, &cum_depth) == 2)
         {
+            // Print the current start and end position
+            fprintf(stdout, "start=%d, end=%d\n", start_pos, end_pos);
+
             // Calculate the mean chromosome coverage
             double chr_mean_coverage = double(cum_depth) / pos_count;
             fprintf(stdout, "%s mean coverage = %.3f\ncumulative depth = %d\nregion length=%d\n", chr, chr_mean_coverage, cum_depth, pos_count);
             cov.length = pos_count;
             cov.mean   = chr_mean_coverage;
-            cov.valid  = true;
+            cov.valid  = true;  // Set the region as valid
         }
     }
     pclose(fp);  // Close the process
@@ -135,7 +155,8 @@ int CNVCaller::getAlignmentEndpoints(std::string input_filepath)
             {
                 primary_count++;
                 // Get the first alignment position
-                if (std::string(chr) == "chr1" && first_position == 0) {
+                // if (std::string(chr) == "chr1" && first_position == 0) {
+                if (std::string(chr) == "1" && first_position == 0) {
                         first_position = aln->core.pos + 1;
                         this->align_start = first_position;
                 }

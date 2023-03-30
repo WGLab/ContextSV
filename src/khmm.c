@@ -16,6 +16,7 @@
 */
 
 
+
 // Entry point
 void testVit_CHMM (CHMM hmm, int T, double *O1, double *O2, double *pfb, int *snpdist, double *plogproba)
 {
@@ -982,6 +983,100 @@ CHMM ReadCHMM (char *filename)
 	
 	fclose (fp);
 	return hmm;
+}
+
+/// Return a default CHMM
+CHMM GetDefaultCHMM()
+{
+    CHMM hmm;
+	hmm.N = 5;  // Number of states
+	hmm.M = 5;  // 
+	hmm.A = (double **) dmatrix(1, hmm.N, 1, hmm.N);
+	CHMM *phmm;
+	int i, j, k;
+
+	// for (i = 1; i <= hmm.N; i++) { 
+	// 	for (j = 1; j <= hmm.N; j++) {
+	// 		if (fscanf(fp, "%lf", &(phmm->A[i][j])) == EOF) fprintf(stderr, "khmm::ReadCHMM: cannot read A matrix from HMM file");
+	// 	}
+	// 	if (fscanf(fp,"\n") == EOF) fprintf(stderr, "khmm::ReadCHMM: cannot read return character from HMM file");
+	// }
+
+	// if (fscanf(fp, "B:\n") == EOF) fprintf(stderr, "khmm::ReadCHMM: cannot read B annotation from HMM file");
+	// phmm->B = (double **) dmatrix(1, phmm->N, 1, phmm->M);
+	// for (j = 1; j <= phmm->N; j++) { 
+	// 	for (k = 1; k <= phmm->M; k++) {
+	// 		if (fscanf(fp, "%lf", &(phmm->B[j][k])) == EOF) fprintf(stderr, "khmm::ReadCHMM: cannot read B matrix from HMM file");
+	// 	}
+	// 	if (fscanf(fp,"\n") == EOF) fprintf(stderr, "khmm::ReadCHMM: cannot read return character from HMM file");
+	// }
+
+	// if (fscanf(fp, "pi:\n") == EOF) fprintf(stderr, "khmm::ReadCHMM: cannot read PI annotation from HMM file");
+	// phmm->pi = (double *) dvector(1, phmm->N);
+	// for (i = 1; i <= phmm->N; i++) {
+	// 	if (fscanf(fp, "%lf", &(phmm->pi[i])) == EOF) fprintf(stderr, "khmm::ReadCHMM: cannot read PI vector from HMM file");
+	// 	if (phmm->pi[i] < 1e-6) phmm->pi[i] = 1e-6;
+	// }
+	// if (fscanf(fp,"\n") == EOF) fprintf(stderr, "khmm::ReadCHMM: cannot read return character from HMM file");
+	
+	// if (fscanf(fp, "B1_mean:\n") == EOF) fprintf(stderr, "khmm::ReadCHMM: cannot read B1_mean annotation from HMM file");
+	// phmm->B1_mean = (double *) dvector(1, phmm->N);
+	// for (i = 1; i <= phmm->N; i++)
+	// 	if (fscanf(fp, "%lf", &(phmm->B1_mean[i])) == EOF) fprintf(stderr, "khmm::ReadCHMM: cannot read B1_mean vector from HMM file");
+	// if (fscanf(fp,"\n") == EOF) fprintf(stderr, "khmm::ReadCHMM: cannot read return character from HMM file");
+
+	// if (fscanf(fp, "B1_sd:\n") == EOF) fprintf(stderr, "khmm::ReadCHMM: cannot read B1_sd annotation from HMM file");
+	// phmm->B1_sd = (double *) dvector(1, phmm->N);
+	// for (i = 1; i <= phmm->N; i++)
+	// 	if (fscanf(fp, "%lf", &(phmm->B1_sd[i])) == EOF) fprintf(stderr, "khmm::ReadCHMM: cannot read B1_sd from HMM file");
+	// if (fscanf(fp,"\n") == EOF) fprintf(stderr, "khmm::ReadCHMM: cannot read return character from HMM file");
+	
+	// if (fscanf(fp, "B1_uf:\n") == EOF) fprintf(stderr, "khmm::ReadCHMM: cannot read B1_uf annotation from HMM file");
+	// if (fscanf(fp, "%lf", &(phmm->B1_uf)) == EOF) fprintf(stderr, "khmm::ReadCHMM: cannot read B1_uf from HMM file");
+	// if (fscanf(fp,"\n") == EOF) fprintf(stderr, "khmm::ReadCHMM: cannot read return character from HMM file");
+
+	// if (fscanf(fp, "B2_mean:\n") == EOF) fprintf(stderr, "khmm::ReadCHMM: cannot read B2_mean annotation from HMM file");
+	// phmm->B2_mean = (double *) dvector(1, 5);
+	// for (i = 1; i <= 5; i++)
+	// 	if (fscanf(fp, "%lf", &(phmm->B2_mean[i])) == EOF) fprintf(stderr, "khmm::ReadCHMM: cannot read B2_mean from HMM file");
+	// if (fscanf(fp,"\n") == EOF) fprintf(stderr, "khmm::ReadCHMM: cannot read return character from HMM file");
+
+	// if (fscanf(fp, "B2_sd:\n") == EOF) fprintf(stderr, "khmm::ReadCHMM: cannot read B2_sd annotation from HMM file");
+	// phmm->B2_sd = (double *) dvector(1, 5);
+	// for (i = 1; i <= 5; i++)
+	// 	if (fscanf(fp, "%lf", &(phmm->B2_sd[i])) == EOF) fprintf(stderr, "khmm::ReadCHMM: cannot read B2_sd from HMM file");
+	// if (fscanf(fp,"\n") == EOF) fprintf(stderr, "khmm::ReadCHMM: cannot read return character from HMM file");
+
+	// if (fscanf(fp, "B2_uf:\n") == EOF) fprintf(stderr, "khmm::ReadCHMM: cannot read B2_uf annotation from HMM file");
+	// if (fscanf(fp, "%lf", &(phmm->B2_uf)) == EOF) fprintf(stderr, "khmm::ReadCHMM: cannot read B2_uf from HMM file");
+	// if (fscanf(fp,"\n") == EOF) fprintf(stderr, "khmm::ReadCHMM: cannot read return character from HMM file");
+	
+	// if (fscanf(fp, "B3_mean:\n") != EOF) {
+	// 	phmm->NP_flag = 1;
+	// 	phmm->B3_mean = (double *) dvector (1, phmm->N);
+	// 	for (i = 1; i <= phmm->N; i++)
+	// 		if (fscanf(fp, "%lf", &(phmm->B3_mean[i])) == EOF) fprintf(stderr, "khmm::ReadCHMM: cannot read B3_mean from HMM file");
+	// 	if (fscanf(fp,"\n") == EOF) fprintf(stderr, "khmm::ReadCHMM: cannot read return character from HMM file");
+	// 	if (fscanf(fp, "B3_sd:\n") == EOF) fprintf(stderr, "khmm::ReadCHMM: cannot read B3_sd annotation from HMM file");
+	// 	phmm->B3_sd = (double *) dvector (1, phmm->N);
+	// 	for (i = 1; i <= phmm->N; i++)
+	// 		if (fscanf(fp, "%lf", &(phmm->B3_sd[i])) == EOF) fprintf(stderr, "khmm::ReadCHMM: cannot read B3_sd from HMM file");
+	// 	if (fscanf(fp,"\n") == EOF) fprintf(stderr, "khmm::ReadCHMM: cannot read return character from HMM file");
+	// 	if (fscanf(fp, "B3_uf:\n") == EOF) fprintf(stderr, "khmm::ReadCHMM: cannot read B3_uf annotation from HMM file");
+	// 	if (fscanf(fp, "%lf", &(phmm->B3_uf)) == EOF) fprintf(stderr, "khmm::ReadCHMM: cannot read B3_uf from HMM file");
+	// 	if (fscanf(fp,"\n") == EOF) fprintf(stderr, "khmm::ReadCHMM: cannot read return character from HMM file");
+	// } else {
+	// 	phmm->NP_flag = 0;
+	// }
+	
+	// if (fscanf(fp, "DIST:\n") != EOF) {
+	// 	if (fscanf(fp, "%d", &(phmm->dist)) == EOF) fprintf(stderr, "khmm:ReadCHMM: cannot read DIST from HMM file");
+	// } else {
+	// 	phmm->dist = STATE_CHANGE;
+	// }
+	
+	// fclose (fp);
+	return hmm;	
 }
 
 void FreeCHMM(CHMM *phmm)
