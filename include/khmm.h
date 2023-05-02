@@ -1,3 +1,10 @@
+#ifndef _KHMM_H
+#define _KHMM_H
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
+#include <string.h>
 
 typedef struct {
 	int N;			/* number of states;  Q={1,2,...,N} */
@@ -28,7 +35,7 @@ typedef struct {
 ************************************/
 
 /// Read an HMM from a file
-CHMM ReadCHMM (char *filename);
+CHMM ReadCHMM (const char *filename);
 
 /// Generate an HMM with default parameters
 CHMM GetDefaultCHMM();
@@ -72,3 +79,5 @@ void ViterbiLogNP_SEQ (CHMM *phmm, int T, double k, double theta, double *O1, in
 double b4iot (int state, double *mean, double *sd, double uf, double pfb, int o1, int o2);
 double b3iot (int state, double *mean, double *sd, double uf, double o1, int length);
 void adjustHMMExpected (CHMM *phmm, double coverage);
+
+#endif // _HMM_H_

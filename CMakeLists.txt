@@ -24,8 +24,8 @@ set(
         ${SRC_DIR}/integrative_caller.cpp
         ${SRC_DIR}/cnv_caller.cpp
         ${SRC_DIR}/snv_caller.cpp
-        ${SRC_DIR}/khmm.c
-        ${SRC_DIR}/kc.c
+        ${SRC_DIR}/khmm.cpp
+        ${SRC_DIR}/kc.cpp
         ${SRC_DIR}/main.cpp)
 
 add_executable(contextsv ${SOURCE_FILES})

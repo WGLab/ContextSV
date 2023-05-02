@@ -1,12 +1,12 @@
 //
-// LRR.h:
-// Functions for calculating the Log R Ratio
+// cnv_caller.h:
+// Detect CNVs
 //
 
-#ifndef CONTEXTSV_LRR_H
-#define CONTEXTSV_LRR_H
+#ifndef CNV_CALLER_H
+#define CNV_CALLER_H
 
-
+#include "khmm.h"
 #include "snv_caller.h"
 
 #include <string>
@@ -40,4 +40,4 @@ class CNVCaller {
         int getAlignmentEndpoints(std::string input_filepath);
 };
 
-#endif //CONTEXTSV_LRR_H
+#endif // CNV_CALLER_H

@@ -1,6 +1,4 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <math.h>
+#include <iostream>
 
 #include "khmm.h"
 #include "kc.h"
@@ -328,7 +326,7 @@ void GetStateProb_CHMM(CHMM *phmm, int T, double *O1, double *O2, double *pfb, i
 	snpdist[0] = 5000;				/*arbitrarily set the transition probability to 5000*/
 	for (t=1;t<=T;t++) {
 		if (O2[t] > 1) {
-			if (!phmm->NP_flag) nrerror ("FATAL ERROR: CN probe detected but HMM model does not contain parameters for them\n");
+			if (!phmm->NP_flag) std::cerr << "FATAL ERROR: CN probe detected but HMM model does not contain parameters for them\n";
 			logprob += b1iot (state, phmm->B1_mean, phmm->B1_sd, phmm->B1_uf, O1[t]);
 		} else {
 			logprob += b1iot (state, phmm->B1_mean, phmm->B1_sd, phmm->B1_uf, O1[t]);
@@ -383,7 +381,7 @@ void ViterbiLogNP_CHMM(CHMM *phmm, int T, double *O1, double *O2, double *pfb, i
 		for (t = 1; t <= T; t++) {
 			// If it's non-polymorphic (BAF > 1)
 			if (O2[t] > 1) {					/*normally BAF>=0 and BAF<=1; we use BAF>1 to indicate a Non-Polymorphic marker*/
-				if (!phmm->NP_flag) nrerror ("FATAL ERROR: CN probe detected but HMM model does not contain parameters for them\n");
+				if (!phmm->NP_flag) std::cerr << "FATAL ERROR: CN probe detected but HMM model does not contain parameters for them\n";
 
 				// Update emissions based on LRR
 				biot[i][t] = b1iot (i, phmm->B3_mean, phmm->B3_sd, phmm->B3_uf, O1[t]);
@@ -485,7 +483,7 @@ void ViterbiLogNPStroma_CHMM(CHMM *phmm, int T, double *O1, double *O2, double *
 	for (i = 1; i <= phmm->N; i++) {
 		for (t = 1; t <= T; t++) {
 			if (O2[t] > 1) {					/*normally BAF>=0 and BAF<=1; we use BAF>1 to indicate a Non-Polymorphic marker*/
-				if (!phmm->NP_flag) nrerror ("FATAL ERROR: CN probe detected but HMM model does not contain parameters for them\n");
+				if (!phmm->NP_flag) std::cerr << "FATAL ERROR: CN probe detected but HMM model does not contain parameters for them\n";
 				biot[i][t] = b5iot (i, phmm->B3_mean, phmm->B3_sd, phmm->B3_uf, O1[t], stroma);
 				cn_count++;
 			} else {						/*a regular SNP marker; we use both LRR and BAF information to calculate logProb for the marker*/
@@ -720,7 +718,7 @@ void BaumWelchNP_CHMM(CHMM *phmm, int T, double *O1, double *O2, double *pfb, in
 		biosumtemp = 0;
 		for (i = 1; i <= phmm->N; i++) {
 			if (O2[t] > 1) {
-				if (!phmm->NP_flag) nrerror ("FATAL ERROR: detected CN probe but HMM model does not contain info for CN probe\n");
+				if (!phmm->NP_flag) std::cerr << "FATAL ERROR: detected CN probe but HMM model does not contain info for CN probe\n";
 				biotemp[i] = exp (b1iot (i, phmm->B3_mean, phmm->B3_sd, phmm->B3_uf, O1[t]));
 			} else {
 				biotemp[i] = exp (b1iot (i, phmm->B1_mean, phmm->B1_sd, phmm->B1_uf, O1[t]));
@@ -885,16 +883,16 @@ void FreeXi(double *** xi, int T, int N)
 
 }
 
-CHMM ReadCHMM (char *filename)
+CHMM ReadCHMM (const char *filename)
 {
 	FILE *fp;
 	CHMM hmm;
 	CHMM *phmm;
 	int i, j, k;
-	
+
 	phmm = &hmm;
 	fp = fopen (filename, "r");
-	if (!fp) fprintf(stderr, "Error: cannot read from HMM file");
+	if (!fp) fprintf(stderr, "Error: cannot read from HMM file %s\n", filename);
 	
 	if (fscanf(fp, "M=%d\n", &(phmm->M)) == EOF) fprintf(stderr, "khmm::ReadCHMM: cannot read M annotation from HMM file");
 	if (fscanf(fp, "N=%d\n", &(phmm->N)) == EOF) fprintf(stderr, "khmm::ReadCHMM: cannot read N annotation from HMM file");
@@ -1253,7 +1251,7 @@ double b4iot (int state, double *mean, double *sd, double uf, double pfb, int o1
 	if (p==0) p=FLOAT_MINIMUM;
 	if (p>1.0) {
 		fprintf(stderr, "state=%i o1=%i o2=%i p=%f uf=%f mean3=%f sd3=%f total is %f uffraction=%f\n", state, o1, o2, p, uf, mean[3], sd[3], pdf_binomial (o1, o2, 0.75), uf / sqrt (mean[3]) / sd[3] / 4);
-		nrerror("ERROR");
+		std::cerr << "ERROR\n";
 	}
 	return log(p);
 }
@@ -1398,7 +1396,7 @@ void ViterbiLogNP_SEQ (CHMM *phmm, int T, double k, double theta, double *O1, in
 				if (t<10) {
 					fprintf(stderr, "NOTICE: i=%i t=%i l=%i b3iot=%f o1=%f o2=%i pfb=%f mena=%f sd=%f uf=%f\n", i, t, length[t], b3iot (i, phmm->B1_mean, phmm->B1_sd, phmm->B1_uf, O1[t], length[t]), O1[t], O2[t], pfb[t], phmm->B3_mean[i], phmm->B3_sd[i], phmm->B3_uf);
 				}
-				if (!phmm->NP_flag) nrerror ("FATAL ERROR: CN probe detected but HMM model does not contain parameters for them\n");
+				if (!phmm->NP_flag) std::cerr << "FATAL ERROR: CN probe detected but HMM model does not contain parameters for them\n";
 				biot[i][t] = b3iot (i, phmm->B3_mean, phmm->B3_sd, phmm->B3_uf, O1[t], length[t]);
 				cn_count++;
 			} else {						/*a regular SNP marker; we use both LRR and BAF information to calculate logProb for the marker*/

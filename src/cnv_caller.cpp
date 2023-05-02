@@ -1,8 +1,6 @@
 
-
+// #include "khmm.h"
 #include "cnv_caller.h"
-
-#include "khmm.h"
 
 #include <iostream>
 #include <fstream>
@@ -25,8 +23,22 @@ std::vector<double> CNVCaller::run(std::string input_filepath, SNVCaller snv_obj
     std::vector<double> log_r_ratios;
     log_r_ratios = calculateLogRRatios(input_filepath);
 
-    // Run the HMM
+    // Read the HMM from file
+    std::string hmm_filepath = "data/wgs.hmm";
+    CHMM hmm = ReadCHMM(hmm_filepath.c_str());
+
+    // Estimate the hidden states from the LRRs
+    // TODO: Follow detect_cnv.pl's example and use the Viterbi algorithm
+    // https://github.com/WGLab/PennCNV/blob/b6d76b58821deea4f6fe9dc3c241215f25a7fd67/detect_cnv.pl#LL903C20-L903C20
+
+    // #generate CNV calls
+	// 			my $probe_count = scalar (@$lrr)-1;
+	// 			khmm::testVit_CHMM ($hmm_model, $probe_count, $lrr, $baf, $pfb, $snpdist, \$logprob);
+	// 			analyzeStateSequence ($curcnvcall, $curchr, $pfb, $name, $pos, $sample_sex);
+
     
+    //testVit_CHMM(hmm, log_r_ratios);
+
 
     return log_r_ratios;
 }
