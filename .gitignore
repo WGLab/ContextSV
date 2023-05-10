@@ -46,3 +46,6 @@ CMakeSettings.json
 # Doxygen
 doc/doxygen
 *.code-workspace
+
+# Data directory
+data/
