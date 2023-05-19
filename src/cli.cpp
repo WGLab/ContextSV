@@ -41,7 +41,13 @@ bool CLI::cmdOptionExists(char** begin, char** end, const std::string& option)
 	return std::find(begin, end, option) != end;
 }
 
-std::string CLI::get_bam_filepath() {
+std::string CLI::get_output_dir()
+{
+    return this->output_dir;
+}
+
+std::string CLI::get_bam_filepath()
+{
     return this->bam_filepath;
 }
 
@@ -65,6 +71,19 @@ int CLI::parse(int argc, char **argv) {
 	
 	else
 	{
+		// Get the output directory
+		std::string output_dir = getCmdOption(argv, argv + argc, "-o");
+		if (output_dir.empty()) {
+			output_dir = getCmdOption(argv, argv + argc, "--out");
+		}
+		if (!output_dir.empty()) {
+			this->output_dir = output_dir;
+			std::cout << "Output directory = " << output_dir << std::endl;
+		} else {
+			std::string err_str = "Output directory not specified.";
+			throw std::invalid_argument(err_str);
+		}
+
 		// Get the reference genome file
 		std::string ref_filename = getCmdOption(argv, argv + argc, "--ref");
 		if (fileExists(ref_filename)) {
@@ -97,6 +116,7 @@ int CLI::parse(int argc, char **argv) {
 int CLI::run()
 {
 	// Get the input arguments
+	std::string output_dir = this->get_output_dir();
 	std::string bam_filepath = this->get_bam_filepath();
 	std::string ref_filepath = this->get_ref_filepath();
 	IntegrativeCaller caller_obj;

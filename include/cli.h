@@ -11,6 +11,7 @@
 
 class CLI {
     private:
+        std::string output_dir;
         std::string ref_filepath;
         std::string bam_filepath;
 
@@ -32,6 +33,7 @@ class CLI {
         /// Check if the filepath exists
         static bool fileExists(const std::string &name);
 
+        std::string get_output_dir();
         std::string get_bam_filepath();
         std::string get_ref_filepath();
 

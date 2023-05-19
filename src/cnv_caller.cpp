@@ -17,11 +17,15 @@ CNVCaller::CNVCaller() = default;
 std::vector<double> CNVCaller::run()
 {
     // Get alignment endpoints
+    std::cout << "Getting alignment endpoints..." << std::endl;
     getAlignmentEndpoints(this->bam_filepath);
+    std::cout << "Alignment endpoints retrieved." << std::endl;
 
     // Calculate LRRs
+    std::cout << "Calculating LRRs..." << std::endl;
     std::vector<double> log_r_ratios;
     log_r_ratios = calculateLogRRatios(this->bam_filepath);
+    std::cout << "LRRs calculated." << std::endl;
 
     // Calculate BAFs
     //std::vector<double> b_allele_freqs;
