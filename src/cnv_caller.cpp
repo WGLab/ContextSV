@@ -14,14 +14,14 @@
 
 CNVCaller::CNVCaller() = default;
 
-std::vector<double> CNVCaller::run(std::string input_filepath, SNVCaller snv_obj)
+std::vector<double> CNVCaller::run()
 {
     // Get alignment endpoints
-    getAlignmentEndpoints(input_filepath);
+    getAlignmentEndpoints(this->bam_filepath);
 
     // Calculate LRRs
     std::vector<double> log_r_ratios;
-    log_r_ratios = calculateLogRRatios(input_filepath);
+    log_r_ratios = calculateLogRRatios(this->bam_filepath);
 
     // Calculate BAFs
     //std::vector<double> b_allele_freqs;
@@ -173,7 +173,7 @@ RegionCoverage CNVCaller::getRegionCoverage(std::string input_filepath, char* ch
     bool log_debug = false;  // Log debugging output
 
     // Get the path to the reference genome
-    std::string ref_genome_path = "data/hs37d5.fa";
+    std::string ref_genome_path = this->ref_filepath;
 
     // Test: "samtools mpileup -r 1 -f data/hs37d5.fa /home/perdomoj/github/SampleData/ContextSV/LargeSV_trimmed.bam --no-output-ins --no-output-del --no-output-ends
 
@@ -368,4 +368,14 @@ int CNVCaller::getAlignmentEndpoints(std::string input_filepath)
 void CNVCaller::setChrPrefix(bool uses_chr_prefix)
 {
     this->uses_chr_prefix = uses_chr_prefix;
+}
+
+void CNVCaller::set_bam_filepath(std::string bam_filepath)
+{
+    this->bam_filepath = bam_filepath;
+}
+
+void CNVCaller::set_ref_filepath(std::string ref_filepath)
+{
+    this->ref_filepath = ref_filepath;
 }

@@ -11,7 +11,8 @@
 
 class CLI {
     private:
-        std::string input_filepath;
+        std::string ref_filepath;
+        std::string bam_filepath;
 
     public:
         CLI();
@@ -31,7 +32,8 @@ class CLI {
         /// Check if the filepath exists
         static bool fileExists(const std::string &name);
 
-        std::string getInputFilepath();
+        std::string get_bam_filepath();
+        std::string get_ref_filepath();
 
         static void printHelpText();
 

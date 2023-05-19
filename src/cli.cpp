@@ -41,8 +41,13 @@ bool CLI::cmdOptionExists(char** begin, char** end, const std::string& option)
 	return std::find(begin, end, option) != end;
 }
 
-std::string CLI::getInputFilepath() {
-    return input_filepath;
+std::string CLI::get_bam_filepath() {
+    return this->bam_filepath;
+}
+
+std::string CLI::get_ref_filepath()
+{
+    return this->ref_filepath;
 }
 
 // Parse input arguments
@@ -60,17 +65,27 @@ int CLI::parse(int argc, char **argv) {
 	
 	else
 	{
-		// Get the input BAM file
-		std::string filename = getCmdOption(argv, argv + argc, "--bam");
+		// Get the reference genome file
+		std::string ref_filename = getCmdOption(argv, argv + argc, "--ref");
+		if (fileExists(ref_filename)) {
+			this->ref_filepath = ref_filename;
+			std::cout << "Reference genome file = " << this->ref_filepath << std::endl;
+		} else {
+			std::string err_str = "File " + ref_filename + " does not exist.";
+			throw std::invalid_argument(err_str);
+		}
 
-		if (fileExists(filename)) {
-			this->input_filepath = filename;
-			std::cout << "Alignment file = " << this->input_filepath << std::endl;
+
+		// Get the bam file
+		std::string bam_filename = getCmdOption(argv, argv + argc, "--bam");
+		if (fileExists(bam_filename)) {
+			this->bam_filepath = bam_filename;
+			std::cout << "Alignment file = " << this->bam_filepath << std::endl;
 			
 			// Set the success code
 			exit_code = 0;
 		} else {
-			std::string err_str = "Input BAM does not exist: " + filename;
+			std::string err_str = "File " + bam_filename + " does not exist.";
 			throw std::invalid_argument(err_str);
 		}
 	}
@@ -81,12 +96,15 @@ int CLI::parse(int argc, char **argv) {
 // Run the CLI with input arguments
 int CLI::run()
 {
-	// Read the BAM file
-	std::string filepath = getInputFilepath();
+	// Get the input arguments
+	std::string bam_filepath = this->get_bam_filepath();
+	std::string ref_filepath = this->get_ref_filepath();
 	IntegrativeCaller caller_obj;
 	try
-	{
-		caller_obj.run(filepath);
+	{	
+		caller_obj.set_bam_filepath(bam_filepath);
+		caller_obj.set_ref_filepath(ref_filepath);
+		caller_obj.run();
 	}
 
     catch (std::exception& e)
@@ -104,9 +122,10 @@ void CLI::printHelpText() {
 
     std::cout << std::left
               << std::setw(width) << "\nPositional arguments:\n"
-              << std::setw(width) << "--bam" << std::setw(20) << "BAM file input"
+			  << std::setw(width) << "--ref" << std::setw(20) << "reference genome fasta file"
+              << std::setw(width) << "--bam" << std::setw(20) << "alignment file in BAM format"
               << std::endl
-              << std::setw(width) << "-o, --output" << std::setw(20) << "Output file directory"
+              << std::setw(width) << "-o, --output" << std::setw(20) << "output file directory"
               << std::endl
               << std::setw(width) << "\nOptional arguments:\n"
               << std::setw(width) << "-h, --help" << std::setw(20) << "Show this help message and exit\n"

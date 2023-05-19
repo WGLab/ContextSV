@@ -10,15 +10,23 @@
 #include <string>
 class IntegrativeCaller {
 	private:
-		// Nothing here yet
+		std::string bam_filepath;
+		std::string ref_filepath;
+
 	public:
 		IntegrativeCaller();
 
-		/// Entry point
-		int run(std::string filepath);
+		// Entry point
+		int run();
 
-		/// Check if the bam file uses chr prefix notation
+		// Check if the bam file uses chr prefix notation
 		int bamHasChrPrefix(std::string filepath, bool& uses_chr_prefix);
+
+		// Set the bam file path
+		void set_bam_filepath(std::string bam_filepath);
+
+		// Set the reference file path
+		void set_ref_filepath(std::string ref_filepath);
 };
 
 #endif

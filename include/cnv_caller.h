@@ -21,6 +21,8 @@ struct RegionCoverage {
 
 class CNVCaller {
     private:
+        std::string bam_filepath;
+        std::string ref_filepath;
         int window_size = 10000;  // Window size (bases) for calculating the Log R Ratio
         int align_start = -1;
         int align_end   = -1;
@@ -30,7 +32,7 @@ class CNVCaller {
         CNVCaller();
 
         /// Detect CNVs
-		std::vector<double> run(std::string input_filepath, SNVCaller snv_obj);
+		std::vector<double> run();
 
         /// Calculate Log R Ratios
 		std::vector<double> calculateLogRRatios(std::string input_filepath);
@@ -46,6 +48,12 @@ class CNVCaller {
 
         /// Set the chromosome prefix notation
         void setChrPrefix(bool uses_chr_prefix);
+
+        // Set the bam file path
+        void set_bam_filepath(std::string bam_filepath);
+
+        // Set the reference file path
+        void set_ref_filepath(std::string ref_filepath);
 };
 
 #endif // CNV_CALLER_H

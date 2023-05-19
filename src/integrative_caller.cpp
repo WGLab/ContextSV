@@ -12,20 +12,23 @@ IntegrativeCaller::IntegrativeCaller()
 = default;
 
 /// Entry point
-int IntegrativeCaller::run(std::string filepath)
+int IntegrativeCaller::run()
 {
     // Check if the bam file uses chr prefix notation
+    std::string filepath = bam_filepath;
     bool uses_chr_prefix;
     int exit_code = bamHasChrPrefix(filepath, uses_chr_prefix);
 
     // Call SNVs
-    SNVCaller snv_obj;
-    snv_obj.run(filepath);
+    //SNVCaller snv_obj;
+    //snv_obj.run(filepath);
 
     // Call CNVs
     CNVCaller cnv_obj;
+    cnv_obj.set_bam_filepath(filepath);
+    cnv_obj.set_ref_filepath(ref_filepath);
     cnv_obj.setChrPrefix(uses_chr_prefix);
-    cnv_obj.run(filepath, snv_obj);
+    cnv_obj.run();
 
     return 0;
 }
@@ -60,4 +63,14 @@ int IntegrativeCaller::bamHasChrPrefix(std::string filepath, bool& uses_chr_pref
     bam_hdr_destroy(header);
     sam_close(bam_file);
     return 0;
+}
+
+void IntegrativeCaller::set_bam_filepath(std::string bam_filepath)
+{
+    this->bam_filepath = bam_filepath;
+}
+
+void IntegrativeCaller::set_ref_filepath(std::string ref_filepath)
+{
+    this->ref_filepath = ref_filepath;
 }
