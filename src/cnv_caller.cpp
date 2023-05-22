@@ -340,6 +340,7 @@ int CNVCaller::getAlignmentEndpoints(std::string input_filepath)
     int read_count = 0;
     int primary_count = 0;
     int first_position = 0;
+    int invalid_count = 0;  // Number of invalid alignments
 
     std::cout << "Reading alignments..." << std::endl;
 
@@ -347,7 +348,8 @@ int CNVCaller::getAlignmentEndpoints(std::string input_filepath)
 
         // Check if the alignment is valid
         if (aln->core.tid < 0) {
-            std::cerr << "Error: invalid alignment" << std::endl;
+            //std::cerr << "Error: invalid alignment" << std::endl;
+            invalid_count++;
             continue;
         }
 
@@ -376,6 +378,9 @@ int CNVCaller::getAlignmentEndpoints(std::string input_filepath)
 	}
 
     std::cout << "Completed reading alignments." << std::endl;
+    std::cout << "Found " << read_count << " alignments." << std::endl;
+    std::cout << "Found " << primary_count << " primary alignments." << std::endl;
+    std::cout << "Found " << invalid_count << " invalid alignments." << std::endl;
 
     // Get the last alignment position
     std::cout << "Getting last alignment position..." << std::endl;
