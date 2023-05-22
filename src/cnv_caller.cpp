@@ -357,13 +357,13 @@ int CNVCaller::getAlignmentEndpoints(std::string input_filepath)
         int map_flag = aln->core.flag;  // Alignment type flag
         if (int(len) > 0) {
             read_count++;
-            std::cout << "Read count = " << read_count << std::endl;
+            //std::cout << "Read count = " << read_count << std::endl;
 
             // Get primary alignments only
             if (! ((map_flag & BAM_FSECONDARY) || (map_flag & BAM_FSUPPLEMENTARY)) )
             {
                 primary_count++;
-                std::cout << "Primary count = " << primary_count << std::endl;
+                //std::cout << "Primary count = " << primary_count << std::endl;
 
                 // Get the first alignment position
                 if (first_position == 0) {
