@@ -321,7 +321,7 @@ int CNVCaller::getAlignmentEndpoints(std::string input_filepath)
 {
     std::cout << "Opening bam file..." << std::endl;
 	samFile *fp_in = hts_open(input_filepath.c_str(), "r");  // Open BAM file
-    
+
     // Check if the file was opened
     if (fp_in == NULL) {
         std::cerr << "Error: failed to open " << input_filepath << "\n";
@@ -344,12 +344,20 @@ int CNVCaller::getAlignmentEndpoints(std::string input_filepath)
     std::cout << "Reading alignments..." << std::endl;
 
 	while(sam_read1(fp_in,bamHdr,aln) > 0){
+
+        // Check if the alignment is valid
+        if (aln->core.tid < 0) {
+            std::cerr << "Error: invalid alignment" << std::endl;
+            continue;
+        }
+
 		int32_t pos = aln->core.pos +1; //left most position of alignment in zero-based coordinates (+1)
 		char *chr = bamHdr->target_name[aln->core.tid] ; //contig name (chromosome)
 		uint32_t len = aln->core.l_qseq; //length of the read
         int map_flag = aln->core.flag;  // Alignment type flag
         if (int(len) > 0) {
             read_count++;
+            std::cout << "Read count = " << read_count << std::endl;
 
             // Get primary alignments only
             if (! ((map_flag & BAM_FSECONDARY) || (map_flag & BAM_FSUPPLEMENTARY)) )
