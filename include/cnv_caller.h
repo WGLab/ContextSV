@@ -23,6 +23,11 @@ class CNVCaller {
     private:
         std::string bam_filepath;
         std::string ref_filepath;
+        std::string output_dir;
+        std::string region;
+        std::string region_chr;
+        int region_start = -1;
+        int region_end   = -1;
         int window_size = 10000;  // Window size (bases) for calculating the Log R Ratio
         int align_start = -1;
         int align_end   = -1;
@@ -32,16 +37,16 @@ class CNVCaller {
         CNVCaller();
 
         /// Detect CNVs
-		std::vector<double> run();
+		std::vector<double> run(std::string region_chr, int region_start, int region_end);
 
         /// Calculate Log R Ratios
 		std::vector<double> calculateLogRRatios(std::string input_filepath);
 
         /// Calculate the mean chromosome coverage
-        RegionCoverage getChromosomeCoverage(std::string input_filepath, char *chr);
+        RegionCoverage getChromosomeCoverage(std::string input_filepath, std::string chr);
 
         /// Calculate region mean coverage
-        RegionCoverage getRegionCoverage(std::string input_filepath, char* chr, int start_pos=1, int end_pos=1);
+        RegionCoverage getRegionCoverage(std::string input_filepath, std::string chr, int start_pos=1, int end_pos=1);
 
         /// Get alignment start and stop positions
         int getAlignmentEndpoints(std::string input_filepath);
@@ -54,6 +59,12 @@ class CNVCaller {
 
         // Set the reference file path
         void set_ref_filepath(std::string ref_filepath);
+
+        // Set the output directory
+        void set_output_dir(std::string output_dir);
+
+        // Set the region to analyze
+        void set_region(std::string region);
 };
 
 #endif // CNV_CALLER_H

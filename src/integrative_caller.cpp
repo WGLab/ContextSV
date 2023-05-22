@@ -27,8 +27,8 @@ int IntegrativeCaller::run()
     CNVCaller cnv_obj;
     cnv_obj.set_bam_filepath(filepath);
     cnv_obj.set_ref_filepath(ref_filepath);
-    cnv_obj.setChrPrefix(uses_chr_prefix);
-    cnv_obj.run();
+    cnv_obj.set_output_dir(output_dir);
+    cnv_obj.run(this->region_chr, this->region_start, this->region_end);
 
     return 0;
 }
@@ -73,4 +73,41 @@ void IntegrativeCaller::set_bam_filepath(std::string bam_filepath)
 void IntegrativeCaller::set_ref_filepath(std::string ref_filepath)
 {
     this->ref_filepath = ref_filepath;
+}
+
+void IntegrativeCaller::set_output_dir(std::string output_dir)
+{
+    this->output_dir = output_dir;
+}
+
+void IntegrativeCaller::set_region(std::string region)
+{
+    this->region = region;
+
+    // Parse the region
+    char *tok = strtok((char *)region.c_str(), ":");
+    int col = 0;
+    while (tok != NULL)
+    {
+        // Get the chromosome
+        if (col == 0)
+        {
+            this->region_chr = tok;
+        }
+
+        // Get the start position
+        else if (col == 1)
+        {
+            this->region_start = atoi(tok);
+        }
+
+        // Get the end position
+        else if (col == 2)
+        {
+            this->region_end = atoi(tok);
+        }
+
+        tok = strtok(NULL, ":");
+        col++;
+    }
 }

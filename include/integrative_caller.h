@@ -12,6 +12,11 @@ class IntegrativeCaller {
 	private:
 		std::string bam_filepath;
 		std::string ref_filepath;
+        std::string output_dir;
+        std::string region;
+        std::string region_chr;
+        int region_start = -1;
+        int region_end   = -1;
 
 	public:
 		IntegrativeCaller();
@@ -27,6 +32,8 @@ class IntegrativeCaller {
 
 		// Set the reference file path
 		void set_ref_filepath(std::string ref_filepath);
+        void set_output_dir(std::string output_dir);
+        void set_region(std::string region);
 };
 
 #endif

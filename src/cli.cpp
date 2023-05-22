@@ -41,21 +41,6 @@ bool CLI::cmdOptionExists(char** begin, char** end, const std::string& option)
 	return std::find(begin, end, option) != end;
 }
 
-std::string CLI::get_output_dir()
-{
-    return this->output_dir;
-}
-
-std::string CLI::get_bam_filepath()
-{
-    return this->bam_filepath;
-}
-
-std::string CLI::get_ref_filepath()
-{
-    return this->ref_filepath;
-}
-
 // Parse input arguments
 int CLI::parse(int argc, char **argv) {
 
@@ -107,6 +92,13 @@ int CLI::parse(int argc, char **argv) {
 			std::string err_str = "File " + bam_filename + " does not exist.";
 			throw std::invalid_argument(err_str);
 		}
+
+		// Get the region to analyze
+		std::string region = getCmdOption(argv, argv + argc, "--region");
+		if (!region.empty()) {
+			this->region = region;
+			std::cout << "Region = " << region << std::endl;
+		}
 	}
 
 	return exit_code;
@@ -116,14 +108,17 @@ int CLI::parse(int argc, char **argv) {
 int CLI::run()
 {
 	// Get the input arguments
-	std::string output_dir = this->get_output_dir();
-	std::string bam_filepath = this->get_bam_filepath();
-	std::string ref_filepath = this->get_ref_filepath();
+	std::string output_dir = this->output_dir;
+	std::string bam_filepath = this->bam_filepath;
+	std::string ref_filepath = this->ref_filepath;
+	std::string region = this->region;
 	IntegrativeCaller caller_obj;
 	try
 	{	
 		caller_obj.set_bam_filepath(bam_filepath);
 		caller_obj.set_ref_filepath(ref_filepath);
+		caller_obj.set_output_dir(output_dir);
+		caller_obj.set_region(region);
 		caller_obj.run();
 	}
 
@@ -147,6 +142,7 @@ void CLI::printHelpText() {
               << std::endl
               << std::setw(width) << "-o, --output" << std::setw(20) << "output file directory"
               << std::endl
+			  << std::setw(width) << "--region" << std::setw(20) << "region to analyze"
               << std::setw(width) << "\nOptional arguments:\n"
               << std::setw(width) << "-h, --help" << std::setw(20) << "Show this help message and exit\n"
               << std::endl;
