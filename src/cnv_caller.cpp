@@ -319,14 +319,30 @@ RegionCoverage CNVCaller::getRegionCoverage(std::string input_filepath, char* ch
 
 int CNVCaller::getAlignmentEndpoints(std::string input_filepath)
 {
+    std::cout << "Opening bam file..." << std::endl;
 	samFile *fp_in = hts_open(input_filepath.c_str(), "r");  // Open BAM file
+    
+    // Check if the file was opened
+    if (fp_in == NULL) {
+        std::cerr << "Error: failed to open " << input_filepath << "\n";
+        return 1;
+    }
+
+    std::cout << "Opened." << std::endl;
+
+    std::cout << "Reading header..." << std::endl;
 	bam_hdr_t *bamHdr = sam_hdr_read(fp_in);  // Read header
+    std::cout << "Header read." << std::endl;
+
     bam1_t *aln = bam_init1();  // Initialize alignment record
     std::vector<int> end_positions (2);
 	
     int read_count = 0;
     int primary_count = 0;
     int first_position = 0;
+
+    std::cout << "Reading alignments..." << std::endl;
+
 	while(sam_read1(fp_in,bamHdr,aln) > 0){
 		int32_t pos = aln->core.pos +1; //left most position of alignment in zero-based coordinates (+1)
 		char *chr = bamHdr->target_name[aln->core.tid] ; //contig name (chromosome)
