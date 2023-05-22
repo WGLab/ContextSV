@@ -363,24 +363,22 @@ int CNVCaller::getAlignmentEndpoints(std::string input_filepath)
             if (! ((map_flag & BAM_FSECONDARY) || (map_flag & BAM_FSUPPLEMENTARY)) )
             {
                 primary_count++;
+                std::cout << "Primary count = " << primary_count << std::endl;
 
                 // Get the first alignment position
-                if (this->uses_chr_prefix == true) {
-                    if (std::string(chr) == "chr1" && first_position == 0) {
-                        first_position = aln->core.pos + 1;
-                        this->align_start = first_position;
-                    }
-                } else {
-                    if (std::string(chr) == "1" && first_position == 0) {
-                        first_position = aln->core.pos + 1;
-                        this->align_start = first_position;
-                    }
+                if (first_position == 0) {
+                    std::cout << "First position = " << first_position << std::endl;
+                    first_position = aln->core.pos + 1;
+                    this->align_start = first_position;
                 }
             }
         }
 	}
 
+    std::cout << "Completed reading alignments." << std::endl;
+
     // Get the last alignment position
+    std::cout << "Getting last alignment position..." << std::endl;
     int last_position = aln->core.pos + bam_cigar2rlen(aln->core.n_cigar, bam_get_cigar(aln)) - 1;
     this->align_end = last_position;
     std::cout << "alignment start = " << this->align_start << std::endl;
