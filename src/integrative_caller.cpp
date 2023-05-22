@@ -78,6 +78,10 @@ void IntegrativeCaller::set_ref_filepath(std::string ref_filepath)
 void IntegrativeCaller::set_output_dir(std::string output_dir)
 {
     this->output_dir = output_dir;
+
+    // Create the output directory
+    std::string cmd = "mkdir -p " + output_dir;
+    system(cmd.c_str());
 }
 
 void IntegrativeCaller::set_region(std::string region)

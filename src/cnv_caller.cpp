@@ -78,7 +78,8 @@ std::vector<double> CNVCaller::calculateLogRRatios(std::string input_filepath)
 
     // Set up the output CSV
     std::ofstream lrr_output;
-    lrr_output.open ("lrr_output.csv");
+    std::string output_filepath = this->output_dir + "/lrr_output.csv";
+    lrr_output.open(output_filepath);
 
     // Write headers
     lrr_output << "start,end,lrr,baf\n";
