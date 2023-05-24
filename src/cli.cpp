@@ -99,6 +99,13 @@ int CLI::parse(int argc, char **argv) {
 			this->region = region;
 			std::cout << "Region = " << region << std::endl;
 		}
+
+		// Get the window size
+		std::string window_size = getCmdOption(argv, argv + argc, "--window-size");
+		if (!window_size.empty()) {
+			this->window_size = std::stoi(window_size);
+			std::cout << "Window size = " << window_size << std::endl;
+		}
 	}
 
 	return exit_code;
@@ -144,6 +151,8 @@ void CLI::printHelpText() {
               << std::endl
 			  << std::setw(width) << "--region" << std::setw(20) << "region to analyze"
               << std::setw(width) << "\nOptional arguments:\n"
+			  << std::setw(width) << "--window-size" << std::setw(20) << "window size (default = 10000)"
+			  << std::endl
               << std::setw(width) << "-h, --help" << std::setw(20) << "Show this help message and exit\n"
               << std::endl;
 

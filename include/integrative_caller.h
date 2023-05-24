@@ -17,6 +17,7 @@ class IntegrativeCaller {
         std::string region_chr;
         int region_start = -1;
         int region_end   = -1;
+		int window_size = 10000;  // Window size (bases) for calculating the Log R Ratio
 
 	public:
 		IntegrativeCaller();

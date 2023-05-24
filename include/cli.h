@@ -15,6 +15,7 @@ class CLI {
         std::string ref_filepath;
         std::string bam_filepath;
         std::string region;
+        int window_size = 10000;  // Window size (bases) for calculating the Log R Ratio and B Allele Frequency
 
     public:
         CLI();

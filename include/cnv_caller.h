@@ -17,6 +17,7 @@ struct RegionCoverage {
     int length  = 0;
     double mean = 0;
     double baf  = 0;
+    std::vector<std::pair<int, double>> baf_by_pos;
 };
 
 class CNVCaller {
@@ -31,13 +32,12 @@ class CNVCaller {
         int window_size = 10000;  // Window size (bases) for calculating the Log R Ratio
         int align_start = -1;
         int align_end   = -1;
-        bool uses_chr_prefix = false;  // Does the BAM file use chr prefix notation?
 
     public:
         CNVCaller();
 
         /// Detect CNVs
-		std::vector<double> run(std::string region_chr, int region_start, int region_end);
+		std::vector<double> run(std::string region_chr, int region_start, int region_end, int window_size);
 
         /// Calculate Log R Ratios
 		std::vector<double> calculateLogRRatios(std::string input_filepath);
@@ -50,9 +50,6 @@ class CNVCaller {
 
         /// Get alignment start and stop positions
         int getAlignmentEndpoints(std::string input_filepath);
-
-        /// Set the chromosome prefix notation
-        void setChrPrefix(bool uses_chr_prefix);
 
         // Set the bam file path
         void set_bam_filepath(std::string bam_filepath);

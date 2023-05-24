@@ -14,12 +14,15 @@
 
 CNVCaller::CNVCaller() = default;
 
-std::vector<double> CNVCaller::run(std::string region_chr, int region_start, int region_end)
+std::vector<double> CNVCaller::run(std::string region_chr, int region_start, int region_end, int window_size)
 {
     // Set the region
     this->region_chr = region_chr;
     this->region_start = region_start;
     this->region_end = region_end;
+
+    // Set the window size
+    this->window_size = window_size;
 
     // Get alignment endpoints
     std::cout << "Getting alignment endpoints..." << std::endl;
@@ -70,28 +73,35 @@ std::vector<double> CNVCaller::run(std::string region_chr, int region_start, int
 std::vector<double> CNVCaller::calculateLogRRatios(std::string input_filepath)
 {
     std::string target_chr = this->region_chr;
+    int window_size = this->window_size;
     std::vector<double> chr_lrr;
     
     // Calculate mean chromosome coverage
     fprintf(stdout, "\nCalculating coverage for chromosome: %s\n", target_chr.c_str());
     RegionCoverage chr_cov = getChromosomeCoverage(input_filepath, target_chr);
 
-    // Set up the output CSV
+    // Set up the output LRR CSV
     std::ofstream lrr_output;
     std::string output_filepath = this->output_dir + "/lrr_output.csv";
     lrr_output.open(output_filepath);
+    lrr_output << "start,end,lrr,baf\n";  // Write headers
 
-    // Write headers
-    lrr_output << "start,end,lrr,baf\n";
+    // Set up the output BAF CSV
+    std::ofstream baf_output;
+    std::string baf_output_filepath = this->output_dir + "/baf_output.csv";
+    baf_output.open(baf_output_filepath);
+    baf_output << "pos,baf\n";  // Write headers
 
-    // Calculate Log R ratios
+    // Determine the region to analyze
     if (this->region_start == -1 || this->region_end == -1) {
         this->region_start = this->align_start;
         this->region_end = this->align_end;
     }
 
+    // Loop through the regions
+    //int start_pos = this->align_start, end_pos = (start_pos + window_size -
+    //1);
     int start_pos = this->region_start, end_pos = std::min(start_pos + window_size - 1, this->region_end);
-    //int start_pos = this->align_start, end_pos = (start_pos + window_size - 1);
     while (end_pos <= this->region_end) {
 
         // Calculate window mean coverage
@@ -105,8 +115,19 @@ std::vector<double> CNVCaller::calculateLogRRatios(std::string input_filepath)
             fprintf(stdout, "%.3f/%.3f\n", region_cov.mean, chr_cov.mean);
             fprintf(stdout, "LRR=%.3f\n", region_lrr);
 
-            // Save start, end, LRR, and BAF to CSV
+            // Save region start, end, LRR, and BAF to CSV
             lrr_output << start_pos << "," << end_pos << "," << region_lrr << "," << region_cov.baf << "\n";
+
+            // Save BAF to CSV from the region's BAF vector
+            for (int i = 0; i < region_cov.baf_by_pos.size(); i++)
+            {
+                // Get the position and BAF
+                int pos = region_cov.baf_by_pos[i].first;
+                double baf = region_cov.baf_by_pos[i].second;
+
+                // Save to CSV
+                baf_output << pos << "," << baf << "\n";
+            }
         }
 
         // Update indexes
@@ -211,11 +232,16 @@ RegionCoverage CNVCaller::getRegionCoverage(std::string input_filepath, std::str
     // 9. read flags
     // 10. read tags
 
+    // Vector for storing BAFs and corresponding positions
+    std::vector<std::pair<int, double>> baf_pos;
+
     // Parse the mpileup output
     int pos_count = 0;
     int cum_depth = 0;
     int cum_non_ref = 0;
     double mean_baf = 0.0;
+    int snp_count = 0;
+    int pos = 0;
     while (fgets(line, BUFFER_SIZE, fp) != NULL)
     {
         // Parse the line
@@ -230,9 +256,14 @@ RegionCoverage CNVCaller::getRegionCoverage(std::string input_filepath, std::str
         char ref_base = 'N';
         while (tok != NULL)
         {
+            // Get the position from column 2
+            if (col == 1)
+            {
+                pos = atoi(tok);
+            }
 
             // Get the reference base from column 3
-            if (col == 2)
+            else if (col == 2)
             {
                 ref_base = tok[0];
             }
@@ -285,15 +316,23 @@ RegionCoverage CNVCaller::getRegionCoverage(std::string input_filepath, std::str
                 }
 
                 // Get the BAF if the non-reference count is greater than zero
+                // (= SNP)
                 double baf = 0.0;
                 if (non_ref_count > 0)
                 {
+                    snp_count++;
                     baf = double(non_ref_count) / (ref_count + non_ref_count);
                     //std::cout << "BAF = " << baf << std::endl;
+
+
+                    // Store the BAF and its position
+                    baf_pos.push_back(std::make_pair(pos, baf));
+
+
+                    // Update the mean BAF
+                    mean_baf = (mean_baf * (snp_count - 1) + baf) / snp_count;
+                    //mean_baf = (mean_baf * (pos_count - 1) + baf) / pos_count;
                 }
-            
-                // Update the mean BAF
-                mean_baf = (mean_baf * (pos_count - 1) + baf) / pos_count;
             }
 
             tok = strtok(NULL, "\t");
@@ -314,9 +353,10 @@ RegionCoverage CNVCaller::getRegionCoverage(std::string input_filepath, std::str
         double chr_mean_coverage = double(cum_depth) / pos_count;
 
         // Update the coverage struct
-        cov.length = pos_count;
-        cov.mean   = chr_mean_coverage;
-        cov.baf    = mean_baf;
+        cov.length     = pos_count;
+        cov.mean       = chr_mean_coverage;
+        cov.baf        = mean_baf;
+        cov.baf_by_pos = baf_pos;
     }
 
     return cov;
@@ -334,7 +374,6 @@ int CNVCaller::getAlignmentEndpoints(std::string input_filepath)
     }
 
     std::cout << "Opened." << std::endl;
-
     std::cout << "Reading header..." << std::endl;
 	bam_hdr_t *bamHdr = sam_hdr_read(fp_in);  // Read header
     std::cout << "Header read." << std::endl;
@@ -399,11 +438,6 @@ int CNVCaller::getAlignmentEndpoints(std::string input_filepath)
 	sam_close(fp_in);
 
     return 0;
-}
-
-void CNVCaller::setChrPrefix(bool uses_chr_prefix)
-{
-    this->uses_chr_prefix = uses_chr_prefix;
 }
 
 void CNVCaller::set_bam_filepath(std::string bam_filepath)
