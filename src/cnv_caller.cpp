@@ -12,9 +12,10 @@
 
 #define BUFFER_SIZE 1024
 
-CNVCaller::CNVCaller(Common common)
+CNVCaller::CNVCaller(Common common, std::vector<int> snp_positions)
 {
     this->common = common;
+    this->snp_positions = snp_positions;
 }
 
 std::vector<double> CNVCaller::run()

@@ -23,21 +23,13 @@ struct RegionCoverage {
 
 class CNVCaller {
     private:
-        // std::string bam_filepath;
-        // std::string ref_filepath;
-        // std::string output_dir;
-        // std::string region;
-        // std::string region_chr;
-        // int region_start = -1;
-        // int region_end   = -1;
-        // int window_size = 10000;  // Window size (bases) for calculating the
-        // Log R Ratio
         Common common;
+        std::vector<int> snp_positions;
         int align_start = -1;
         int align_end   = -1;
 
     public:
-        CNVCaller(Common common);
+        CNVCaller(Common common, std::vector<int> snp_positions);
 
         /// Detect CNVs
 		std::vector<double> run();

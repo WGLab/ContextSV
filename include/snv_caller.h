@@ -6,14 +6,19 @@
 #ifndef CONTEXTSV_SNV_CALLER_H
 #define CONTEXTSV_SNV_CALLER_H
 
+#include "common.h"
 
 #include <string>
+
 class SNVCaller {
 	private:
+		Common common;
+		std::vector<int> snp_positions;
 	public:
-		SNVCaller();
+		SNVCaller(Common common);
 
-		int run(std::string filepath);
+		int run();
+		std::vector<int> get_snp_positions();
 };
 
 #endif
