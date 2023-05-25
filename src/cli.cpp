@@ -11,7 +11,6 @@
 #include <iomanip>
 #include <stdexcept>
 
-CLI::CLI() = default;
 
 // Check if the filepath exists
 bool CLI::fileExists(const std::string &name) {
@@ -43,9 +42,11 @@ bool CLI::cmdOptionExists(char** begin, char** end, const std::string& option)
 
 // Parse input arguments
 int CLI::parse(int argc, char **argv) {
+	// Initialize the common parameters
+	this->common = Common();
 
 	// Exit code 0 indicates parameters were successfully set
-	int exit_code(1);
+	int exit_code = 0;
 
     // Print help text
 	if (argc == 1 || cmdOptionExists(argv, argv+argc, "-h") || cmdOptionExists(argv, argv+argc, "--help"))
@@ -62,8 +63,9 @@ int CLI::parse(int argc, char **argv) {
 			output_dir = getCmdOption(argv, argv + argc, "--out");
 		}
 		if (!output_dir.empty()) {
-			this->output_dir = output_dir;
+			this->common.set_output_dir(output_dir);
 			std::cout << "Output directory = " << output_dir << std::endl;
+
 		} else {
 			std::string err_str = "Output directory not specified.";
 			throw std::invalid_argument(err_str);
@@ -72,8 +74,9 @@ int CLI::parse(int argc, char **argv) {
 		// Get the reference genome file
 		std::string ref_filename = getCmdOption(argv, argv + argc, "--ref");
 		if (fileExists(ref_filename)) {
-			this->ref_filepath = ref_filename;
-			std::cout << "Reference genome file = " << this->ref_filepath << std::endl;
+			common.set_ref_filepath(ref_filename);
+			std::cout << "Reference genome file = " << ref_filename << std::endl;
+
 		} else {
 			std::string err_str = "File " + ref_filename + " does not exist.";
 			throw std::invalid_argument(err_str);
@@ -83,28 +86,38 @@ int CLI::parse(int argc, char **argv) {
 		// Get the bam file
 		std::string bam_filename = getCmdOption(argv, argv + argc, "--bam");
 		if (fileExists(bam_filename)) {
-			this->bam_filepath = bam_filename;
-			std::cout << "Alignment file = " << this->bam_filepath << std::endl;
+			common.set_bam_filepath(bam_filename);
+			std::cout << "Alignment file = " << bam_filename << std::endl;
 			
-			// Set the success code
-			exit_code = 0;
 		} else {
-			std::string err_str = "File " + bam_filename + " does not exist.";
+			std::string err_str = "BAM file does not exist: " + bam_filename;
 			throw std::invalid_argument(err_str);
 		}
 
 		// Get the region to analyze
 		std::string region = getCmdOption(argv, argv + argc, "--region");
 		if (!region.empty()) {
-			this->region = region;
+			//this->region = region;
+			common.set_region(region);
 			std::cout << "Region = " << region << std::endl;
 		}
 
 		// Get the window size
 		std::string window_size = getCmdOption(argv, argv + argc, "--window-size");
 		if (!window_size.empty()) {
-			this->window_size = std::stoi(window_size);
+			common.set_window_size(std::stoi(window_size));
 			std::cout << "Window size = " << window_size << std::endl;
+		}
+
+		// Get the SNP VCF file
+		std::string snp_vcf_filename = getCmdOption(argv, argv + argc, "--snp-vcf");
+		if (fileExists(snp_vcf_filename)) {
+			common.set_snp_vcf_filepath(snp_vcf_filename);
+			std::cout << "SNP VCF file = " << snp_vcf_filename << std::endl;
+
+		} else if (!snp_vcf_filename.empty()) {
+			std::string err_str = "SNP VCF file does not exist: " + snp_vcf_filename;
+			throw std::invalid_argument(err_str);
 		}
 	}
 
@@ -114,18 +127,10 @@ int CLI::parse(int argc, char **argv) {
 // Run the CLI with input arguments
 int CLI::run()
 {
-	// Get the input arguments
-	std::string output_dir = this->output_dir;
-	std::string bam_filepath = this->bam_filepath;
-	std::string ref_filepath = this->ref_filepath;
-	std::string region = this->region;
-	IntegrativeCaller caller_obj;
+	// Run the integrative caller
+	IntegrativeCaller caller_obj(this->common);
 	try
 	{	
-		caller_obj.set_bam_filepath(bam_filepath);
-		caller_obj.set_ref_filepath(ref_filepath);
-		caller_obj.set_output_dir(output_dir);
-		caller_obj.set_region(region);
 		caller_obj.run();
 	}
 

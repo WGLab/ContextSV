@@ -6,21 +6,16 @@
 #ifndef CONTEXTSV_INTEGRATIVE_CALLER_H
 #define CONTEXTSV_INTEGRATIVE_CALLER_H
 
+#include "common.h"
 
 #include <string>
+
 class IntegrativeCaller {
 	private:
-		std::string bam_filepath;
-		std::string ref_filepath;
-        std::string output_dir;
-        std::string region;
-        std::string region_chr;
-        int region_start = -1;
-        int region_end   = -1;
-		int window_size = 10000;  // Window size (bases) for calculating the Log R Ratio
+		Common common;
 
 	public:
-		IntegrativeCaller();
+		IntegrativeCaller(Common common);
 
 		// Entry point
 		int run();
@@ -35,6 +30,7 @@ class IntegrativeCaller {
 		void set_ref_filepath(std::string ref_filepath);
         void set_output_dir(std::string output_dir);
         void set_region(std::string region);
+        void set_window_size(int window_size);
 };
 
 #endif

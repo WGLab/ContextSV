@@ -12,27 +12,22 @@
 
 #define BUFFER_SIZE 1024
 
-CNVCaller::CNVCaller() = default;
-
-std::vector<double> CNVCaller::run(std::string region_chr, int region_start, int region_end, int window_size)
+CNVCaller::CNVCaller(Common common)
 {
-    // Set the region
-    this->region_chr = region_chr;
-    this->region_start = region_start;
-    this->region_end = region_end;
+    this->common = common;
+}
 
-    // Set the window size
-    this->window_size = window_size;
-
+std::vector<double> CNVCaller::run()
+{
     // Get alignment endpoints
     std::cout << "Getting alignment endpoints..." << std::endl;
-    getAlignmentEndpoints(this->bam_filepath);
+    getAlignmentEndpoints();
     std::cout << "Alignment endpoints retrieved." << std::endl;
 
     // Calculate LRRs
     std::cout << "Calculating LRRs..." << std::endl;
     std::vector<double> log_r_ratios;
-    log_r_ratios = calculateLogRRatios(this->bam_filepath);
+    log_r_ratios = calculateLogRRatios();
     std::cout << "LRRs calculated." << std::endl;
 
     // Calculate BAFs
@@ -70,43 +65,47 @@ std::vector<double> CNVCaller::run(std::string region_chr, int region_start, int
     return log_r_ratios;
 }
 
-std::vector<double> CNVCaller::calculateLogRRatios(std::string input_filepath)
+std::vector<double> CNVCaller::calculateLogRRatios()
 {
-    std::string target_chr = this->region_chr;
-    int window_size = this->window_size;
+    std::string target_chr = this->common.get_region_chr();
+    int window_size = this->common.get_window_size();
     std::vector<double> chr_lrr;
     
     // Calculate mean chromosome coverage
+    std::string input_filepath = this->common.get_bam_filepath();
     fprintf(stdout, "\nCalculating coverage for chromosome: %s\n", target_chr.c_str());
-    RegionCoverage chr_cov = getChromosomeCoverage(input_filepath, target_chr);
+    RegionCoverage chr_cov = getChromosomeCoverage();
 
     // Set up the output LRR CSV
     std::ofstream lrr_output;
-    std::string output_filepath = this->output_dir + "/lrr_output.csv";
+    std::string output_dir = this->common.get_output_dir();
+    std::string output_filepath = output_dir + "/lrr_output.csv";
     lrr_output.open(output_filepath);
     lrr_output << "start,end,lrr,baf\n";  // Write headers
 
     // Set up the output BAF CSV
     std::ofstream baf_output;
-    std::string baf_output_filepath = this->output_dir + "/baf_output.csv";
+    std::string baf_output_filepath = output_dir + "/baf_output.csv";
     baf_output.open(baf_output_filepath);
     baf_output << "pos,baf\n";  // Write headers
 
     // Determine the region to analyze
-    if (this->region_start == -1 || this->region_end == -1) {
-        this->region_start = this->align_start;
-        this->region_end = this->align_end;
+    int region_start = this->common.get_region_start();
+    int region_end = this->common.get_region_end();
+    if (region_start == -1 || region_end == -1) {
+        region_start = this->align_start;
+        region_end = this->align_end;
     }
 
     // Loop through the regions
     //int start_pos = this->align_start, end_pos = (start_pos + window_size -
     //1);
-    int start_pos = this->region_start, end_pos = std::min(start_pos + window_size - 1, this->region_end);
-    while (end_pos <= this->region_end) {
+    int start_pos = region_start, end_pos = std::min(start_pos + window_size - 1, region_end);
+    while (end_pos <= region_end) {
 
         // Calculate window mean coverage
         // fprintf(stdout, "\nCalculating coverage for region %s:%d-%d\n", target_chr, start_pos, end_pos);
-        RegionCoverage region_cov = getRegionCoverage(input_filepath, target_chr, start_pos, end_pos);
+        RegionCoverage region_cov = getRegionCoverage(start_pos, end_pos);
         
         if (region_cov.valid) {
             // Calculate the region's Log R ratio
@@ -142,8 +141,11 @@ std::vector<double> CNVCaller::calculateLogRRatios(std::string input_filepath)
 }
 
 /// Calculate the mean chromosome coverage
-RegionCoverage CNVCaller::getChromosomeCoverage(std::string input_filepath, std::string chr)
+RegionCoverage CNVCaller::getChromosomeCoverage()
 {
+    std::string chr = this->common.get_region_chr();
+    std::string input_filepath = this->common.get_bam_filepath();
+
     char cmd[BUFFER_SIZE];
     FILE *fp;
     char line[BUFFER_SIZE];
@@ -194,7 +196,7 @@ RegionCoverage CNVCaller::getChromosomeCoverage(std::string input_filepath, std:
     return cov;
 }
 
-RegionCoverage CNVCaller::getRegionCoverage(std::string input_filepath, std::string chr, int start_pos, int end_pos)
+RegionCoverage CNVCaller::getRegionCoverage(int start_pos, int end_pos)
 {
     char cmd[BUFFER_SIZE];
     FILE *fp;
@@ -203,11 +205,11 @@ RegionCoverage CNVCaller::getRegionCoverage(std::string input_filepath, std::str
     bool log_debug = false;  // Log debugging output
 
     // Get the path to the reference genome
-    std::string ref_genome_path = this->ref_filepath;
-
-    // Test: "samtools mpileup -r 1 -f data/hs37d5.fa /home/perdomoj/github/SampleData/ContextSV/LargeSV_trimmed.bam --no-output-ins --no-output-del --no-output-ends
+    std::string ref_genome_path = this->common.get_ref_filepath();
 
     // Run on a region of the chromosome using mpileup
+    std::string chr = this->common.get_region_chr();
+    std::string input_filepath = this->common.get_bam_filepath();
     snprintf(cmd, BUFFER_SIZE,\
     "samtools mpileup -r %s:%d-%d -f %s %s --no-output-ins --no-output-del --no-output-ends",\
     chr.c_str(), start_pos, end_pos, ref_genome_path.c_str(), input_filepath.c_str());
@@ -362,8 +364,10 @@ RegionCoverage CNVCaller::getRegionCoverage(std::string input_filepath, std::str
     return cov;
 }
 
-int CNVCaller::getAlignmentEndpoints(std::string input_filepath)
+int CNVCaller::getAlignmentEndpoints()
 {
+    // Open the BAM file
+    std::string input_filepath = this->common.get_bam_filepath();
     std::cout << "Opening bam file..." << std::endl;
 	samFile *fp_in = hts_open(input_filepath.c_str(), "r");  // Open BAM file
 
@@ -438,51 +442,4 @@ int CNVCaller::getAlignmentEndpoints(std::string input_filepath)
 	sam_close(fp_in);
 
     return 0;
-}
-
-void CNVCaller::set_bam_filepath(std::string bam_filepath)
-{
-    this->bam_filepath = bam_filepath;
-}
-
-void CNVCaller::set_ref_filepath(std::string ref_filepath)
-{
-    this->ref_filepath = ref_filepath;
-}
-
-void CNVCaller::set_output_dir(std::string output_dir)
-{
-    this->output_dir = output_dir;
-}
-
-void CNVCaller::set_region(std::string region)
-{
-    this->region = region;
-
-    // Parse the region
-    char *tok = strtok((char *)region.c_str(), ":");
-    int col = 0;
-    while (tok != NULL)
-    {
-        // Get the chromosome
-        if (col == 0)
-        {
-            this->region_chr = tok;
-        }
-
-        // Get the start position
-        else if (col == 1)
-        {
-            this->region_start = atoi(tok);
-        }
-
-        // Get the end position
-        else if (col == 2)
-        {
-            this->region_end = atoi(tok);
-        }
-
-        tok = strtok(NULL, ":");
-        col++;
-    }
 }
