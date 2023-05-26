@@ -14,6 +14,7 @@ class SNVCaller {
 	private:
 		Common common;
 		std::vector<int> snp_positions;
+		std::vector<float> snp_bafs;
 	public:
 		SNVCaller(Common common);
 
