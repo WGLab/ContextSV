@@ -18,17 +18,19 @@ IntegrativeCaller::IntegrativeCaller(Common common)
 int IntegrativeCaller::run()
 {
     // Call SNVs
-    SNVCaller snv_obj(this->common);
-    snv_obj.run();
+    // SNVCaller snv_obj(this->common);
+    // snv_obj.run();
 
     // Get the positions of SNPs in the region
     //snv_obj.run(filepath);
 
     // Print the size of the SNP positions vector
-    std::cout << "SNP positions vector size = " << snv_obj.get_snp_positions().size() << std::endl;
+    // std::cout << "SNP positions vector size = " << snv_obj.get_snp_positions().size() << std::endl;
 
     // Call CNVs
-    CNVCaller cnv_obj(this->common, snv_obj.get_snp_positions());
+    //CNVCaller cnv_obj(this->common, snv_obj.get_snp_positions());
+    std::vector<int> snp_positions;
+    CNVCaller cnv_obj(this->common, snp_positions);
     cnv_obj.run();
 
     return 0;
