@@ -190,6 +190,9 @@ RegionCoverage CNVCaller::getChromosomeCoverage()
             cov.length = pos_count;
             cov.mean   = chr_mean_coverage;
             cov.valid  = true;  // Set the region as valid
+
+            // Print values
+            fprintf(stdout, "pos_count = %d\ncum_depth = %d\nmean_coverage (%s) = %.3f\n", pos_count, cum_depth, chr.c_str(), chr_mean_coverage);
         }
     }
     pclose(fp);  // Close the process
