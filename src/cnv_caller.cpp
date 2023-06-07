@@ -21,9 +21,9 @@ CNVCaller::CNVCaller(Common common, std::vector<int> snp_positions)
 std::vector<double> CNVCaller::run()
 {
     // Get alignment endpoints
-    std::cout << "Getting alignment endpoints..." << std::endl;
-    getAlignmentEndpoints();
-    std::cout << "Alignment endpoints retrieved." << std::endl;
+    // std::cout << "Getting alignment endpoints..." << std::endl;
+    // getAlignmentEndpoints();
+    // std::cout << "Alignment endpoints retrieved." << std::endl;
 
     // Calculate LRRs
     std::cout << "Calculating LRRs..." << std::endl;
@@ -94,8 +94,11 @@ std::vector<double> CNVCaller::calculateLogRRatios()
     int region_start = this->common.get_region_start();
     int region_end = this->common.get_region_end();
     if (region_start == -1 || region_end == -1) {
-        region_start = this->align_start;
-        region_end = this->align_end;
+        // No region was specified, so analyze the whole chromosome
+        region_start = 0;
+        region_end = chr_cov.length;
+        // region_start = this->align_start;
+        // region_end = this->align_end;
     }
 
     // Loop through the regions
@@ -370,6 +373,9 @@ RegionCoverage CNVCaller::getRegionCoverage(int start_pos, int end_pos)
 
 int CNVCaller::getAlignmentEndpoints()
 {
+    // TODO: This function only works for the first chromosome in the BAM file.
+    // Update to work for any chromosome or remove it.
+
     // Open the BAM file
     std::string input_filepath = this->common.get_bam_filepath();
     std::cout << "Opening bam file..." << std::endl;
@@ -424,22 +430,12 @@ int CNVCaller::getAlignmentEndpoints()
                     std::cout << "First position = " << first_position << std::endl;
                     first_position = aln->core.pos + 1;
                     this->align_start = first_position;
+
+                    // End the loop if the first position is found
                 }
             }
         }
 	}
-
-    std::cout << "Completed reading alignments." << std::endl;
-    std::cout << "Found " << read_count << " alignments." << std::endl;
-    std::cout << "Found " << primary_count << " primary alignments." << std::endl;
-    std::cout << "Found " << invalid_count << " invalid alignments." << std::endl;
-
-    // Get the last alignment position
-    std::cout << "Getting last alignment position..." << std::endl;
-    int last_position = aln->core.pos + bam_cigar2rlen(aln->core.n_cigar, bam_get_cigar(aln)) - 1;
-    this->align_end = last_position;
-    std::cout << "alignment start = " << this->align_start << std::endl;
-    std::cout << "alignment end   = " << this->align_end << std  ::endl;
 	
 	bam_destroy1(aln);
     bam_hdr_destroy(bamHdr);
