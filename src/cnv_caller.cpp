@@ -74,7 +74,7 @@ std::vector<double> CNVCaller::calculateLogRRatios()
     
     // Calculate mean chromosome coverage
     std::string input_filepath = this->common.get_bam_filepath();
-    std::cout <<  "\nCalculating coverage for chromosome: %s\n" << target_chr.c_str() << std::endl;
+    std::cout <<  "\nCalculating coverage for chromosome: \n" << target_chr.c_str() << std::endl;
     RegionCoverage chr_cov = getChromosomeCoverage();
 
     // Set up the output LRR CSV
@@ -116,7 +116,9 @@ std::vector<double> CNVCaller::calculateLogRRatios()
             double region_lrr = log2(region_cov.mean / chr_cov.mean);
             chr_lrr.push_back(region_lrr);
             fprintf(stdout, "%.3f/%.3f\n", region_cov.mean, chr_cov.mean);
+            fflush(stdout);
             fprintf(stdout, "LRR=%.3f\n", region_lrr);
+            fflush(stdout);
 
             // Save region start, end, LRR, and BAF to CSV
             lrr_output << start_pos << "," << end_pos << "," << region_lrr << "," << region_cov.baf << "\n";
@@ -221,6 +223,10 @@ RegionCoverage CNVCaller::getRegionCoverage(int start_pos, int end_pos)
     snprintf(cmd, BUFFER_SIZE,\
     "samtools mpileup -r %s:%d-%d -f %s %s --no-output-ins --no-output-del --no-output-ends",\
     chr.c_str(), start_pos, end_pos, ref_genome_path.c_str(), input_filepath.c_str());
+
+    // Print the command
+    fprintf(stdout, "%s\n", cmd);
+    fflush(stdout);
     
     // Open the process
     fp = popen(cmd, "r");
@@ -353,6 +359,7 @@ RegionCoverage CNVCaller::getRegionCoverage(int start_pos, int end_pos)
     if (pos_count == 0)
     {
         cov.valid = false;
+        std::cerr << "ERROR: No positions in region " << chr << ":" << start_pos << "-" << end_pos << std::endl;
 
     } else {
 
