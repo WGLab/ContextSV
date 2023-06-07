@@ -9,6 +9,7 @@
 #include <string.h>
 #include <math.h>       /* log2 */
 #include <htslib/sam.h>
+#include "common.h"
 
 #define BUFFER_SIZE 1024
 
@@ -96,9 +97,7 @@ std::vector<double> CNVCaller::calculateLogRRatios()
     if (region_start == -1 || region_end == -1) {
         // No region was specified, so analyze the whole chromosome
         region_start = 0;
-        region_end = chr_cov.length;
-        // region_start = this->align_start;
-        // region_end = this->align_end;
+        region_end = this->common.get_chr_length();
     }
 
     // Loop through the regions
@@ -359,7 +358,7 @@ RegionCoverage CNVCaller::getRegionCoverage(int start_pos, int end_pos)
     if (pos_count == 0)
     {
         cov.valid = false;
-        std::cerr << "ERROR: No positions in region " << chr << ":" << start_pos << "-" << end_pos << std::endl;
+        //std::cerr << "ERROR: No positions in region " << chr << ":" << start_pos << "-" << end_pos << std::endl;
 
     } else {
 

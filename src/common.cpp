@@ -2,6 +2,9 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <iostream>
+
+#define BUFFER_SIZE 1024
 
 std::string Common::get_bam_filepath()
 {
@@ -72,6 +75,19 @@ void Common::set_region(std::string region)
         tok = strtok(NULL, ":");
         col++;
     }
+
+    // Calculate the chromosome length
+    std::cout << "Getting chromosome length for " << this->region_chr << std::endl;
+    std::string input_filepath = this->get_bam_filepath();
+    std::string target_chr = this->get_region_chr();
+    std::string chr_length_cmd = "samtools view -H " + input_filepath + " | grep \"@SQ\" | grep " + target_chr + " | cut -f 3 -d ':' | cut -f 2 -d '-'";
+    FILE *chr_length_pipe = popen(chr_length_cmd.c_str(), "r");
+    char chr_length_buffer[BUFFER_SIZE];
+    fgets(chr_length_buffer, BUFFER_SIZE, chr_length_pipe);
+    pclose(chr_length_pipe);
+    int chr_length = atoi(chr_length_buffer);
+    std::cout << "Chromosome length = " << chr_length << std::endl;
+    this->chr_length = chr_length;
 }
 
 int Common::get_window_size()
@@ -107,4 +123,9 @@ int Common::get_region_start()
 int Common::get_region_end()
 {
     return this->region_end;
+}
+
+int Common::get_chr_length()
+{
+    return this->chr_length;
 }

@@ -7,6 +7,7 @@
 
 #include <string>
 #include <vector>
+#include <map>
 class Common {
     public:
         std::string get_bam_filepath();
@@ -24,6 +25,7 @@ class Common {
         std::string get_region_chr();
         int get_region_start();
         int get_region_end();
+        int get_chr_length();
 
     private:
         std::string bam_filepath = "";
@@ -35,6 +37,7 @@ class Common {
         std::string region_chr = "";
         int region_start = -1;
         int region_end   = -1;
+        int chr_length   = -1;
 };
 
 #endif //CONTEXTSV_COMMON_H
