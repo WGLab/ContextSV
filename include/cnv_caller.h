@@ -15,7 +15,7 @@
 
 struct RegionCoverage {
     bool valid  = false;
-    int length  = 0;
+    uint64_t length  = 0;
     double mean = 0;
     double baf  = 0;
     std::vector<std::pair<int, double>> baf_by_pos;

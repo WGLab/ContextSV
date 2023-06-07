@@ -182,20 +182,20 @@ RegionCoverage CNVCaller::getChromosomeCoverage()
     }
 
     // Parse the outputs
-    int pos_count, cum_depth;
+    uint64_t pos_count, cum_depth;
     if (fgets(line, BUFFER_SIZE, fp) != NULL)
     {           
-        if (sscanf(line, "%d%d", &pos_count, &cum_depth) == 2)
+        if (sscanf(line, "%ld%ld", &pos_count, &cum_depth) == 2)
         {
             // Calculate the mean chromosome coverage
-            double chr_mean_coverage = double(cum_depth) / pos_count;
-            fprintf(stdout, "%s mean coverage = %.3f\ncumulative depth = %d\nregion length=%d\n", chr.c_str(), chr_mean_coverage, cum_depth, pos_count);
+            double chr_mean_coverage = (double) cum_depth / (double) pos_count;
+            fprintf(stdout, "%s mean coverage = %.3f\ncumulative depth = %ld\nregion length=%ld\n", chr.c_str(), chr_mean_coverage, cum_depth, pos_count);
             cov.length = pos_count;
             cov.mean   = chr_mean_coverage;
             cov.valid  = true;  // Set the region as valid
 
             // Print values
-            fprintf(stdout, "pos_count = %d\ncum_depth = %d\nmean_coverage (%s) = %.3f\n", pos_count, cum_depth, chr.c_str(), chr_mean_coverage);
+            fprintf(stdout, "pos_count = %ld\ncum_depth = %ld\nmean_coverage (%s) = %.3f\n", pos_count, cum_depth, chr.c_str(), chr_mean_coverage);
         }
     }
     pclose(fp);  // Close the process
@@ -246,11 +246,10 @@ RegionCoverage CNVCaller::getRegionCoverage(int start_pos, int end_pos)
 
     // Parse the mpileup output
     int pos_count = 0;
-    int cum_depth = 0;
-    int cum_non_ref = 0;
+    uint64_t cum_depth = 0;
     double mean_baf = 0.0;
-    int snp_count = 0;
-    int pos = 0;
+    uint64_t snp_count = 0;
+    uint64_t pos = 0;
     while (fgets(line, BUFFER_SIZE, fp) != NULL)
     {
         // Parse the line
@@ -284,7 +283,7 @@ RegionCoverage CNVCaller::getRegionCoverage(int start_pos, int end_pos)
                 if (depth > 0)
                 {
                     pos_count++;
-                    cum_depth += depth;
+                    cum_depth += (uint64_t) depth;
 
                     // Reset the skip flag
                     skip_pos = false;
@@ -339,7 +338,7 @@ RegionCoverage CNVCaller::getRegionCoverage(int start_pos, int end_pos)
 
 
                     // Update the mean BAF
-                    mean_baf = (mean_baf * (snp_count - 1) + baf) / snp_count;
+                    mean_baf = (mean_baf * ((double) snp_count - 1) + baf) / (double) snp_count;
                     //mean_baf = (mean_baf * (pos_count - 1) + baf) / pos_count;
                 }
             }
@@ -359,7 +358,7 @@ RegionCoverage CNVCaller::getRegionCoverage(int start_pos, int end_pos)
         cov.valid = true;
 
         // Calculate the mean chromosome coverage
-        double chr_mean_coverage = double(cum_depth) / pos_count;
+        double chr_mean_coverage = (double) cum_depth / (double) pos_count;
 
         // Update the coverage struct
         cov.length     = pos_count;
