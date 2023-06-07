@@ -74,7 +74,7 @@ std::vector<double> CNVCaller::calculateLogRRatios()
     
     // Calculate mean chromosome coverage
     std::string input_filepath = this->common.get_bam_filepath();
-    fprintf(stdout, "\nCalculating coverage for chromosome: %s\n", target_chr.c_str());
+    std::cout <<  "\nCalculating coverage for chromosome: %s\n" << target_chr.c_str() << std::endl;
     RegionCoverage chr_cov = getChromosomeCoverage();
 
     // Set up the output LRR CSV
@@ -173,6 +173,7 @@ RegionCoverage CNVCaller::getChromosomeCoverage()
     }
     
     fprintf(stdout, "%s\n", cmd);  // Print the command
+    fflush(stdout);
     
     fp = popen(cmd, "r");
     if (fp == NULL)
