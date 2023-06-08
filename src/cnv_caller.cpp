@@ -100,6 +100,8 @@ std::vector<double> CNVCaller::calculateLogRRatios()
         region_end = this->common.get_chr_length();
     }
 
+    std::cout << "Beginning analysis of region: " << target_chr << ":" << region_start << "-" << region_end << std::endl;
+
     // Loop through the regions
     //int start_pos = this->align_start, end_pos = (start_pos + window_size -
     //1);

@@ -64,12 +64,14 @@ void Common::set_region(std::string region)
         else if (col == 1)
         {
             this->region_start = atoi(tok);
+            std::cout << "Region start = " << this->region_start << std::endl;
         }
 
         // Get the end position
         else if (col == 2)
         {
             this->region_end = atoi(tok);
+            std::cout << "Region end = "  << this->region_end << std::endl;
         }
 
         tok = strtok(NULL, ":");
