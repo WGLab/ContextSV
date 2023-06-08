@@ -60,20 +60,33 @@ void Common::set_region(std::string region)
             this->region_chr = tok;
         }
 
-        // Get the start position
+        // Get the start and end positions
         else if (col == 1)
         {
-            this->region_start = atoi(tok);
-            std::cout << "Region start = " << this->region_start << std::endl;
-        }
+            // Check if empty
+            if (strcmp(tok, "") == 0)
+            {
+                this->region_start = 0;
+                this->region_end = this->chr_length;
+                break;
+            }
 
-        // Get the end position
-        else if (col == 2)
-        {
-            this->region_end = atoi(tok);
-            std::cout << "Region end = "  << this->region_end << std::endl;
-        }
+            // Split the start and end positions
+            char *start_tok = strtok(tok, "-");
+            char *end_tok = strtok(NULL, "-");
 
+            // Get the start position
+            if (start_tok != NULL)
+            {
+                this->region_start = atoi(start_tok);
+            }
+
+            // Get the end position
+            if (end_tok != NULL)
+            {
+                this->region_end = atoi(end_tok);
+            }
+        }
         tok = strtok(NULL, ":");
         col++;
     }
@@ -88,8 +101,13 @@ void Common::set_region(std::string region)
     fgets(chr_length_buffer, BUFFER_SIZE, chr_length_pipe);
     pclose(chr_length_pipe);
     int chr_length = atoi(chr_length_buffer);
+
+    // Print the chromosome length
     std::cout << "Chromosome length = " << chr_length << std::endl;
     this->chr_length = chr_length;
+
+    // Print the region
+    std::cout << "Parsed region = " << this->region_chr << ":" << this->region_start << "-" << this->region_end << std::endl;
 }
 
 int Common::get_window_size()
