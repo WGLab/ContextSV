@@ -128,6 +128,26 @@ std::string Common::get_snp_vcf_filepath()
 void Common::set_snp_vcf_filepath(std::string filepath)
 {
     this->snp_vcf_filepath = filepath;
+
+    // Create a VCF filepath of filtered SNPs
+    std::string filtered_snp_vcf_filepath = this->output_dir + "/filtered_snps.vcf";
+
+    std::cout << "Parsing SNPs from " << this->snp_vcf_filepath << std::endl;
+
+    // Filter variants by depth and quality and SNPs only
+    std::string cmd = "bcftools view -r " + this->region + " -v snps -i 'QUAL > 30 && DP > 10 && FILTER = \"PASS\"' " + this->snp_vcf_filepath + " > " + filtered_snp_vcf_filepath;
+    std::cout << "Command: " << cmd << std::endl;
+    system(cmd.c_str());
+
+    std::cout << "Filtered SNPs written to " << filtered_snp_vcf_filepath << std::endl;
+
+    // Extract all BAFs from the filtered SNPs
+    std::string baf_filepath = this->output_dir + "/filtered_bafs.csv";
+    cmd = "bcftools query -f '%CHROM,%POS,[%VAF]\n' " + filtered_snp_vcf_filepath + " > " + baf_filepath;
+    std::cout << "Command: " << cmd << std::endl;
+    system(cmd.c_str());
+
+    std::cout << "BAFs written to " << baf_filepath << std::endl;
 }
 
 std::string Common::get_region_chr()
