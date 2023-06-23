@@ -18,33 +18,33 @@ struct RegionCoverage {
     uint64_t length  = 0;
     double mean = 0;
     double baf  = 0;
-    std::vector<std::pair<int, double>> baf_by_pos;
 };
 
 class CNVCaller {
     private:
         Common common;
-        std::vector<int> snp_positions;
-        int align_start = -1;
-        int align_end   = -1;
+        double chr_mean_coverage = 0;
 
     public:
-        CNVCaller(Common common, std::vector<int> snp_positions);
+        CNVCaller(Common common);
 
-        /// Detect CNVs
+        // Detect CNVs
 		std::vector<double> run();
 
-        /// Calculate Log R Ratios
-		std::vector<double> calculateLogRRatios();
+        // Calculate Log R Ratios
+		std::vector<double> calculateLogRRatiosAtSNPS(std::vector<int> snp_positions);
 
-        /// Calculate the mean chromosome coverage
-        RegionCoverage getChromosomeCoverage();
+        // Calculate the mean chromosome coverage
+        double calculateChromosomeCoverage();
 
-        /// Calculate region mean coverage
-        RegionCoverage getRegionCoverage(int start_pos=1, int end_pos=1);
+        // Calculate region mean coverage
+        double calculateWindowLogRRatio(int start_pos, int end_pos);
 
-        /// Get alignment start and stop positions
-        int getAlignmentEndpoints();
+        // Read SNP positions and BAF values from the VCF file
+        std::pair<std::vector<int>, std::vector<double>> readSNPBAFs();
+
+        // Save a CSV with SNP positions, BAF values and Log R Ratios
+        void saveSNPLRRBAFCSV(std::string filepath, std::vector<int> snp_positions, std::vector<double> bafs, std::vector<double> logr_ratios);
 };
 
 #endif // CNV_CALLER_H

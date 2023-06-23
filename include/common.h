@@ -25,7 +25,7 @@ class Common {
         std::string get_region_chr();
         int get_region_start();
         int get_region_end();
-        int get_chr_length();
+        bool get_region_set();
 
     private:
         std::string bam_filepath = "";
@@ -35,9 +35,9 @@ class Common {
         int window_size = 10000;
         std::string snp_vcf_filepath = "";
         std::string region_chr = "";
-        int region_start = -1;
-        int region_end   = -1;
-        int chr_length   = -1;
+        int region_start = 0;
+        int region_end   = 0;
+        bool region_set = false;
 };
 
 #endif //CONTEXTSV_COMMON_H

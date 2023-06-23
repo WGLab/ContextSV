@@ -33,8 +33,8 @@ int IntegrativeCaller::run()
 
     // Call CNVs
     //CNVCaller cnv_obj(this->common, snv_obj.get_snp_positions());
-    std::vector<int> snp_positions;
-    CNVCaller cnv_obj(this->common, snp_positions);
+    //std::vector<int> snp_positions;
+    CNVCaller cnv_obj(this->common);
     cnv_obj.run();
 
     return 0;

@@ -9,28 +9,39 @@
 #include <string.h>
 #include <math.h>       /* log2 */
 #include <htslib/sam.h>
+#include <algorithm>
+#include <limits>
+#include <tuple>
 #include "common.h"
 
 #define BUFFER_SIZE 1024
 
-CNVCaller::CNVCaller(Common common, std::vector<int> snp_positions)
+CNVCaller::CNVCaller(Common common)
 {
     this->common = common;
-    this->snp_positions = snp_positions;
 }
 
 std::vector<double> CNVCaller::run()
 {
-    // Get alignment endpoints
-    // std::cout << "Getting alignment endpoints..." << std::endl;
-    // getAlignmentEndpoints();
-    // std::cout << "Alignment endpoints retrieved." << std::endl;
+    // Read SNP positions and BAF values from the VCF file
+    std::cout << "Reading SNP positions and BAF values from the VCF file..." << std::endl;
+    std::pair<std::vector<int>, std::vector<double>> bafs_by_pos = readSNPBAFs();
+    std::cout << "Complete." << std::endl;
+
+    // Extract the SNP positions and BAF values
+    std::vector<int> snp_positions = bafs_by_pos.first;
+    std::vector<double> snp_bafs = bafs_by_pos.second;
 
     // Calculate LRRs
-    std::cout << "Calculating LRRs..." << std::endl;
-    std::vector<double> log_r_ratios;
-    log_r_ratios = calculateLogRRatios();
+    std::cout << "Calculating LRRs at SNP positions..." << std::endl;
+    std::vector<double> log_r_ratios = calculateLogRRatiosAtSNPS(snp_positions);
     std::cout << "LRRs calculated." << std::endl;
+
+    // Save a CSV of the positions, LRRs, and BAFs
+    std::cout << "Saving CSV of positions, LRRs, and BAFs..." << std::endl;
+    std::string output_filepath = this->common.get_output_dir() + "/snp_lrr_baf.csv";
+    saveSNPLRRBAFCSV(output_filepath, snp_positions, snp_bafs, log_r_ratios);
+    std::cout << "CSV saved to: " << output_filepath << std::endl;
 
     // Calculate BAFs
     //std::vector<double> b_allele_freqs;
@@ -39,10 +50,11 @@ std::vector<double> CNVCaller::run()
     // Read the HMM from file
     //std::string hmm_filepath = "data/wgs.hmm";
     //CHMM hmm = ReadCHMM(hmm_filepath.c_str());
+    
 
     // Set up the input variables
     int num_probes = log_r_ratios.size();
-    double *lrr = &log_r_ratios[0];
+    // double *lrr = &log_r_ratios[0];
     double *baf = NULL;
     double *pfb = NULL;
     int *snpdist = NULL;
@@ -67,88 +79,50 @@ std::vector<double> CNVCaller::run()
     return log_r_ratios;
 }
 
-std::vector<double> CNVCaller::calculateLogRRatios()
+std::vector<double> CNVCaller::calculateLogRRatiosAtSNPS(std::vector<int> snp_positions)
 {
     std::string target_chr = this->common.get_region_chr();
-    int window_size = this->common.get_window_size();
-    std::vector<double> chr_lrr;
     
     // Calculate mean chromosome coverage
     std::string input_filepath = this->common.get_bam_filepath();
     std::cout <<  "\nCalculating coverage for chromosome: \n" << target_chr.c_str() << std::endl;
-    RegionCoverage chr_cov = getChromosomeCoverage();
+    double chr_cov = calculateChromosomeCoverage();
 
-    // Set up the output LRR CSV
-    std::ofstream lrr_output;
-    std::string output_dir = this->common.get_output_dir();
-    std::string output_filepath = output_dir + "/lrr_output.csv";
-    lrr_output.open(output_filepath);
-    lrr_output << "start,end,lrr,baf\n";  // Write headers
-
-    // Set up the output BAF CSV
-    std::ofstream baf_output;
-    std::string baf_output_filepath = output_dir + "/baf_output.csv";
-    baf_output.open(baf_output_filepath);
-    baf_output << "pos,baf\n";  // Write headers
-
-    // Determine the region to analyze
-    int region_start = this->common.get_region_start();
-    int region_end = this->common.get_region_end();
-    if (region_start == -1 || region_end == -1) {
-        // No region was specified, so analyze the whole chromosome
-        region_start = 0;
-        region_end = this->common.get_chr_length();
+    // Set the region start and end from the first and last SNPs
+    int region_start = snp_positions.front();
+    int region_end = snp_positions.back();
+    if (this->common.get_region_set()) {
+        region_start = std::max(region_start, this->common.get_region_start());
+        region_end = std::min(region_end, this->common.get_region_end());
     }
 
     std::cout << "Beginning analysis of region: " << target_chr << ":" << region_start << "-" << region_end << std::endl;
 
-    // Loop through the regions
-    //int start_pos = this->align_start, end_pos = (start_pos + window_size -
-    //1);
-    int start_pos = region_start, end_pos = std::min(start_pos + window_size - 1, region_end);
-    while (end_pos <= region_end) {
+    // Loop through each SNP and calculate the LRR
+    std::vector<double> snp_lrr;
+    int window_size = this->common.get_window_size();
+    for (int i = 0; i < snp_positions.size(); i++) {
+        int pos = snp_positions[i];
 
-        // Calculate window mean coverage
-        // fprintf(stdout, "\nCalculating coverage for region %s:%d-%d\n", target_chr, start_pos, end_pos);
-        RegionCoverage region_cov = getRegionCoverage(start_pos, end_pos);
-        
-        if (region_cov.valid) {
-            // Calculate the region's Log R ratio
-            double region_lrr = log2(region_cov.mean / chr_cov.mean);
-            chr_lrr.push_back(region_lrr);
-            fprintf(stdout, "%.3f/%.3f\n", region_cov.mean, chr_cov.mean);
-            fflush(stdout);
-            fprintf(stdout, "LRR=%.3f\n", region_lrr);
-            fflush(stdout);
-
-            // Save region start, end, LRR, and BAF to CSV
-            lrr_output << start_pos << "," << end_pos << "," << region_lrr << "," << region_cov.baf << "\n";
-
-            // Save BAF to CSV from the region's BAF vector
-            for (int i = 0; i < region_cov.baf_by_pos.size(); i++)
-            {
-                // Get the position and BAF
-                int pos = region_cov.baf_by_pos[i].first;
-                double baf = region_cov.baf_by_pos[i].second;
-
-                // Save to CSV
-                baf_output << pos << "," << baf << "\n";
-            }
+        // Skip SNPs outside of the region
+        if (pos < region_start || pos > region_end) {
+            continue;
         }
 
-        // Update indexes
-        start_pos = (end_pos + 1);
-        end_pos += window_size;
-    }
-    
-    lrr_output.close();
-    std::cout << "CNVs calculated" << std::endl;
+        // Calculate window mean coverage
+        int window_start = pos - (window_size / 2);
+        int window_end = pos + (window_size / 2);
+        double lrr = calculateWindowLogRRatio(region_start, region_end);
 
-    return chr_lrr;
+        // Set the LRR value
+        snp_lrr.push_back(lrr);
+    }
+
+    return snp_lrr;
 }
 
 /// Calculate the mean chromosome coverage
-RegionCoverage CNVCaller::getChromosomeCoverage()
+double CNVCaller::calculateChromosomeCoverage()
 {
     std::string chr = this->common.get_region_chr();
     std::string input_filepath = this->common.get_bam_filepath();
@@ -187,16 +161,17 @@ RegionCoverage CNVCaller::getChromosomeCoverage()
 
     // Parse the outputs
     uint64_t pos_count, cum_depth;
+    double chr_mean_coverage;
     if (fgets(line, BUFFER_SIZE, fp) != NULL)
     {           
         if (sscanf(line, "%ld%ld", &pos_count, &cum_depth) == 2)
         {
             // Calculate the mean chromosome coverage
-            double chr_mean_coverage = (double) cum_depth / (double) pos_count;
+            chr_mean_coverage = (double) cum_depth / (double) pos_count;
             fprintf(stdout, "%s mean coverage = %.3f\ncumulative depth = %ld\nregion length=%ld\n", chr.c_str(), chr_mean_coverage, cum_depth, pos_count);
-            cov.length = pos_count;
-            cov.mean   = chr_mean_coverage;
-            cov.valid  = true;  // Set the region as valid
+            // cov.length = pos_count;
+            // cov.mean   = chr_mean_coverage;
+            // cov.valid  = true;  // Set the region as valid
 
             // Print values
             fprintf(stdout, "pos_count = %ld\ncum_depth = %ld\nmean_coverage (%s) = %.3f\n", pos_count, cum_depth, chr.c_str(), chr_mean_coverage);
@@ -204,32 +179,28 @@ RegionCoverage CNVCaller::getChromosomeCoverage()
     }
     pclose(fp);  // Close the process
 
-    return cov;
+    return chr_mean_coverage;
 }
 
-RegionCoverage CNVCaller::getRegionCoverage(int start_pos, int end_pos)
+double CNVCaller::calculateWindowLogRRatio(int start_pos, int end_pos)
 {
+    std::string chr = this->common.get_region_chr();
+    std::string input_filepath = this->common.get_bam_filepath();
+
     char cmd[BUFFER_SIZE];
     FILE *fp;
     char line[BUFFER_SIZE];
-    RegionCoverage cov;
-    bool log_debug = false;  // Log debugging output
 
-    // Get the path to the reference genome
-    std::string ref_genome_path = this->common.get_ref_filepath();
+    // Open a SAMtools process to calculate cumulative read depth and position
+    // counts (non-zero depths only) for a single region
 
-    // Run on a region of the chromosome using mpileup
-    std::string chr = this->common.get_region_chr();
-    std::string input_filepath = this->common.get_bam_filepath();
+    // Run the entire chromosome
     snprintf(cmd, BUFFER_SIZE,\
-    "samtools mpileup -r %s:%d-%d -f %s %s --no-output-ins --no-output-del --no-output-ends",\
-    chr.c_str(), start_pos, end_pos, ref_genome_path.c_str(), input_filepath.c_str());
-
-    // Print the command
-    fprintf(stdout, "%s\n", cmd);
+    "samtools depth -r %s:%d-%d %s | awk '{c++;s+=$3}END{print c, s}'",\
+        chr.c_str(), start_pos, end_pos, input_filepath.c_str());
+    fprintf(stdout, "%s\n", cmd);  // Print the command
     fflush(stdout);
     
-    // Open the process
     fp = popen(cmd, "r");
     if (fp == NULL)
     {
@@ -237,217 +208,124 @@ RegionCoverage CNVCaller::getRegionCoverage(int start_pos, int end_pos)
         exit(EXIT_FAILURE);
     }
 
-    // mpileup output columns:
-    // 1. chromosome
-    // 2. position
-    // 3. reference base
-    // 4. read depth
-    // 5. read bases
-    // 6. base qualities
-    // 7. mapping qualities
-    // 8. read names
-    // 9. read flags
-    // 10. read tags
+    // Parse the outputs
+    uint64_t pos_count, cum_depth;
+    double region_lrr;
+    if (fgets(line, BUFFER_SIZE, fp) != NULL)
+    {           
+        if (sscanf(line, "%ld%ld", &pos_count, &cum_depth) == 2)
+        {
+            // Calculate the LRR
+            double region_mean_coverage = (double) cum_depth / (double) pos_count;
+            region_lrr = log2(region_mean_coverage / this->chr_mean_coverage);
+        }
+    }
+    pclose(fp);  // Close the process
 
-    // Vector for storing BAFs and corresponding positions
-    std::vector<std::pair<int, double>> baf_pos;
+    return region_lrr;
+}
 
-    // Parse the mpileup output
-    int pos_count = 0;
-    uint64_t cum_depth = 0;
-    double mean_baf = 0.0;
-    uint64_t snp_count = 0;
-    uint64_t pos = 0;
+std::pair<std::vector<int>, std::vector<double>> CNVCaller::readSNPBAFs()
+{
+    // Get the VCF filepath with SNPs
+    std::string snp_filepath = this->common.get_snp_vcf_filepath();
+
+    // Create a VCF filepath of filtered SNPs
+    std::string filtered_snp_vcf_filepath = this->common.get_output_dir() + "/filtered_snps.vcf";
+
+    std::cout << "Parsing SNPs from " << snp_filepath << std::endl;
+
+    // Filter variants by depth and quality and SNPs only
+    std::string region = this->common.get_region();
+    std::string cmd;
+    if (region == "")
+    {
+        cmd = "bcftools view -v snps -i 'QUAL > 30 && DP > 10 && FILTER = \"PASS\"' " + snp_filepath + " > " + filtered_snp_vcf_filepath;
+    } else {
+        cmd = "bcftools view -r " + region + " -v snps -i 'QUAL > 30 && DP > 10 && FILTER = \"PASS\"' " + snp_filepath + " > " + filtered_snp_vcf_filepath;
+    }
+    std::cout << "Command: " << cmd << std::endl;
+    system(cmd.c_str());
+
+    std::cout << "Filtered SNPs written to " << filtered_snp_vcf_filepath << std::endl;
+
+    // Extract all BAFs from the filtered SNPs and store in the pair vector
+    std::cout << "Extracting BAFs from filtered SNPs" << std::endl;
+    cmd = "bcftools query -f '%CHROM,%POS,[%VAF]\n' " + filtered_snp_vcf_filepath;
+    std::cout << "Command: " << cmd << std::endl;
+    FILE *fp = popen(cmd.c_str(), "r");
+    if (fp == NULL)
+    {
+        std::cerr << "ERROR: Could not open pipe for command: " << cmd << std::endl;
+        exit(1);
+    }
+
+    // Read the BAFs
+    char line[BUFFER_SIZE];
+
+    // Loop through the lines
+    std::vector<int> snp_positions;
+    std::vector<double> snp_bafs;
     while (fgets(line, BUFFER_SIZE, fp) != NULL)
     {
         // Parse the line
-        char *tok = strtok(line, "\t");  // Tokenize the line
+        char *tok = strtok(line, ",");  // Tokenize the line
         int col = 0;  // Column index
-        int depth = 0;  // Read depth at this position
-        
-        // Skip zero-depth positions
-        bool skip_pos = false;
-
-        // Char for the reference base
-        char ref_base = 'N';
+        std::string chr = "";
+        uint64_t pos = 0;
+        double baf = 0.0;
         while (tok != NULL)
         {
+            // Get the chromosome from column 1
+            if (col == 0)
+            {
+                chr = tok;
+            }
+
             // Get the position from column 2
-            if (col == 1)
+            else if (col == 1)
             {
                 pos = atoi(tok);
             }
 
-            // Get the reference base from column 3
+            // Get the BAF from column 3
             else if (col == 2)
             {
-                ref_base = tok[0];
+                baf = atof(tok);
             }
 
-            // Get the read depth from column 4
-            else if (col == 3)
-            {
-                depth = atoi(tok);
-                if (depth > 0)
-                {
-                    pos_count++;
-                    cum_depth += (uint64_t) depth;
-
-                    // Reset the skip flag
-                    skip_pos = false;
-                } else {
-                    // Skip this position
-                    skip_pos = true;
-                }
-            }
-
-            // Get the non-reference base count from column 5
-            else if ((col == 4) && (!skip_pos))
-            {
-                // Cast the token to a string
-                std::string bases(tok);
-
-                // Counters for reference and non-reference bases
-                int ref_count = 0;
-                int non_ref_count = 0;
-
-                // Loop through the bases
-                for (int i = 0; i < bases.length(); i++)
-                {
-                    // Get the base
-                    char base = bases[i];
-
-                    // Make the base uppercase
-                    base = toupper(base);
-
-                    // Check if the base is non-reference by comparing to A, C, G, T
-                    if (base == 'A' || base == 'C' || base == 'G' || base == 'T')
-                    {
-                        non_ref_count++;
-
-                    // Check if the base is the reference base
-                    } else if (base == '.') {
-                        ref_count++;
-                    }
-                }
-
-                // Get the BAF if the non-reference count is greater than zero
-                // (= SNP)
-                double baf = 0.0;
-                if (non_ref_count > 0)
-                {
-                    snp_count++;
-                    baf = double(non_ref_count) / (ref_count + non_ref_count);
-                    //std::cout << "BAF = " << baf << std::endl;
-
-
-                    // Store the BAF and its position
-                    baf_pos.push_back(std::make_pair(pos, baf));
-
-
-                    // Update the mean BAF
-                    mean_baf = (mean_baf * ((double) snp_count - 1) + baf) / (double) snp_count;
-                    //mean_baf = (mean_baf * (pos_count - 1) + baf) / pos_count;
-                }
-            }
-
-            tok = strtok(NULL, "\t");
+            tok = strtok(NULL, ",");
             col++;
         }
+
+        // Store the position and BAF
+        snp_positions.push_back(pos);
+        snp_bafs.push_back(baf);
     }
 
-    // Determine if the region is valid
-    if (pos_count == 0)
-    {
-        cov.valid = false;
-        //std::cerr << "ERROR: No positions in region " << chr << ":" << start_pos << "-" << end_pos << std::endl;
+    // Close the pipe
+    pclose(fp);
 
-    } else {
+    // Create the pair vector
+    std::pair<std::vector<int>, std::vector<double>> snp_data = std::make_pair(snp_positions, snp_bafs);
 
-        cov.valid = true;
-
-        // Calculate the mean chromosome coverage
-        double chr_mean_coverage = (double) cum_depth / (double) pos_count;
-
-        // Update the coverage struct
-        cov.length     = pos_count;
-        cov.mean       = chr_mean_coverage;
-        cov.baf        = mean_baf;
-        cov.baf_by_pos = baf_pos;
-    }
-
-    return cov;
+    return snp_data;
 }
 
-int CNVCaller::getAlignmentEndpoints()
+void CNVCaller::saveSNPLRRBAFCSV(std::string filepath, std::vector<int> snp_positions, std::vector<double> bafs, std::vector<double> logr_ratios)
 {
-    // TODO: This function only works for the first chromosome in the BAM file.
-    // Update to work for any chromosome or remove it.
+    // Open the CSV file for writing
+    std::ofstream csv_file(filepath);
 
-    // Open the BAM file
-    std::string input_filepath = this->common.get_bam_filepath();
-    std::cout << "Opening bam file..." << std::endl;
-	samFile *fp_in = hts_open(input_filepath.c_str(), "r");  // Open BAM file
+    // Write the header
+    csv_file << "position,baf,log2_ratio" << std::endl;
 
-    // Check if the file was opened
-    if (fp_in == NULL) {
-        std::cerr << "Error: failed to open " << input_filepath << "\n";
-        return 1;
+    // Write the data
+    for (int i = 0; i < snp_positions.size(); i++)
+    {
+        csv_file << snp_positions[i] << "," << bafs[i] << "," << logr_ratios[i] << std::endl;
     }
 
-    std::cout << "Opened." << std::endl;
-    std::cout << "Reading header..." << std::endl;
-	bam_hdr_t *bamHdr = sam_hdr_read(fp_in);  // Read header
-    std::cout << "Header read." << std::endl;
-
-    bam1_t *aln = bam_init1();  // Initialize alignment record
-    std::vector<int> end_positions (2);
-	
-    int read_count = 0;
-    int primary_count = 0;
-    int first_position = 0;
-    int invalid_count = 0;  // Number of invalid alignments
-
-    std::cout << "Reading alignments..." << std::endl;
-
-	while(sam_read1(fp_in,bamHdr,aln) > 0){
-
-        // Check if the alignment is valid
-        if (aln->core.tid < 0) {
-            //std::cerr << "Error: invalid alignment" << std::endl;
-            invalid_count++;
-            continue;
-        }
-
-		int32_t pos = aln->core.pos +1; //left most position of alignment in zero-based coordinates (+1)
-		char *chr = bamHdr->target_name[aln->core.tid] ; //contig name (chromosome)
-		uint32_t len = aln->core.l_qseq; //length of the read
-        int map_flag = aln->core.flag;  // Alignment type flag
-        if (int(len) > 0) {
-            read_count++;
-            //std::cout << "Read count = " << read_count << std::endl;
-
-            // Get primary alignments only
-            if (! ((map_flag & BAM_FSECONDARY) || (map_flag & BAM_FSUPPLEMENTARY)) )
-            {
-                primary_count++;
-                //std::cout << "Primary count = " << primary_count << std::endl;
-
-                // Get the first alignment position
-                if (first_position == 0) {
-                    std::cout << "First position = " << first_position << std::endl;
-                    first_position = aln->core.pos + 1;
-                    this->align_start = first_position;
-
-                    // End the loop if the first position is found
-                }
-            }
-        }
-	}
-	
-	bam_destroy1(aln);
-    bam_hdr_destroy(bamHdr);
-	sam_close(fp_in);
-
-    return 0;
+    // Close the file
+    csv_file.close();
 }
