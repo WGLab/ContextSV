@@ -35,10 +35,10 @@ class CNVCaller {
 		std::vector<double> calculateLogRRatiosAtSNPS(std::vector<int> snp_positions);
 
         // Calculate the mean chromosome coverage
-        double calculateChromosomeCoverage();
+        double calculateMeanChromosomeCoverage();
 
         // Calculate region mean coverage
-        double calculateWindowLogRRatio(int start_pos, int end_pos);
+        double calculateWindowLogRRatio(double mean_chr_cov, int start_pos, int end_pos);
 
         // Read SNP positions and BAF values from the VCF file
         std::pair<std::vector<int>, std::vector<double>> readSNPBAFs();

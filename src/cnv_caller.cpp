@@ -86,7 +86,7 @@ std::vector<double> CNVCaller::calculateLogRRatiosAtSNPS(std::vector<int> snp_po
     // Calculate mean chromosome coverage
     std::string input_filepath = this->common.get_bam_filepath();
     std::cout <<  "\nCalculating coverage for chromosome: \n" << target_chr.c_str() << std::endl;
-    double chr_cov = calculateChromosomeCoverage();
+    double mean_chr_cov = calculateMeanChromosomeCoverage();
 
     // Set the region start and end from the first and last SNPs
     int region_start = snp_positions.front();
@@ -112,7 +112,7 @@ std::vector<double> CNVCaller::calculateLogRRatiosAtSNPS(std::vector<int> snp_po
         // Calculate window mean coverage
         int window_start = pos - (window_size / 2);
         int window_end = pos + (window_size / 2);
-        double lrr = calculateWindowLogRRatio(region_start, region_end);
+        double lrr = calculateWindowLogRRatio(mean_chr_cov, region_start, region_end);
 
         // Set the LRR value
         snp_lrr.push_back(lrr);
@@ -122,7 +122,7 @@ std::vector<double> CNVCaller::calculateLogRRatiosAtSNPS(std::vector<int> snp_po
 }
 
 /// Calculate the mean chromosome coverage
-double CNVCaller::calculateChromosomeCoverage()
+double CNVCaller::calculateMeanChromosomeCoverage()
 {
     std::string chr = this->common.get_region_chr();
     std::string input_filepath = this->common.get_bam_filepath();
@@ -161,13 +161,13 @@ double CNVCaller::calculateChromosomeCoverage()
 
     // Parse the outputs
     uint64_t pos_count, cum_depth;
-    double chr_mean_coverage;
+    double mean_chr_cov;
     if (fgets(line, BUFFER_SIZE, fp) != NULL)
     {           
         if (sscanf(line, "%ld%ld", &pos_count, &cum_depth) == 2)
         {
             // Calculate the mean chromosome coverage
-            chr_mean_coverage = (double) cum_depth / (double) pos_count;
+            mean_chr_cov = (double) cum_depth / (double) pos_count;
             fprintf(stdout, "%s mean coverage = %.3f\ncumulative depth = %ld\nregion length=%ld\n", chr.c_str(), chr_mean_coverage, cum_depth, pos_count);
             // cov.length = pos_count;
             // cov.mean   = chr_mean_coverage;
@@ -179,10 +179,10 @@ double CNVCaller::calculateChromosomeCoverage()
     }
     pclose(fp);  // Close the process
 
-    return chr_mean_coverage;
+    return mean_chr_cov;
 }
 
-double CNVCaller::calculateWindowLogRRatio(int start_pos, int end_pos)
+double CNVCaller::calculateWindowLogRRatio(double mean_chr_cov, int start_pos, int end_pos)
 {
     std::string chr = this->common.get_region_chr();
     std::string input_filepath = this->common.get_bam_filepath();
@@ -216,8 +216,8 @@ double CNVCaller::calculateWindowLogRRatio(int start_pos, int end_pos)
         if (sscanf(line, "%ld%ld", &pos_count, &cum_depth) == 2)
         {
             // Calculate the LRR
-            double region_mean_coverage = (double) cum_depth / (double) pos_count;
-            region_lrr = log2(region_mean_coverage / this->chr_mean_coverage);
+            double mean_window_cov = (double) cum_depth / (double) pos_count;
+            region_lrr = log2(mean_window_cov / mean_chr_cov);
         }
     }
     pclose(fp);  // Close the process
