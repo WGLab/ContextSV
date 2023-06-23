@@ -89,21 +89,6 @@ void Common::set_region(std::string region)
         col++;
     }
 
-    // // Calculate the chromosome length
-    // std::cout << "Getting chromosome length for " << this->region_chr << std::endl;
-    // std::string input_filepath = this->get_bam_filepath();
-    // std::string target_chr = this->get_region_chr();
-    // std::string chr_length_cmd = "samtools view -H " + input_filepath + " | grep \"@SQ\" | grep " + target_chr + " | cut -f 3 -d ':' | cut -f 2 -d '-'";
-    // FILE *chr_length_pipe = popen(chr_length_cmd.c_str(), "r");
-    // char chr_length_buffer[BUFFER_SIZE];
-    // fgets(chr_length_buffer, BUFFER_SIZE, chr_length_pipe);
-    // pclose(chr_length_pipe);
-    // int chr_length = atoi(chr_length_buffer);
-
-    // // Print the chromosome length
-    // std::cout << "Chromosome length = " << chr_length << std::endl;
-    // this->chr_length = chr_length;
-
     // Print the region
     if (this->region_start == 0 && this->region_end == 0)
     {
@@ -133,26 +118,6 @@ std::string Common::get_snp_vcf_filepath()
 void Common::set_snp_vcf_filepath(std::string filepath)
 {
     this->snp_vcf_filepath = filepath;
-
-    // // Create a VCF filepath of filtered SNPs
-    // std::string filtered_snp_vcf_filepath = this->output_dir + "/filtered_snps.vcf";
-
-    // std::cout << "Parsing SNPs from " << this->snp_vcf_filepath << std::endl;
-
-    // // Filter variants by depth and quality and SNPs only
-    // std::string cmd = "bcftools view -r " + this->region + " -v snps -i 'QUAL > 30 && DP > 10 && FILTER = \"PASS\"' " + this->snp_vcf_filepath + " > " + filtered_snp_vcf_filepath;
-    // std::cout << "Command: " << cmd << std::endl;
-    // system(cmd.c_str());
-
-    // std::cout << "Filtered SNPs written to " << filtered_snp_vcf_filepath << std::endl;
-
-    // // Extract all BAFs from the filtered SNPs
-    // std::string baf_filepath = this->output_dir + "/filtered_bafs.csv";
-    // cmd = "bcftools query -f '%CHROM,%POS,[%VAF]\n' " + filtered_snp_vcf_filepath + " > " + baf_filepath;
-    // std::cout << "Command: " << cmd << std::endl;
-    // system(cmd.c_str());
-
-    // std::cout << "BAFs written to " << baf_filepath << std::endl;
 }
 
 std::string Common::get_region_chr()

@@ -18,14 +18,12 @@ set(
         ${INCL_DIR}/integrative_caller.h
         ${INCL_DIR}/common.h
         ${INCL_DIR}/cnv_caller.h
-        ${INCL_DIR}/snv_caller.h
         ${INCL_DIR}/khmm.h
         ${INCL_DIR}/kc.h
         ${SRC_DIR}/cli.cpp
         ${SRC_DIR}/integrative_caller.cpp
         ${SRC_DIR}/common.cpp
         ${SRC_DIR}/cnv_caller.cpp
-        ${SRC_DIR}/snv_caller.cpp
         ${SRC_DIR}/khmm.cpp
         ${SRC_DIR}/kc.cpp
         ${SRC_DIR}/main.cpp)

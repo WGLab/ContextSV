@@ -1,6 +1,5 @@
 
 #include "integrative_caller.h"
-#include "snv_caller.h"
 #include "cnv_caller.h"
 #include "common.h"
 

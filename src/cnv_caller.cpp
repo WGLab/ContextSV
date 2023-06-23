@@ -85,7 +85,7 @@ std::vector<double> CNVCaller::calculateLogRRatiosAtSNPS(std::vector<int> snp_po
     
     // Calculate mean chromosome coverage
     std::string input_filepath = this->common.get_bam_filepath();
-    std::cout <<  "\nCalculating coverage for chromosome: \n" << target_chr.c_str() << std::endl;
+    std::cout <<  "\nCalculating coverage for chromosome: " << target_chr.c_str() << std::endl;
     double mean_chr_cov = calculateMeanChromosomeCoverage();
 
     std::cout << "Mean coverage: " << mean_chr_cov << std::endl;

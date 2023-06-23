@@ -7,7 +7,6 @@
 #define CNV_CALLER_H
 
 #include "khmm.h"
-#include "snv_caller.h"
 #include "common.h"
 
 #include <string>
