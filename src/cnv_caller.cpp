@@ -88,6 +88,8 @@ std::vector<double> CNVCaller::calculateLogRRatiosAtSNPS(std::vector<int> snp_po
     std::cout <<  "\nCalculating coverage for chromosome: \n" << target_chr.c_str() << std::endl;
     double mean_chr_cov = calculateMeanChromosomeCoverage();
 
+    std::cout << "Mean coverage: " << mean_chr_cov << std::endl;
+
     // Set the region start and end from the first and last SNPs
     int region_start = snp_positions.front();
     int region_end = snp_positions.back();
@@ -112,7 +114,7 @@ std::vector<double> CNVCaller::calculateLogRRatiosAtSNPS(std::vector<int> snp_po
         // Calculate window mean coverage
         int window_start = pos - (window_size / 2);
         int window_end = pos + (window_size / 2);
-        double lrr = calculateWindowLogRRatio(mean_chr_cov, region_start, region_end);
+        double lrr = calculateWindowLogRRatio(mean_chr_cov, window_start, window_end);
 
         // Set the LRR value
         snp_lrr.push_back(lrr);
@@ -168,13 +170,6 @@ double CNVCaller::calculateMeanChromosomeCoverage()
         {
             // Calculate the mean chromosome coverage
             mean_chr_cov = (double) cum_depth / (double) pos_count;
-            fprintf(stdout, "%s mean coverage = %.3f\ncumulative depth = %ld\nregion length=%ld\n", chr.c_str(), chr_mean_coverage, cum_depth, pos_count);
-            // cov.length = pos_count;
-            // cov.mean   = chr_mean_coverage;
-            // cov.valid  = true;  // Set the region as valid
-
-            // Print values
-            fprintf(stdout, "pos_count = %ld\ncum_depth = %ld\nmean_coverage (%s) = %.3f\n", pos_count, cum_depth, chr.c_str(), chr_mean_coverage);
         }
     }
     pclose(fp);  // Close the process
