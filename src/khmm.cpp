@@ -874,15 +874,14 @@ double *** AllocXi(int T, int N)
 void FreeXi(double *** xi, int T, int N)
 {
 	int t;
-
-
-
 	for (t = 1; t <= T; t++)
 		free_dmatrix(xi[t], 1, N, 1, N);
 
-	xi ++;
+	xi --;
 	free(xi);
 
+	// xi ++;
+	// free(xi);
 }
 
 CHMM ReadCHMM (const char *filename)
