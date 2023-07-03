@@ -30,17 +30,17 @@ std::vector<double> CNVCaller::run()
 
     // Extract the SNP positions and BAF values
     std::vector<int> snp_positions = bafs_by_pos.first;
-    std::vector<double> snp_bafs = bafs_by_pos.second;
+    std::vector<double> baf = bafs_by_pos.second;
 
     // Calculate LRRs
     std::cout << "Calculating LRRs at SNP positions..." << std::endl;
-    std::vector<double> log_r_ratios = calculateLogRRatiosAtSNPS(snp_positions);
+    std::vector<double> lrr = calculateLogRRatiosAtSNPS(snp_positions);
     std::cout << "LRRs calculated." << std::endl;
 
     // Save a CSV of the positions, LRRs, and BAFs
     std::cout << "Saving CSV of positions, LRRs, and BAFs..." << std::endl;
     std::string output_filepath = this->common.get_output_dir() + "/snp_lrr_baf.csv";
-    saveSNPLRRBAFCSV(output_filepath, snp_positions, snp_bafs, log_r_ratios);
+    saveSNPLRRBAFCSV(output_filepath, snp_positions, baf, lrr);
     std::cout << "CSV saved to: " << output_filepath << std::endl;
 
     // Calculate BAFs
@@ -48,20 +48,21 @@ std::vector<double> CNVCaller::run()
     //b_allele_freqs = calculateBAFs(input_filepath);
 
     // Read the HMM from file
-    //std::string hmm_filepath = "data/wgs.hmm";
-    //CHMM hmm = ReadCHMM(hmm_filepath.c_str());
-    
+    std::cout << "Reading HMM from file..." << std::endl;
+    std::string hmm_filepath = "wgs.hmm";
+    CHMM hmm = ReadCHMM(hmm_filepath.c_str());
+    std::cout << "HMM read from file." << std::endl;
 
     // Set up the input variables
-    int num_probes = log_r_ratios.size();
+    int num_probes = lrr.size();
     // double *lrr = &log_r_ratios[0];
-    double *baf = NULL;
+    // double *baf = NULL;
     double *pfb = NULL;
     int *snpdist = NULL;
     double logprob = 0.0;
 
     // Run the Viterbi algorithm
-    //testVit_CHMM(hmm, num_probes, lrr, baf, pfb, snpdist, &logprob);
+    testVit_CHMM(hmm, num_probes, lrr, baf, pfb, snpdist, &logprob);
 
     // Estimate the hidden states from the LRRs
     // TODO: Follow detect_cnv.pl's example and use the Viterbi algorithm
@@ -76,7 +77,7 @@ std::vector<double> CNVCaller::run()
     //testVit_CHMM(hmm, log_r_ratios);
 
 
-    return log_r_ratios;
+    return std::vector<double>();
 }
 
 std::vector<double> CNVCaller::calculateLogRRatiosAtSNPS(std::vector<int> snp_positions)

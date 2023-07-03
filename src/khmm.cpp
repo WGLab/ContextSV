@@ -16,7 +16,7 @@
 
 
 // Entry point
-void testVit_CHMM (CHMM hmm, int T, double *O1, double *O2, double *pfb, int *snpdist, double *plogproba)
+void testVit_CHMM (CHMM hmm, int T, std::vector<double> O1, std::vector<double> O2, double *pfb, int *snpdist, double *plogproba)
 {
 	// T= probe, marker count (= Length of LRR array - 1)
 	// O1 = LRR (Log R Ratio)
@@ -339,7 +339,7 @@ void GetStateProb_CHMM(CHMM *phmm, int T, double *O1, double *O2, double *pfb, i
 }	
 
 // SV calling with the HMM via the Viterbi algorithm
-void ViterbiLogNP_CHMM(CHMM *phmm, int T, double *O1, double *O2, double *pfb, int *snpdist, double **delta, int **psi, int *q, double *pprob)
+void ViterbiLogNP_CHMM(CHMM *phmm, int T, std::vector<double> O1, std::vector<double> O2, double *pfb, int *snpdist, double **delta, int **psi, int *q, double *pprob)
 {
         int     i, j;   /* state indices */
         int     t;      /* time index */
@@ -393,6 +393,7 @@ void ViterbiLogNP_CHMM(CHMM *phmm, int T, double *O1, double *O2, double *pfb, i
 				biot[i][t] = b1iot (i, phmm->B1_mean, phmm->B1_sd, phmm->B1_uf, O1[t]);
 
 				// Update emissions based on BAF (O2)
+				// TODO: Remove pfb by not multiplying by it in b2iot
 				biot[i][t] += b2iot (i, phmm->B2_mean, phmm->B2_sd, phmm->B2_uf, pfb[t], O2[t]);
 				snp_count++;
 			}
@@ -411,22 +412,23 @@ void ViterbiLogNP_CHMM(CHMM *phmm, int T, double *O1, double *O2, double *pfb, i
  
         for (t = 2; t <= T; t++) {
 
-		if (phmm->dist != 1) convertHMMTransition (phmm, A1, snpdist[t-1]);			/*t-1 is used because the current val is calculated from previous values*/
+			// 
+			if (phmm->dist != 1) convertHMMTransition (phmm, A1, snpdist[t-1]);			/*t-1 is used because the current val is calculated from previous values*/
 
-                for (j = 1; j <= phmm->N; j++) {
-                        maxval = -VITHUGE;
-                        maxvalind = 1;
-                        for (i = 1; i <= phmm->N; i++) {
-                                val = delta[t-1][i] + log (A1[i][j]);
-                                if (val > maxval) {
-                                        maxval = val;
-                                        maxvalind = i;
-                                }
-                        }
- 
-                        delta[t][j] = maxval + biot[j][t]; 
-                        psi[t][j] = maxvalind;
-                }
+			for (j = 1; j <= phmm->N; j++) {
+					maxval = -VITHUGE;
+					maxvalind = 1;
+					for (i = 1; i <= phmm->N; i++) {
+							val = delta[t-1][i] + log (A1[i][j]);
+							if (val > maxval) {
+									maxval = val;
+									maxvalind = i;
+							}
+					}
+
+					delta[t][j] = maxval + biot[j][t]; 
+					psi[t][j] = maxvalind;
+			}
         }
  
         /* 3. Termination */

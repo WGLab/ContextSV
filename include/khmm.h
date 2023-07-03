@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>
+#include <vector>
 
 typedef struct {
 	int N;			/* number of states;  Q={1,2,...,N} */
@@ -44,9 +45,9 @@ void PrintCHMM(FILE *fp, CHMM *phmm);
 void CopyCHMM(CHMM *phmm1, CHMM *phmm2);
 void FreeCHMM(CHMM *phmm);
 
-void testVit_CHMM (CHMM hmm, int T, double *O1, double *O2, double *pfb, int *snpdist, double *plogproba);
+void testVit_CHMM (CHMM hmm, int T, std::vector<double> O1, std::vector<double> O2, double *pfb, int *snpdist, double *plogproba);
 void tumorVit_CHMM (CHMM hmm, int T, double *O1, double *O2, double *pfb, int *snpdist, double *plogproba, double stroma);
-void ViterbiLogNP_CHMM(CHMM *phmm, int T, double *O1, double *O2, double *pfb, int *snpdist, double **delta, int **psi, int *q, double *pprob);
+void ViterbiLogNP_CHMM(CHMM *phmm, int T, std::vector<double> O1, std::vector<double> O2, double *pfb, int *snpdist, double **delta, int **psi, int *q, double *pprob);
 void ViterbiLogNPStroma_CHMM(CHMM *phmm, int T, double *O1, double *O2, double *pfb, int *snpdist, double **delta, int **psi, int *q, double *pprob, double stroma);
 
 void estHMMFromFile_CHMM (CHMM hmm, int T, FILE *fp, int *niter, double *logprobinit, double *logprobfinal);
