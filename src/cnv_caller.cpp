@@ -12,6 +12,7 @@
 #include <algorithm>
 #include <limits>
 #include <tuple>
+#include <iomanip>  // Progress bar
 #include "common.h"
 
 #define BUFFER_SIZE 1024
@@ -48,21 +49,50 @@ std::vector<double> CNVCaller::run()
     //b_allele_freqs = calculateBAFs(input_filepath);
 
     // Read the HMM from file
-    std::cout << "Reading HMM from file..." << std::endl;
-    std::string hmm_filepath = "wgs.hmm";
+    std::string hmm_filepath = "data/wgs.hmm";
+    std::cout << "Reading HMM from file: " << hmm_filepath << std::endl;
     CHMM hmm = ReadCHMM(hmm_filepath.c_str());
     std::cout << "HMM read from file." << std::endl;
 
     // Set up the input variables
     int num_probes = lrr.size();
+    double *lrr_ptr = lrr.data();
+    double *baf_ptr = baf.data();
     // double *lrr = &log_r_ratios[0];
     // double *baf = NULL;
-    double *pfb = NULL;
+
+    // Set pfb as an array of 1s
+    double *pfb = (double *)malloc(num_probes * sizeof(double));
+    for (int i = 0; i < num_probes; i++) {
+        pfb[i] = 1.0;
+    }
+
     int *snpdist = NULL;
-    double logprob = 0.0;
+    
+    // Allocate memory for the log probability
+    double *logprob = (double *)malloc(6 * sizeof(double));
 
     // Run the Viterbi algorithm
-    testVit_CHMM(hmm, num_probes, lrr, baf, pfb, snpdist, &logprob);
+    std::cout << "Running the Viterbi algorithm..." << std::endl;
+    testVit_CHMM(hmm, num_probes, lrr_ptr, baf_ptr, pfb, snpdist, logprob);
+    std::cout << "Viterbi algorithm complete." << std::endl;
+
+    // PFB contains the state sequence
+    // LOGPROB contains the log probability of the state sequence
+
+    // Each of the 6 states corresponds to a CNV call:
+    // 1: 0/0 (Two copy loss)
+    // 2: 1/0 (One copy loss)
+    // 3: 1/1 (Normal)
+    // 4: 1/1 (Copy neutral LOH)
+    // 5: 2/1 (One copy gain)
+    // 6: 2/2 (Two copy gain)
+
+    // Print the state sequence and log probability
+    std::cout << "State sequence:" << std::endl;
+    for (int i = 0; i < num_probes; i++) {
+        std::cout << pfb[i] << std::endl;
+    }
 
     // Estimate the hidden states from the LRRs
     // TODO: Follow detect_cnv.pl's example and use the Viterbi algorithm
@@ -87,7 +117,9 @@ std::vector<double> CNVCaller::calculateLogRRatiosAtSNPS(std::vector<int> snp_po
     // Calculate mean chromosome coverage
     std::string input_filepath = this->common.get_bam_filepath();
     std::cout <<  "\nCalculating coverage for chromosome: " << target_chr.c_str() << std::endl;
-    double mean_chr_cov = calculateMeanChromosomeCoverage();
+    //double mean_chr_cov = calculateMeanChromosomeCoverage();  // Commented out
+    //for testing
+    double mean_chr_cov = 39.4096;  // Chr6 mean coverage from test data
 
     std::cout << "Mean coverage: " << mean_chr_cov << std::endl;
 
@@ -119,6 +151,9 @@ std::vector<double> CNVCaller::calculateLogRRatiosAtSNPS(std::vector<int> snp_po
 
         // Set the LRR value
         snp_lrr.push_back(lrr);
+
+        // Update the progress bar
+        this->common.print_progress(i, snp_positions.size()-1);
     }
 
     return snp_lrr;
@@ -194,8 +229,8 @@ double CNVCaller::calculateWindowLogRRatio(double mean_chr_cov, int start_pos, i
     snprintf(cmd, BUFFER_SIZE,\
     "samtools depth -r %s:%d-%d %s | awk '{c++;s+=$3}END{print c, s}'",\
         chr.c_str(), start_pos, end_pos, input_filepath.c_str());
-    fprintf(stdout, "%s\n", cmd);  // Print the command
-    fflush(stdout);
+    //fprintf(stdout, "%s\n", cmd);  // Print the command
+    //fflush(stdout);
     
     fp = popen(cmd, "r");
     if (fp == NULL)

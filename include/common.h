@@ -1,6 +1,6 @@
 //
 // common.h:
-// Manage common parameters
+// Manage common parameters and functions
 
 #ifndef CONTEXTSV_COMMON_H
 #define CONTEXTSV_COMMON_H
@@ -26,6 +26,7 @@ class Common {
         int get_region_start();
         int get_region_end();
         bool get_region_set();
+        void print_progress(int progress, int total);
 
     private:
         std::string bam_filepath = "";
