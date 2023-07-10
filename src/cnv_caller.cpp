@@ -43,7 +43,8 @@ std::vector<double> CNVCaller::run()
     //b_allele_freqs = calculateBAFs(input_filepath);
 
     // Read the HMM from file
-    std::string hmm_filepath = "data/wgs.hmm";
+    //std::string hmm_filepath = "data/wgs.hmm";
+    std::string hmm_filepath = "data/hh550.hmm";
     std::cout << "Reading HMM from file: " << hmm_filepath << std::endl;
     CHMM hmm = ReadCHMM(hmm_filepath.c_str());
     std::cout << "HMM read from file." << std::endl;
