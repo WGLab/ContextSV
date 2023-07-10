@@ -502,38 +502,30 @@ unsigned char *cvector(long nl, long nh)
 
 double *dvector(long nl, long nh)
 /* allocate a double vector with subscript range v[nl..nh] */
-{
-	// // void fprintf(stderr, char *error_text);
-	double *v;
 
-	v=(double *)malloc((size_t) ((nh-nl+1+NR_END)*sizeof(double)));
-	if (!v) fprintf(stderr, "kc::dvector: allocation failure in dvector()");
-	return v-nl+NR_END;
+{
+	double *v = new double[nh + 1];
+	return v;
+
+
+	// // // void fprintf(stderr, char *error_text);
+	// double *v;
+
+	// v=(double *)malloc((size_t) ((nh-nl+1+NR_END)*sizeof(double)));
+	// if (!v) fprintf(stderr, "kc::dvector: allocation failure in dvector()");
+	// return v-nl+NR_END;
 }
 
 double **dmatrix(long nrl, long nrh, long ncl, long nch)
 /* allocate a double matrix with subscript range m[nrl..nrh][ncl..nch] */
 {
-	// // void fprintf(stderr, char *error_text);
-	long i, nrow=nrh-nrl+1,ncol=nch-ncl+1;
-	double **m;
-
-	/* allocate pointers to rows */
-	m=(double **) malloc((size_t)((nrow+NR_END)*sizeof(double*)));
-	if (!m) fprintf(stderr, "kc::dmatrix: allocation failure 1 in matrix()");
-	m += NR_END;
-	m -= nrl;
-
-	/* allocate rows and set pointers to them */
-	m[nrl]=(double *) malloc((size_t)((nrow*ncol+NR_END)*sizeof(double)));
-	if (!m[nrl]) fprintf(stderr, "kc::dmatrix: allocation failure 2 in matrix()");
-	m[nrl] += NR_END;
-	m[nrl] -= ncl;
-
-	for(i=nrl+1;i<=nrh;i++) m[i]=m[i-1]+ncol;
-
-	/* return pointer to array of pointers to rows */
-	return m;
+    double** matrix = new double*[nrh + 1];  // Allocate array of row pointers
+    
+	for (int i = nrl; i <= nrh; i++) {
+		matrix[i] = new double[nch + 1];  // Allocate each row separately
+	}
+    
+    return matrix;
 }
 
 int **imatrix(long nrl, long nrh, long ncl, long nch)
@@ -622,14 +614,17 @@ void free_cvector(unsigned char *v, long nl, long nh)
 void free_dvector(double *v, long nl, long nh)
 /* free a double vector allocated with dvector() */
 {
-	free((FREE_ARG) (v+nl-NR_END));
+	// free((FREE_ARG) (v+nl-NR_END));
+	delete [] v;
 }
 
 void free_dmatrix(double **m, long nrl, long nrh, long ncl, long nch)
 /* free a double matrix allocated by dmatrix() */
 {
-	free((FREE_ARG) (m[nrl]+ncl-NR_END));
-	free((FREE_ARG) (m+nrl-NR_END));
+	for (int i = nrl; i <= nrh; i++) {
+		delete [] m[i];
+	}
+	delete [] m;
 }
 
 void free_imatrix(int **m, long nrl, long nrh, long ncl, long nch)

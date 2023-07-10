@@ -14,7 +14,7 @@
 */
 
 // Entry point
-void testVit_CHMM(CHMM hmm, int T, double *O1, double *O2, double *pfb, int *snpdist, double *plogproba)
+std::vector<int> testVit_CHMM(CHMM hmm, int T, double *O1, double *O2, double *pfb, int *snpdist, double *plogproba)
 {
 	// T= probe, marker count (= Length of LRR array - 1)
 	// O1 = LRR (Log R Ratio)
@@ -27,26 +27,34 @@ void testVit_CHMM(CHMM hmm, int T, double *O1, double *O2, double *pfb, int *snp
 	// Note: PLOGPROBA is replaced with DELTA (delta matrix) after running the
 	// HMM, which is used to calculate the probability of the most likely state
 
-	int *q;			/* Array for the state sequence q[1..T] */
+	// int *q;			/* Array for the state sequence q[1..T] */
 	double **delta; // Matrix
 	int **psi;		// Matrix
 
 	// These 3 variables will be updated with the HMM results
-	q = ivector(1, T);				 // Allocate an int vector for each probe
+	// q = ivector(1, T);                // Allocate an int vector for each
+	// probe
 	delta = dmatrix(1, T, 1, hmm.N); // Allocate a TxN  double matrix (N=6 states)
 	psi = imatrix(1, T, 1, hmm.N);	 // Allocate a TxN  int matrix (N=6 states)
 
-	// Run the HMM
-	ViterbiLogNP_CHMM(&hmm, T, O1, O2, pfb, snpdist, delta, psi, q, plogproba);
+	// Allocate pfb and plogproba
+	pfb = dvector(1, T);
+	plogproba = dvector(1, hmm.N);
 
-	// Update the PFB from Q for each probe position
-	for (int i = 1; i <= T; i++)
-		pfb[i] = q[i]; /*assign the most likely state value to return*/
+	// Run the HMM
+	std::vector<int> q;  // State sequence
+	q = ViterbiLogNP_CHMM(&hmm, T, O1, O2, pfb, snpdist, delta, psi, plogproba);
 
 	// Free the variables
-	free_ivector(q, 1, T);
+	// free_ivector(q, 1, T);
 	free_imatrix(psi, 1, T, 1, hmm.N);
 	free_dmatrix(delta, 1, T, 1, hmm.N);
+
+	// Pop the first element of q, which is always 0 (Done this way for 1-based indexing)
+	q.erase(q.begin());
+
+	// Return the state sequence
+	return q;
 }
 
 void tumorVit_CHMM(CHMM hmm, int T, double *O1, double *O2, double *pfb, int *snpdist, double *plogproba, double stroma)
@@ -438,7 +446,7 @@ void GetStateProb_CHMM(CHMM *phmm, int T, double *O1, double *O2, double *pfb, i
 }
 
 // SV calling with the HMM via the Viterbi algorithm
-void ViterbiLogNP_CHMM(CHMM *phmm, int T, double *O1, double *O2, double *pfb, int *snpdist, double **delta, int **psi, int *q, double *pprob)
+std::vector<int> ViterbiLogNP_CHMM(CHMM *phmm, int T, double *O1, double *O2, double *pfb, int *snpdist, double **delta, int **psi, double *pprob)
 {
 	int i, j; /* state indices */
 	int t;	  /* time index */
@@ -450,6 +458,8 @@ void ViterbiLogNP_CHMM(CHMM *phmm, int T, double *O1, double *O2, double *pfb, i
 	double maxval, val;
 	double **biot;
 	double **A1;
+
+	std::vector<int> q(T + 1);  // state sequence (+1 for 1-based indexing)
 
 	// A1 is the NxN transition probability matrix from state i to j.
 	// Initialize with initial values from the provided HMM file
@@ -517,6 +527,7 @@ void ViterbiLogNP_CHMM(CHMM *phmm, int T, double *O1, double *O2, double *pfb, i
 	{
 		delta[1][i] = phmm->pi[i] + biot[i][1];
 		psi[1][i] = 0;
+		pprob[1] = -VITHUGE;  // Initialize log probabilities for each state to -inf
 	}
 
 	/* 2. Recursion */
@@ -550,14 +561,22 @@ void ViterbiLogNP_CHMM(CHMM *phmm, int T, double *O1, double *O2, double *pfb, i
 
 	/* 3. Termination */
 
-	*pprob = -VITHUGE;
+	// *pprob = -VITHUGE;
 	q[T] = 1;
 	for (i = 1; i <= phmm->N; i++)
 	{
-		if (delta[T][i] > *pprob)
+		// Get the log probability of state i at time T
+		double current_prob = delta[T][i];
+
+		// Get the current log probability of the state
+		double prev_prob = pprob[i];
+
+		// If it's greater than the initial probability, update the probability
+		if (current_prob > prev_prob)
 		{
-			*pprob = delta[T][i];
-			q[T] = i;
+			// *pprob = prob;
+			q[T] = i;  // Set the state at time T to i
+			pprob[i] = current_prob;  // Update the log probability of state i
 		}
 	}
 
@@ -572,6 +591,9 @@ void ViterbiLogNP_CHMM(CHMM *phmm, int T, double *O1, double *O2, double *pfb, i
 	}
 	free_dmatrix(biot, 1, phmm->N, 1, T);
 	free_dmatrix(A1, 1, phmm->N, 1, phmm->N);
+
+	// Return the state sequence
+	return q;
 }
 
 void ViterbiLogNPStroma_CHMM(CHMM *phmm, int T, double *O1, double *O2, double *pfb, int *snpdist, double **delta, int **psi, int *q, double *pprob, double stroma)

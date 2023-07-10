@@ -38,12 +38,6 @@ std::vector<double> CNVCaller::run()
     std::vector<double> lrr = calculateLogRRatiosAtSNPS(snp_positions);
     std::cout << "LRRs calculated." << std::endl;
 
-    // Save a CSV of the positions, LRRs, and BAFs
-    std::cout << "Saving CSV of positions, LRRs, and BAFs..." << std::endl;
-    std::string output_filepath = this->common.get_output_dir() + "/snp_lrr_baf.csv";
-    saveSNPLRRBAFCSV(output_filepath, snp_positions, baf, lrr);
-    std::cout << "CSV saved to: " << output_filepath << std::endl;
-
     // Calculate BAFs
     //std::vector<double> b_allele_freqs;
     //b_allele_freqs = calculateBAFs(input_filepath);
@@ -61,20 +55,15 @@ std::vector<double> CNVCaller::run()
     // double *lrr = &log_r_ratios[0];
     // double *baf = NULL;
 
-    // Set pfb as an array of 1s
-    double *pfb = (double *)malloc(num_probes * sizeof(double));
-    for (int i = 0; i < num_probes; i++) {
-        pfb[i] = 1.0;
-    }
-
+    // Create a double array for pop. frequency and snp distance (not used), and log probabilities
     int *snpdist = NULL;
-    
-    // Allocate memory for the log probability
-    double *logprob = (double *)malloc(6 * sizeof(double));
+    double *pfb = NULL;
+    double *logprob = NULL;
 
     // Run the Viterbi algorithm
     std::cout << "Running the Viterbi algorithm..." << std::endl;
-    testVit_CHMM(hmm, num_probes, lrr_ptr, baf_ptr, pfb, snpdist, logprob);
+    std::vector<int> state_sequence;  // Create the output state sequence
+    state_sequence = testVit_CHMM(hmm, num_probes, lrr_ptr, baf_ptr, pfb, snpdist, logprob);
     std::cout << "Viterbi algorithm complete." << std::endl;
 
     // PFB contains the state sequence
@@ -88,11 +77,11 @@ std::vector<double> CNVCaller::run()
     // 5: 2/1 (One copy gain)
     // 6: 2/2 (Two copy gain)
 
-    // Print the state sequence and log probability
-    std::cout << "State sequence:" << std::endl;
-    for (int i = 0; i < num_probes; i++) {
-        std::cout << pfb[i] << std::endl;
-    }
+    // // Print the state sequence and log probability
+    // std::cout << "State sequence:" << std::endl;
+    // for (int i = 0; i < num_probes; i++) {
+    //     std::cout << pfb[i] << std::endl;
+    // }
 
     // Estimate the hidden states from the LRRs
     // TODO: Follow detect_cnv.pl's example and use the Viterbi algorithm
@@ -106,6 +95,11 @@ std::vector<double> CNVCaller::run()
     
     //testVit_CHMM(hmm, log_r_ratios);
 
+    // Save a CSV of the positions, LRRs, BAFs, and state sequence
+    std::cout << "Saving CSV of positions, LRRs, and BAFs..." << std::endl;
+    std::string output_filepath = this->common.get_output_dir() + "/snp_lrr_baf.csv";
+    saveSNPLRRBAFCSV(output_filepath, snp_positions, baf, lrr, state_sequence);
+    std::cout << "CSV saved to: " << output_filepath << std::endl;
 
     return std::vector<double>();
 }
@@ -343,18 +337,23 @@ std::pair<std::vector<int>, std::vector<double>> CNVCaller::readSNPBAFs()
     return snp_data;
 }
 
-void CNVCaller::saveSNPLRRBAFCSV(std::string filepath, std::vector<int> snp_positions, std::vector<double> bafs, std::vector<double> logr_ratios)
+void CNVCaller::saveSNPLRRBAFCSV(std::string filepath, std::vector<int> snp_positions, std::vector<double> bafs, std::vector<double> logr_ratios, std::vector<int> state_sequence)
 {
     // Open the CSV file for writing
     std::ofstream csv_file(filepath);
 
     // Write the header
-    csv_file << "position,baf,log2_ratio" << std::endl;
+    csv_file << "position,baf,log2_ratio,cnv_state" << std::endl;
 
     // Write the data
     for (int i = 0; i < snp_positions.size(); i++)
     {
-        csv_file << snp_positions[i] << "," << bafs[i] << "," << logr_ratios[i] << std::endl;
+        // int snp_pos = snp_positions[i];
+        // double baf = bafs[i];
+        // double lrr = logr_ratios[i];
+        // double state = pfb[i];
+        // std::cout << snp_pos << "," << baf << "," << lrr << "," << state << std::endl;
+        csv_file << snp_positions[i] << "," << bafs[i] << "," << logr_ratios[i] << "," << state_sequence[i] << std::endl;
     }
 
     // Close the file
