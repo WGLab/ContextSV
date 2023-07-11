@@ -38,10 +38,6 @@ std::vector<double> CNVCaller::run()
     std::vector<double> lrr = calculateLogRRatiosAtSNPS(snp_positions);
     std::cout << "LRRs calculated." << std::endl;
 
-    // Calculate BAFs
-    //std::vector<double> b_allele_freqs;
-    //b_allele_freqs = calculateBAFs(input_filepath);
-
     // Read the HMM from file
     //std::string hmm_filepath = "data/wgs.hmm";
     std::string hmm_filepath = "data/hh550.hmm";
@@ -53,8 +49,6 @@ std::vector<double> CNVCaller::run()
     int num_probes = lrr.size();
     double *lrr_ptr = lrr.data();
     double *baf_ptr = baf.data();
-    // double *lrr = &log_r_ratios[0];
-    // double *baf = NULL;
 
     // Create a double array for pop. frequency and snp distance (not used), and log probabilities
     int *snpdist = NULL;
@@ -62,14 +56,6 @@ std::vector<double> CNVCaller::run()
     double *logprob = NULL;
 
     // Run the Viterbi algorithm
-    std::cout << "Running the Viterbi algorithm..." << std::endl;
-    std::vector<int> state_sequence;  // Create the output state sequence
-    state_sequence = testVit_CHMM(hmm, num_probes, lrr_ptr, baf_ptr, pfb, snpdist, logprob);
-    std::cout << "Viterbi algorithm complete." << std::endl;
-
-    // PFB contains the state sequence
-    // LOGPROB contains the log probability of the state sequence
-
     // Each of the 6 states corresponds to a CNV call:
     // 1: 0/0 (Two copy loss)
     // 2: 1/0 (One copy loss)
@@ -77,24 +63,10 @@ std::vector<double> CNVCaller::run()
     // 4: 1/1 (Copy neutral LOH)
     // 5: 2/1 (One copy gain)
     // 6: 2/2 (Two copy gain)
-
-    // // Print the state sequence and log probability
-    // std::cout << "State sequence:" << std::endl;
-    // for (int i = 0; i < num_probes; i++) {
-    //     std::cout << pfb[i] << std::endl;
-    // }
-
-    // Estimate the hidden states from the LRRs
-    // TODO: Follow detect_cnv.pl's example and use the Viterbi algorithm
-    // https://github.com/WGLab/PennCNV/blob/b6d76b58821deea4f6fe9dc3c241215f25a7fd67/detect_cnv.pl#LL903C20-L903C20
-
-    // #generate CNV calls
-	// 			my $probe_count = scalar (@$lrr)-1;
-	// 			khmm::testVit_CHMM ($hmm_model, $probe_count, $lrr, $baf, $pfb, $snpdist, \$logprob);
-	// 			analyzeStateSequence ($curcnvcall, $curchr, $pfb, $name, $pos, $sample_sex);
-
-    
-    //testVit_CHMM(hmm, log_r_ratios);
+    std::cout << "Running the Viterbi algorithm..." << std::endl;
+    std::vector<int> state_sequence;  // Create the output state sequence
+    state_sequence = testVit_CHMM(hmm, num_probes, lrr_ptr, baf_ptr, pfb, snpdist, logprob);
+    std::cout << "Viterbi algorithm complete." << std::endl;
 
     // Save a CSV of the positions, LRRs, BAFs, and state sequence
     std::cout << "Saving CSV of positions, LRRs, and BAFs..." << std::endl;
@@ -112,9 +84,9 @@ std::vector<double> CNVCaller::calculateLogRRatiosAtSNPS(std::vector<int> snp_po
     // Calculate mean chromosome coverage
     std::string input_filepath = this->common.get_bam_filepath();
     std::cout <<  "\nCalculating coverage for chromosome: " << target_chr.c_str() << std::endl;
-    //double mean_chr_cov = calculateMeanChromosomeCoverage();  // Commented out
-    //for testing
-    double mean_chr_cov = 39.4096;  // Chr6 mean coverage from test data
+    double mean_chr_cov = calculateMeanChromosomeCoverage();  // Commented out for testing
+    // double mean_chr_cov = 39.4096;  // Chr6 mean coverage from test data
+    // double mean_chr_cov = 39.561;  // Chr3 mean coverage from test data
 
     std::cout << "Mean coverage: " << mean_chr_cov << std::endl;
 
@@ -349,11 +321,6 @@ void CNVCaller::saveSNPLRRBAFCSV(std::string filepath, std::vector<int> snp_posi
     // Write the data
     for (int i = 0; i < snp_positions.size(); i++)
     {
-        // int snp_pos = snp_positions[i];
-        // double baf = bafs[i];
-        // double lrr = logr_ratios[i];
-        // double state = pfb[i];
-        // std::cout << snp_pos << "," << baf << "," << lrr << "," << state << std::endl;
         csv_file << snp_positions[i] << "," << bafs[i] << "," << logr_ratios[i] << "," << state_sequence[i] << std::endl;
     }
 
