@@ -3,7 +3,7 @@
 //
 
 #include "cli.h"
-#include "bam_reader.h"
+#include "integrative_caller.h"
 
 #include <algorithm>
 #include <string>
@@ -11,10 +11,9 @@
 #include <iomanip>
 #include <stdexcept>
 
-cli::cli() = default;
 
 // Check if the filepath exists
-bool cli::fileExists(const std::string &name) {
+bool CLI::fileExists(const std::string &name) {
 	if (FILE *file = fopen(name.c_str(), "r")) {
 		fclose(file);
 		return true;
@@ -24,7 +23,7 @@ bool cli::fileExists(const std::string &name) {
 }
 
 // Get the command argument input
-std::string cli::getCmdOption(char** begin, char** end, const std::string& option)
+std::string CLI::getCmdOption(char** begin, char** end, const std::string& option)
 {
 	std::string result("");
 	char ** itr = std::find(begin, end, option);
@@ -36,20 +35,18 @@ std::string cli::getCmdOption(char** begin, char** end, const std::string& optio
 }
 
 // Check if the input argument is provided
-bool cli::cmdOptionExists(char** begin, char** end, const std::string& option)
+bool CLI::cmdOptionExists(char** begin, char** end, const std::string& option)
 {
 	return std::find(begin, end, option) != end;
 }
 
-std::string cli::getInputFilepath() {
-    return input_filepath;
-}
-
 // Parse input arguments
-int cli::parse(int argc, char **argv) {
+int CLI::parse(int argc, char **argv) {
+	// Initialize the common parameters
+	this->common = Common();
 
 	// Exit code 0 indicates parameters were successfully set
-	int exit_code(1);
+	int exit_code = 0;
 
     // Print help text
 	if (argc == 1 || cmdOptionExists(argv, argv+argc, "-h") || cmdOptionExists(argv, argv+argc, "--help"))
@@ -60,17 +57,66 @@ int cli::parse(int argc, char **argv) {
 	
 	else
 	{
-		// Get the input BAM file
-		std::string filename = getCmdOption(argv, argv + argc, "--bam");
+		// Get the output directory
+		std::string output_dir = getCmdOption(argv, argv + argc, "-o");
+		if (output_dir.empty()) {
+			output_dir = getCmdOption(argv, argv + argc, "--out");
+		}
+		if (!output_dir.empty()) {
+			this->common.set_output_dir(output_dir);
+			std::cout << "Output directory = " << output_dir << std::endl;
 
-		if (fileExists(filename)) {
-			this->input_filepath = filename;
-			std::cout << "Input BAM = " << this->input_filepath << std::endl;
-			
-			// Set the success code
-			exit_code = 0;
 		} else {
-			std::string err_str = "Input BAM does not exist: " + filename;
+			std::string err_str = "Output directory not specified.";
+			throw std::invalid_argument(err_str);
+		}
+
+		// Get the reference genome file
+		std::string ref_filename = getCmdOption(argv, argv + argc, "--ref");
+		if (fileExists(ref_filename)) {
+			common.set_ref_filepath(ref_filename);
+			std::cout << "Reference genome file = " << ref_filename << std::endl;
+
+		} else {
+			std::string err_str = "File " + ref_filename + " does not exist.";
+			throw std::invalid_argument(err_str);
+		}
+
+
+		// Get the bam file
+		std::string bam_filename = getCmdOption(argv, argv + argc, "--bam");
+		if (fileExists(bam_filename)) {
+			common.set_bam_filepath(bam_filename);
+			std::cout << "Alignment file = " << bam_filename << std::endl;
+			
+		} else {
+			std::string err_str = "BAM file does not exist: " + bam_filename;
+			throw std::invalid_argument(err_str);
+		}
+
+		// Get the region to analyze
+		std::string region = getCmdOption(argv, argv + argc, "--region");
+		if (!region.empty()) {
+			//this->region = region;
+			common.set_region(region);
+			std::cout << "Region = " << region << std::endl;
+		}
+
+		// Get the window size
+		std::string window_size = getCmdOption(argv, argv + argc, "--window-size");
+		if (!window_size.empty()) {
+			common.set_window_size(std::stoi(window_size));
+			std::cout << "Window size = " << window_size << std::endl;
+		}
+
+		// Get the SNP VCF file
+		std::string snp_vcf_filename = getCmdOption(argv, argv + argc, "--snp-vcf");
+		if (fileExists(snp_vcf_filename)) {
+			common.set_snp_vcf_filepath(snp_vcf_filename);
+			std::cout << "SNP VCF file = " << snp_vcf_filename << std::endl;
+
+		} else if (!snp_vcf_filename.empty()) {
+			std::string err_str = "SNP VCF file does not exist: " + snp_vcf_filename;
 			throw std::invalid_argument(err_str);
 		}
 	}
@@ -79,14 +125,13 @@ int cli::parse(int argc, char **argv) {
 }
 
 // Run the CLI with input arguments
-int cli::run()
+int CLI::run()
 {
-	// Read the BAM file
-	std::string filepath = getInputFilepath();
-	bam_reader bam_obj;
+	// Run the integrative caller
+	IntegrativeCaller caller_obj(this->common);
 	try
-	{
-		bam_obj.read(filepath);
+	{	
+		caller_obj.run();
 	}
 
     catch (std::exception& e)
@@ -98,17 +143,21 @@ int cli::run()
 	return 0;
 }
 
-void cli::printHelpText() {
+void CLI::printHelpText() {
     int width = 20;
     std::ios_base::fmtflags flags = std::cout.flags();
 
     std::cout << std::left
               << std::setw(width) << "\nPositional arguments:\n"
-              << std::setw(width) << "--bam" << std::setw(20) << "BAM file input"
+			  << std::setw(width) << "--ref" << std::setw(20) << "reference genome fasta file"
+              << std::setw(width) << "--bam" << std::setw(20) << "alignment file in BAM format"
               << std::endl
-              << std::setw(width) << "-o, --output" << std::setw(20) << "Output file directory"
+              << std::setw(width) << "-o, --output" << std::setw(20) << "output file directory"
               << std::endl
+			  << std::setw(width) << "--region" << std::setw(20) << "region to analyze"
               << std::setw(width) << "\nOptional arguments:\n"
+			  << std::setw(width) << "--window-size" << std::setw(20) << "window size (default = 10000)"
+			  << std::endl
               << std::setw(width) << "-h, --help" << std::setw(20) << "Show this help message and exit\n"
               << std::endl;
 

@@ -9,15 +9,16 @@
 
 int main(int argc, char *argv[]){
     // Run the command line interface
-    cli cli_obj;
+    CLI cli;
     try
     {
+        // Parse the input arguments and set the common parameters
         int exit_code;
-        exit_code = cli_obj.parse(argc, argv);
+        exit_code = cli.parse(argc, argv);
         if (exit_code == 0)
         {
-            // Run if arguments are provided
-            cli_obj.run();
+            // Run the integrative caller
+            cli.run();
         }
     }
 
