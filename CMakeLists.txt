@@ -7,32 +7,16 @@ set(CMAKE_CXX_STANDARD 14)
 set(INCL_DIR ./include)
 set(SRC_DIR ./src)
 
-#set(HTSLIB_INCLUDE_DIR "/home/perdomoj/software/lib/include")
-#set(HTSLIB_LIBRARIES "/home/perdomoj/software/lib/lib")
+# Find HTS
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(HTS REQUIRED htslib)
 
-#set(HTSLIB_INCLUDE_DIR "/home/perdomoj/miniconda3/envs/lrst_py39/include")
-#set(HTSLIB_LIBRARIES "/home/perdomoj/miniconda3/envs/lrst_py39/lib")
+# Set HTS directories
+set(HTSLIB_INCLUDE_DIR ${HTS_INCLUDE_DIRS})
+set(HTSLIB_LIBRARIES ${HTS_LIBRARIES})
 
-set(HTSLIB_INCLUDE_DIR "/home/perdomoj/software/htslib/include")
-set(HTSLIB_LIBRARIES "/home/perdomoj/software/htslib/lib")
-
-#set(HTSLIB_INCLUDE_DIR "/home/perdomoj/software/lib/include")
-#set(HTSLIB_LIBRARIES "/home/perdomoj/software/lib/lib")
-
-#set(HTSLIB_INCLUDE_DIR "/home/perdomoj/miniconda3/envs/lrst_py39/include")
-#set(HTSLIB_LIBRARIES "/home/perdomoj/miniconda3/envs/lrst_py39/lib")
-
-set(HTSLIB_INCLUDE_DIR "/home/perdomoj/software/htslib/include")
-set(HTSLIB_LIBRARIES "/home/perdomoj/software/htslib/lib")
-
-# Specify project and external library directories
-#include_directories(${INCL_DIR} /usr/local/include ${HTSLIB_INCLUDE_DIR})
-#link_directories(usr/local/lib/ ${HTSLIB_LIBRARIES})
-
-include_directories(${INCL_DIR} ${HTSLIB_INCLUDE_DIR})
-link_directories(${HTSLIB_LIBRARIES} "/home/perdomoj//miniconda3/envs/contextsvenv/lib")
-#include_directories(${INCL_DIR} /usr/local/include ${HTSLIB_INCLUDE_DIR})
-#link_directories(usr/local/lib/ ${HTSLIB_LIBRARIES})
+# set(HTSLIB_INCLUDE_DIR "/home/perdomoj/software/htslib/include")
+# set(HTSLIB_LIBRARIES "/home/perdomoj/software/htslib/lib")
 
 include_directories(${INCL_DIR} ${HTSLIB_INCLUDE_DIR})
 link_directories(${HTSLIB_LIBRARIES} "/home/perdomoj//miniconda3/envs/contextsvenv/lib")
@@ -57,10 +41,7 @@ set(
         ${SRC_DIR}/main.cpp)
 
 # Add executable
-# Add executable
 add_executable(contextsv ${SOURCE_FILES})
-
-target_include_directories(contextsv PRIVATE ${HTSLIB_INCLUDE_DIR})
 target_include_directories(contextsv PRIVATE ${HTSLIB_INCLUDE_DIR})
 target_link_libraries(contextsv PUBLIC hts)  # Link HTS
 
