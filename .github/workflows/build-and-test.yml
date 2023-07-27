@@ -1,0 +1,26 @@
+name: Build and Test
+
+on:
+  push:
+    branches: [ "9-set-up-unit-testing-workflow" ]
+  pull_request:
+    branches: [ "9-set-up-unit-testing-workflow" ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up conda environment
+      uses: conda-incubator/setup-miniconda@v2
+      with:
+        activate-environment: contextsv
+        environment-file: environment.yml
+        python-version: 3.9
+        auto-activate-base: false
+
+    - name: Build C++ code
+      shell: bash --login {0}  # --login enables PATH variable access
+      run: |
+        make
