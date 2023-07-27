@@ -8,7 +8,6 @@
 
 #include "common.h"
 
-#include <htslib/sam.h>
 #include <string>
 
 class CLI {

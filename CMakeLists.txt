@@ -3,27 +3,34 @@ project(ContextSV)
 
 set(CMAKE_CXX_STANDARD 14)
 
-# Set directories
+# Set project directories
 set(INCL_DIR ./include)
 set(SRC_DIR ./src)
 
-# Find HTS
-find_package(PkgConfig REQUIRED)
-pkg_check_modules(HTS REQUIRED htslib)
+include_directories(${INCL_DIR})
 
-# Set HTS directories
-set(HTSLIB_INCLUDE_DIR ${HTS_INCLUDE_DIRS})
-set(HTSLIB_LIBRARIES ${HTS_LIBRARIES})
+# Set HTSLib directories
+include_directories(${PROJECT_SOURCE_DIR}/include/htslib)
+# include_directories(${PROJECT_SOURCE_DIR}/lib)
 
-# set(HTSLIB_INCLUDE_DIR "/home/perdomoj/software/htslib/include")
-# set(HTSLIB_LIBRARIES "/home/perdomoj/software/htslib/lib")
+link_directories(${PROJECT_SOURCE_DIR}/lib)
 
-include_directories(${INCL_DIR} ${HTSLIB_INCLUDE_DIR})
-link_directories(${HTSLIB_LIBRARIES} "/home/perdomoj//miniconda3/envs/contextsvenv/lib")
+# Set the OpenSSL directories
+include_directories(${PROJECT_SOURCE_DIR}/include/openssl)
+# set(HTSLIB_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/include/htslib)
+# set(HTSLIB_LIBRARIES ${CMAKE_CURRENT_SOURCE_DIR}/lib/htslib)
+
+# Set include and link directories
+# link_directories(${HTSLIB_LIBRARIES})
+# include_directories(${INCL_DIR} ${HTSLIB_INCLUDE_DIR})
+# link_directories(${HTSLIB_LIBRARIES})
+
 
 # Set source files
 set(
         SOURCE_FILES
+        ${INCL_DIR}/contextsv.h
+        ${SRC_DIR}/contextsv.cpp
         ${INCL_DIR}/cli.h
         ${INCL_DIR}/integrative_caller.h
 	${INCL_DIR}/common.h
@@ -42,6 +49,9 @@ set(
 
 # Add executable
 add_executable(contextsv ${SOURCE_FILES})
-target_include_directories(contextsv PRIVATE ${HTSLIB_INCLUDE_DIR})
-target_link_libraries(contextsv PUBLIC hts)  # Link HTS
 
+# Link HTSLib
+# target_include_directories(contextsv PUBLIC ${HTSLIB_INCLUDE_DIR})
+# target_link_libraries(contextsv ${HTSLIB_LIBRARIES})
+
+target_link_libraries(contextsv hts)

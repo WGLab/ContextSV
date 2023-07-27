@@ -10,6 +10,7 @@
 #include <iostream>
 #include <iomanip>
 #include <stdexcept>
+#include <htslib/sam.h>
 
 
 // Check if the filepath exists
