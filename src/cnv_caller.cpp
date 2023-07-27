@@ -103,7 +103,8 @@ std::vector<double> CNVCaller::calculateLogRRatiosAtSNPS(std::vector<int> snp_po
     // Loop through each SNP and calculate the LRR
     std::vector<double> snp_lrr;
     int window_size = this->common.get_window_size();
-    for (int i = 0; i < snp_positions.size(); i++) {
+    int snp_count = (int) snp_positions.size();
+    for (int i = 0; i < snp_count; i++) {
         int pos = snp_positions[i];
 
         // Skip SNPs outside of the region
@@ -136,13 +137,11 @@ double CNVCaller::calculateMeanChromosomeCoverage()
     FILE *fp;
     char line[BUFFER_SIZE];
     RegionCoverage cov;
-    bool log_debug = false;  // Log debugging output
 
     // Open a SAMtools process to calculate cumulative read depth and position
     // counts (non-zero depths only) for a single chromosome
 
     // Run the entire chromosome
-    log_debug = true;
     snprintf(cmd, BUFFER_SIZE,\
     "samtools depth -r %s %s | awk '{c++;s+=$3}END{print c, s}'",\
     chr.c_str(), input_filepath.c_str());  // Remove '-a' for debugging
@@ -166,7 +165,7 @@ double CNVCaller::calculateMeanChromosomeCoverage()
 
     // Parse the outputs
     uint64_t pos_count, cum_depth;
-    double mean_chr_cov;
+    double mean_chr_cov = -1;
     if (fgets(line, BUFFER_SIZE, fp) != NULL)
     {           
         if (sscanf(line, "%ld%ld", &pos_count, &cum_depth) == 2)
@@ -208,7 +207,7 @@ double CNVCaller::calculateWindowLogRRatio(double mean_chr_cov, int start_pos, i
 
     // Parse the outputs
     uint64_t pos_count, cum_depth;
-    double region_lrr;
+    double region_lrr = -1;
     if (fgets(line, BUFFER_SIZE, fp) != NULL)
     {           
         if (sscanf(line, "%ld%ld", &pos_count, &cum_depth) == 2)
@@ -319,7 +318,8 @@ void CNVCaller::saveSNPLRRBAFCSV(std::string filepath, std::vector<int> snp_posi
     csv_file << "position,baf,log2_ratio,cnv_state" << std::endl;
 
     // Write the data
-    for (int i = 0; i < snp_positions.size(); i++)
+    int snp_count = (int) snp_positions.size();
+    for (int i = 0; i < snp_count; i++)
     {
         csv_file << snp_positions[i] << "," << bafs[i] << "," << logr_ratios[i] << "," << state_sequence[i] << std::endl;
     }
