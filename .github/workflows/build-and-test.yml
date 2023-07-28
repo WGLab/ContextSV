@@ -24,3 +24,9 @@ jobs:
       shell: bash --login {0}  # --login enables PATH variable access
       run: |
         make
+
+    - name: Run unit tests
+      shell: bash --login {0}
+      run: |
+        mkdir tests/output
+        python -m pytest tests
