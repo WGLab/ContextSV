@@ -29,4 +29,4 @@ jobs:
       shell: bash --login {0}
       run: |
         mkdir tests/output
-        python -m pytest tests
+        python -m pytest
