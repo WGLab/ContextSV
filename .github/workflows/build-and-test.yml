@@ -28,5 +28,5 @@ jobs:
     - name: Run unit tests
       shell: bash --login {0}
       run: |
-        mkdir tests/output
+        mkdir -p tests/output
         python -m pytest
