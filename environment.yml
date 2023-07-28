@@ -1,4 +1,4 @@
-name: longreadsum
+name: contextsv
 channels:
   - bioconda
   - anaconda
