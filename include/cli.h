@@ -10,29 +10,6 @@
 
 #include <string>
 
-class CLI {
-    private:
-        Common common;
-
-    public:
-        // Parse input arguments
-        int parse(int argc, char** argv);
-
-        // Run the CLI
-        int run();
-
-		// Get the command argument input
-		static std::string getCmdOption(char ** begin, char ** end, const std::string & option);
-
-        // Check if the input argument is provided
-		static bool cmdOptionExists(char** begin, char** end, const std::string& option);
-
-        // Check if the filepath exists
-        static bool fileExists(const std::string &name);
-
-        static void printHelpText();
-
-};
-
+int run(std::string bam, std::string snps, std::string outdir, std::string region);
 
 #endif //CONTEXTSV_CLI_H

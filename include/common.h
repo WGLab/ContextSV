@@ -8,6 +8,7 @@
 #include <string>
 #include <vector>
 #include <map>
+
 class Common {
     public:
         std::string get_bam_filepath();
