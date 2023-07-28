@@ -7,6 +7,13 @@
 *.o
 *.obj
 
+# SWIG files
+src/swig_wrapper.cpp
+lib/contextsv.py
+
+# Pycache
+__pycache__/
+
 # Precompiled Headers
 *.gch
 *.pch

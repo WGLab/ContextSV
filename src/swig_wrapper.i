@@ -6,6 +6,7 @@ SWIG wrapper for C++ code.
 
 // Header files to be wrapped
 %{
-#include "contextsv.h"
+#include "common.h"  // Holds input arguments
+#include "contextsv.h"  // Holds main function
 %}
 
