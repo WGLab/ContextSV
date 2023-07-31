@@ -3,11 +3,10 @@ test_general.py: Test the general module.
 """
 
 import os
+import sys
 import pytest
 
-# from lib import contextsv
-# Import lib from the parent directory.
-import sys
+# Import lib from the parent directory
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from lib import contextsv
@@ -22,11 +21,9 @@ TEST_SNPS_FILE = os.path.join(TEST_DATA_DIR, 'snps.vcf.gz')
 # Set the output directory.
 TEST_OUTDIR = os.path.join(os.path.dirname(__file__), 'output')
 
-def test_run():
-    """
-    Test the run() function.
-    """
 
+def test_run():
+    """Test the run function."""
     # Run the program.
     contextsv.run(
         TEST_BAM_FILE,
