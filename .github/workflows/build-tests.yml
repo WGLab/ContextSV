@@ -2,9 +2,9 @@ name: build tests
 
 on:
   push:
-    branches: [ "9-set-up-unit-testing-workflow" ]
+    branches: [ "main" ]
   pull_request:
-    branches: [ "9-set-up-unit-testing-workflow" ]
+    branches: [ "main" ]
 
 jobs:
   build-and-test:
