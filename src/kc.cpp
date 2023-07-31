@@ -2341,7 +2341,7 @@ double* matrix_regModelStat (double** X, int m, int n, double** Y, double** B)
  * check the source code to know what each field is, I'll write a more detailed description in the future
  */
 {
-	double mse, msm, mst, sse=0, ssm=0, sst=0, y=0, f, p, r2, r2_adj;
+	double mse, msm, sse=0, ssm=0, sst=0, y=0, f, p, r2, r2_adj;
 	double **P, *stat;
 	int i;
 	
@@ -2358,7 +2358,6 @@ double* matrix_regModelStat (double** X, int m, int n, double** Y, double** B)
 	}
 	mse = sse / (double)(m-n);
 	msm = ssm / (double)(n-1);
-	mst = sst / (double)(m-1);
 	
 	f = msm/mse;
 	p = 1-cdf_f (n-1, m-n, f);
@@ -2945,7 +2944,7 @@ double cc(double* x, double* y, int n)
 		syy += yt*yt;
 		sxy += xt*yt;
 	}
-	if (! sxx*syy) fprintf(stderr, "kc::cc: correlation cannot be calculated due to lack of variation in data");
+	if ( (sxx*syy) == 0) fprintf(stderr, "kc::cc: correlation cannot be calculated due to lack of variation in data");
 	return sxy/sqrt(sxx*syy);
 }
 
@@ -3115,7 +3114,7 @@ void chi2test_trend_2by3table (double *bins, double *chi2, double *p)
 the bins[] contains six elements, representing the 3 elements in the first row, followed by 3 elements in the second row
 */
 {
-	double row1, row2, col1, col2, col3, total;
+	double row1, row2, col1, col2, total;
 	double e0, e1;	/*expected value in the first and second cell in contingency table*/
 	double cdf_chi2 (double df, double x);
 	
@@ -3123,10 +3122,9 @@ the bins[] contains six elements, representing the 3 elements in the first row, 
 	row2 = bins[3]+bins[4]+bins[5];
 	col1 = bins[0]+bins[3];
 	col2 = bins[1]+bins[4];
-	col3 = bins[2]+bins[5];
 	total = row1+row2;
 	
-	if (! (row1*row2*(total * (col2 + 4*col1) - (col2 + 2*col1)*(col2 + 2*col1)))) {
+	if ((row1*row2*(total * (col2 + 4*col1) - (col2 + 2*col1)*(col2 + 2*col1))) == 0) {
 		*chi2 = -1;
 		*p = -1;
 		return;
@@ -3167,7 +3165,7 @@ void chi2test_2by2table(double *bins, double *chi2, double *p)
 	col2 = bins[1]+bins[3];
 	total = row1+row2;
 	
-	if (! (row1*row2*col1*col2)) {
+	if ((row1*row2*col1*col2) == 0) {
 		*chi2 = -1;
 		*p = -1;
 		return;
@@ -3222,7 +3220,7 @@ this table has 2 rows and 3 columns, the input in bins[] array are a11, a12, a13
 	col3 = bins[2]+bins[5];
 	total = row1+row2;
 
-	if (! (row1*row2*col1*col2*col3)) {
+	if ((row1*row2*col1*col2*col3) == 0) {
 		*chi2 = -1;
 		*p = -1;
 		return;
@@ -3315,12 +3313,11 @@ I used lnfactorial, rather than relying on the more familiar hypergeometric dist
 */
 {
 	double lnfactorial (double x);
-	int lownum=a;
 	int temp, i, newa, newb, newc, newd;
 	double prob = 0, firstprob, currentprob;
 	
 	if (a<b && a<c && a<d) {
-		lownum=a;
+		//lownum=a;
 	} else if (b<c && b<d) {
 		temp=b; b=a; a=temp;
 		temp=d; d=c; c=temp;
@@ -3345,10 +3342,18 @@ I used lnfactorial, rather than relying on the more familiar hypergeometric dist
 
 	if (a*d < b*c) {			//the a cell is under-represented; calculate the sum of prob where the cell range from 0 to a
 		prob += exp(firstprob - lnfactorial(a) - lnfactorial(b) - lnfactorial(c) - lnfactorial(d));
-		if (prob > 1) prob = 1; if (prob < 0) prob = 0;
+		if (prob > 1) {
+			prob = 1;
+		 } else if (prob < 0) {
+			prob = 0;
+		 }
 		return prob;
 	} else {
-		if (prob > 1) prob = 1; if (prob < 0) prob = 0;
+		if (prob > 1) {
+			prob = 1;
+		} else if (prob < 0) {
+			prob = 0;
+		}
 		return 1-prob;
 	}
 }
@@ -3360,12 +3365,11 @@ I used lnfactorial, rather than relying on the more familiar hypergeometric dist
 */
 {
 	double lnfactorial (double x);
-	int lownum=a;
 	int temp, i, newa, newb, newc, newd, maxa;
 	double prob = 0, firstprob, currentprob, tableprob;
 	
 	if (a<b && a<c && a<d) {
-		lownum=a;
+		//lownum=a;
 	} else if (b<c && b<d) {
 		temp=b; b=a; a=temp;
 		temp=d; d=c; c=temp;
@@ -3403,7 +3407,11 @@ I used lnfactorial, rather than relying on the more familiar hypergeometric dist
 			prob += currentprob;
 		}
 	}
-	if (prob > 1) prob = 1; if (prob < 0) prob = 0;
+	if (prob > 1) {
+		prob = 1;
+	} else if (prob < 0) {
+		prob = 0;
+	}
 	return 1-prob;
 }
 
@@ -3423,8 +3431,18 @@ code adapted from http://alienryderflex.com/quicksort/
 		if (L<R) {
 			piv=arr[L];
 			while (L<R) {
-				while (arr[R]>=piv && L<R) R--; if (L<R) arr[L++]=arr[R];
-				while (arr[L]<=piv && L<R) L++; if (L<R) arr[R--]=arr[L]; 
+				while (arr[R]>=piv && L<R) {
+					R--;
+					if (L<R) {
+						arr[L++]=arr[R];
+					}
+				}
+				while (arr[L]<=piv && L<R) {
+					L++;
+					if (L<R) {
+						arr[R--]=arr[L];
+					}
+				} 
 			}
 			arr[L]=piv; beg[i+1]=L+1; end[i+1]=end[i]; end[i++]=L;
 			if (end[i]-beg[i]>end[i-1]-beg[i-1]) {

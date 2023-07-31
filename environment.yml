@@ -1,0 +1,12 @@
+name: contextsv
+channels:
+  - bioconda
+  - anaconda
+  - conda-forge
+  - defaults
+dependencies:
+  - python
+  - numpy
+  - htslib
+  - swig
+  - pytest

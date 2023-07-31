@@ -1,0 +1,37 @@
+name: build tests
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up conda environment
+      uses: conda-incubator/setup-miniconda@v2
+      with:
+        activate-environment: contextsv
+        environment-file: environment.yml
+        python-version: 3.9
+        auto-activate-base: false
+
+    - name: Install samtools and bcftools using sudo apt-get
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y samtools bcftools
+
+    - name: Build C++ code
+      shell: bash --login {0}  # --login enables PATH variable access
+      run: |
+        make
+
+    - name: Run unit tests
+      shell: bash --login {0}
+      run: |
+        mkdir -p tests/output
+        python -m pytest
