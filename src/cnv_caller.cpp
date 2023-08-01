@@ -1,6 +1,8 @@
 
-// #include "khmm.h"
 #include "cnv_caller.h"
+#include "common.h"
+
+#include <htslib/sam.h>
 
 #include <iostream>
 #include <fstream>
@@ -8,12 +10,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>       /* log2 */
-#include <htslib/sam.h>
 #include <algorithm>
 #include <limits>
 #include <tuple>
 #include <iomanip>  // Progress bar
-#include "common.h"
+
 
 #define BUFFER_SIZE 1024
 

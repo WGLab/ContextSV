@@ -3,8 +3,8 @@
 // Integrate SV calls
 //
 
-#ifndef CONTEXTSV_INTEGRATIVE_CALLER_H
-#define CONTEXTSV_INTEGRATIVE_CALLER_H
+#ifndef INTEGRATIVE_CALLER_H
+#define INTEGRATIVE_CALLER_H
 
 #include "common.h"
 
@@ -33,4 +33,4 @@ class IntegrativeCaller {
         void set_window_size(int window_size);
 };
 
-#endif
+#endif  // INTEGRATIVE_CALLER_H

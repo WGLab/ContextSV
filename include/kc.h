@@ -1,3 +1,5 @@
+#ifndef KC_H
+#define KC_H
 
 #include <stdio.h>
 // #include "EXTERN.h"   /* std perl include */
@@ -249,3 +251,5 @@ double random_stdnormal (int *idum);
 3rd party code
 ******************/
 double SNPHWE(int obs_hets, int obs_hom1, int obs_hom2);
+
+#endif  /* KC_H */
