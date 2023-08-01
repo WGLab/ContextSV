@@ -2,8 +2,8 @@
 // common.h:
 // Manage common parameters and functions
 
-#ifndef CONTEXTSV_COMMON_H
-#define CONTEXTSV_COMMON_H
+#ifndef COMMON_H
+#define COMMON_H
 
 #include <string>
 #include <vector>
@@ -11,23 +11,23 @@
 
 class Common {
     public:
-        std::string get_bam_filepath();
-        void set_bam_filepath(std::string filepath);
-        std::string get_ref_filepath();
-		void set_ref_filepath(std::string filepath);
-        std::string get_output_dir();
-		void set_output_dir(std::string dirpath);
-        std::string get_region();
-		void set_region(std::string region);
-        int get_window_size();
-		void set_window_size(int window_size);
-        std::string get_snp_vcf_filepath();
-        void set_snp_vcf_filepath(std::string filepath);
-        std::string get_region_chr();
-        int get_region_start();
-        int get_region_end();
-        bool get_region_set();
-        void print_progress(int progress, int total);
+        std::string getBAMFilepath();
+        void setBAMFilepath(std::string filepath);
+        std::string getRefFilepath();
+		void setRefFilepath(std::string filepath);
+        std::string getOutputDir();
+		void setOutputDir(std::string dirpath);
+        std::string getRegion();
+		void setRegion(std::string region);
+        int getWindowSize();
+		void setWindowSize(int window_size);
+        std::string getSNPFilepath();
+        void setSNPFilepath(std::string filepath);
+        std::string getRegionChr();
+        int getRegionStart();
+        int getRegionEnd();
+        bool getRegionSet();
+        void printProgress(int progress, int total);
 
     private:
         std::string bam_filepath = "";
@@ -42,4 +42,4 @@ class Common {
         bool region_set = false;
 };
 
-#endif //CONTEXTSV_COMMON_H
+#endif //COMMON_H

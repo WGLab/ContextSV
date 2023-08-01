@@ -70,7 +70,7 @@ std::vector<double> CNVCaller::run()
 
     // Save a CSV of the positions, LRRs, BAFs, and state sequence
     std::cout << "Saving CSV of positions, LRRs, and BAFs..." << std::endl;
-    std::string output_filepath = this->common.get_output_dir() + "/snp_lrr_baf.csv";
+    std::string output_filepath = this->common.getOutputDir() + "/snp_lrr_baf.csv";
     saveSNPLRRBAFCSV(output_filepath, snp_positions, baf, lrr, state_sequence);
     std::cout << "CSV saved to: " << output_filepath << std::endl;
 
@@ -79,10 +79,10 @@ std::vector<double> CNVCaller::run()
 
 std::vector<double> CNVCaller::calculateLogRRatiosAtSNPS(std::vector<int> snp_positions)
 {
-    std::string target_chr = this->common.get_region_chr();
+    std::string target_chr = this->common.getRegionChr();
     
     // Calculate mean chromosome coverage
-    std::string input_filepath = this->common.get_bam_filepath();
+    std::string input_filepath = this->common.getBAMFilepath();
     std::cout <<  "\nCalculating coverage for chromosome: " << target_chr.c_str() << std::endl;
     //double mean_chr_cov = calculateMeanChromosomeCoverage();  // Commented out for testing
     // double mean_chr_cov = 39.4096;  // Chr6 mean coverage from test data
@@ -93,16 +93,16 @@ std::vector<double> CNVCaller::calculateLogRRatiosAtSNPS(std::vector<int> snp_po
     // Set the region start and end from the first and last SNPs
     int region_start = snp_positions.front();
     int region_end = snp_positions.back();
-    if (this->common.get_region_set()) {
-        region_start = std::max(region_start, this->common.get_region_start());
-        region_end = std::min(region_end, this->common.get_region_end());
+    if (this->common.getRegionSet()) {
+        region_start = std::max(region_start, this->common.getRegionStart());
+        region_end = std::min(region_end, this->common.getRegionEnd());
     }
 
     std::cout << "Beginning analysis of region: " << target_chr << ":" << region_start << "-" << region_end << std::endl;
 
     // Loop through each SNP and calculate the LRR
     std::vector<double> snp_lrr;
-    int window_size = this->common.get_window_size();
+    int window_size = this->common.getWindowSize();
     int snp_count = (int) snp_positions.size();
     for (int i = 0; i < snp_count; i++) {
         int pos = snp_positions[i];
@@ -121,7 +121,7 @@ std::vector<double> CNVCaller::calculateLogRRatiosAtSNPS(std::vector<int> snp_po
         snp_lrr.push_back(lrr);
 
         // Update the progress bar
-        this->common.print_progress(i, snp_positions.size()-1);
+        this->common.printProgress(i, snp_positions.size()-1);
     }
 
     return snp_lrr;
@@ -130,8 +130,8 @@ std::vector<double> CNVCaller::calculateLogRRatiosAtSNPS(std::vector<int> snp_po
 /// Calculate the mean chromosome coverage
 double CNVCaller::calculateMeanChromosomeCoverage()
 {
-    std::string chr = this->common.get_region_chr();
-    std::string input_filepath = this->common.get_bam_filepath();
+    std::string chr = this->common.getRegionChr();
+    std::string input_filepath = this->common.getBAMFilepath();
 
     char cmd[BUFFER_SIZE];
     FILE *fp;
@@ -181,8 +181,8 @@ double CNVCaller::calculateMeanChromosomeCoverage()
 
 double CNVCaller::calculateWindowLogRRatio(double mean_chr_cov, int start_pos, int end_pos)
 {
-    std::string chr = this->common.get_region_chr();
-    std::string input_filepath = this->common.get_bam_filepath();
+    std::string chr = this->common.getRegionChr();
+    std::string input_filepath = this->common.getBAMFilepath();
 
     char cmd[BUFFER_SIZE];
     FILE *fp;
@@ -225,15 +225,15 @@ double CNVCaller::calculateWindowLogRRatio(double mean_chr_cov, int start_pos, i
 std::pair<std::vector<int>, std::vector<double>> CNVCaller::readSNPBAFs()
 {
     // Get the VCF filepath with SNPs
-    std::string snp_filepath = this->common.get_snp_vcf_filepath();
+    std::string snp_filepath = this->common.getSNPFilepath();
 
     // Create a VCF filepath of filtered SNPs
-    std::string filtered_snp_vcf_filepath = this->common.get_output_dir() + "/filtered_snps.vcf";
+    std::string filtered_snp_vcf_filepath = this->common.getOutputDir() + "/filtered_snps.vcf";
 
     std::cout << "Parsing SNPs from " << snp_filepath << std::endl;
 
     // Filter variants by depth and quality and SNPs only
-    std::string region = this->common.get_region();
+    std::string region = this->common.getRegion();
     std::string cmd;
     if (region == "")
     {

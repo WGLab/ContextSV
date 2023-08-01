@@ -18,10 +18,10 @@ int run(std::string bam, std::string snps, std::string outdir, std::string regio
 {
 	// Create the common parameters
 	Common common;
-	common.set_bam_filepath(bam);
-	common.set_snp_vcf_filepath(snps);
-	common.set_output_dir(outdir);
-	common.set_region(region);
+	common.setBAMFilepath(bam);
+	common.setSNPFilepath(snps);
+	common.setOutputDir(outdir);
+	common.setRegion(region);
 
 	// Run the integrative caller
 	IntegrativeCaller caller_obj(common);

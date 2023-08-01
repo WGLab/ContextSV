@@ -21,7 +21,7 @@ int IntegrativeCaller::run()
     // snv_obj.run();
 
     // Get the SNP VCF file
-    std::string snp_vcf_filename = this->common.get_snp_vcf_filepath();
+    std::string snp_vcf_filename = this->common.getSNPFilepath();
     std::cout << "SNP VCF file = " << snp_vcf_filename << std::endl;
 
     // Get the positions of SNPs in the region

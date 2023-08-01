@@ -6,32 +6,32 @@
 
 #define BUFFER_SIZE 1024
 
-std::string Common::get_bam_filepath()
+std::string Common::getBAMFilepath()
 {
     return this->bam_filepath;
 }
 
-void Common::set_bam_filepath(std::string filepath)
+void Common::setBAMFilepath(std::string filepath)
 {
     this->bam_filepath = filepath;
 }
 
-std::string Common::get_ref_filepath()
+std::string Common::getRefFilepath()
 {
     return this->ref_filepath;
 }
 
-void Common::set_ref_filepath(std::string filepath)
+void Common::setRefFilepath(std::string filepath)
 {
     this->ref_filepath = filepath;
 }
 
-std::string Common::get_output_dir()
+std::string Common::getOutputDir()
 {
     return this->output_dir;
 }
 
-void Common::set_output_dir(std::string dirpath)
+void Common::setOutputDir(std::string dirpath)
 {
     this->output_dir = dirpath;
 
@@ -40,12 +40,12 @@ void Common::set_output_dir(std::string dirpath)
     system(cmd.c_str());
 }
 
-std::string Common::get_region()
+std::string Common::getRegion()
 {
     return this->region;
 }
 
-void Common::set_region(std::string region)
+void Common::setRegion(std::string region)
 {
     this->region = region;
 
@@ -100,47 +100,47 @@ void Common::set_region(std::string region)
     }
 }
 
-int Common::get_window_size()
+int Common::getWindowSize()
 {
     return this->window_size;
 }
 
-void Common::set_window_size(int window_size)
+void Common::setWindowSize(int window_size)
 {
     this->window_size = window_size;
 }
 
-std::string Common::get_snp_vcf_filepath()
+std::string Common::getSNPFilepath()
 {
     return this->snp_vcf_filepath;
 }
 
-void Common::set_snp_vcf_filepath(std::string filepath)
+void Common::setSNPFilepath(std::string filepath)
 {
     this->snp_vcf_filepath = filepath;
 }
 
-std::string Common::get_region_chr()
+std::string Common::getRegionChr()
 {
     return this->region_chr;
 }
 
-int Common::get_region_start()
+int Common::getRegionStart()
 {
     return this->region_start;
 }
 
-int Common::get_region_end()
+int Common::getRegionEnd()
 {
     return this->region_end;
 }
 
-bool Common::get_region_set()
+bool Common::getRegionSet()
 {
     return this->region_set;
 }
 
-void Common::print_progress(int progress, int total)
+void Common::printProgress(int progress, int total)
 {
     // Get the percentage
     float percent = (float)progress / (float)total * 100.0;
