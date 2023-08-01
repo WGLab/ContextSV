@@ -27,8 +27,8 @@ class CNVCaller {
     public:
         CNVCaller(Common common);
 
-        // Detect CNVs
-		std::vector<double> run();
+        // Detect CNVs and return the state sequence by SNP position
+		std::map<int, int> run();
 
         // Calculate Log R Ratios
 		std::vector<double> calculateLogRRatiosAtSNPS(std::vector<int> snp_positions);

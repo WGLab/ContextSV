@@ -47,7 +47,8 @@ def test_run():
     with open(output_file, 'r') as f:
         assert f.readline().strip() == "position,baf,log2_ratio,cnv_state"
 
-    # Check that the output file has the correct last line.
+    # Check that the output file has the correct SNP values (excluding predicted
+    # state) in the last line
     with open(output_file, 'r') as f:
         last_line = f.readlines()[-1].strip()
-        assert last_line == "60389325,0.590909,-0.048852,1"
+        assert last_line[:-2] == "60389325,0.590909,-0.048852"

@@ -22,7 +22,7 @@ CNVCaller::CNVCaller(Common common)
     this->common = common;
 }
 
-std::vector<double> CNVCaller::run()
+std::map<int, int> CNVCaller::run()
 {
     // Read SNP positions and BAF values from the VCF file
     std::cout << "Reading SNP positions and BAF values from the VCF file..." << std::endl;
@@ -74,7 +74,14 @@ std::vector<double> CNVCaller::run()
     saveSNPLRRBAFCSV(output_filepath, snp_positions, baf, lrr, state_sequence);
     std::cout << "CSV saved to: " << output_filepath << std::endl;
 
-    return std::vector<double>();
+    // Return a map of the state sequence by position
+    std::map<int, int> state_sequence_by_pos;
+    for (int i = 0; i < num_probes; i++)
+    {
+        state_sequence_by_pos[snp_positions[i]] = state_sequence[i];
+    }
+
+    return state_sequence_by_pos;
 }
 
 std::vector<double> CNVCaller::calculateLogRRatiosAtSNPS(std::vector<int> snp_positions)

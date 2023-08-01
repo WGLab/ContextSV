@@ -6,6 +6,7 @@
 #include <htslib/sam.h>
 #include <iostream>
 #include <string>
+#include <vector>
 
 
 IntegrativeCaller::IntegrativeCaller(Common common)
@@ -16,24 +17,9 @@ IntegrativeCaller::IntegrativeCaller(Common common)
 /// Entry point
 int IntegrativeCaller::run()
 {
-    // Call SNVs
-    // SNVCaller snv_obj(this->common);
-    // snv_obj.run();
-
-    // Get the SNP VCF file
-    std::string snp_vcf_filename = this->common.getSNPFilepath();
-    std::cout << "SNP VCF file = " << snp_vcf_filename << std::endl;
-
-    // Get the positions of SNPs in the region
-    //snv_obj.run(filepath);
-
-    // Print the size of the SNP positions vector
-    // std::cout << "SNP positions vector size = " << snv_obj.get_snp_positions().size() << std::endl;
-
-    // Call CNVs
-    //CNVCaller cnv_obj(this->common, snv_obj.get_snp_positions());
-    //std::vector<int> snp_positions;
+    // Call CNVs using the SNP positions
     CNVCaller cnv_obj(this->common);
+    std::map<int, int> state_sequence =
     cnv_obj.run();
 
     return 0;
