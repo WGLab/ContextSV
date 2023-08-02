@@ -28,8 +28,9 @@ int IntegrativeCaller::run()
     std::cout << "Calling SVs..." << std::endl;
     SVCaller sv_obj(this->common);
 
-    // Return a map of SV type by start and end position (key=SV start position, value=(SV type, SV end position))
-    std::map<int, std::pair<int, int>> sv_calls =
+    // Return a map of SV type by start and end position (key=[chromosome, SV
+    // start position], value=[SV end position, SV type])
+    std::map<std::pair<char *, int>, std::pair<int, int>> sv_calls =
     sv_obj.run();
 
     // Integrate CNV and SV calls

@@ -16,7 +16,7 @@ class SVCaller {
         SVCaller(Common common);
 
         // Detect SVs and return SV type by start and end position
-        std::map<int, std::pair<int, int>> run();
+        std::map<std::pair<char *, int>, std::pair<int, int>> run();
 };
 
 #endif // SV_CALLER_H

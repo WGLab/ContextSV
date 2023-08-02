@@ -19,7 +19,7 @@ SVCaller::SVCaller(Common common)
 }
 
 // Detect SVs and return SV type by start and end position
-std::map<int, std::pair<int, int>> SVCaller::run()
+std::map<std::pair<char *, int>, std::pair<int, int>> SVCaller::run()
 {
     // Open the BAM file
     samFile *fp_in = sam_open(this->common.getBAMFilepath().c_str(), "r");
@@ -39,13 +39,21 @@ std::map<int, std::pair<int, int>> SVCaller::run()
     int32_t last_pos = -1;
     bool sorted = true;
 
-    // Variables to store the SV calls
-    std::map<int, std::pair<int, int>> sv_calls;
+    // SV calls by start and end position (key=[chromosome, SV start position],
+    // value=[SV end position, SV type])
+    std::map<std::pair<char *, int>, std::pair<int, int>> sv_calls;
+
+    // Set the minimum mapping quality
+    int min_mapq = 20;
+
+    // Set the minimum alignment length
+    int min_alignment_length = 50;
 
     // Iterate through the alignments
     int num_alignments = 0;
     int num_sv_calls = 0;
     while (sam_read1(fp_in, bamHdr, bam1) >= 0) {
+
         // Get the tid and pos
         int32_t tid = bam1->core.tid;
         int32_t pos = bam1->core.pos;
@@ -60,11 +68,16 @@ std::map<int, std::pair<int, int>> SVCaller::run()
         last_tid = tid;
         last_pos = pos;
 
-        // Check if the alignment is unmapped
-        if (bam1->core.flag & BAM_FUNMAP) {
+        // Skip secondary alignments
+        if (bam1->core.flag & BAM_FSECONDARY) {            
             continue;
         }
 
+        // Skip alignments with mapping quality less than min_mapq
+        if (bam1->core.qual < min_mapq) {
+            continue;
+        }
+        
         // Get insertion and deletion start and end positions from the CIGAR
         // string
         int32_t ins_start = -1;
@@ -73,7 +86,9 @@ std::map<int, std::pair<int, int>> SVCaller::run()
         int32_t del_end = -1;
         int32_t ref_pos = bam1->core.pos;
         uint32_t *cigar = bam_get_cigar(bam1);
+        char *chr = bamHdr->target_name[bam1->core.tid];
         for (uint32_t i = 0; i < bam1->core.n_cigar; i++) {
+
             // Get the CIGAR operation
             int cigar_op = bam_cigar_op(cigar[i]);
 
@@ -111,20 +126,22 @@ std::map<int, std::pair<int, int>> SVCaller::run()
 
         // Check if the insertion start and end positions have been set
         if (ins_start != -1 && ins_end != -1) {
-            // Check if the insertion is longer than 50 bp
-            if (ins_end - ins_start > 50) {
+            // Check if the insertion is longer than the minimum alignment length
+            if (ins_end - ins_start > min_alignment_length) {
+
                 // Add the insertion to the SV calls
-                sv_calls[ins_start] = std::make_pair(1, ins_end);
+                sv_calls[std::make_pair(chr, ins_start)] = std::make_pair(ins_end, 1);
                 num_sv_calls++;
             }
         }
 
         // Check if the deletion start and end positions have been set
         if (del_start != -1 && del_end != -1) {
-            // Check if the deletion is longer than 50 bp
-            if (del_end - del_start > 50) {
+            // Check if the deletion is longer than the minimum alignment length
+            if (del_end - del_start > min_alignment_length) {
+
                 // Add the deletion to the SV calls
-                sv_calls[del_start] = std::make_pair(2, del_end);
+                sv_calls[std::make_pair(chr, del_start)] = std::make_pair(del_end, 2);
                 num_sv_calls++;
             }
         }
