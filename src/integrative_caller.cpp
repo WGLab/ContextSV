@@ -21,21 +21,18 @@ int IntegrativeCaller::run()
     // Call CNVs using the SNP positions
     std::cout << "Calling CNVs..." << std::endl;
     CNVCaller cnv_obj(this->common);
-    std::map<int, int> state_sequence =
-    cnv_obj.run();
+    CNVMap cnv_calls = cnv_obj.run();
 
-    // Call SVs from long read alignments
+    // Call SVs from long read alignments:
+    // Return a map of SV type by start and end position
+    // Key = [chromosome, SV start position], Value = [SV end position, SV type]
     std::cout << "Calling SVs..." << std::endl;
     SVCaller sv_obj(this->common);
-
-    // Return a map of SV type by start and end position (key=[chromosome, SV
-    // start position], value=[SV end position, SV type])
-    std::map<std::pair<char *, int>, std::pair<int, int>> sv_calls =
-    sv_obj.run();
+    SVMap sv_calls = sv_obj.run();
 
     // Integrate CNV and SV calls
-    // TODO
     std::cout << "Integrating CNV and SV calls..." << std::endl;
+    //filterCNVs(state_sequence, sv_calls);
     //filterCNVs(state_sequence);
 
     return 0;

@@ -23,7 +23,7 @@ CNVCaller::CNVCaller(Common common)
     this->common = common;
 }
 
-std::map<int, int> CNVCaller::run()
+CNVMap CNVCaller::run()
 {
     // Read SNP positions and BAF values from the VCF file
     std::cout << "Reading SNP positions and BAF values from the VCF file..." << std::endl;
@@ -76,22 +76,36 @@ std::map<int, int> CNVCaller::run()
     std::cout << "CSV saved to: " << output_filepath << std::endl;
 
     // Return a map of the state sequence by position
-    std::map<int, int> state_sequence_by_pos;
+    std::string chr = this->common.getRegionChr();
+
+    // Convert constant char * to char *
+    char *chr_cstr = new char[chr.length() + 1];
+    strcpy(chr_cstr, chr.c_str());
+
+    // Create a map of the state sequence by position
+    CNVMap state_sequence_by_pos;
+    //std::map<std::pair<char *, int>, int> state_sequence_by_pos;
     for (int i = 0; i < num_probes; i++)
     {
-        state_sequence_by_pos[snp_positions[i]] = state_sequence[i];
+        state_sequence_by_pos.addCNVCall(chr_cstr, snp_positions[i], state_sequence[i]);
+        //std::pair<char *, int> pos = std::make_pair(chr, snp_positions[i]);
+        //state_sequence_by_pos[pos] = state_sequence[i];
     }
+
+    // Free the memory
+    delete[] chr_cstr;
 
     return state_sequence_by_pos;
 }
 
 std::vector<double> CNVCaller::calculateLogRRatiosAtSNPS(std::vector<int> snp_positions)
 {
-    std::string target_chr = this->common.getRegionChr();
+    // Get the target chromosome
+    std::string chr = this->common.getRegionChr();
     
     // Calculate mean chromosome coverage
     std::string input_filepath = this->common.getBAMFilepath();
-    std::cout <<  "\nCalculating coverage for chromosome: " << target_chr.c_str() << std::endl;
+    std::cout <<  "\nCalculating coverage for chromosome: " << chr << std::endl;
     //double mean_chr_cov = calculateMeanChromosomeCoverage();  // Commented out for testing
     // double mean_chr_cov = 39.4096;  // Chr6 mean coverage from test data
     double mean_chr_cov = 39.561;  // Chr3 mean coverage from test data
@@ -106,7 +120,7 @@ std::vector<double> CNVCaller::calculateLogRRatiosAtSNPS(std::vector<int> snp_po
         region_end = std::min(region_end, this->common.getRegionEnd());
     }
 
-    std::cout << "Beginning analysis of region: " << target_chr << ":" << region_start << "-" << region_end << std::endl;
+    std::cout << "Beginning analysis of region: " << chr << ":" << region_start << "-" << region_end << std::endl;
 
     // Loop through each SNP and calculate the LRR
     std::vector<double> snp_lrr;

@@ -7,6 +7,7 @@
 #define SV_CALLER_H
 
 #include "common.h"
+#include "sv_map.h"
 
 class SVCaller {
     private:
@@ -16,7 +17,7 @@ class SVCaller {
         SVCaller(Common common);
 
         // Detect SVs and return SV type by start and end position
-        std::map<std::pair<char *, int>, std::pair<int, int>> run();
+        SVMap run();
 };
 
 #endif // SV_CALLER_H

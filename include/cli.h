@@ -3,8 +3,8 @@
 // Command-line interface entrypoint.
 //
 
-#ifndef CONTEXTSV_CLI_H
-#define CONTEXTSV_CLI_H
+#ifndef CLI_H
+#define CLI_H
 
 #include "common.h"
 
@@ -12,4 +12,4 @@
 
 int run(std::string bam, std::string snps, std::string outdir, std::string region);
 
-#endif //CONTEXTSV_CLI_H
+#endif //CLI_H
