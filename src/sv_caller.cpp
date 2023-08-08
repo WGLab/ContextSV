@@ -18,8 +18,16 @@ SVCaller::SVCaller(Common common)
 }
 
 // Detect SVs and return SV type by start and end position
-SVMap SVCaller::run()
+SVMap SVCaller::run(CNVMap cnv_calls)
 {
+    // Test if a key exists in the CNV map
+    std::pair<std::string, int> key("chr3", 60771676);
+    if (cnv_calls.getCNVCalls().find(key) != cnv_calls.getCNVCalls().end()) {
+        std::cout << "[2] Found key" << std::endl;
+    } else {
+        std::cout << "[2] Did not find key" << std::endl;
+    }
+
     // Open the BAM file
     samFile *fp_in = sam_open(this->common.getBAMFilepath().c_str(), "r");
     if (fp_in == NULL) {
@@ -51,6 +59,7 @@ SVMap SVCaller::run()
 
     // Set the minimum alignment length
     int min_alignment_length = 50;
+    //int min_alignment_length = 0;
 
     // Iterate through the alignments in the region and get the SV calls
     SVMap sv_calls;
@@ -77,7 +86,20 @@ SVMap SVCaller::run()
         int32_t del_end = -1;
         int32_t ref_pos = bam1->core.pos;
         uint32_t *cigar = bam_get_cigar(bam1);
-        char *chr = bamHdr->target_name[bam1->core.tid];
+
+        std::string chr = bamHdr->target_name[bam1->core.tid];
+        //std::cout << "SV chr: " << chr << std::endl;
+        //char *chr = bamHdr->target_name[bam1->core.tid];
+        //char chr[100];
+        //strcpy(chr, bamHdr->target_name[bam1->core.tid]);
+
+        // Define the maximum distance between consecutive insertions or
+        // deletions to be considered a single SV
+        int max_indel_distance = 100; // 100 bp
+        int ins_distance = 0;
+        int prev_ins_end = -1;
+        int del_distance = 0;
+        int prev_del_end = -1;
 
         for (uint32_t i = 0; i < bam1->core.n_cigar; i++) {
 
@@ -97,10 +119,22 @@ SVMap SVCaller::run()
 
                 // Set the insertion end position
                 ins_end = ref_pos + cigar_op_len;
+
+                // Get the distance between consecutive insertions
+                if (prev_ins_end != -1) {
+                    ins_distance = ref_pos - prev_ins_end;
+                }
+
+                // Set the previous insertion end position
+                prev_ins_end = ins_end;
+
+                // Set the insertion end position
+                //ins_end = ref_pos + cigar_op_len;
+                //ins_end = ins_start + cigar_op_len;
             }
 
             // Check if the CIGAR operation is a deletion
-            if (cigar_op == BAM_CDEL) {
+            else if (cigar_op == BAM_CDEL) {
 
                 // Check if the deletion start position has not been set
                 if (del_start == -1) {
@@ -109,21 +143,32 @@ SVMap SVCaller::run()
 
                 // Set the deletion end position
                 del_end = ref_pos + cigar_op_len;
+                //del_end = del_start + cigar_op_len;
+
+                // Get the distance between consecutive deletions
+                if (prev_del_end != -1) {
+                    del_distance = ref_pos - prev_del_end;
+                }
+
+                // Set the previous deletion end position
+                prev_del_end = del_end;
             }
 
-            // Check if the CIGAR operation is a match or mismatch
+            // Update the reference position based on the CIGAR operation and length
             if (cigar_op == BAM_CMATCH || cigar_op == BAM_CEQUAL || cigar_op == BAM_CDIFF) {
-
-                // Increment the reference position
                 ref_pos += cigar_op_len;
+            } else if (cigar_op == BAM_CDEL || cigar_op == BAM_CREF_SKIP) {
+                ref_pos += cigar_op_len;
+            } else if (cigar_op == BAM_CINS || cigar_op == BAM_CSOFT_CLIP) {
+                // Do nothing
+            } else if (cigar_op == BAM_CHARD_CLIP) {
+                // Do nothing
+            } else {
+                std::cerr << "ERROR: unknown CIGAR operation " << cigar_op << std::endl;
+                exit(1);
             }
 
-            // Check if the CIGAR operation is a soft clip
-            if (cigar_op == BAM_CSOFT_CLIP) {
-
-                // Increment the reference position
-                ref_pos += cigar_op_len;
-            }
+            // Process the insertion and deletion start and end positions
 
             // Check if an insertion has been found
             if (ins_start != -1 && ins_end != -1) {
@@ -131,14 +176,30 @@ SVMap SVCaller::run()
                 // Check if the insertion is longer than the minimum alignment length
                 if (ins_end - ins_start > min_alignment_length) {
 
+                    // Get the predicted SV type from the CNV calls
+                    int sv_type = cnv_calls.getSVType(chr, ins_start, ins_end);
+                    // std::cout << "cnv type: " << sv_type << std::endl;
+                    // std::cout << "sv type: " << 1 << std::endl;
+                    if (sv_type == 1) {
+                        std::cout << "Found insertion supported by CNV calls:" << std::endl;
+                        std::cout << "CIGAR INS at " << chr << ":" << ins_start << "-" << ins_end << ", length " << ins_end - ins_start << std::endl;
+                    }
+
                     // Add the insertion to the SV calls
                     sv_calls.addSVCall(chr, ins_start, ins_end, 1);
                     num_sv_calls++;
                 }
 
-                // Reset the insertion start and end positions
-                ins_start = -1;
-                ins_end = -1;
+                // Reset the insertion start and end positions if the distance
+                // between consecutive insertions is greater than the maximum
+                // indel distance
+                if (ins_distance > max_indel_distance) {
+                    ins_start = -1;
+                    ins_end = -1;
+                    ins_distance = 0;
+                } else {
+                    ins_distance = ins_end - ins_start;
+                }
             }
 
             // Check if a deletion has been found
@@ -147,14 +208,28 @@ SVMap SVCaller::run()
                 // Check if the deletion is longer than the minimum alignment length
                 if (del_end - del_start > min_alignment_length) {
 
+                    // Get the predicted SV type from the CNV calls
+                    int sv_type = cnv_calls.getSVType(chr, del_start, del_end);
+                    // std::cout << "cnv type: " << sv_type << std::endl;
+                    // std::cout << "sv type: " << 2 << std::endl;
+                    if (sv_type == 2) {
+                        std::cout << "Found deletion supported by CNV calls" << std::endl;
+                        std::cout << "CIGAR DEL at " << chr << ":" << del_start << "-" << del_end << ", length " << del_end - del_start << std::endl;
+                    }
+
                     // Add the deletion to the SV calls
                     sv_calls.addSVCall(chr, del_start, del_end, 2);
                     num_sv_calls++;
                 }
 
-                // Reset the deletion start and end positions
-                del_start = -1;
-                del_end = -1;
+                // Reset the deletion start and end positions if the distance
+                // between consecutive deletions is greater than the maximum
+                // indel distance
+                if (del_distance > max_indel_distance) {
+                    del_start = -1;
+                    del_end = -1;
+                    del_distance = 0;
+                }
             }
         }
 

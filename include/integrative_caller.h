@@ -22,8 +22,8 @@ class IntegrativeCaller {
 		// Entry point
 		int run();
 
-		// Filter CNVs based on SV calls
-		void filterCNVs(CNVMap state_sequence, SVMap sv_calls);
+		// Integrate CNV and SV calls
+		SVMap integrateCNVs(CNVMap cnv_calls, SVMap sv_calls);
 };
 
 #endif  // INTEGRATIVE_CALLER_H

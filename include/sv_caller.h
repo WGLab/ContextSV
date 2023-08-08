@@ -7,6 +7,7 @@
 #define SV_CALLER_H
 
 #include "common.h"
+#include "cnv_map.h"
 #include "sv_map.h"
 
 class SVCaller {
@@ -16,8 +17,8 @@ class SVCaller {
     public:
         SVCaller(Common common);
 
-        // Detect SVs and return SV type by start and end position
-        SVMap run();
+        // Detect SVs and predict SV type from long read alignments and CNV calls
+        SVMap run(CNVMap cnv_calls);
 };
 
 #endif // SV_CALLER_H
