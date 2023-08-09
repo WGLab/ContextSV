@@ -23,14 +23,6 @@ int IntegrativeCaller::run()
     CNVCaller cnv_obj(this->common);
     CNVMap cnv_calls = cnv_obj.run();
 
-    // Test if a key exists in the CNV map
-    std::pair<std::string, int> key("chr3", 60771676);
-    if (cnv_calls.getCNVCalls().find(key) != cnv_calls.getCNVCalls().end()) {
-        std::cout << "[1] Found key" << std::endl;
-    } else {
-        std::cout << "[1] Did not find key" << std::endl;
-    }
-
     // Call SVs from long read alignments and CNV calls
     // Return a map of SV type by start and end position
     // Key = [chromosome, SV start position], Value = [SV end position, SV type]
