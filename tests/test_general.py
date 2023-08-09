@@ -51,4 +51,9 @@ def test_run():
     # state) in the last line
     with open(output_file, 'r') as f:
         last_line = f.readlines()[-1].strip()
-        assert last_line[:-2] == "60389325,0.590909,-0.048852"
+
+        # CNV2:
+        #assert last_line[:-2] == "60389325,0.590909,-0.048852"
+
+        # CNV3:
+        assert last_line[:-2] == "60389325,0.590909,-0.0433203"
