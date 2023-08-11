@@ -19,6 +19,7 @@ class SVMap {
 
     public:
         void addSVCall(std::string, int start, int end, int sv_type);
+        void addSVCalls(SVMap sv_calls);
         //map_type getSVCalls();
 };
 

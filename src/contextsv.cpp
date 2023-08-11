@@ -15,7 +15,7 @@ ContextSV::ContextSV(Common common)
     this->common = common;
 }
 
-/// Entry point
+// Entry point
 int ContextSV::run()
 {
     // Call CNVs using the SNP positions

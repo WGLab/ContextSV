@@ -14,7 +14,7 @@
 
 class ContextSV {
 	private:
-		Common common;
+		Common common;		
 
 	public:
 		ContextSV(Common common);

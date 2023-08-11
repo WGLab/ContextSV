@@ -12,7 +12,11 @@ void SVMap::addSVCall(std::string chr, int start, int end, int sv_type)
     }
 }
 
-// map_type SVMap::getSVCalls()
-// {
-//     return this->sv_calls;
-// }
+void SVMap::addSVCalls(SVMap sv_calls)
+{
+    // Iterate over the SV calls
+    for (auto const& sv_call : sv_calls.sv_calls) {
+        // Add the SV call to the map
+        this->addSVCall(std::get<0>(sv_call.first), std::get<1>(sv_call.first), std::get<2>(sv_call.first), std::get<3>(sv_call.first));
+    }
+}

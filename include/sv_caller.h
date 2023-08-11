@@ -33,7 +33,7 @@ class SVCaller {
         SVMap run(CNVMap cnv_calls);
 
         // Detect SVs from long read alignments in the CIGAR string
-        SVMap detectSVsFromCIGAR();
+        SVMap detectSVsFromCIGAR(std::string chr, int32_t pos, uint32_t* cigar, int cigar_len);
 
         // Detect SVs from split-read alignments (primary and supplementary)
         SVMap detectSVsFromSplitReads();
