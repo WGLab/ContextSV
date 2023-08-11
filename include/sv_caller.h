@@ -12,6 +12,11 @@
 
 class SVCaller {
     private:
+        // Aliases
+        typedef std::tuple<std::string, int, int> AlignmentLocation;
+        typedef std::vector<AlignmentLocation> AlignmentVector;
+        typedef std::map<std::string, AlignmentVector> QueryMap;
+
         //int max_indel_dist = 1000;  // Maximum distance between two indels to
         //be considered as a single SV
         int max_indel_dist = 10;  // Maximum distance between two indels to be considered as a single SV

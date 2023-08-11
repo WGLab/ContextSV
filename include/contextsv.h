@@ -1,15 +1,29 @@
 //
-// contextsv.h
-// Main header file for the contextsv library.
+// contextsv.h:
+// Main class for ContextSV
 //
 
 #ifndef CONTEXTSV_H
 #define CONTEXTSV_H
 
-#include "khmm.h"
 #include "common.h"
+#include "cnv_map.h"
+#include "sv_map.h"
 
 #include <string>
-#include <vector>
 
-#endif // CONTEXTSV_H
+class ContextSV {
+	private:
+		Common common;
+
+	public:
+		ContextSV(Common common);
+
+		// Entry point
+		int run();
+
+		// Integrate CNV and SV calls
+		SVMap integrateCNVs(CNVMap cnv_calls, SVMap sv_calls);
+};
+
+#endif  // CONTEXTSV_H

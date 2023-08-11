@@ -6,7 +6,7 @@ SWIG wrapper for C++ code.
 
 // Include header
 %{
-#include "cli.h"
+#include "swig_interface.h"
 %}
 
 // Set up types

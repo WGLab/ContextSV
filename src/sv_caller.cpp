@@ -4,7 +4,6 @@
 //
 
 #include "sv_caller.h"
-#include "query_map.h"
 
 #include <htslib/sam.h>
 
@@ -273,7 +272,8 @@ SVMap SVCaller::detectSVsFromSplitReads()
     // of chr:start-end
     // Note: Multiple primary alignments can have the same QNAME when alignment
     // quality is similar ex. in repetitive regions
-    QueryMap alignments;
+    QueryMap primary_alignments;
+    QueryMap supplementary_alignments;
     while (sam_itr_next(fp_in, itr, bam1) >= 0) {
 
         // Get the QNAME (query template name) for associating split reads
@@ -293,7 +293,15 @@ SVMap SVCaller::detectSVsFromSplitReads()
             std::string chr = bamHdr->target_name[bam1->core.tid];
             int32_t start = bam1->core.pos;
             int32_t end = bam_endpos(bam1);
-            alignments.addAlignment(chr, start, end, 0);
+            
+            // Add the primary alignment to the map
+            AlignmentLocation location(chr, start, end);
+
+            // Add the primary alignment to the map
+            primary_alignments[qname].push_back(location);
+
+            // Add the primary alignment to the map
+            //query_map.addAlignment(chr, start, end, 0);
 
             // Print the primary alignment position
             std::cout << "Primary alignment" << std::endl;
@@ -324,7 +332,13 @@ SVMap SVCaller::detectSVsFromSplitReads()
             std::string chr = bamHdr->target_name[bam1->core.tid];
             int32_t start = bam1->core.pos;
             int32_t end = bam_endpos(bam1);
-            alignments.addAlignment(chr, start, end, 1);
+            //alignments.addAlignment(chr, start, end, 1);
+
+            // Add the supplementary alignment to the map
+            AlignmentLocation location(chr, start, end);
+
+            // Add the supplementary alignment to the map
+            supplementary_alignments[qname].push_back(location);
 
             // Print the supplementary alignment position
             std::cout << "Supplementary alignment" << std::endl;
@@ -354,26 +368,28 @@ SVMap SVCaller::detectSVsFromSplitReads()
     std::cout << "Calling SVs from split reads..." << std::endl;
 
     // Loop through the map of primary alignments by QNAME
-    std::map<std::string, std::vector<std::tuple<std::string, int, int>>> primary_reads = alignments.getPrimaryAlignments();
-    for (const auto& entry : primary_reads) {
+    //std::map<std::string, std::vector<std::tuple<std::string, int, int>>> primary_reads = alignments.getPrimaryAlignments();
+    for (const auto& entry : primary_alignments) {
 
         // Get the QNAME
         std::string qname = entry.first;
 
         // Get the first primary alignment
-        std::tuple<std::string, int, int> primary_alignment_tuple = entry.second[0];
+        //std::tuple<std::string, int, int> primary_alignment_tuple = entry.second[0];
+        AlignmentLocation primary_alignment = entry.second[0];
 
         // Get the primary alignment chromosome
-        std::string primary_chr = std::get<0>(primary_alignment_tuple);
+        std::string primary_chr = std::get<0>(primary_alignment);
 
         // Get the start and end positions of the primary alignment
-        int32_t primary_start = std::get<1>(primary_alignment_tuple);
-        int32_t primary_end = std::get<2>(primary_alignment_tuple);
+        int32_t primary_start = std::get<1>(primary_alignment);
+        int32_t primary_end = std::get<2>(primary_alignment);
 
         std::cout << "Primary alignment at " << primary_chr << ":" << primary_start << "-" << primary_end << std::endl;
 
         // Get the supplementary alignments
-        std::vector<std::tuple<std::string, int, int>> supp_alignments = alignments.getSupplementaryAlignments(qname);
+        //std::vector<std::tuple<std::string, int, int>> supp_alignments = alignments.getSupplementaryAlignments(qname);
+        AlignmentVector supp_alignments = supplementary_alignments[qname];
 
         // Get the gaps between split reads
         // Loop through the supplementary alignments
