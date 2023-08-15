@@ -7,16 +7,22 @@
 #define SV_CALLER_H
 
 #include "common.h"
-#include "cnv_map.h"
-#include "sv_map.h"
+#include "cnv_data.h"
+#include "sv_data.h"
+
+// Type aliases
+class SVCaller;
+        // Alignment location (chr, start, end)
+        typedef std::tuple<std::string, int, int> AlignmentLocation;
+
+        // Alignment vector (alignment location)
+        typedef std::vector<AlignmentLocation> AlignmentVector;
+
+        // Query map (query name, alignment vector)
+        typedef std::map<std::string, AlignmentVector> QueryMap;
 
 class SVCaller {
     private:
-        // Aliases
-        typedef std::tuple<std::string, int, int> AlignmentLocation;
-        typedef std::vector<AlignmentLocation> AlignmentVector;
-        typedef std::map<std::string, AlignmentVector> QueryMap;
-
         //int max_indel_dist = 1000;  // Maximum distance between two indels to
         //be considered as a single SV
         int max_indel_dist = 10;  // Maximum distance between two indels to be considered as a single SV
@@ -26,17 +32,17 @@ class SVCaller {
         int min_mapq = 20;          // Minimum mapping quality to be considered
         Common common;
 
+        // Detect SVs from long read alignments in the CIGAR string
+        SVData detectSVsFromCIGAR(std::string chr, int32_t pos, uint32_t* cigar, int cigar_len);
+
+        // Detect SVs from split-read alignments (primary and supplementary)
+        SVData detectSVsFromSplitReads();
+
     public:
         SVCaller(Common common);
 
         // Detect SVs and predict SV type from long read alignments and CNV calls
-        SVMap run(CNVMap cnv_calls);
-
-        // Detect SVs from long read alignments in the CIGAR string
-        SVMap detectSVsFromCIGAR(std::string chr, int32_t pos, uint32_t* cigar, int cigar_len);
-
-        // Detect SVs from split-read alignments (primary and supplementary)
-        SVMap detectSVsFromSplitReads();
+        SVData run();
 };
 
 #endif // SV_CALLER_H

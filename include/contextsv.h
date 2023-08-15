@@ -7,23 +7,23 @@
 #define CONTEXTSV_H
 
 #include "common.h"
-#include "cnv_map.h"
-#include "sv_map.h"
+#include "cnv_data.h"
+#include "sv_data.h"
 
 #include <string>
 
 class ContextSV {
 	private:
-		Common common;		
+		Common common;
+
+		// Label SVs based on CNV calls
+		void labelCNVs(CNVData cnv_calls, SVData& sv_calls);
 
 	public:
 		ContextSV(Common common);
 
 		// Entry point
 		int run();
-
-		// Integrate CNV and SV calls
-		SVMap integrateCNVs(CNVMap cnv_calls, SVMap sv_calls);
 };
 
 #endif  // CONTEXTSV_H

@@ -19,23 +19,21 @@ SVCaller::SVCaller(Common common)
 }
 
 // Detect SVs and return SV type by start and end position
-SVMap SVCaller::run(CNVMap cnv_calls)
+SVData SVCaller::run()
 {
-
-    // Get SV calls directly from the CIGAR string
-    // SVMap sv_calls = this->detectSVsFromCIGAR();
-
-    // Get SV calls from split read alignments (primary and supplementary)
-    SVMap sv_calls = this->detectSVsFromSplitReads();
+    // Get SV calls from split read alignments (primary and supplementary) and
+    // directly from the CIGAR string
+    SVData sv_calls = this->detectSVsFromSplitReads();
+    //sv_calls.addSVCalls(split_read_calls);
     
     // Return the SV calls
     return sv_calls;
 }
 
-SVMap SVCaller::detectSVsFromCIGAR(std::string chr, int32_t pos, uint32_t *cigar, int cigar_len)
+SVData SVCaller::detectSVsFromCIGAR(std::string chr, int32_t pos, uint32_t *cigar, int cigar_len)
 {
     // Create a map of SV calls
-    SVMap sv_calls;
+    SVData sv_calls;
 
     // Track gaps between alignments for merging SVs
     int32_t merged_insertion_start = -1;
@@ -136,7 +134,7 @@ SVMap SVCaller::detectSVsFromCIGAR(std::string chr, int32_t pos, uint32_t *cigar
     return sv_calls;
 }
 
-SVMap SVCaller::detectSVsFromSplitReads()
+SVData SVCaller::detectSVsFromSplitReads()
 {
     // Open the BAM file
     samFile *fp_in = sam_open(this->common.getBAMFilepath().c_str(), "r");
@@ -171,7 +169,7 @@ SVMap SVCaller::detectSVsFromSplitReads()
     // Create a map of primary and supplementary alignments by QNAME (query template name)
     int num_alignments = 0;
     int num_sv_calls = 0;
-    SVMap sv_calls;
+    SVData sv_calls;
     QueryMap primary_alignments;
     QueryMap supplementary_alignments;
     while (sam_itr_next(fp_in, itr, bam1) >= 0) {
@@ -216,7 +214,7 @@ SVMap SVCaller::detectSVsFromSplitReads()
             
                 // Finally, call SVs directly from the CIGAR string
                 std::cout << "Calling SVs from CIGAR string..." << std::endl;
-                SVMap cigar_calls = this->detectSVsFromCIGAR(chr, bam1->core.pos, bam_get_cigar(bam1), bam1->core.n_cigar);
+                SVData cigar_calls = this->detectSVsFromCIGAR(chr, bam1->core.pos, bam_get_cigar(bam1), bam1->core.n_cigar);
                 std::cout << "Complete." << std::endl;
 
                 // Add the SV calls to the SV map
@@ -294,13 +292,11 @@ SVMap SVCaller::detectSVsFromSplitReads()
             std::cout << "Supplementary alignment at " << supp_chr << ":" << supp_start << "-" << supp_end << std::endl;
 
             // Determine the type of gap between alignments
-            int gap_type = 0;  // 0 = insertion, 1 = deletion
             int32_t gap_start = 0;
             int32_t gap_end = 0;
             if (supp_start < primary_start && supp_end < primary_start) {
                 // INDEL (Supplementary alignment is before primary
                 // alignment with no overlap)
-                gap_type = 0;
 
                 // Get the gap start and end positions
                 gap_start = supp_end;
@@ -310,7 +306,6 @@ SVMap SVCaller::detectSVsFromSplitReads()
                 
             } else if (supp_start > primary_end && supp_end > primary_end) {
                 // INDEL (Supplementary alignment is after primary alignment with no overlap)
-                gap_type = 0;
 
                 // Get the gap start and end positions
                 gap_start = primary_end;
@@ -320,7 +315,6 @@ SVMap SVCaller::detectSVsFromSplitReads()
 
             } else {
                 // OVERLAP (Supplementary alignment is within primary alignment or overlaps with primary alignment)
-                gap_type = 1;
 
                 // Get the gap start and end positions
                 gap_start = std::min(primary_start, supp_start);
@@ -333,7 +327,8 @@ SVMap SVCaller::detectSVsFromSplitReads()
             if (gap_end - gap_start > this->min_sv_size) {
 
                 // Add the gap to the SV calls
-                sv_calls.addSVCall(supp_chr, gap_start, gap_end, gap_type);
+                // Set the SV type to -1 for now, will be labeled later using CNV calls
+                sv_calls.addSVCall(supp_chr, gap_start, gap_end, -1);
 
                 //std::cout << "Added SV call at " << supp_chr << ":" << gap_start << "-" << gap_end << std::endl;
                 std::cout << "SV size = " << gap_end - gap_start << std::endl;

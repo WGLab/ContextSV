@@ -8,7 +8,7 @@
 
 #include "khmm.h"
 #include "common.h"
-#include "cnv_map.h"
+#include "cnv_data.h"
 
 #include <string>
 #include <vector>
@@ -30,7 +30,7 @@ class CNVCaller {
 
         // Detect CNVs and return the state sequence by SNP position
         // (key = [chromosome, SNP position], value = state)
-		CNVMap run();
+		CNVData run();
 
         // Calculate Log R Ratios
 		std::vector<double> calculateLogRRatiosAtSNPS(std::vector<int> snp_positions);

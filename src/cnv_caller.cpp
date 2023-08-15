@@ -23,7 +23,7 @@ CNVCaller::CNVCaller(Common common)
     this->common = common;
 }
 
-CNVMap CNVCaller::run()
+CNVData CNVCaller::run()
 {
     // Read SNP positions and BAF values from the VCF file
     std::cout << "Reading SNP positions and BAF values from the VCF file..." << std::endl;
@@ -83,7 +83,7 @@ CNVMap CNVCaller::run()
     strcpy(chr_cstr, chr.c_str());
 
     // Create a map of the state sequence by position
-    CNVMap state_sequence_by_pos;
+    CNVData state_sequence_by_pos;
     //std::map<std::pair<char *, int>, int> state_sequence_by_pos;
     for (int i = 0; i < num_probes; i++)
     {
