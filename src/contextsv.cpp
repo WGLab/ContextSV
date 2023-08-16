@@ -35,9 +35,9 @@ int ContextSV::run()
     this->labelCNVs(cnv_calls, sv_calls);
 
     // Write SV calls to file
-    std::cout << "[test] Writing SV calls to file..." << std::endl;
-    std::string output_vcf = this->common.getOutputDir() + "/sv_calls.vcf";
-    sv_calls.saveToVCF(output_vcf);
+    std::cout << "Writing SV calls to file..." << std::endl;
+    std::string output_dir = this->common.getOutputDir();
+    sv_calls.saveToVCF(output_dir);
 
     std::cout << "Done!" << std::endl;
 

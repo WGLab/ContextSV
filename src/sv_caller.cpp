@@ -201,6 +201,19 @@ SVData SVCaller::detectSVsFromSplitReads()
                 std::string chr = bamHdr->target_name[bam1->core.tid];
                 int32_t start = bam1->core.pos;
                 int32_t end = bam_endpos(bam1);
+
+                // Get the alternate (read) sequence
+                uint8_t *seq = bam_get_seq(bam1);  // Read sequence
+                
+                // Convert the sequence to a string
+                std::string seq_str = "";
+                for (int i = 0; i < bam1->core.l_qseq; i++) {
+                    seq_str += seq_nt16_str[bam_seqi(seq, i)];
+                }
+
+                // Print the sequence
+                std::cout << "Primary alternate sequence: " << std::endl;
+                std::cout << seq_str << std::endl;
                 
                 // Add the primary alignment to the map
                 AlignmentLocation location(chr, start, end);
@@ -213,12 +226,45 @@ SVData SVCaller::detectSVsFromSplitReads()
                 std::cout << bamHdr->target_name[bam1->core.tid] << ":" << bam1->core.pos << "-" << bam_endpos(bam1) << std::endl;
             
                 // Finally, call SVs directly from the CIGAR string
-                std::cout << "Calling SVs from CIGAR string..." << std::endl;
-                SVData cigar_calls = this->detectSVsFromCIGAR(chr, bam1->core.pos, bam_get_cigar(bam1), bam1->core.n_cigar);
-                std::cout << "Complete." << std::endl;
+                // std::cout << "Calling SVs from CIGAR string..." << std::endl;                
+                //SVData cigar_calls = this->detectSVsFromCIGAR(chr, bam1->core.pos, bam_get_cigar(bam1), bam1->core.n_cigar);
+                // std::cout << "Complete." << std::endl;
 
                 // Add the SV calls to the SV map
-                sv_calls.addSVCalls(cigar_calls);
+                //sv_calls.addSVCalls(cigar_calls);
+
+                // Get the reference (genome) sequence from the CIGAR string
+                std::cout << "Getting reference sequence from CIGAR string..." << std::endl;
+                std::string ref_seq = "";
+                int32_t ref_pos = bam1->core.pos;
+                uint32_t *cigar = bam_get_cigar(bam1);
+                for (uint32_t i = 0; i < bam1->core.n_cigar; i++) {
+                    int op = bam_cigar_op(cigar[i]);
+                    int len = bam_cigar_oplen(cigar[i]);
+                    if (op == BAM_CMATCH) {
+                        for (int j = 0; j < len; j++) {
+                            ref_seq += seq_nt16_str[bam_seqi(bam_get_seq(bam1), j)];
+                        }
+                        ref_pos += len;
+                    } else if (op == BAM_CDEL) {
+                        for (int j = 0; j < len; j++) {
+                            ref_seq += seq_nt16_str[bam_seqi(bam_get_seq(bam1), j)];
+                        }
+                        ref_pos += len;
+                    } else if (op == BAM_CINS) {
+                        ref_pos += len;
+                    } else if (op == BAM_CSOFT_CLIP) {
+                        ref_pos += len;
+                    } else if (op == BAM_CHARD_CLIP) {
+                        // Do nothing
+                    } else {
+                        std::cerr << "ERROR: Unknown CIGAR operation" << std::endl;
+                        exit(1);
+                    }
+                }
+                std::cout << "Complete." << std::endl;
+                std::cout << "Reference sequence: " << std::endl;
+                std::cout << ref_seq << std::endl;
 
             // Process supplementary alignments
             } else if (bam1->core.flag & BAM_FSUPPLEMENTARY) {

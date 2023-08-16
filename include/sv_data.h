@@ -10,8 +10,8 @@ class SVData;
         // SV candidate location (chr, start, end)
         typedef std::tuple<std::string, int, int> SVCandidate;
 
-        // SV candidate info (SV type, read depth)
-        typedef std::pair<int, int> SVInfo;
+        // SV candidate info (SV type, read depth, reference allele, alternate allele)
+        typedef std::tuple<int, int, std::string, std::string> SVInfo;
 
         // SV info map (SV candidate location, SV info)
         typedef std::map<SVCandidate, SVInfo> SVInfoMap;
@@ -29,7 +29,7 @@ class SVData {
         void updateSVType(std::string chr, int start, int end, int sv_type);
         
         // Save SV calls to VCF
-        void saveToVCF(std::string filename);
+        void saveToVCF(std::string output_dir);
 
         // Begin and end iterators for the SV candidate map
         SVInfoMap::iterator begin() { return this->sv_calls.begin(); }
