@@ -1,7 +1,4 @@
-//
-// sv_caller.cpp:
-// Detect SVs from long read alignments
-//
+// SVCaller: Detect SVs from long read alignments
 
 #ifndef SV_CALLER_H
 #define SV_CALLER_H

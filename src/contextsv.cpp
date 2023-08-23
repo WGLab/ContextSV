@@ -2,6 +2,7 @@
 #include "contextsv.h"
 #include "cnv_caller.h"
 #include "sv_caller.h"
+#include "fasta_query.h"
 
 #include <htslib/sam.h>
 #include <iostream>

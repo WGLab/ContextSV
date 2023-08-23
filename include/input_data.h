@@ -5,18 +5,22 @@
 #ifndef INPUT_DATA_H
 #define INPUT_DATA_H
 
+#include "fasta_query.h"
+
 #include <string>
 #include <vector>
 #include <map>
 
 class InputData {
     public:
+        InputData();
         std::string getBAMFilepath();
         void setBAMFilepath(std::string filepath);
         std::string getRefFilepath();
 		void setRefFilepath(std::string filepath);
+        std::string getSequence(std::string chr, int pos_start, int pos_end);
         std::string getOutputDir();
-		void setOutputDir(std::string dirpath);
+        void setOutputDir(std::string dirpath);
         std::string getRegion();
 		void setRegion(std::string region);
         int getWindowSize();
@@ -31,6 +35,7 @@ class InputData {
     private:
         std::string bam_filepath = "";
         std::string ref_filepath = "";
+        FASTAQuery fasta_query;
         std::string output_dir   = "";
         std::string region = "";
         int window_size = 10000;
