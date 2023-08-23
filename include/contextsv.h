@@ -6,7 +6,7 @@
 #ifndef CONTEXTSV_H
 #define CONTEXTSV_H
 
-#include "common.h"
+#include "input_data.h"
 #include "cnv_data.h"
 #include "sv_data.h"
 
@@ -14,13 +14,13 @@
 
 class ContextSV {
 	private:
-		Common common;
+		InputData input_data;
 
 		// Label SVs based on CNV calls
 		void labelCNVs(CNVData cnv_calls, SVData& sv_calls);
 
 	public:
-		ContextSV(Common common);
+		ContextSV(InputData input_data);
 
 		// Entry point
 		int run();

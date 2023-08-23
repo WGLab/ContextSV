@@ -1,6 +1,5 @@
 
 #include "contextsv.h"
-#include "common.h"
 #include "cnv_caller.h"
 #include "sv_caller.h"
 
@@ -10,24 +9,25 @@
 #include <vector>
 
 
-ContextSV::ContextSV(Common common)
+ContextSV::ContextSV(InputData input_data)
 {
-    this->common = common;
+    this->input_data = input_data;
 }
+
 
 // Entry point
 int ContextSV::run()
 {
     // Call CNVs using the SNP positions
     std::cout << "Calling CNVs..." << std::endl;
-    CNVCaller cnv_obj(this->common);
+    CNVCaller cnv_obj(this->input_data);
     CNVData cnv_calls = cnv_obj.run();
 
     // Call SVs from long read alignments and CNV calls
     // Return a map of SV type by start and end position
     // Key = [chromosome, SV start position], Value = [SV end position, SV type]
     std::cout << "Calling SVs..." << std::endl;
-    SVCaller sv_obj(this->common);
+    SVCaller sv_obj(this->input_data);
     SVData sv_calls = sv_obj.run();
 
     // Classify SVs based on CNV calls
@@ -36,7 +36,7 @@ int ContextSV::run()
 
     // Write SV calls to file
     std::cout << "Writing SV calls to file..." << std::endl;
-    std::string output_dir = this->common.getOutputDir();
+    std::string output_dir = this->input_data.getOutputDir();
     sv_calls.saveToVCF(output_dir);
 
     std::cout << "Done!" << std::endl;

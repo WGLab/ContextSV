@@ -1,13 +1,11 @@
-//
-// cnv_caller.h:
-// Detect CNVs
-//
+// CNVCaller: Detect CNVs and return the state sequence by SNP position
+// (key = [chromosome, SNP position], value = state)
 
 #ifndef CNV_CALLER_H
 #define CNV_CALLER_H
 
 #include "khmm.h"
-#include "common.h"
+#include "input_data.h"
 #include "cnv_data.h"
 
 #include <string>
@@ -22,11 +20,11 @@ struct RegionCoverage {
 
 class CNVCaller {
     private:
-        Common common;
+        InputData input_data;
         double chr_mean_coverage = 0;
 
     public:
-        CNVCaller(Common common);
+        CNVCaller(InputData input_data);
 
         // Detect CNVs and return the state sequence by SNP position
         // (key = [chromosome, SNP position], value = state)

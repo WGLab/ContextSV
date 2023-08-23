@@ -6,10 +6,10 @@
 #ifndef SWIG_INTERFACE_H
 #define SWIG_INTERFACE_H
 
-#include "common.h"
+#include "input_data.h"
 
 #include <string>
 
-int run(std::string bam, std::string snps, std::string outdir, std::string region);
+int run(std::string bam_fp, std::string ref_fp, std::string snps_fp, std::string outdir, std::string region);
 
 #endif // SWIG_INTERFACE_H

@@ -13,9 +13,9 @@
 #include <map>
 
 
-SVCaller::SVCaller(Common common)
+SVCaller::SVCaller(InputData input_data)
 {
-    this->common = common;
+    this->input_data = input_data;
 }
 
 // Detect SVs and return SV type by start and end position
@@ -137,26 +137,26 @@ SVData SVCaller::detectSVsFromCIGAR(std::string chr, int32_t pos, uint32_t *ciga
 SVData SVCaller::detectSVsFromSplitReads()
 {
     // Open the BAM file
-    samFile *fp_in = sam_open(this->common.getBAMFilepath().c_str(), "r");
+    samFile *fp_in = sam_open(this->input_data.getBAMFilepath().c_str(), "r");
     if (fp_in == NULL) {
-        std::cerr << "ERROR: failed to open " << this->common.getBAMFilepath() << std::endl;
+        std::cerr << "ERROR: failed to open " << this->input_data.getBAMFilepath() << std::endl;
         exit(1);
     }
 
     // Get the header
     bam_hdr_t *bamHdr = sam_hdr_read(fp_in);
     if (bamHdr == NULL) {
-        std::cerr << "ERROR: failed to read header for " << this->common.getBAMFilepath() << std::endl;
+        std::cerr << "ERROR: failed to read header for " << this->input_data.getBAMFilepath() << std::endl;
         exit(1);
     }
 
     // Get the region
-    std::string region = this->common.getRegion();
+    std::string region = this->input_data.getRegion();
 
     // Get the index
-    hts_idx_t *idx = sam_index_load(fp_in, this->common.getBAMFilepath().c_str());
+    hts_idx_t *idx = sam_index_load(fp_in, this->input_data.getBAMFilepath().c_str());
     if (idx == NULL) {
-        std::cerr << "ERROR: failed to load index for " << this->common.getBAMFilepath() << std::endl;
+        std::cerr << "ERROR: failed to load index for " << this->input_data.getBAMFilepath() << std::endl;
         exit(1);
     }
 

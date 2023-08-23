@@ -6,7 +6,7 @@
 #ifndef SV_CALLER_H
 #define SV_CALLER_H
 
-#include "common.h"
+#include "input_data.h"
 #include "cnv_data.h"
 #include "sv_data.h"
 
@@ -30,7 +30,7 @@ class SVCaller {
         //int min_sv_size = 30;       // Minimum SV size to be considered
         int min_sv_size = 50;       // Minimum SV size to be considered
         int min_mapq = 20;          // Minimum mapping quality to be considered
-        Common common;
+        InputData input_data;
 
         // Detect SVs from long read alignments in the CIGAR string
         SVData detectSVsFromCIGAR(std::string chr, int32_t pos, uint32_t* cigar, int cigar_len);
@@ -39,7 +39,7 @@ class SVCaller {
         SVData detectSVsFromSplitReads();
 
     public:
-        SVCaller(Common common);
+        SVCaller(InputData input_data);
 
         // Detect SVs and predict SV type from long read alignments and CNV calls
         SVData run();

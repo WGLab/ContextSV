@@ -1,15 +1,15 @@
 //
 // common.h:
-// Manage common parameters and functions
+// Manage common types, parameters, and functions
 
-#ifndef COMMON_H
-#define COMMON_H
+#ifndef INPUT_DATA_H
+#define INPUT_DATA_H
 
 #include <string>
 #include <vector>
 #include <map>
 
-class Common {
+class InputData {
     public:
         std::string getBAMFilepath();
         void setBAMFilepath(std::string filepath);
@@ -27,7 +27,6 @@ class Common {
         int getRegionStart();
         int getRegionEnd();
         bool getRegionSet();
-        void printProgress(int progress, int total);
 
     private:
         std::string bam_filepath = "";
@@ -42,4 +41,4 @@ class Common {
         bool region_set = false;
 };
 
-#endif //COMMON_H
+#endif // INPUT_DATA_H

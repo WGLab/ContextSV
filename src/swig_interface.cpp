@@ -9,17 +9,18 @@
 
 
 // Run the CLI with the given parameters
-int run(std::string bam, std::string snps, std::string outdir, std::string region)
+int run(std::string bam_fp, std::string ref_fp, std::string snps_fp, std::string outdir, std::string region)
 {
-	// Create the common parameters
-	Common common;
-	common.setBAMFilepath(bam);
-	common.setSNPFilepath(snps);
-	common.setOutputDir(outdir);
-	common.setRegion(region);
+	// Create the input_data parameters
+	InputData input_data;
+	input_data.setBAMFilepath(bam_fp);
+	input_data.setRefFilepath(ref_fp);
+	input_data.setSNPFilepath(snps_fp);
+	input_data.setOutputDir(outdir);
+	input_data.setRegion(region);
 
 	// Run ContextSV
-	ContextSV caller_obj(common);
+	ContextSV caller_obj(input_data);
 	try
 	{	
 		caller_obj.run();

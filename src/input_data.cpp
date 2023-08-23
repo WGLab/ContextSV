@@ -1,4 +1,4 @@
-#include "common.h"
+#include "input_data.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -6,32 +6,32 @@
 
 #define BUFFER_SIZE 1024
 
-std::string Common::getBAMFilepath()
+std::string InputData::getBAMFilepath()
 {
     return this->bam_filepath;
 }
 
-void Common::setBAMFilepath(std::string filepath)
+void InputData::setBAMFilepath(std::string filepath)
 {
     this->bam_filepath = filepath;
 }
 
-std::string Common::getRefFilepath()
+std::string InputData::getRefFilepath()
 {
     return this->ref_filepath;
 }
 
-void Common::setRefFilepath(std::string filepath)
+void InputData::setRefFilepath(std::string filepath)
 {
     this->ref_filepath = filepath;
 }
 
-std::string Common::getOutputDir()
+std::string InputData::getOutputDir()
 {
     return this->output_dir;
 }
 
-void Common::setOutputDir(std::string dirpath)
+void InputData::setOutputDir(std::string dirpath)
 {
     this->output_dir = dirpath;
 
@@ -40,12 +40,12 @@ void Common::setOutputDir(std::string dirpath)
     system(cmd.c_str());
 }
 
-std::string Common::getRegion()
+std::string InputData::getRegion()
 {
     return this->region;
 }
 
-void Common::setRegion(std::string region)
+void InputData::setRegion(std::string region)
 {
     this->region = region;
 
@@ -100,70 +100,42 @@ void Common::setRegion(std::string region)
     }
 }
 
-int Common::getWindowSize()
+int InputData::getWindowSize()
 {
     return this->window_size;
 }
 
-void Common::setWindowSize(int window_size)
+void InputData::setWindowSize(int window_size)
 {
     this->window_size = window_size;
 }
 
-std::string Common::getSNPFilepath()
+std::string InputData::getSNPFilepath()
 {
     return this->snp_vcf_filepath;
 }
 
-void Common::setSNPFilepath(std::string filepath)
+void InputData::setSNPFilepath(std::string filepath)
 {
     this->snp_vcf_filepath = filepath;
 }
 
-std::string Common::getRegionChr()
+std::string InputData::getRegionChr()
 {
     return this->region_chr;
 }
 
-int Common::getRegionStart()
+int InputData::getRegionStart()
 {
     return this->region_start;
 }
 
-int Common::getRegionEnd()
+int InputData::getRegionEnd()
 {
     return this->region_end;
 }
 
-bool Common::getRegionSet()
+bool InputData::getRegionSet()
 {
     return this->region_set;
-}
-
-void Common::printProgress(int progress, int total)
-{
-    // Get the percentage
-    float percent = (float)progress / (float)total * 100.0;
-
-    // Get the number of hashes
-    int num_hashes = (int)(percent / 2.0);
-
-    // Print the progress bar
-    printf("\r[");
-    for (int i = 0; i < num_hashes; i++)
-    {
-        printf("#");
-    }
-    for (int i = 0; i < 50 - num_hashes; i++)
-    {
-        printf(" ");
-    }
-    printf("] %3.2f%%", percent);
-    fflush(stdout);
-
-    // Print a new line if finished
-    if (progress == total)
-    {
-        printf("\n");
-    }
 }

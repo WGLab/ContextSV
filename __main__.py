@@ -18,6 +18,11 @@ def main():
         required=True
     )
     parser.add_argument(
+        "-g", "--reference",
+        help="The path to the reference genome.",
+        required=True
+    )
+    parser.add_argument(
         "-s", "--snps",
         help="The path to the SNPs file.",
         required=True
@@ -39,12 +44,14 @@ def main():
     # Run the program.
     print("Running contextsv with the following arguments:")
     print("BAM: {}".format(args.bam))
+    print("Reference: {}".format(args.reference))
     print("SNPs: {}".format(args.snps))
     print("Output: {}".format(args.output))
     print("Region: {}".format(args.region))
     
     contextsv.run(
         args.bam,
+        args.reference,
         args.snps,
         args.output,
         args.region

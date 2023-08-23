@@ -16,6 +16,7 @@ TEST_DATA_DIR = os.path.join(os.path.dirname(__file__), 'data')
 
 # Get the path to the test data files.
 TEST_BAM_FILE = os.path.join(TEST_DATA_DIR, 'test.bam')
+TEST_REF_FILE = ""  # Empty string for now.
 TEST_SNPS_FILE = os.path.join(TEST_DATA_DIR, 'snps.vcf.gz')
 
 # Set the output directory.
@@ -27,6 +28,7 @@ def test_run():
     # Run the program.
     contextsv.run(
         TEST_BAM_FILE,
+        TEST_REF_FILE,
         TEST_SNPS_FILE,
         TEST_OUTDIR,
         "chr3:60380533-60390533"
