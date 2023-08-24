@@ -14,13 +14,13 @@
 
 class ContextSV {
 	private:
-		InputData input_data;
+		InputData* input_data;
 
 		// Label SVs based on CNV calls
 		void labelCNVs(CNVData cnv_calls, SVData& sv_calls);
 
 	public:
-		ContextSV(InputData input_data);
+		ContextSV(InputData& input_data);
 
 		// Entry point
 		int run();

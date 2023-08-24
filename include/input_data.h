@@ -16,8 +16,8 @@ class InputData {
         InputData();
         std::string getBAMFilepath();
         void setBAMFilepath(std::string filepath);
-        std::string getRefFilepath();
-		void setRefFilepath(std::string filepath);
+		void setRefGenome(std::string fasta_filepath);
+        FASTAQuery getRefGenome();
         std::string getSequence(std::string chr, int pos_start, int pos_end);
         std::string getOutputDir();
         void setOutputDir(std::string dirpath);

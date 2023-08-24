@@ -80,15 +80,39 @@ int FASTAQuery::setFilepath(std::string fasta_filepath)
     return 0;
 }
 
+std::string FASTAQuery::getFilepath()
+{
+    return this->fasta_filepath;
+}
 
 // Function to get the reference sequence at a given position range
-std::string FASTAQuery::getSequence(std::string chr, int pos_start, int pos_end)
+std::string FASTAQuery::query(std::string chr, int pos_start, int pos_end)
 {
+    // Check if a FASTA file has been set
+    if (this->fasta_filepath == "")
+    {
+        std::cout << "No FASTA file set" << std::endl;
+        return "";
+    }
+
+    // Check if the chromosome is in the map
+    if (this->chr_to_seq.find(chr) == this->chr_to_seq.end())
+    {
+        std::cout << "Chromosome " << chr << " not found in FASTA file" << std::endl;
+        return "";
+    }
+    
+    std::cout << "Querying " << chr << ":" << pos_start << "-" << pos_end << std::endl;
+
     // Get the sequence
     std::string sequence = this->chr_to_seq[chr];
 
+    std::cout << "Sequence length: " << sequence.length() << std::endl;
+
     // Get the substring
     std::string subsequence = sequence.substr(pos_start, pos_end - pos_start);
+
+    std::cout << "Subsequence length: " << subsequence.length() << std::endl;
 
     return subsequence;
 }

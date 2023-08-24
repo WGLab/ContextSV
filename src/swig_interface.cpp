@@ -14,7 +14,7 @@ int run(std::string bam_fp, std::string ref_fp, std::string snps_fp, std::string
 	// Create the input_data parameters
 	InputData input_data;
 	input_data.setBAMFilepath(bam_fp);
-	input_data.setRefFilepath(ref_fp);
+	input_data.setRefGenome(ref_fp);
 	input_data.setSNPFilepath(snps_fp);
 	input_data.setOutputDir(outdir);
 	input_data.setRegion(region);

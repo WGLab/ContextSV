@@ -23,28 +23,15 @@ void InputData::setBAMFilepath(std::string filepath)
     this->bam_filepath = filepath;
 }
 
-std::string InputData::getRefFilepath()
+void InputData::setRefGenome(std::string fasta_filepath)
 {
-    return this->ref_filepath;
+    // Set the reference genome
+    this->fasta_query.setFilepath(fasta_filepath);
 }
 
-void InputData::setRefFilepath(std::string filepath)
+FASTAQuery InputData::getRefGenome()
 {
-    this->ref_filepath = filepath;
-
-    // Create an object for querying the reference sequence
-    FASTAQuery fasta_query;
-    if (fasta_query.setFilepath(filepath) != 0)
-    {
-        std::cout << "Could not open FASTA file " << filepath << std::endl;
-    }
-    this->fasta_query = fasta_query;
-}
-
-// Function to get the reference sequence at a given position range
-std::string InputData::getSequence(std::string chr, int pos_start, int pos_end)
-{
-    return this->fasta_query.getSequence(chr, pos_start, pos_end);
+    return this->fasta_query;
 }
 
 std::string InputData::getOutputDir()

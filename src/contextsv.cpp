@@ -2,7 +2,6 @@
 #include "contextsv.h"
 #include "cnv_caller.h"
 #include "sv_caller.h"
-#include "fasta_query.h"
 
 #include <htslib/sam.h>
 #include <iostream>
@@ -10,9 +9,9 @@
 #include <vector>
 
 
-ContextSV::ContextSV(InputData input_data)
+ContextSV::ContextSV(InputData& input_data)
 {
-    this->input_data = input_data;
+    this->input_data = &input_data;
 }
 
 
@@ -21,15 +20,23 @@ int ContextSV::run()
 {
     // Call CNVs using the SNP positions
     std::cout << "Calling CNVs..." << std::endl;
-    CNVCaller cnv_obj(this->input_data);
+    // Get the input data object
+    CNVCaller cnv_obj(*this->input_data);
+    std::cout << "Starting CNVCaller" << std::endl;
     CNVData cnv_calls = cnv_obj.run();
 
     // Call SVs from long read alignments and CNV calls
     // Return a map of SV type by start and end position
     // Key = [chromosome, SV start position], Value = [SV end position, SV type]
     std::cout << "Calling SVs..." << std::endl;
-    SVCaller sv_obj(this->input_data);
+    SVCaller sv_obj(*this->input_data);
     SVData sv_calls = sv_obj.run();
+
+    // Check if the ref genome was set
+    if (sv_calls.getRefGenome() == "") {
+        std::cerr << "Error: Reference genome not set in SVData" << std::endl;
+        exit(1);
+    }
 
     // Classify SVs based on CNV calls
     std::cout << "Labeling CNVs..." << std::endl;
@@ -37,8 +44,10 @@ int ContextSV::run()
 
     // Write SV calls to file
     std::cout << "Writing SV calls to file..." << std::endl;
-    std::string output_dir = this->input_data.getOutputDir();
-    sv_calls.saveToVCF(output_dir);
+    // Get the reference genome
+    FASTAQuery ref_genome = this->input_data->getRefGenome();
+    std::string output_dir = this->input_data->getOutputDir();
+    sv_calls.saveToVCF(ref_genome, output_dir);
 
     std::cout << "Done!" << std::endl;
 
@@ -71,6 +80,6 @@ void ContextSV::labelCNVs(CNVData cnv_calls, SVData& sv_calls)
         int cnv_call = cnv_calls.getMostCommonCNV(chr, start_pos, end_pos);
 
         // Update the SV call's type
-        sv_calls.updateSVType(chr, start_pos, end_pos, cnv_call);
+        sv_calls.updateSVType(key, cnv_call);
     }
 }

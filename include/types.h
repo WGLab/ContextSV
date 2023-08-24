@@ -1,3 +1,5 @@
+// This file contains all the type definitions used in the project
+
 #ifndef TYPES_H
 #define TYPES_H
 
@@ -10,10 +12,18 @@
 using SNPLocation = std::pair<std::string, int>;
 using SNPToCNVMap = std::map<SNPLocation, int>;
 
-// SV candidate location map
-// (chr, start, end) : (sv_type, read_depth, ref_allele, alt_allele)
-using SVCandidate = std::tuple<std::string, int, int>;
-using SVInfo = std::tuple<int, int, std::string, std::string>;
-using SVInfoMap = std::map<SVCandidate, SVInfo>;
+// SV candidate read depth map. An SV is defined by its location, type, and
+// alternate allele.
+// (chr, start, end, sv_type, alt_allele) : (ref_allele, num_reads)
+using SVCandidate = std::tuple<std::string, int, int, int, std::string>;  // chr, start, end, sv_type, alt_allele
+using SVDepthMap = std::map<SVCandidate, int>;  // Map for getting depth of SV candidates
+
+// SV calling:
+// Alignment location (chr, start, end)
+using AlignmentLocation = std::tuple<std::string, int, int>;
+using AlignmentVector = std::vector<AlignmentLocation>;
+
+// Query map (query name, alignment vector)
+using QueryMap = std::map<std::string, AlignmentVector>;
 
 #endif // TYPES_H

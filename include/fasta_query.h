@@ -13,7 +13,8 @@ class FASTAQuery {
 
     public:
         int setFilepath(std::string fasta_filepath);
-        std::string getSequence(std::string chr, int pos_start, int pos_end);
+        std::string getFilepath();
+        std::string query(std::string chr, int pos_start, int pos_end);
 };
 
 #endif // FASTA_QUERY_H

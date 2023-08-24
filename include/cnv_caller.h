@@ -20,11 +20,11 @@ struct RegionCoverage {
 
 class CNVCaller {
     private:
-        InputData input_data;
+        InputData* input_data;
         double chr_mean_coverage = 0;
 
     public:
-        CNVCaller(InputData input_data);
+        CNVCaller(InputData& input_data);
 
         // Detect CNVs and return the state sequence by SNP position
         // (key = [chromosome, SNP position], value = state)

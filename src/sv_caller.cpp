@@ -13,9 +13,9 @@
 #include <map>
 
 
-SVCaller::SVCaller(InputData input_data)
+SVCaller::SVCaller(InputData& input_data)
 {
-    this->input_data = input_data;
+    this->input_data = &input_data;
 }
 
 // Detect SVs and return SV type by start and end position
@@ -33,13 +33,17 @@ SVData SVCaller::run()
 SVData SVCaller::detectSVsFromCIGAR(std::string chr, int32_t pos, uint32_t *cigar, int cigar_len)
 {
     // Create a map of SV calls
-    SVData sv_calls;
+    FASTAQuery ref_genome = this->input_data->getRefGenome();
+    SVData sv_calls(ref_genome);
 
     // Track gaps between alignments for merging SVs
     int32_t merged_insertion_start = -1;
     int32_t last_insertion_end = -1;
     int32_t merged_deletion_start = -1;
     int32_t last_deletion_end = -1;
+
+    // Store the read sequence
+    std::string read_seq = "";
 
     // Get the end position
     int32_t end = pos;
@@ -73,7 +77,7 @@ SVData SVCaller::detectSVsFromCIGAR(std::string chr, int32_t pos, uint32_t *ciga
 
             } else {
                 // Add the previous insertion to the SV calls
-                sv_calls.addSVCall(chr, merged_insertion_start, last_insertion_end, 0);
+                sv_calls.addSVCall(chr, merged_insertion_start, last_insertion_end, 0, "");
 
                 // Print the SV type and length
                 std::cout << "CIGAR INS\t" << last_insertion_end - merged_insertion_start << std::endl;
@@ -107,7 +111,7 @@ SVData SVCaller::detectSVsFromCIGAR(std::string chr, int32_t pos, uint32_t *ciga
 
             } else {
                 // Add the previous deletion to the SV calls
-                sv_calls.addSVCall(chr, merged_deletion_start, last_deletion_end, 1);
+                sv_calls.addSVCall(chr, merged_deletion_start, last_deletion_end, 1, "");
                 
                 // Print the SV type and length
                 std::cout << "CIGAR DEL\t" << last_deletion_end - merged_deletion_start << std::endl;
@@ -137,26 +141,26 @@ SVData SVCaller::detectSVsFromCIGAR(std::string chr, int32_t pos, uint32_t *ciga
 SVData SVCaller::detectSVsFromSplitReads()
 {
     // Open the BAM file
-    samFile *fp_in = sam_open(this->input_data.getBAMFilepath().c_str(), "r");
+    samFile *fp_in = sam_open(this->input_data->getBAMFilepath().c_str(), "r");
     if (fp_in == NULL) {
-        std::cerr << "ERROR: failed to open " << this->input_data.getBAMFilepath() << std::endl;
+        std::cerr << "ERROR: failed to open " << this->input_data->getBAMFilepath() << std::endl;
         exit(1);
     }
 
     // Get the header
     bam_hdr_t *bamHdr = sam_hdr_read(fp_in);
     if (bamHdr == NULL) {
-        std::cerr << "ERROR: failed to read header for " << this->input_data.getBAMFilepath() << std::endl;
+        std::cerr << "ERROR: failed to read header for " << this->input_data->getBAMFilepath() << std::endl;
         exit(1);
     }
 
     // Get the region
-    std::string region = this->input_data.getRegion();
+    std::string region = this->input_data->getRegion();
 
     // Get the index
-    hts_idx_t *idx = sam_index_load(fp_in, this->input_data.getBAMFilepath().c_str());
+    hts_idx_t *idx = sam_index_load(fp_in, this->input_data->getBAMFilepath().c_str());
     if (idx == NULL) {
-        std::cerr << "ERROR: failed to load index for " << this->input_data.getBAMFilepath() << std::endl;
+        std::cerr << "ERROR: failed to load index for " << this->input_data->getBAMFilepath() << std::endl;
         exit(1);
     }
 
@@ -169,7 +173,8 @@ SVData SVCaller::detectSVsFromSplitReads()
     // Create a map of primary and supplementary alignments by QNAME (query template name)
     int num_alignments = 0;
     int num_sv_calls = 0;
-    SVData sv_calls;
+    FASTAQuery ref_genome = this->input_data->getRefGenome();
+    SVData sv_calls(ref_genome);
     QueryMap primary_alignments;
     QueryMap supplementary_alignments;
     while (sam_itr_next(fp_in, itr, bam1) >= 0) {
@@ -201,24 +206,7 @@ SVData SVCaller::detectSVsFromSplitReads()
                 std::string chr = bamHdr->target_name[bam1->core.tid];
                 int32_t start = bam1->core.pos;
                 int32_t end = bam_endpos(bam1);
-
-                // Get the alternate (read) sequence
-                uint8_t *seq = bam_get_seq(bam1);  // Read sequence
-                
-                // Convert the sequence to a string
-                std::string seq_str = "";
-                for (int i = 0; i < bam1->core.l_qseq; i++) {
-                    seq_str += seq_nt16_str[bam_seqi(seq, i)];
-                }
-
-                // Print the sequence
-                std::cout << "Primary alternate sequence: " << std::endl;
-                std::cout << seq_str << std::endl;
-                
-                // Add the primary alignment to the map
                 AlignmentLocation location(chr, start, end);
-
-                // Add the primary alignment to the map
                 primary_alignments[qname].push_back(location);
 
                 // Print the primary alignment position
@@ -233,39 +221,6 @@ SVData SVCaller::detectSVsFromSplitReads()
                 // Add the SV calls to the SV map
                 //sv_calls.addSVCalls(cigar_calls);
 
-                // Get the reference (genome) sequence from the CIGAR string
-                std::cout << "Getting reference sequence from CIGAR string..." << std::endl;
-                std::string ref_seq = "";
-                int32_t ref_pos = bam1->core.pos;
-                uint32_t *cigar = bam_get_cigar(bam1);
-                for (uint32_t i = 0; i < bam1->core.n_cigar; i++) {
-                    int op = bam_cigar_op(cigar[i]);
-                    int len = bam_cigar_oplen(cigar[i]);
-                    if (op == BAM_CMATCH) {
-                        for (int j = 0; j < len; j++) {
-                            ref_seq += seq_nt16_str[bam_seqi(bam_get_seq(bam1), j)];
-                        }
-                        ref_pos += len;
-                    } else if (op == BAM_CDEL) {
-                        for (int j = 0; j < len; j++) {
-                            ref_seq += seq_nt16_str[bam_seqi(bam_get_seq(bam1), j)];
-                        }
-                        ref_pos += len;
-                    } else if (op == BAM_CINS) {
-                        ref_pos += len;
-                    } else if (op == BAM_CSOFT_CLIP) {
-                        ref_pos += len;
-                    } else if (op == BAM_CHARD_CLIP) {
-                        // Do nothing
-                    } else {
-                        std::cerr << "ERROR: Unknown CIGAR operation" << std::endl;
-                        exit(1);
-                    }
-                }
-                std::cout << "Complete." << std::endl;
-                std::cout << "Reference sequence: " << std::endl;
-                std::cout << ref_seq << std::endl;
-
             // Process supplementary alignments
             } else if (bam1->core.flag & BAM_FSUPPLEMENTARY) {
 
@@ -273,8 +228,6 @@ SVData SVCaller::detectSVsFromSplitReads()
                 std::string chr = bamHdr->target_name[bam1->core.tid];
                 int32_t start = bam1->core.pos;
                 int32_t end = bam_endpos(bam1);
-
-                // Add the supplementary alignment to the map
                 AlignmentLocation location(chr, start, end);
 
                 // Add the supplementary alignment to the map
@@ -374,7 +327,7 @@ SVData SVCaller::detectSVsFromSplitReads()
 
                 // Add the gap to the SV calls
                 // Set the SV type to -1 for now, will be labeled later using CNV calls
-                sv_calls.addSVCall(supp_chr, gap_start, gap_end, -1);
+                sv_calls.addSVCall(supp_chr, gap_start, gap_end, -1, "");
 
                 //std::cout << "Added SV call at " << supp_chr << ":" << gap_start << "-" << gap_end << std::endl;
                 std::cout << "SV size = " << gap_end - gap_start << std::endl;
