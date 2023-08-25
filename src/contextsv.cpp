@@ -27,7 +27,7 @@ int ContextSV::run()
 
     // Call SVs from long read alignments and CNV calls
     // Return a map of SV type by start and end position
-    // Key = [chromosome, SV start position], Value = [SV end position, SV type]
+    // candidate = [chromosome, SV start position], Value = [SV end position, SV type]
     std::cout << "Calling SVs..." << std::endl;
     SVCaller sv_obj(*this->input_data);
     SVData sv_calls = sv_obj.run();
@@ -35,7 +35,6 @@ int ContextSV::run()
     // Check if the ref genome was set
     if (sv_calls.getRefGenome() == "") {
         std::cerr << "Error: Reference genome not set in SVData" << std::endl;
-        exit(1);
     }
 
     // Classify SVs based on CNV calls
@@ -67,19 +66,26 @@ void ContextSV::labelCNVs(CNVData cnv_calls, SVData& sv_calls)
     // Iterate over SV calls
     for (auto const& sv_call : sv_calls) {
 
-        SVCandidate key = sv_call.first;
+        SVCandidate candidate = sv_call.first;
         
         // Get the SV coordinates
-        std::string chr = std::get<0>(key);
-        int start_pos = std::get<1>(key);
-        int end_pos = std::get<2>(key);
-        //int sv_type = std::get<3>(key);
+        std::string chr = std::get<0>(candidate);
+        int start_pos = std::get<1>(candidate);
+        int end_pos = std::get<2>(candidate);
+
+        // Get the SV type
+        SVInfo sv_info = sv_call.second;
+        int sv_type = sv_info.first;
 
         // Get CNV calls within the SV coordinate range and identify the most
         // common call
         int cnv_call = cnv_calls.getMostCommonCNV(chr, start_pos, end_pos);
 
         // Update the SV call's type
-        sv_calls.updateSVType(key, cnv_call);
+        sv_calls.updateSVType(candidate, cnv_call);
+
+        // Print the updated SV call
+        std::cout << "Updated SV call from " << sv_type << " to " << cnv_call << std::endl;
+        std::cout << "Update: " << sv_info.first << std::endl;
     }
 }

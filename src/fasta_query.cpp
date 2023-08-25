@@ -114,5 +114,11 @@ std::string FASTAQuery::query(std::string chr, int pos_start, int pos_end)
 
     std::cout << "Subsequence length: " << subsequence.length() << std::endl;
 
+    // If the subsequence is empty, return VCF missing data character
+    if (subsequence == "")
+    {
+        return ".";
+    }
+
     return subsequence;
 }

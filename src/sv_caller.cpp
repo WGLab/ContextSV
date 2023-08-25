@@ -175,7 +175,7 @@ SVData SVCaller::detectSVsFromSplitReads()
     int num_sv_calls = 0;
     FASTAQuery ref_genome = this->input_data->getRefGenome();
     SVData sv_calls(ref_genome);
-    QueryMap primary_alignments;
+    QueryMap primary_alignments;  // TODO: Add depth to primary alignments
     QueryMap supplementary_alignments;
     while (sam_itr_next(fp_in, itr, bam1) >= 0) {
 
@@ -327,7 +327,7 @@ SVData SVCaller::detectSVsFromSplitReads()
 
                 // Add the gap to the SV calls
                 // Set the SV type to -1 for now, will be labeled later using CNV calls
-                sv_calls.addSVCall(supp_chr, gap_start, gap_end, -1, "");
+                sv_calls.addSVCall(supp_chr, gap_start, gap_end, -1, ".");
 
                 //std::cout << "Added SV call at " << supp_chr << ":" << gap_start << "-" << gap_end << std::endl;
                 std::cout << "SV size = " << gap_end - gap_start << std::endl;

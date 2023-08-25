@@ -5,15 +5,18 @@
 
 void SVData::addSVCall(std::string chr, int start, int end, int sv_type, std::string alt_allele)
 {
-    // TODO: Only need to compare alt. allele in the map's key
+    // TODO: Only need to compare alt. allele in the map's candidate
     // Add the SV call to the map of candidate locations
-    SVCandidate key(chr, start, end, sv_type, alt_allele);
-    if (this->sv_calls.find(key) != this->sv_calls.end()) {
-        // Update the depth for the SV candidate
-        this->sv_calls[key] += 1;
+    SVCandidate candidate(chr, start, end, alt_allele);
+    if (this->sv_calls.find(candidate) != this->sv_calls.end()) {
+        // Update the SV type and depth for the SV
+        SVInfo& sv_info = this->sv_calls[candidate];
+        sv_info.first = sv_type;
+        sv_info.second += 1;
+
     } else {
         // Add the SV candidate to the map
-        this->sv_calls[key] = 1;
+        this->sv_calls[candidate] = SVInfo(sv_type, 1);
     }
 }
 
@@ -34,15 +37,15 @@ std::string SVData::getSequence(std::string chr, int pos_start, int pos_end)
     return this->ref_genome->query(chr, pos_start, pos_end);
 }
 
-void SVData::updateSVType(SVCandidate key, int sv_type)
+void SVData::updateSVType(SVCandidate candidate, int sv_type)
 {
     // Update the SV type for a given SV candidate
-    if (this->sv_calls.find(key) != this->sv_calls.end()) {
+    if (this->sv_calls.find(candidate) != this->sv_calls.end()) {
         // Update the SV type
-        std::get<3>(key) = sv_type;
+        SVInfo& sv_info = this->sv_calls[candidate];
+        sv_info.first = sv_type;
     } else {
-        std::cerr << "Error: SV candidate not found in SVData::updateSVType()" << std::endl;
-        exit(1);
+        std::cerr << "Error: Unable to update SV type for SV candidate (" << std::get<0>(candidate) << ", " << std::get<1>(candidate) << ", " << std::get<2>(candidate) << ", " << std::get<3>(candidate) << ")" << std::endl;
     }
 }
 
@@ -74,15 +77,16 @@ void SVData::saveToVCF(FASTAQuery& ref_genome, std::string output_dir)
     for (auto const& sv_call : this->sv_calls) {
 
         // Get the SV candidate and SV info
-        SVCandidate key = sv_call.first;
-        int depth = sv_call.second;
+        SVCandidate candidate = sv_call.first;
+        SVInfo info = sv_call.second;
+        int sv_type = info.first;
+        int depth = info.second;
 
-        // Get the CHROM, POS, END, SVTYPE, and ALT
-        std::string chr = std::get<0>(key);
-        int pos = std::get<1>(key);
-        int end = std::get<2>(key);
-        int sv_type = std::get<3>(key);
-        std::string alt_allele = std::get<4>(key);
+        // Get the CHROM, POS, END, and ALT
+        std::string chr = std::get<0>(candidate);
+        int pos = std::get<1>(candidate);
+        int end = std::get<2>(candidate);
+        std::string alt_allele = std::get<3>(candidate);
 
         // // Get the depth and reference allele
         // int depth = std::get<1>(value);
@@ -97,10 +101,17 @@ void SVData::saveToVCF(FASTAQuery& ref_genome, std::string output_dir)
         // Get the SV length
         int sv_len = end - pos;
 
-        std::cout << "chr: " << chr << ", pos: " << pos << ", end: " << end << ", sv_type: " << sv_type << ", alt_allele: " << alt_allele << ", depth: " << depth << ", ref_allele: " << ref_allele << ", sv_len: " << sv_len << std::endl;
+        // Get the SV type
+        std::string sv_type_str = this->sv_type_map[sv_type];
+
+        std::cout << "sv_type: " << sv_type << std::endl;
+        std::cout << "sv_type_str: " << sv_type_str << std::endl;
+        std::cout << "DEL type: " << this->sv_type_map[0] << std::endl;
+
+        std::cout << "chr: " << chr << ", pos: " << pos << ", end: " << end << ", sv_type: " << sv_type_str << ", alt_allele: " << alt_allele << ", depth: " << depth << ", ref_allele: " << ref_allele << ", sv_len: " << sv_len << std::endl;
 
         // Write the SV call to the file
-        output_stream << chr << "\t" << pos << "\t" << "." << "\t" << ref_allele << "\t" << alt_allele << "\t" << "." << "\t" << "." << "\t" << "SVTYPE=" << sv_type << ";SVLEN=" << sv_len << ";DP=" << depth << std::endl;
+        output_stream << chr << "\t" << pos << "\t" << "." << "\t" << ref_allele << "\t" << alt_allele << "\t" << "." << "\t" << "." << "\t" << "SVTYPE=" << sv_type_str << ";SVLEN=" << sv_len << ";DP=" << depth << std::endl;
     }
 
     // Close the output stream

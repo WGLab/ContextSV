@@ -12,9 +12,18 @@ class SVData {
     private:
         // SV candidate to read depth map
         SVDepthMap sv_calls;
-        
+                
         // Store a reference to the reference genome
         FASTAQuery *ref_genome;
+
+        // SV type to string map
+        std::map<int, std::string> sv_type_map = {
+            {0, "DEL"},
+            {1, "DUP"},
+            {2, "INV"},
+            {3, "INS"},
+            {4, "BND"}
+        };
         
     public:
         SVData(FASTAQuery& ref_genome);
