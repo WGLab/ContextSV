@@ -15,8 +15,8 @@
 #include <tuple>
 #include <iomanip>  // Progress bar
 
-
 #define BUFFER_SIZE 1024
+
 
 CNVCaller::CNVCaller(InputData& input_data)
 {

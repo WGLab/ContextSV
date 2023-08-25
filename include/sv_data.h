@@ -32,7 +32,7 @@ class SVData {
 
         std::string getRefGenome();
         
-        // Query the reference genome
+        // Query the reference genome for a given sequence
         std::string getSequence(std::string chr, int pos_start, int pos_end);
 
         // Update the SV type for a given SV candidate
@@ -40,10 +40,6 @@ class SVData {
         
         // Save SV calls to VCF
         void saveToVCF(FASTAQuery& ref_genome, std::string output_dir);
-
-        // // Begin and end iterators for the SV candidate map
-        // SVDepthMap::iterator begin() const { return this->sv_calls.begin(); }
-        // SVDepthMap::iterator end() const { return this->sv_calls.end(); }
 
         // Begin and end iterators for the SV candidate map
         SVDepthMap::iterator begin() { return this->sv_calls.begin(); }

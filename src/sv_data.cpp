@@ -56,9 +56,11 @@ void SVData::saveToVCF(FASTAQuery& ref_genome, std::string output_dir)
     std::string output_vcf = output_dir + "/sv_calls.vcf";
 
     // Remove the file if it already exists
+    std::cout << "Removing previous VCF..." << std::endl;
     std::remove(output_vcf.c_str());
 
     // Open the output stream
+    std::cout << "Opening VCF..." << std::endl;
     std::ofstream output_stream(output_vcf);
     if (!output_stream.is_open()) {
         std::cerr << "Error: Unable to open " << output_vcf << std::endl;
@@ -67,13 +69,16 @@ void SVData::saveToVCF(FASTAQuery& ref_genome, std::string output_dir)
 
     // Write the header
     output_stream << "##fileformat=VCFv4.2" << std::endl;
+    output_stream << "##INFO=<ID=END,Number=1,Type=Integer,Description=\"End position of the variant described in this record\">" << std::endl;
     output_stream << "##INFO=<ID=SVTYPE,Number=1,Type=String,Description=\"Type of structural variant\">" << std::endl;
     output_stream << "##INFO=<ID=SVLEN,Number=1,Type=Integer,Description=\"Difference in length between REF and ALT alleles\">" << std::endl;
     output_stream << "##INFO=<ID=DP,Number=1,Type=Integer,Description=\"Total read depth at the locus\">" << std::endl;
+    output_stream << "##INFO=<ID=SVMETHOD,Number=1,Type=String,Description=\"Method used to call the structural variant\">" << std::endl;
     output_stream << "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO" << std::endl;
 
     // Iterate over the SV calls
     std::cout << "Saving SV calls to " << output_vcf << "..." << std::endl;
+    std::string sv_method = "CONTEXTSVv0.1";
     for (auto const& sv_call : this->sv_calls) {
 
         // Get the SV candidate and SV info
@@ -94,9 +99,7 @@ void SVData::saveToVCF(FASTAQuery& ref_genome, std::string output_dir)
 
         // Get the reference allele from the reference genome
         std::cout << "Getting reference allele..." << std::endl;
-        //std::string ref_allele = this->getSequence(chr, pos, end);
         std::string ref_allele = ref_genome.query(chr, pos, end);
-        std::cout << "ref_allele first 10: " << ref_allele.substr(0, 10) << std::endl;
 
         // Get the SV length
         int sv_len = end - pos;
@@ -104,14 +107,17 @@ void SVData::saveToVCF(FASTAQuery& ref_genome, std::string output_dir)
         // Get the SV type
         std::string sv_type_str = this->sv_type_map[sv_type];
 
-        std::cout << "sv_type: " << sv_type << std::endl;
-        std::cout << "sv_type_str: " << sv_type_str << std::endl;
-        std::cout << "DEL type: " << this->sv_type_map[0] << std::endl;
+        std::cout << "SV type: " << sv_type_str << std::endl;
 
-        std::cout << "chr: " << chr << ", pos: " << pos << ", end: " << end << ", sv_type: " << sv_type_str << ", alt_allele: " << alt_allele << ", depth: " << depth << ", ref_allele: " << ref_allele << ", sv_len: " << sv_len << std::endl;
+        // Use symbolic ALT alleles for deletions and duplications
+        if (sv_type == 0 || sv_type == 1) {
+            alt_allele = "<" + sv_type_str + ">";
+        }
 
         // Write the SV call to the file
-        output_stream << chr << "\t" << pos << "\t" << "." << "\t" << ref_allele << "\t" << alt_allele << "\t" << "." << "\t" << "." << "\t" << "SVTYPE=" << sv_type_str << ";SVLEN=" << sv_len << ";DP=" << depth << std::endl;
+        output_stream << chr << "\t" << pos << "\t" << "." << "\t" << ref_allele.substr(0, 10) << "\t" << alt_allele << "\t" << "." << "\t" << "." << "\t" << "END=" << end << ";SVTYPE=" << sv_type_str << ";SVLEN=" << sv_len << ";DP=" << depth << ";SVMETHOD=" << sv_method << std::endl;
+        //output_stream << chr << "\t" << pos << "\t" << "." << "\t" << ref_allele.substr(0, 10) << "\t" << alt_allele << "\t" << "." << "\t" << "." << "\t" << "SVTYPE=" << sv_type_str << ";SVLEN=" << sv_len << ";DP=" << depth << ";SVMETHOD=" << sv_method << std::endl;
+        //output_stream << chr << "\t" << pos << "\t" << "." << "\t" << ref_allele.substr(0, 10) << "\t" << alt_allele << "\t" << "." << "\t" << "." << "\t" << "SVTYPE=" << sv_type_str << ";SVLEN=" << sv_len << ";DP=" << depth << std::endl;
     }
 
     // Close the output stream

@@ -28,8 +28,6 @@ int FASTAQuery::setFilepath(std::string fasta_filepath)
         exit(1);
     }
 
-    std::cout << "Parsing FASTA file" << std::endl;
-
     // Get the sequence
     std::map<std::string, std::string> chr_to_seq;
     std::string current_chr = "";
@@ -46,7 +44,7 @@ int FASTAQuery::setFilepath(std::string fasta_filepath)
             if (current_chr != "")
             {
                 chr_to_seq[current_chr] = sequence;
-                std::cout << "Read chromosome " << current_chr << std::endl;
+                //std::cout << "Read chromosome " << current_chr << std::endl;
                 sequence = "";  // Reset the sequence
             }
 
@@ -72,10 +70,13 @@ int FASTAQuery::setFilepath(std::string fasta_filepath)
     }
 
     // Close the file
+    std::cout << "Closing FASTA file..." << std::endl;
     fasta_file.close();
 
     // Set the map
     this->chr_to_seq = chr_to_seq;
+
+    std::cout << "Done." << std::endl;
 
     return 0;
 }
