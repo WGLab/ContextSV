@@ -106,9 +106,9 @@ std::vector<double> CNVCaller::calculateLogRRatiosAtSNPS(std::vector<int> snp_po
     // Calculate mean chromosome coverage
     std::string input_filepath = this->input_data->getBAMFilepath();
     std::cout <<  "\nCalculating coverage for chromosome: " << chr << std::endl;
-    //double mean_chr_cov = calculateMeanChromosomeCoverage();  // Commented out for testing
+    // double mean_chr_cov = calculateMeanChromosomeCoverage();  // Commented out for testing
     double mean_chr_cov = 39.4096;  // Chr6 mean coverage from test data
-    // double mean_chr_cov = 39.561;  // Chr3 mean coverage from test data
+    //double mean_chr_cov = 39.561;  // Chr3 mean coverage from test data
 
     std::cout << "Mean coverage: " << mean_chr_cov << std::endl;
 
@@ -268,6 +268,106 @@ std::pair<std::vector<int>, std::vector<double>> CNVCaller::readSNPBAFs()
     system(cmd.c_str());
 
     std::cout << "Filtered SNPs written to " << filtered_snp_vcf_filepath << std::endl;
+
+    // // Extract total depth (DP) and alternate allele depth (AD) from the
+    // // filtered SNPs for calculating BAFs
+    // std::cout << "Extracting DP and AD from filtered SNPs" << std::endl;
+    // cmd = "bcftools query -f '%CHROM,%POS,[%DP],[%AD]\n' " + filtered_snp_vcf_filepath;
+    // std::cout << "Command: " << cmd << std::endl;
+    // FILE *fp = popen(cmd.c_str(), "r");
+    // if (fp == NULL)
+    // {
+    //     std::cerr << "ERROR: Could not open pipe for command: " << cmd << std::endl;
+    //     exit(1);
+    // }
+
+    
+    
+    // // Read the DP and AD values (AD for alternate allele depth)
+    // char line[BUFFER_SIZE];
+    // std::vector<int> snp_positions;
+    // std::vector<double> snp_bafs;
+    // std::vector<int> dps;
+    // std::vector<int> ads;
+    // while (fgets(line, BUFFER_SIZE, fp) != NULL)
+    // {
+    //     // Print the line
+    //     //std::cout << "Parsing line: " << line << std::endl;
+
+    //     // Parse the line
+    //     char *tok = strtok(line, ",");  // Tokenize the line
+    //     int col = 0;  // Column index
+    //     std::string chr = "";
+    //     uint64_t pos = 0;
+    //     //int dp = 0;  // This includes unfiltered reads
+    //     int ref_ad = 0;
+    //     int alt_ad = 0;
+
+    //     while (tok != NULL)
+    //     {
+    //         // Get the chromosome from column 1
+    //         if (col == 0)
+    //         {
+    //             chr = tok;
+    //         }
+
+    //         // Get the position from column 2
+    //         else if (col == 1)
+    //         {
+    //             pos = atoi(tok);
+    //         }
+
+    //         // Get the DP from column 3
+    //         else if (col == 2)
+    //         {
+    //             //dp = atoi(tok);
+    //         }
+
+    //         // Get the AD for the reference allele from column 4
+    //         else if (col == 3)
+    //         {
+    //             //ad = atoi(tok);
+    //             ref_ad = atoi(tok);
+    //         }
+
+    //         // Get the AD for the non-reference allele from column 5
+    //         else if (col == 4)
+    //         {
+    //             //ad = atoi(tok);
+    //             alt_ad = atoi(tok);
+    //         }
+
+    //         tok = strtok(NULL, ",");
+    //         col++;
+    //     }
+
+    //     // Skip if data is missing
+    //     if (chr == "" || pos == 0 || ref_ad == 0 || alt_ad == 0)
+    //     {
+    //         std::cerr << "ERROR: Missing data for SNP at " << chr << ":" << pos << std::endl;
+    //         continue;
+    //     }
+
+    //     // Get the non-reference allele depth (The AD column is a
+    //     // comma-separated list of values, with the first value being the
+    //     // reference allele depth and the second value being the non-reference
+    //     // allele depth)
+    //     //double baf = (double) ad / (double) dp;
+    //     double baf = (double) alt_ad / (double) (ref_ad + alt_ad);
+
+    //     // Store the position, DP, AD, and BAF
+    //     snp_positions.push_back(pos);
+    //     // dps.push_back(dp);
+    //     // ads.push_back(ad);
+    //     snp_bafs.push_back(baf);
+    // }
+
+    // // Close the pipe
+    // pclose(fp);
+
+    // // Remove the filtered SNPs file
+    // std::cout << "Removing filtered SNPs file: " << filtered_snp_vcf_filepath << std::endl;
+    // std::remove(filtered_snp_vcf_filepath.c_str());
 
     // Extract all BAFs from the filtered SNPs and store in the pair vector
     std::cout << "Extracting BAFs from filtered SNPs" << std::endl;
