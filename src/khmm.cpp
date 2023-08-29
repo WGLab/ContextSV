@@ -41,6 +41,17 @@ std::vector<int> testVit_CHMM(CHMM hmm, int T, double *O1, double *O2, double *p
 	pfb = dvector(1, T);
 	plogproba = dvector(1, hmm.N);
 
+	// Initialize pfb and plogproba
+	for (int i = 1; i <= T; i++)
+	{
+		pfb[i] = 1;
+	}
+
+	for (int i = 1; i <= hmm.N; i++)
+	{
+		plogproba[i] = -VITHUGE;
+	}
+
 	// Run the HMM
 	std::vector<int> q;  // State sequence
 	q = ViterbiLogNP_CHMM(&hmm, T, O1, O2, pfb, snpdist, delta, psi, plogproba);
