@@ -43,7 +43,7 @@ class CNVCaller {
         std::pair<std::vector<int>, std::vector<double>> readSNPBAFs();
 
         // Save a CSV with SNP positions, BAF values and Log R Ratios
-        void saveSNPLRRBAFCSV(std::string filepath, std::vector<int> snp_positions, std::vector<double> bafs, std::vector<double> logr_ratios, std::vector<int> state_sequence);
+        void saveToTSV(std::string filepath, std::vector<int> snp_positions, std::vector<double> bafs, std::vector<double> logr_ratios, std::vector<int> state_sequence);
 };
 
 #endif // CNV_CALLER_H

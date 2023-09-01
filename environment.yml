@@ -10,3 +10,7 @@ dependencies:
   - htslib
   - swig
   - pytest
+  - plotly
+  - pandas
+  - scikit-learn
+  - joblib

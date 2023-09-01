@@ -70,10 +70,10 @@ CNVData CNVCaller::run()
     std::cout << "Viterbi algorithm complete." << std::endl;
 
     // Save a CSV of the positions, LRRs, BAFs, and state sequence
-    std::cout << "Saving CSV of positions, LRRs, and BAFs..." << std::endl;
-    std::string output_filepath = this->input_data->getOutputDir() + "/snp_lrr_baf.csv";
-    saveSNPLRRBAFCSV(output_filepath, snp_positions, baf, lrr, state_sequence);
-    std::cout << "CSV saved to: " << output_filepath << std::endl;
+    std::cout << "Saving TSV of positions, LRRs, and BAFs..." << std::endl;
+    std::string output_filepath = this->input_data->getOutputDir() + "/cnv_data.tsv";
+    saveToTSV(output_filepath, snp_positions, baf, lrr, state_sequence);
+    std::cout << "TSV saved to: " << output_filepath << std::endl;
 
     // Return a map of the state sequence by position
     std::string chr = this->input_data->getRegionChr();
@@ -352,21 +352,21 @@ std::pair<std::vector<int>, std::vector<double>> CNVCaller::readSNPBAFs()
     return snp_data;
 }
 
-void CNVCaller::saveSNPLRRBAFCSV(std::string filepath, std::vector<int> snp_positions, std::vector<double> bafs, std::vector<double> logr_ratios, std::vector<int> state_sequence)
+void CNVCaller::saveToTSV(std::string filepath, std::vector<int> snp_positions, std::vector<double> bafs, std::vector<double> logr_ratios, std::vector<int> state_sequence)
 {
-    // Open the CSV file for writing
-    std::ofstream csv_file(filepath);
+    // Open the TSV file for writing
+    std::ofstream tsv_file(filepath);
 
     // Write the header
-    csv_file << "position,baf,log2_ratio,cnv_state" << std::endl;
+    tsv_file << "position\tbaf\tlog2_ratio\tcnv_state" << std::endl;
 
     // Write the data
     int snp_count = (int) snp_positions.size();
     for (int i = 0; i < snp_count; i++)
     {
-        csv_file << snp_positions[i] << "," << bafs[i] << "," << logr_ratios[i] << "," << state_sequence[i] << std::endl;
+        tsv_file << snp_positions[i] << "\t" << bafs[i] << "\t" << logr_ratios[i] << "\t" << state_sequence[i] << std::endl;
     }
 
     // Close the file
-    csv_file.close();
+    tsv_file.close();
 }

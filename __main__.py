@@ -5,6 +5,7 @@ __main__.py: Run the program.
 import os
 import argparse
 from lib import contextsv
+from python import cnv_plots
 
 def main():
 
@@ -56,6 +57,19 @@ def main():
         args.output,
         args.region
     )
+
+    # Run the python-based analysis.
+    print("Running python-based analysis.")
+    vcf_path = os.path.join(args.output, "sv_calls.vcf")
+    cnv_data_path = os.path.join(args.output, "cnv_data.tsv")
+    region = args.region
+    output_dir = args.output
+    print("VCF: {}".format(vcf_path))
+    print("CNV Data: {}".format(cnv_data_path))
+    print("Region: {}".format(region))
+    
+    cnv_plots.run(vcf_path, cnv_data_path, output_dir, region)
+    #cnv_plots.run(vcf_path, cnv_data_path, args.output, args.region)
 
 
 if __name__ == '__main__':
