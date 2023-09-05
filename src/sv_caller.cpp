@@ -77,10 +77,15 @@ SVData SVCaller::detectSVsFromCIGAR(std::string chr, int32_t pos, uint32_t *ciga
 
             } else {
                 // Add the previous insertion to the SV calls
-                sv_calls.addSVCall(chr, merged_insertion_start, last_insertion_end, 0, "");
+                //sv_calls.addSVCall(chr, merged_insertion_start, last_insertion_end, 0, "");
 
-                // Print the SV type and length
-                std::cout << "CIGAR INS\t" << last_insertion_end - merged_insertion_start << std::endl;
+
+                // Print the SV type, position, and length if length is greater
+                // than 20 kb
+                if (last_insertion_end - merged_insertion_start > 20000) {
+                    std::cout << "CIGAR INS\t" << merged_insertion_start << "\t" << last_insertion_end << "\t" << last_insertion_end - merged_insertion_start << std::endl;
+                }
+                //std::cout << "CIGAR INS\t" << merged_insertion_start << "\t" << last_insertion_end << "\t" << last_insertion_end - merged_insertion_start << std::endl;
 
                 // Start a new insertion
                 merged_insertion_start = ins_start;
@@ -111,10 +116,14 @@ SVData SVCaller::detectSVsFromCIGAR(std::string chr, int32_t pos, uint32_t *ciga
 
             } else {
                 // Add the previous deletion to the SV calls
-                sv_calls.addSVCall(chr, merged_deletion_start, last_deletion_end, 1, "");
+                //sv_calls.addSVCall(chr, merged_deletion_start, last_deletion_end, 1, "");
                 
-                // Print the SV type and length
-                std::cout << "CIGAR DEL\t" << last_deletion_end - merged_deletion_start << std::endl;
+                // Print the SV type, position, and length if length is greater
+                // than 20 kb
+                if (last_deletion_end - merged_deletion_start > 20000) {
+                    std::cout << "CIGAR DEL\t" << merged_deletion_start << "\t" << last_deletion_end << "\t" << last_deletion_end - merged_deletion_start << std::endl;
+                }
+                //std::cout << "CIGAR DEL\t" << merged_deletion_start << "\t" << last_deletion_end << "\t" << last_deletion_end - merged_deletion_start << std::endl;
 
                 // Start a new deletion
                 merged_deletion_start = del_start;
@@ -202,6 +211,8 @@ SVData SVCaller::detectSVsFromSplitReads()
             // Process primary alignments
             if (!(bam1->core.flag & BAM_FSUPPLEMENTARY)) {
 
+                //std::cout << "Primary alignment" << std::endl;
+
                 // Add the primary alignment to the map
                 std::string chr = bamHdr->target_name[bam1->core.tid];
                 int32_t start = bam1->core.pos;
@@ -211,19 +222,21 @@ SVData SVCaller::detectSVsFromSplitReads()
                 primary_alignments[qname].push_back(alignment);
 
                 // Print the primary alignment position
-                std::cout << "Primary alignment" << std::endl;
-                std::cout << bamHdr->target_name[bam1->core.tid] << ":" << bam1->core.pos << "-" << bam_endpos(bam1) << std::endl;
+                //std::cout << "Primary alignment" << std::endl;
+                //std::cout << bamHdr->target_name[bam1->core.tid] << ":" << bam1->core.pos << "-" << bam_endpos(bam1) << std::endl;
             
                 // Finally, call SVs directly from the CIGAR string
-                // std::cout << "Calling SVs from CIGAR string..." << std::endl;                
+                //std::cout << "Calling SVs from CIGAR string..." << std::endl;                
                 //SVData cigar_calls = this->detectSVsFromCIGAR(chr, bam1->core.pos, bam_get_cigar(bam1), bam1->core.n_cigar);
-                // std::cout << "Complete." << std::endl;
+                //std::cout << "Complete." << std::endl;
 
                 // Add the SV calls to the SV map
                 //sv_calls.addSVCalls(cigar_calls);
 
             // Process supplementary alignments
             } else if (bam1->core.flag & BAM_FSUPPLEMENTARY) {
+
+                std::cout << "Found supplementary alignment" << std::endl;
 
                 // Add the supplementary alignment to the map
                 std::string chr = bamHdr->target_name[bam1->core.tid];
@@ -236,8 +249,8 @@ SVData SVCaller::detectSVsFromSplitReads()
                 supplementary_alignments[qname].push_back(alignment);
 
                 // Print the supplementary alignment position
-                std::cout << "Supplementary alignment" << std::endl;
-                std::cout << bamHdr->target_name[bam1->core.tid] << ":" << bam1->core.pos << "-" << bam_endpos(bam1) << std::endl;
+                //std::cout << "Supplementary alignment" << std::endl;
+                //std::cout << bamHdr->target_name[bam1->core.tid] << ":" << bam1->core.pos << "-" << bam_endpos(bam1) << std::endl;
             }
         }
 
@@ -270,7 +283,7 @@ SVData SVCaller::detectSVsFromSplitReads()
         // Get the read depth
         int32_t primary_depth = std::get<3>(primary_alignment);
 
-        std::cout << "Primary alignment at " << primary_chr << ":" << primary_start << "-" << primary_end << " with depth " << primary_depth << std::endl;
+        //std::cout << "Primary alignment at " << primary_chr << ":" << primary_start << "-" << primary_end << " with depth " << primary_depth << std::endl;
 
         // Identify potential duplications by looking for supplementary
         // alignments that overlap with the primary alignment
@@ -290,6 +303,7 @@ SVData SVCaller::detectSVsFromSplitReads()
             // Skip supplementary alignments that are on a different chromosome
             // for now (TODO: Use for translocations)
             if (primary_chr != supp_chr) {
+                std::cout << "Supplementary alignment on different chromosome" << std::endl;
                 continue;
             }
 
@@ -297,7 +311,7 @@ SVData SVCaller::detectSVsFromSplitReads()
             int32_t supp_start = std::get<1>(supp_alignment);
             int32_t supp_end = std::get<2>(supp_alignment);
 
-            std::cout << "Supplementary alignment at " << supp_chr << ":" << supp_start << "-" << supp_end << std::endl;
+            //std::cout << "Supplementary alignment at " << supp_chr << ":" << supp_start << "-" << supp_end << std::endl;
 
             // Determine the type of gap between alignments
             int32_t gap_start = 0;
@@ -305,44 +319,52 @@ SVData SVCaller::detectSVsFromSplitReads()
             if (supp_start < primary_start && supp_end < primary_start) {
                 // INDEL (Supplementary alignment is before primary
                 // alignment with no overlap)
+                // = Tandem duplication or translocation
+
+                // // Print if within the region of interest 61135039-61911274
+                // if (gap_start > 61000000 && gap_end < 62000000) {
+                //     std::cout << "INDEL at " << supp_chr << ":" << gap_start << "-" << gap_end << std::endl;
+                // } else {
+                //     continue;
+                // }
 
                 // Get the gap start and end positions
                 gap_start = supp_end;
                 gap_end = primary_start;
 
-                // Print if within the region of interest 61135039-61911274
-                if (gap_start > 61000000 && gap_end < 62000000) {
-                    std::cout << "INDEL at " << supp_chr << ":" << gap_start << "-" << gap_end << std::endl;
-                }
-
-                std::cout << "INDEL at " << supp_chr << ":" << gap_start << "-" << gap_end << std::endl;
+                std::cout << "FWD GAP at " << supp_chr << ":" << gap_start << "-" << gap_end << std::endl;
                 
             } else if (supp_start > primary_end && supp_end > primary_end) {
                 // INDEL (Supplementary alignment is after primary alignment with no overlap)
+                // = Deletion
+
+                // // Print if within the region of interest 61135039-61911274
+                // if (gap_start > 61000000 && gap_end < 62000000) {
+                //     std::cout << "INDEL at " << supp_chr << ":" << gap_start << "-" << gap_end << std::endl;
+                // } else {
+                //     continue;
+                // }
 
                 // Get the gap start and end positions
                 gap_start = primary_end;
                 gap_end = supp_start;
 
-                // Print if within the region of interest 61135039-61911274
-                if (gap_start > 61000000 && gap_end < 62000000) {
-                    std::cout << "INDEL at " << supp_chr << ":" << gap_start << "-" << gap_end << std::endl;
-                }
-
-                std::cout << "INDEL at " << supp_chr << ":" << gap_start << "-" << gap_end << std::endl;
+                std::cout << "REV GAP at " << supp_chr << ":" << gap_start << "-" << gap_end << std::endl;
 
             } else {
                 // OVERLAP (Supplementary alignment is within primary alignment or overlaps with primary alignment)
-                // Either a duplication or deletion
+                // = Tandem duplication or translocation
+
+                // // Print if within the region of interest 61135039-61911274
+                // if (gap_start > 61000000 && gap_end < 62000000) {
+                //     std::cout << "OVERLAP at " << supp_chr << ":" << gap_start << "-" << gap_end << std::endl;
+                // } else {
+                //     continue;
+                // }
 
                 // Get the gap start and end positions
                 gap_start = std::min(primary_start, supp_start);
                 gap_end = std::max(primary_end, supp_end);
-
-                // Print if within the region of interest 61135039-61911274
-                if (gap_start > 61000000 && gap_end < 62000000) {
-                    std::cout << "INDEL at " << supp_chr << ":" << gap_start << "-" << gap_end << std::endl;
-                }
 
                 std::cout << "OVERLAP at " << supp_chr << ":" << gap_start << "-" << gap_end << std::endl;
             }
@@ -350,14 +372,16 @@ SVData SVCaller::detectSVsFromSplitReads()
             // Check if the gap is larger than the minimum SV size
             if (gap_end - gap_start > this->min_sv_size) {
 
+                // // Print if within the region of interest 61135039-61911274
+                // if (gap_start > 61000000 && gap_end < 62000000) {
+                //     std::cout << "INDEL at " << supp_chr << ":" << gap_start << "-" << gap_end << std::endl;
+                // } else {
+                //     continue;
+                // }
+
                 // Add the gap to the SV calls
                 // Set the SV type to -1 for now, will be labeled later using CNV calls
                 sv_calls.addSVCall(supp_chr, gap_start, gap_end, -1, ".");
-
-                // Print if within the region of interest 61135039-61911274
-                if (gap_start > 61000000 && gap_end < 62000000) {
-                    std::cout << "INDEL at " << supp_chr << ":" << gap_start << "-" << gap_end << std::endl;
-                }
                 
                 //std::cout << "Added SV call at " << supp_chr << ":" << gap_start << "-" << gap_end << std::endl;
                 std::cout << "SV size = " << gap_end - gap_start << std::endl;

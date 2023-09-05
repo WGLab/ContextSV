@@ -84,8 +84,9 @@ void ContextSV::labelCNVs(CNVData cnv_calls, SVData& sv_calls)
         // Update the SV call's type
         sv_calls.updateSVType(candidate, cnv_call);
 
-        // Print the updated SV call
-        std::cout << "Updated SV call from " << sv_type << " to " << cnv_call << std::endl;
-        std::cout << "Update: " << sv_info.first << std::endl;
+        // Print the updated SV call if the type was changed, and if it is not unknown
+        if (cnv_call != -1 && cnv_call != sv_type) {
+            std::cout << "Updated SV call from " << sv_type << " to " << cnv_call << std::endl;
+        }
     }
 }
