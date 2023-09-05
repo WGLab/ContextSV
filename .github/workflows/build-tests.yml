@@ -34,4 +34,4 @@ jobs:
       shell: bash --login {0}
       run: |
         mkdir -p tests/output
-        python -m pytest
+        python -m pytest -s -v tests/test_general.py
