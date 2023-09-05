@@ -8,7 +8,7 @@ import plotly
 import pandas as pd
 
 def run(vcf_path, cnv_data_path, output_path):
-    # Open the VCf file and get the CNV data.
+    # Get the CNV data.
     vcf_file = open(vcf_path, "r")
     cnv_data = pd.read_csv(cnv_data_path, sep="\t")
 
@@ -19,12 +19,13 @@ def run(vcf_path, cnv_data_path, output_path):
     l2r_values = cnv_data["log2_ratio"]
     baf_values = cnv_data["b_allele_freq"]
 
-    # Get the CNV types as a list of integers (non-64 bit integers) using numpy.
-    cnv_states = cnv_data["cnv_state"].to_numpy()
-    cnv_states = cnv_states.astype(int)
+    # # Get the CNV types as a list of integers (non-64 bit integers) using numpy.
+    # cnv_states = cnv_data["cnv_state"].to_numpy()
+    # cnv_states = cnv_states.astype(int)
 
     # Get the CNV colors.
     cnv_colors = []
+    cnv_states = cnv_data["cnv_state"]
     for cnv_state in cnv_states:
         if cnv_state in [1, 2]:  # DEL
             cnv_colors.append("red")
@@ -57,6 +58,23 @@ def run(vcf_path, cnv_data_path, output_path):
             size = 10,
         )
     )
+
+    # Read the VCF file.
+    vcf_lines = vcf_file.readlines()
+
+    # Get all CNVs from the VCF file (SVTYPE = DEL, DUP) and store the start and
+    # end positions.
+    cnv_start_positions = []
+    cnv_end_positions = []
+    for line in vcf_lines:
+        if line.startswith("#"):
+            continue
+        line = line.strip()
+        line_parts = line.split("\t")
+        if line_parts[4] in ["DEL", "DUP"]:
+            cnv_start_positions.append(int(line_parts[1]))
+            cnv_end_positions.append(int(line_parts[7].split(";")[0].split("=")[1]))
+        
 
     # Define the layout.
     layout = plotly.graph_objs.Layout(

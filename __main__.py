@@ -20,7 +20,7 @@ def main():
         help="The path to the output directory.",
         required=True
     )
-    
+
     parser.add_argument(
         "-v", "--version",
         help="Print the version number and exit.",
@@ -113,7 +113,6 @@ def main():
     print("Output: {}".format(output_dir))
     
     cnv_plots.run(vcf_path, cnv_data_path, output_dir)
-    #cnv_plots.run(vcf_path, cnv_data_path, args.output, args.region)
 
 
 if __name__ == '__main__':

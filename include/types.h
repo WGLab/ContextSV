@@ -20,9 +20,9 @@ using SVInfo = std::pair<int, int>;  // SV type, read depth
 using SVDepthMap = std::map<SVCandidate, SVInfo>;  // Map for getting type and read depth of SV candidates
 
 // SV calling:
-// Alignment location (chr, start, end)
-using AlignmentLocation = std::tuple<std::string, int, int>;
-using AlignmentVector = std::vector<AlignmentLocation>;
+// Alignment location (chr, start, end, depth)
+using AlignmentData = std::tuple<std::string, int, int, int>;
+using AlignmentVector = std::vector<AlignmentData>;
 
 // Query map (query name, alignment vector)
 using QueryMap = std::map<std::string, AlignmentVector>;
