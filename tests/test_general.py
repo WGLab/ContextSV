@@ -35,7 +35,7 @@ def test_run():
     )
 
     # Check that the output file exists.
-    output_file = os.path.join(TEST_OUTDIR, 'snp_lrr_baf.csv')
+    output_file = os.path.join(TEST_OUTDIR, 'cnv_data.tsv')
     assert os.path.exists(output_file)
 
     # Check that the output file is not empty.
@@ -47,19 +47,20 @@ def test_run():
 
     # Check that the output file has the correct header.
     with open(output_file, 'r') as f:
-        assert f.readline().strip() == "position,baf,log2_ratio,cnv_state"
+        assert f.readline().strip() == "chromosome\tposition\tb_allele_freq\tlog2_ratio\tcnv_state"
 
     # Check that the output file has the correct SNP values (excluding predicted
     # state) in the last line
     with open(output_file, 'r') as f:
-        last_line = f.readlines()[-1].strip()
+        last_line = f.readlines()[-1]
 
         print("Debugging:")
         print(last_line)
         print(last_line[:-2])
 
         # CNV2:
-        assert last_line[:-2] == "60389325,0.590909,-0.048852"
+        #chr3	60389325	0.590909	-0.048852
+        assert last_line[:-2] == "chr3\t60389325\t0.590909\t-0.048852\t"
 
         # CNV3:
         #assert last_line[:-2] == "60389325,0.590909,-0.0433203"
