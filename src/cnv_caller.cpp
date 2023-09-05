@@ -358,13 +358,14 @@ void CNVCaller::saveToTSV(std::string filepath, std::vector<int> snp_positions, 
     std::ofstream tsv_file(filepath);
 
     // Write the header
-    tsv_file << "position\tbaf\tlog2_ratio\tcnv_state" << std::endl;
+    tsv_file << "chromosome\tposition\tb_allele_freq\tlog2_ratio\tcnv_state" << std::endl;
 
     // Write the data
+    std::string chr = this->input_data->getRegionChr();
     int snp_count = (int) snp_positions.size();
     for (int i = 0; i < snp_count; i++)
     {
-        tsv_file << snp_positions[i] << "\t" << bafs[i] << "\t" << logr_ratios[i] << "\t" << state_sequence[i] << std::endl;
+        tsv_file << chr << "\t" << snp_positions[i] << "\t" << bafs[i] << "\t" << logr_ratios[i] << "\t" << state_sequence[i] << std::endl;
     }
 
     // Close the file

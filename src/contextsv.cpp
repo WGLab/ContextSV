@@ -34,7 +34,7 @@ int ContextSV::run()
 
     // Check if the ref genome was set
     if (sv_calls.getRefGenome() == "") {
-        std::cerr << "Error: Reference genome not set in SVData" << std::endl;
+        std::cout << "Warning: Reference genome not set in SVData" << std::endl;
     }
 
     // Classify SVs based on CNV calls
