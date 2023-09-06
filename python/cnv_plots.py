@@ -4,8 +4,43 @@ cnv_plots.py: Plot the copy number variants and their log2_ratio, BAF values.
 
 import os
 import sys
+import logging as log
 import plotly
 import pandas as pd
+
+# Set up logging.
+log.basicConfig(
+    level=log.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    handlers=[
+        log.StreamHandler(sys.stdout)
+    ]
+)
+
+def get_info_field_value(info_field, field_name):
+    """
+    Get the value of a field in the INFO field of a VCF file.
+
+    Args:
+        info_field (str): The INFO field.
+        field_name (str): The name of the field to get the value of.
+
+    Returns:
+        str: The value of the field.
+    """
+
+    # Split the INFO field into its parts.
+    info_field_parts = info_field.split(";")
+
+    # Get the field value.
+    field_value = ""
+    for info_field_part in info_field_parts:
+        if info_field_part.startswith("{}=".format(field_name)):
+            field_value = info_field_part.split("=")[1]
+            break
+
+    # Return the field value.
+    return field_value
 
 def run(vcf_path, cnv_data_path, output_path):
     # Get the CNV data.
@@ -62,8 +97,9 @@ def run(vcf_path, cnv_data_path, output_path):
     # Read the VCF file.
     vcf_lines = vcf_file.readlines()
 
-    # Get all CNVs from the VCF file (SVTYPE = DEL, DUP) and store the start and
-    # end positions.
+    # Get the CNV positions.
+    cnv_types = []
+    cnv_chromosomes = []
     cnv_start_positions = []
     cnv_end_positions = []
     for line in vcf_lines:
@@ -71,10 +107,41 @@ def run(vcf_path, cnv_data_path, output_path):
             continue
         line = line.strip()
         line_parts = line.split("\t")
-        if line_parts[4] in ["DEL", "DUP"]:
-            cnv_start_positions.append(int(line_parts[1]))
-            cnv_end_positions.append(int(line_parts[7].split(";")[0].split("=")[1]))
         
+        # Get the INFO field.
+        info_field = line_parts[7]
+
+        # Get the SVTYPE field value.
+        svtype = get_info_field_value(info_field, "SVTYPE")
+
+        # Skip if the SVTYPE is not DEL or DUP.
+        if svtype != "DEL" and svtype != "DUP":
+            continue
+
+        # Get the start and end positions.
+        start_position = int(line_parts[1])
+        end_position = int(get_info_field_value(info_field, "END"))
+
+        # Get the chromosome.
+        chromosome = line_parts[0]
+
+        # Add the SV type and positions to the lists.
+        if svtype == "DEL" or svtype == "DUP":
+            cnv_types.append(svtype)
+            cnv_chromosomes.append(chromosome)
+            cnv_start_positions.append(start_position)
+            cnv_end_positions.append(end_position)
+
+    # # Create the figure.
+    # fig = plotly.graph_objs.Figure(
+    #     data = [cnv_trace]
+    # )
+
+
+    # # Create the figure.
+    # fig = plotly.graph_objs.Figure(
+    #     data = [cnv_trace]
+    # )
 
     # Define the layout.
     layout = plotly.graph_objs.Layout(
@@ -92,6 +159,44 @@ def run(vcf_path, cnv_data_path, output_path):
         data = [cnv_trace],
         layout = layout
     )
+
+    # Create a shaded rectangle for each CNV, layering them below the CNV trace
+    # and labeling them with the CNV type.
+    for i in range(len(cnv_chromosomes)):
+        fig.add_vrect(
+            x0 = cnv_start_positions[i],
+            x1 = cnv_end_positions[i],
+            fillcolor = "Black",
+            layer = "below",
+            line_width = 0,
+            opacity = 0.1,
+            annotation_text = cnv_types[i],
+            annotation_position = "top left",
+            annotation_font_size = 20,
+            annotation_font_color = "black"
+        )
+
+        # Add vertical lines at the start and end positions of the CNV.
+        fig.add_vline(
+            x = cnv_start_positions[i],
+            line_width = 1,
+            line_color = "black",
+            layer = "below"
+        )
+
+        fig.add_vline(
+            x = cnv_end_positions[i],
+            line_width = 1,
+            line_color = "black",
+            layer = "below"
+        )
+
+        log.info("Added CNV rectangle for {}:{}-{}, SVLEN={}".format(
+            cnv_chromosomes[i],
+            cnv_start_positions[i],
+            cnv_end_positions[i],
+            cnv_end_positions[i] - cnv_start_positions[i]
+        ))
 
     # Save the figure.
     filepath = os.path.join(output_path, "cnv_plot.html")
