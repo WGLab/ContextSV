@@ -20,14 +20,10 @@ int ContextSV::run()
 {
     // Call CNVs using the SNP positions
     std::cout << "Calling CNVs..." << std::endl;
-    // Get the input data object
     CNVCaller cnv_obj(*this->input_data);
-    std::cout << "Starting CNVCaller" << std::endl;
     CNVData cnv_calls = cnv_obj.run();
 
     // Call SVs from long read alignments and CNV calls
-    // Return a map of SV type by start and end position
-    // candidate = [chromosome, SV start position], Value = [SV end position, SV type]
     std::cout << "Calling SVs..." << std::endl;
     SVCaller sv_obj(*this->input_data);
     SVData sv_calls = sv_obj.run();
@@ -49,13 +45,6 @@ int ContextSV::run()
     sv_calls.saveToVCF(ref_genome, output_dir);
 
     std::cout << "Done!" << std::endl;
-
-    // Integrate CNV and SV calls
-    // std::cout << "Integrating CNV and SV calls..." << std::endl;
-    // SVMap integrated_calls = integrateCNVs(cnv_calls, sv_calls);
-
-    //filterCNVs(state_sequence, sv_calls);
-    //filterCNVs(state_sequence);
 
     return 0;
 }

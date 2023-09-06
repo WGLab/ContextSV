@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <iostream>
+#include <sstream>
 
 #define BUFFER_SIZE 1024
 
@@ -153,27 +154,42 @@ void InputData::setChrCov(std::string chr_cov)
     // Update the chromosome coverage map if the string is not empty
     if (chr_cov != "")
     {
-        // Parse the string
-        char *tok = strtok((char *)chr_cov.c_str(), ",");
-        while (tok != NULL)
+        // Split the string by commas
+        std::istringstream ss(chr_cov);
+        std::string token;
+        std::vector<std::string> chr_cov_pairs;
+
+        while (std::getline(ss, token, ','))
         {
-            // Split the chromosome and coverage
-            char *chr_tok = strtok(tok, ":");
-            char *cov_tok = strtok(NULL, ":");
+            chr_cov_pairs.push_back(token);
+        }
 
-            // Get the chromosome
-            std::string chr = chr_tok;
+        // Iterate over the pairs
+        for (auto const &pair : chr_cov_pairs)
+        {
+            // Split the pair by colon
+            std::istringstream ss(pair);
+            std::string token;
+            std::vector<std::string> chr_cov;
 
-            // Get the coverage
-            double cov = atof(cov_tok);
+            while (std::getline(ss, token, ':'))
+            {
+                chr_cov.push_back(token);
+            }
 
-            // Add the coverage to the map
-            this->chr_cov[chr] = cov;
+            // Check if the pair is valid
+            if (chr_cov.size() == 2)
+            {
+                // Get the chromosome and coverage
+                std::string chr = chr_cov[0];
+                double cov = std::stod(chr_cov[1]);
 
-            // Get the next token
-            tok = strtok(NULL, ",");
+                // Add the pair to the map
+                this->chr_cov[chr] = cov;
 
-            std::cout << "Set mean coverage for " << chr << " to " << cov << std::endl;
+                // Print the pair
+                std::cout << "Set mean coverage for " << chr << " to " << cov << std::endl;
+            }
         }
     }
 }
