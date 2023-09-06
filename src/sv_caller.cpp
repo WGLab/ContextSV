@@ -280,9 +280,6 @@ SVData SVCaller::detectSVsFromSplitReads()
         int32_t primary_start = std::get<1>(primary_alignment);
         int32_t primary_end = std::get<2>(primary_alignment);
 
-        // Get the read depth
-        int32_t primary_depth = std::get<3>(primary_alignment);
-
         //std::cout << "Primary alignment at " << primary_chr << ":" << primary_start << "-" << primary_end << " with depth " << primary_depth << std::endl;
 
         // Identify potential duplications by looking for supplementary

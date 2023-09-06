@@ -31,6 +31,8 @@ class InputData {
         int getRegionStart();
         int getRegionEnd();
         bool getRegionSet();
+        void setChrCov(std::string chr_cov);
+        int getChrCov(std::string chr, double& cov);
 
     private:
         std::string bam_filepath = "";
@@ -44,6 +46,7 @@ class InputData {
         int region_start = 0;
         int region_end   = 0;
         bool region_set = false;
+        std::map<std::string, double> chr_cov;
 };
 
 #endif // INPUT_DATA_H

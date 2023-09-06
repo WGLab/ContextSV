@@ -147,3 +147,51 @@ bool InputData::getRegionSet()
 {
     return this->region_set;
 }
+
+void InputData::setChrCov(std::string chr_cov)
+{
+    // Update the chromosome coverage map if the string is not empty
+    if (chr_cov != "")
+    {
+        // Parse the string
+        char *tok = strtok((char *)chr_cov.c_str(), ",");
+        while (tok != NULL)
+        {
+            // Split the chromosome and coverage
+            char *chr_tok = strtok(tok, ":");
+            char *cov_tok = strtok(NULL, ":");
+
+            // Get the chromosome
+            std::string chr = chr_tok;
+
+            // Get the coverage
+            double cov = atof(cov_tok);
+
+            // Add the coverage to the map
+            this->chr_cov[chr] = cov;
+
+            // Get the next token
+            tok = strtok(NULL, ",");
+
+            std::cout << "Set mean coverage for " << chr << " to " << cov << std::endl;
+        }
+    }
+}
+
+int InputData::getChrCov(std::string chr, double &cov)
+{
+    // Check if the chromosome is in the map
+    if (this->chr_cov.find(chr) != this->chr_cov.end())
+    {
+        // Get the coverage
+        cov = this->chr_cov[chr];
+
+        // Return 0 if the chromosome is in the map
+        return 0;
+    }
+    else
+    {
+        // Return -1 if the chromosome is not in the map
+        return -1;
+    }
+}

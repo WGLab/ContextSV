@@ -22,4 +22,4 @@ SWIG wrapper for C++ code.
 }
 
 // Include functions
-int run(const std::string& bam_fp, const std::string& ref_fp, const std::string& snps_fp, const std::string& outdir, const std::string& region);
+int run(const std::string& bam_fp, const std::string& ref_fp, const std::string& snps_fp, const std::string& outdir, const std::string& region, const std::string& chr_cov);

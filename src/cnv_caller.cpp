@@ -100,17 +100,20 @@ CNVData CNVCaller::run()
 
 std::vector<double> CNVCaller::calculateLogRRatiosAtSNPS(std::vector<int> snp_positions)
 {
-    // Get the target chromosome
-    std::string chr = this->input_data->getRegionChr();
-    
-    // Calculate mean chromosome coverage
     std::string input_filepath = this->input_data->getBAMFilepath();
-    std::cout <<  "\nCalculating coverage for chromosome: " << chr << std::endl;
-    // double mean_chr_cov = calculateMeanChromosomeCoverage();  // Commented out for testing
-    // double mean_chr_cov = 39.4096;  // Chr6 mean coverage from test data
-    double mean_chr_cov = 39.561;  // Chr3 mean coverage from test data
+    std::string chr = this->input_data->getRegionChr();
 
-    std::cout << "Mean coverage: " << mean_chr_cov << std::endl;
+    // Check if the chromosome coverage was passed in
+    double mean_chr_cov = -1;
+    if (this->input_data->getChrCov(chr, mean_chr_cov) == -1)
+    {
+        // Calculate the mean chromosome coverage
+        std::cout <<  "\nCalculating coverage for chromosome: " << chr << std::endl;
+        mean_chr_cov = calculateMeanChromosomeCoverage();
+        std::cout << "Mean coverage for chromosome " << chr << ": " << mean_chr_cov << std::endl;
+    } else {
+        std::cout << "Using user-provided mean coverage for chromosome " << chr << ": " << mean_chr_cov << std::endl;
+    }
 
     // Set the region start and end from the first and last SNPs
     int region_start = snp_positions.front();

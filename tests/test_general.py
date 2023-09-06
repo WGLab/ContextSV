@@ -22,16 +22,17 @@ TEST_SNPS_FILE = os.path.join(TEST_DATA_DIR, 'snps.vcf.gz')
 # Set the output directory.
 TEST_OUTDIR = os.path.join(os.path.dirname(__file__), 'output')
 
-
+# Test the main function.
 def test_run():
-    """Test the run function."""
+    
     # Run the program.
     contextsv.run(
         TEST_BAM_FILE,
         TEST_REF_FILE,
         TEST_SNPS_FILE,
         TEST_OUTDIR,
-        "chr3:60380533-60390533"
+        "chr3:60380533-60390533",
+        "chr3:39.561,chr6:39.4096"
     )
 
     # Check that the output file exists.

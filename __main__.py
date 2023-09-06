@@ -3,9 +3,20 @@ __main__.py: Run the program.
 """
 
 import os
+import sys
 import argparse
+import logging as log
 from lib import contextsv
 from python import cnv_plots
+
+# Set up logging.
+log.basicConfig(
+    level=log.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    handlers=[
+        log.StreamHandler(sys.stdout)
+    ]
+)
 
 def main():
 
@@ -61,6 +72,13 @@ def main():
         required=True
     )
 
+    # Pass in chromosome mean coverage data for speediness.
+    sv_parser.add_argument(
+        "-c", "--chr-cov",
+        help="Chromosome mean coverage values passed in as a comma-separated list (e.g. chr1:100,chr2:200,chr3:300).",
+        required=False
+    )
+
     # Mode 2: CNV plots mode.
     cnv_parser = subparsers.add_parser(
         "plot_cnv",
@@ -94,13 +112,15 @@ def main():
         print("SNPs: {}".format(args.snps))
         print("Output: {}".format(args.output))
         print("Region: {}".format(args.region))
+        print("Chromosome mean coverage: {}".format(args.chr_cov))
     
         contextsv.run(
             args.bam,
             args.reference,
             args.snps,
             args.output,
-            args.region
+            args.region,
+            str(args.chr_cov)
         )
 
     # Run the python-based analysis.
@@ -113,6 +133,8 @@ def main():
     print("Output: {}".format(output_dir))
     
     cnv_plots.run(vcf_path, cnv_data_path, output_dir)
+
+    log.info("Done.")
 
 
 if __name__ == '__main__':
