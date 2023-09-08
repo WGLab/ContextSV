@@ -1,0 +1,83 @@
+\doxysection{setup Namespace Reference}
+\hypertarget{namespacesetup}{}\label{namespacesetup}\index{setup@{setup}}
+\doxysubsubsection*{Variables}
+\begin{DoxyCompactItemize}
+\item 
+\Hypertarget{namespacesetup_ab3a7a0638d76a01367c5bc3cc699447f}\label{namespacesetup_ab3a7a0638d76a01367c5bc3cc699447f} 
+str {\bfseries name} = "{}contextsv"{}
+\item 
+\Hypertarget{namespacesetup_a2aa722b36a933088812b50ea79b97a5c}\label{namespacesetup_a2aa722b36a933088812b50ea79b97a5c} 
+str {\bfseries version} = "{}0.\+0.\+1"{}
+\item 
+\Hypertarget{namespacesetup_a3a57a4772d418a06835249cbade0d86a}\label{namespacesetup_a3a57a4772d418a06835249cbade0d86a} 
+str {\bfseries author} = "{}WGLab"{}
+\item 
+\Hypertarget{namespacesetup_aedf461ec52a946bda975938ba0b93ec0}\label{namespacesetup_aedf461ec52a946bda975938ba0b93ec0} 
+str {\bfseries description} = "{}Context\+SV\+: A tool for integrative structural variant detection."{}
+\item 
+\Hypertarget{namespacesetup_a31063cd91ab47345a5d006b742213514}\label{namespacesetup_a31063cd91ab47345a5d006b742213514} 
+{\bfseries conda\+\_\+prefix} = os.\+environ.\+get("{}CONDA\+\_\+\+PREFIX"{})
+\item 
+\Hypertarget{namespacesetup_a95c4b349bbef41671126a6b0b673672f}\label{namespacesetup_a95c4b349bbef41671126a6b0b673672f} 
+{\bfseries conda\+\_\+include\+\_\+dir} = os.\+path.\+join(conda\+\_\+prefix, "{}include"{})
+\item 
+\Hypertarget{namespacesetup_ab2140270823760fed1fb65ea4151fc21}\label{namespacesetup_ab2140270823760fed1fb65ea4151fc21} 
+{\bfseries conda\+\_\+lib\+\_\+dir} = os.\+path.\+join(conda\+\_\+prefix, "{}lib"{})
+\item 
+\Hypertarget{namespacesetup_ac72833a2507e3fad7c1f0e01868de455}\label{namespacesetup_ac72833a2507e3fad7c1f0e01868de455} 
+str {\bfseries src\+\_\+dir} = "{}src"{}
+\item 
+\Hypertarget{namespacesetup_a8b0c506f6c8d68e5064a3bdc042c3b75}\label{namespacesetup_a8b0c506f6c8d68e5064a3bdc042c3b75} 
+{\bfseries src\+\_\+files} = glob.\+glob(os.\+path.\+join(src\+\_\+dir, "{}\texorpdfstring{$\ast$}{*}.cpp"{}))
+\item 
+\Hypertarget{namespacesetup_acc7b0fee8412fcf81dfbda375d7fb8d9}\label{namespacesetup_acc7b0fee8412fcf81dfbda375d7fb8d9} 
+str {\bfseries include\+\_\+dir} = "{}include"{}
+\item 
+\Hypertarget{namespacesetup_a15dd2ff78a3114449bc8fc0f761991f4}\label{namespacesetup_a15dd2ff78a3114449bc8fc0f761991f4} 
+{\bfseries include\+\_\+files} = glob.\+glob(os.\+path.\+join(include\+\_\+dir, "{}\texorpdfstring{$\ast$}{*}.h"{}))
+\item 
+\mbox{\hyperlink{namespacesetup_a8345a57adf0c9566a76dd0fa6dbba6df}{ext}}
+\item 
+\Hypertarget{namespacesetup_a1bf56ea61d1e9865f316116dca2fbfea}\label{namespacesetup_a1bf56ea61d1e9865f316116dca2fbfea} 
+{\bfseries ext\+\_\+modules}
+\item 
+\Hypertarget{namespacesetup_ad6a0f278ba38b7ed3595fd6896196fb3}\label{namespacesetup_ad6a0f278ba38b7ed3595fd6896196fb3} 
+{\bfseries py\+\_\+modules}
+\item 
+\Hypertarget{namespacesetup_aff2375a361fd5865c77bd9aa093be747}\label{namespacesetup_aff2375a361fd5865c77bd9aa093be747} 
+{\bfseries packages}
+\item 
+\Hypertarget{namespacesetup_afd7a7f31bfa5027bfe335aedfcc1b70e}\label{namespacesetup_afd7a7f31bfa5027bfe335aedfcc1b70e} 
+{\bfseries test\+\_\+suite}
+\item 
+\Hypertarget{namespacesetup_ada7058afc98897f073d3f3b8b9157059}\label{namespacesetup_ada7058afc98897f073d3f3b8b9157059} 
+{\bfseries entry\+\_\+points}
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+\begin{DoxyVerb}setup.py:
+    This file is used to install the package.
+\end{DoxyVerb}
+ 
+
+\doxysubsection{Variable Documentation}
+\Hypertarget{namespacesetup_a8345a57adf0c9566a76dd0fa6dbba6df}\label{namespacesetup_a8345a57adf0c9566a76dd0fa6dbba6df} 
+\index{setup@{setup}!ext@{ext}}
+\index{ext@{ext}!setup@{setup}}
+\doxysubsubsection{\texorpdfstring{ext}{ext}}
+{\footnotesize\ttfamily setup.\+ext}
+
+{\bfseries Initial value\+:}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00001\ =\ \ Extension(}
+\DoxyCodeLine{00002\ \ \ \ \ name=\textcolor{stringliteral}{"{}\_"{}}\ +\ name,}
+\DoxyCodeLine{00003\ \ \ \ \ sources=src\_files,}
+\DoxyCodeLine{00004\ \ \ \ \ include\_dirs=[include\_dir,\ conda\_include\_dir],}
+\DoxyCodeLine{00005\ \ \ \ \ extra\_compile\_args=[\textcolor{stringliteral}{"{}-\/std=c++11"{}}],}
+\DoxyCodeLine{00006\ \ \ \ \ language=\textcolor{stringliteral}{"{}c++"{}},}
+\DoxyCodeLine{00007\ \ \ \ \ libraries=[\textcolor{stringliteral}{"{}hts"{}}],}
+\DoxyCodeLine{00008\ \ \ \ \ library\_dirs=[conda\_lib\_dir]}
+\DoxyCodeLine{00009\ )}
+
+\end{DoxyCode}

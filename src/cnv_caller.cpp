@@ -162,7 +162,6 @@ double CNVCaller::calculateMeanChromosomeCoverage()
     char cmd[BUFFER_SIZE];
     FILE *fp;
     char line[BUFFER_SIZE];
-    RegionCoverage cov;
 
     // Open a SAMtools process to calculate cumulative read depth and position
     // counts (non-zero depths only) for a single chromosome

@@ -1,0 +1,26 @@
+\doxysection{fasta\+\_\+query.\+h}
+\hypertarget{fasta__query_8h_source}{}\label{fasta__query_8h_source}\index{include/fasta\_query.h@{include/fasta\_query.h}}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00001\ \textcolor{comment}{//\ FASTAQuery:\ A\ class\ for\ querying\ a\ FASTA\ file.}}
+\DoxyCodeLine{00002\ }
+\DoxyCodeLine{00003\ \textcolor{preprocessor}{\#ifndef\ FASTA\_QUERY\_H}}
+\DoxyCodeLine{00004\ \textcolor{preprocessor}{\#define\ FASTA\_QUERY\_H}}
+\DoxyCodeLine{00005\ }
+\DoxyCodeLine{00006\ \textcolor{preprocessor}{\#include\ <string>}}
+\DoxyCodeLine{00007\ \textcolor{preprocessor}{\#include\ <map>}}
+\DoxyCodeLine{00008\ }
+\DoxyCodeLine{00009\ \textcolor{keyword}{class\ }\mbox{\hyperlink{class_f_a_s_t_a_query}{FASTAQuery}}\ \{}
+\DoxyCodeLine{00010\ \ \ \ \ \textcolor{keyword}{private}:}
+\DoxyCodeLine{00011\ \ \ \ \ \ \ \ \ std::string\ fasta\_filepath;}
+\DoxyCodeLine{00012\ \ \ \ \ \ \ \ \ std::map<std::string,\ std::string>\ chr\_to\_seq;}
+\DoxyCodeLine{00013\ }
+\DoxyCodeLine{00014\ \ \ \ \ \textcolor{keyword}{public}:}
+\DoxyCodeLine{00015\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{int}\ setFilepath(std::string\ fasta\_filepath);}
+\DoxyCodeLine{00016\ \ \ \ \ \ \ \ \ std::string\ getFilepath();}
+\DoxyCodeLine{00017\ \ \ \ \ \ \ \ \ std::string\ query(std::string\ chr,\ \textcolor{keywordtype}{int}\ pos\_start,\ \textcolor{keywordtype}{int}\ pos\_end);}
+\DoxyCodeLine{00018\ \};}
+\DoxyCodeLine{00019\ }
+\DoxyCodeLine{00020\ \textcolor{preprocessor}{\#endif\ }\textcolor{comment}{//\ FASTA\_QUERY\_H}}
+
+\end{DoxyCode}

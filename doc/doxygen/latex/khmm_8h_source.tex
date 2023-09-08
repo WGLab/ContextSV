@@ -1,0 +1,88 @@
+\doxysection{khmm.\+h}
+\hypertarget{khmm_8h_source}{}\label{khmm_8h_source}\index{include/khmm.h@{include/khmm.h}}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00001\ \textcolor{preprocessor}{\#ifndef\ \_KHMM\_H}}
+\DoxyCodeLine{00002\ \textcolor{preprocessor}{\#define\ \_KHMM\_H}}
+\DoxyCodeLine{00003\ }
+\DoxyCodeLine{00004\ \textcolor{preprocessor}{\#include\ <stdio.h>}}
+\DoxyCodeLine{00005\ \textcolor{preprocessor}{\#include\ <stdlib.h>}}
+\DoxyCodeLine{00006\ \textcolor{preprocessor}{\#include\ <math.h>}}
+\DoxyCodeLine{00007\ \textcolor{preprocessor}{\#include\ <string.h>}}
+\DoxyCodeLine{00008\ \textcolor{preprocessor}{\#include\ <vector>}}
+\DoxyCodeLine{00009\ }
+\DoxyCodeLine{00010\ \textcolor{keyword}{typedef}\ \textcolor{keyword}{struct\ }\{}
+\DoxyCodeLine{00011\ \ \ \ \ \textcolor{keywordtype}{int}\ N;\ \ \ \ \ \ \ \ \ \ \textcolor{comment}{/*\ number\ of\ states;\ \ Q=\{1,2,...,N\}\ */}}
+\DoxyCodeLine{00012\ \ \ \ \ \textcolor{keywordtype}{int}\ M;\ \ \ \ \ \ \ \ \ \ \textcolor{comment}{/*\ number\ of\ observation\ symbols;\ V=\{1,2,...,M\}*/}}
+\DoxyCodeLine{00013\ \ \ \ \ \textcolor{keywordtype}{double}\ **A;\ \ \ \ \ \textcolor{comment}{/*\ A[1..N][1..N].\ a[i][j]\ is\ the\ transition\ prob}}
+\DoxyCodeLine{00014\ \textcolor{comment}{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ of\ going\ from\ state\ i\ at\ time\ t\ to\ state\ j}}
+\DoxyCodeLine{00015\ \textcolor{comment}{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ at\ time\ t+1\ */}}
+\DoxyCodeLine{00016\ \ \ \ \ \textcolor{keywordtype}{double}\ **B;\ \ \ \ \ \textcolor{comment}{/*\ B[1..N][1..M].\ b[j][k]\ is\ the\ probability\ of}}
+\DoxyCodeLine{00017\ \textcolor{comment}{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ of\ observing\ symbol\ k\ in\ state\ j\ */}}
+\DoxyCodeLine{00018\ \ \ \ \ \textcolor{keywordtype}{double}\ *pi;\ \ \ \ \ \textcolor{comment}{/*\ pi[1..N]\ pi[i]\ is\ the\ initial\ state\ distribution.\ */}}
+\DoxyCodeLine{00019\ \ \ \ \ \textcolor{keywordtype}{double}\ *B1\_mean;\ \ \ \ \textcolor{comment}{/*\ B1\_mean[1..N]\ mean\ of\ a\ continuous\ Gaussian\ distribution\ for\ state\ 1\ through\ N*/}}
+\DoxyCodeLine{00020\ \ \ \ \ \textcolor{keywordtype}{double}\ *B1\_sd;\ \ \ \ \ \ \textcolor{comment}{/*B1\_sd\ standard\ deviation\ of\ B1\ values,\ which\ is\ the\ same\ for\ all\ states*/}}
+\DoxyCodeLine{00021\ \ \ \ \ \textcolor{keywordtype}{double}\ B1\_uf;\ \ \ \ \ \ \ \textcolor{comment}{/*B1\_uniform\_fraction:\ the\ contribution\ of\ uniform\ distribution\ to\ the\ finite\ mixture\ model\ */}}
+\DoxyCodeLine{00022\ \ \ \ \ \textcolor{keywordtype}{double}\ *B2\_mean;\ \ \ \ \textcolor{comment}{/*\ B2\_mean[1..4]\ is\ the\ average\ of\ B\_allele\_freq*/}}
+\DoxyCodeLine{00023\ \ \ \ \ \textcolor{keywordtype}{double}\ *B2\_sd;\ \ \ \ \ \ \textcolor{comment}{/*\ B2\_sd[1..4]\ is\ the\ standard\ deviation\ of\ four\ B\_allele\_freq,\ B2\_sd[5]\ is\ specially\ for\ state1,\ where\ B\ is\ modelled\ as\ a\ wide\ normal\ distribution\ */}}
+\DoxyCodeLine{00024\ \ \ \ \ \textcolor{keywordtype}{double}\ B2\_uf;\ \ \ \ \ \ \ \textcolor{comment}{/*\ B2\_uniform\_fraction:\ the\ fraction\ of\ uniform\ distribution\ in\ the\ finite\ mixture\ model\ */}}
+\DoxyCodeLine{00025\ \ \ \ \ }
+\DoxyCodeLine{00026\ \ \ \ \ \textcolor{keywordtype}{int}\ NP\_flag;\ \ \ \ \ \ \ \ \textcolor{comment}{/*flag\ of\ 1\ and\ 0\ to\ indicate\ whether\ Non-\/Polymorhpic\ marker\ information\ is\ contained\ with\ HMM\ file*/}}
+\DoxyCodeLine{00027\ \ \ \ \ \textcolor{keywordtype}{double}\ *B3\_mean;\ \ \ \ \textcolor{comment}{/*\ B3\_mean[1..N]\ mean\ of\ non-\/polymorphic\ probe\ for\ state\ 1\ through\ N*/}}
+\DoxyCodeLine{00028\ \ \ \ \ \textcolor{keywordtype}{double}\ *B3\_sd;\ \ \ \ \ \ \textcolor{comment}{/*\ B3\_sd[1..4]\ is\ the\ standard\ deviation\ of\ B3\ values*/}}
+\DoxyCodeLine{00029\ \ \ \ \ \textcolor{keywordtype}{double}\ B3\_uf;\ \ \ \ \ \ \ \textcolor{comment}{/*\ B3\_uniform\_fraction:\ */}}
+\DoxyCodeLine{00030\ \ \ \ \ \textcolor{keywordtype}{int}\ dist;\ \ \ \ \ \ \ \textcolor{comment}{/*\ new\ parameter\ to\ facilitate\ CNV\ calling\ from\ resequencing\ data\ (2009\ April)\ */}}
+\DoxyCodeLine{00031\ \}\ \mbox{\hyperlink{struct_c_h_m_m}{CHMM}};}
+\DoxyCodeLine{00032\ }
+\DoxyCodeLine{00033\ }
+\DoxyCodeLine{00034\ \textcolor{comment}{/************************************}}
+\DoxyCodeLine{00035\ \textcolor{comment}{*subroutines\ for\ processing\ continuous\ HMM\ models}}
+\DoxyCodeLine{00036\ \textcolor{comment}{************************************/}}
+\DoxyCodeLine{00037\ }
+\DoxyCodeLine{00039\ \mbox{\hyperlink{struct_c_h_m_m}{CHMM}}\ ReadCHMM\ (\textcolor{keyword}{const}\ \textcolor{keywordtype}{char}\ *filename);}
+\DoxyCodeLine{00040\ }
+\DoxyCodeLine{00042\ \mbox{\hyperlink{struct_c_h_m_m}{CHMM}}\ GetDefaultCHMM();}
+\DoxyCodeLine{00043\ }
+\DoxyCodeLine{00044\ \textcolor{keywordtype}{void}\ PrintCHMM(FILE\ *fp,\ \mbox{\hyperlink{struct_c_h_m_m}{CHMM}}\ *phmm);}
+\DoxyCodeLine{00045\ \textcolor{keywordtype}{void}\ CopyCHMM(\mbox{\hyperlink{struct_c_h_m_m}{CHMM}}\ *phmm1,\ \mbox{\hyperlink{struct_c_h_m_m}{CHMM}}\ *phmm2);}
+\DoxyCodeLine{00046\ \textcolor{keywordtype}{void}\ FreeCHMM(\mbox{\hyperlink{struct_c_h_m_m}{CHMM}}\ *phmm);}
+\DoxyCodeLine{00047\ }
+\DoxyCodeLine{00048\ std::vector<int>\ testVit\_CHMM\ (\mbox{\hyperlink{struct_c_h_m_m}{CHMM}}\ hmm,\ \textcolor{keywordtype}{int}\ T,\ \textcolor{keywordtype}{double}\ *O1,\ \textcolor{keywordtype}{double}\ *O2,\ \textcolor{keywordtype}{double}\ *pfb,\ \textcolor{keywordtype}{int}\ *snpdist,\ \textcolor{keywordtype}{double}\ *plogproba);}
+\DoxyCodeLine{00049\ \textcolor{keywordtype}{void}\ tumorVit\_CHMM\ (\mbox{\hyperlink{struct_c_h_m_m}{CHMM}}\ hmm,\ \textcolor{keywordtype}{int}\ T,\ \textcolor{keywordtype}{double}\ *O1,\ \textcolor{keywordtype}{double}\ *O2,\ \textcolor{keywordtype}{double}\ *pfb,\ \textcolor{keywordtype}{int}\ *snpdist,\ \textcolor{keywordtype}{double}\ *plogproba,\ \textcolor{keywordtype}{double}\ stroma);}
+\DoxyCodeLine{00050\ std::vector<int>\ ViterbiLogNP\_CHMM(\mbox{\hyperlink{struct_c_h_m_m}{CHMM}}\ *phmm,\ \textcolor{keywordtype}{int}\ T,\ \textcolor{keywordtype}{double}\ *O1,\ \textcolor{keywordtype}{double}\ *O2,\ \textcolor{keywordtype}{double}\ *pfb,\ \textcolor{keywordtype}{int}\ *snpdist,\ \textcolor{keywordtype}{double}\ **delta,\ \textcolor{keywordtype}{int}\ **psi,\ \textcolor{keywordtype}{double}\ *pprob);}
+\DoxyCodeLine{00051\ \textcolor{keywordtype}{void}\ ViterbiLogNPStroma\_CHMM(\mbox{\hyperlink{struct_c_h_m_m}{CHMM}}\ *phmm,\ \textcolor{keywordtype}{int}\ T,\ \textcolor{keywordtype}{double}\ *O1,\ \textcolor{keywordtype}{double}\ *O2,\ \textcolor{keywordtype}{double}\ *pfb,\ \textcolor{keywordtype}{int}\ *snpdist,\ \textcolor{keywordtype}{double}\ **delta,\ \textcolor{keywordtype}{int}\ **psi,\ \textcolor{keywordtype}{int}\ *q,\ \textcolor{keywordtype}{double}\ *pprob,\ \textcolor{keywordtype}{double}\ stroma);}
+\DoxyCodeLine{00052\ }
+\DoxyCodeLine{00053\ \textcolor{keywordtype}{void}\ estHMMFromFile\_CHMM\ (\mbox{\hyperlink{struct_c_h_m_m}{CHMM}}\ hmm,\ \textcolor{keywordtype}{int}\ T,\ FILE\ *fp,\ \textcolor{keywordtype}{int}\ *niter,\ \textcolor{keywordtype}{double}\ *logprobinit,\ \textcolor{keywordtype}{double}\ *logprobfinal);}
+\DoxyCodeLine{00054\ \textcolor{keywordtype}{void}\ BaumWelchNP\_CHMM(\mbox{\hyperlink{struct_c_h_m_m}{CHMM}}\ *phmm,\ \textcolor{keywordtype}{int}\ T,\ \textcolor{keywordtype}{double}\ *O1,\ \textcolor{keywordtype}{double}\ *O2,\ \textcolor{keywordtype}{double}\ *pfb,\ \textcolor{keywordtype}{int}\ *snpdist,\ \textcolor{keywordtype}{double}\ **alpha,\ \textcolor{keywordtype}{double}\ **beta,\ \textcolor{keywordtype}{double}\ **gamma,\ \textcolor{keywordtype}{int}\ *pniter,\ \textcolor{keywordtype}{double}\ *plogprobinit,\ \textcolor{keywordtype}{double}\ *plogprobfinal);}
+\DoxyCodeLine{00055\ \textcolor{keywordtype}{void}\ ComputeXi\_CHMM\ (\mbox{\hyperlink{struct_c_h_m_m}{CHMM}}*\ phmm,\ \textcolor{keywordtype}{int}\ T,\ \textcolor{keywordtype}{double}\ *O1,\ \textcolor{keywordtype}{double}\ *O2,\ \textcolor{keywordtype}{double}\ **biot,\ \textcolor{keywordtype}{int}\ *snpdist,\ \textcolor{keywordtype}{double}\ **alpha,\ \textcolor{keywordtype}{double}\ **beta,\ \textcolor{keywordtype}{double}\ ***xi);}
+\DoxyCodeLine{00056\ \textcolor{keywordtype}{void}\ ComputeGamma\_CHMM\ (\mbox{\hyperlink{struct_c_h_m_m}{CHMM}}\ *phmm,\ \textcolor{keywordtype}{int}\ T,\ \textcolor{keywordtype}{double}\ **alpha,\ \textcolor{keywordtype}{double}\ **beta,\ \textcolor{keywordtype}{double}\ **gamma);}
+\DoxyCodeLine{00057\ \textcolor{keywordtype}{void}\ BackwardWithScale\_CHMM\ (\mbox{\hyperlink{struct_c_h_m_m}{CHMM}}\ *phmm,\ \textcolor{keywordtype}{int}\ T,\ \textcolor{keywordtype}{double}\ *O1,\ \textcolor{keywordtype}{double}\ *O2,\ \textcolor{keywordtype}{double}\ **biot,\ \textcolor{keywordtype}{int}\ *snpdist,\ \textcolor{keywordtype}{double}\ **beta,\ \textcolor{keywordtype}{double}\ *scale,\ \textcolor{keywordtype}{double}\ *pprob);}
+\DoxyCodeLine{00058\ \textcolor{keywordtype}{void}\ ForwardWithScale\_CHMM\ (\mbox{\hyperlink{struct_c_h_m_m}{CHMM}}\ *phmm,\ \textcolor{keywordtype}{int}\ T,\ \textcolor{keywordtype}{double}\ *O1,\ \textcolor{keywordtype}{double}\ *O2,\ \textcolor{keywordtype}{double}\ **biot,\ \textcolor{keywordtype}{int}\ *snpdist,\ \textcolor{keywordtype}{double}\ **alpha,\ \textcolor{keywordtype}{double}\ *scale,\ \textcolor{keywordtype}{double}\ *pprob);}
+\DoxyCodeLine{00059\ }
+\DoxyCodeLine{00060\ \textcolor{keywordtype}{void}\ GetStateProb\_CHMM(\mbox{\hyperlink{struct_c_h_m_m}{CHMM}}\ *phmm,\ \textcolor{keywordtype}{int}\ T,\ \textcolor{keywordtype}{double}\ *O1,\ \textcolor{keywordtype}{double}\ *O2,\ \textcolor{keywordtype}{double}\ *pfb,\ \textcolor{keywordtype}{int}\ *snpdist,\ \textcolor{keywordtype}{double}\ *pprob,\ \textcolor{keywordtype}{int}\ state);}
+\DoxyCodeLine{00061\ \textcolor{keywordtype}{void}\ convertHMMTransition\ (\mbox{\hyperlink{struct_c_h_m_m}{CHMM}}\ *phmm,\ \textcolor{keywordtype}{double}\ **A1,\ \textcolor{keywordtype}{int}\ dist);}
+\DoxyCodeLine{00062\ \textcolor{keywordtype}{void}\ adjustBSD\ (\mbox{\hyperlink{struct_c_h_m_m}{CHMM}}\ *phmm,\ \textcolor{keywordtype}{double}\ sdo);}
+\DoxyCodeLine{00063\ }
+\DoxyCodeLine{00064\ \textcolor{keywordtype}{double}\ b1iot\ (\textcolor{keywordtype}{int}\ state,\ \textcolor{keywordtype}{double}\ *mean,\ \textcolor{keywordtype}{double}\ *sd,\ \textcolor{keywordtype}{double}\ uf,\ \textcolor{keywordtype}{double}\ o);}
+\DoxyCodeLine{00065\ \textcolor{keywordtype}{double}\ b2iot\ (\textcolor{keywordtype}{int}\ state,\ \textcolor{keywordtype}{double}\ *mean,\ \textcolor{keywordtype}{double}\ *sd,\ \textcolor{keywordtype}{double}\ uf,\ \textcolor{keywordtype}{double}\ pfb,\ \textcolor{keywordtype}{double}\ b);}
+\DoxyCodeLine{00066\ \textcolor{keywordtype}{double}\ b5iot\ (\textcolor{keywordtype}{int}\ state,\ \textcolor{keywordtype}{double}\ *mean,\ \textcolor{keywordtype}{double}\ *sd,\ \textcolor{keywordtype}{double}\ uf,\ \textcolor{keywordtype}{double}\ o,\ \textcolor{keywordtype}{double}\ stroma);}
+\DoxyCodeLine{00067\ \textcolor{keywordtype}{double}\ b6iot\ (\textcolor{keywordtype}{int}\ state,\ \textcolor{keywordtype}{double}\ *mean,\ \textcolor{keywordtype}{double}\ *sd,\ \textcolor{keywordtype}{double}\ uf,\ \textcolor{keywordtype}{double}\ pfb,\ \textcolor{keywordtype}{double}\ b,\ \textcolor{keywordtype}{double}\ stroma);}
+\DoxyCodeLine{00068\ }
+\DoxyCodeLine{00069\ \textcolor{keywordtype}{void}\ testVitTrio\_CHMM\ (\mbox{\hyperlink{struct_c_h_m_m}{CHMM}}\ *phmm,\ \textcolor{keywordtype}{int}\ T,\ \textcolor{keywordtype}{double}\ *Of1,\ \textcolor{keywordtype}{double}\ *Of2,\ \textcolor{keywordtype}{double}\ *Om1,\ \textcolor{keywordtype}{double}\ *Om2,\ \textcolor{keywordtype}{double}\ *Oo1,\ \textcolor{keywordtype}{double}\ *Oo2,\ \textcolor{keywordtype}{double}\ *pfb,\ \textcolor{keywordtype}{int}\ *snpdist,\ \textcolor{keywordtype}{double}\ *plogproba,\ \textcolor{keywordtype}{double}\ *trio\_lrr\_sd,\ \textcolor{keywordtype}{int}\ osex,\ \textcolor{keywordtype}{int}\ chrx\_flag);}
+\DoxyCodeLine{00070\ \textcolor{keywordtype}{double}\ trioTransition\ (\textcolor{keywordtype}{double}\ cimcell,\ \textcolor{keywordtype}{double}\ chit,\ \textcolor{keywordtype}{double}\ **A1,\ \textcolor{keywordtype}{double}\ e1,\ \textcolor{keywordtype}{double}\ e2,\ \textcolor{keywordtype}{int}\ dist,\ \textcolor{keywordtype}{int}\ pdn,\ \textcolor{keywordtype}{int}\ pifat,\ \textcolor{keywordtype}{int}\ pimot,\ \textcolor{keywordtype}{int}\ pioff,\ \textcolor{keywordtype}{int}\ dn,\ \textcolor{keywordtype}{int}\ ifat,\ \textcolor{keywordtype}{int}\ imot,\ \textcolor{keywordtype}{int}\ ioff);}
+\DoxyCodeLine{00071\ \textcolor{keywordtype}{void}\ calculateCHIT\ (\textcolor{keywordtype}{double}\ a,\ \textcolor{keywordtype}{double}\ M[5][5][5][5][5][5]);}
+\DoxyCodeLine{00072\ \textcolor{keywordtype}{void}\ calculateCHIT\_male\_x\ (\textcolor{keywordtype}{double}\ a,\ \textcolor{keywordtype}{double}\ M[5][5][5][5][5][5]);}
+\DoxyCodeLine{00073\ \textcolor{keywordtype}{void}\ calculateCHIT\_female\_x\ (\textcolor{keywordtype}{double}\ a,\ \textcolor{keywordtype}{double}\ M[5][5][5][5][5][5]);}
+\DoxyCodeLine{00074\ }
+\DoxyCodeLine{00075\ \textcolor{keywordtype}{double}\ ***\ AllocXi(\textcolor{keywordtype}{int}\ T,\ \textcolor{keywordtype}{int}\ N);}
+\DoxyCodeLine{00076\ \textcolor{keywordtype}{void}\ FreeXi(\textcolor{keywordtype}{double}\ ***\ xi,\ \textcolor{keywordtype}{int}\ T,\ \textcolor{keywordtype}{int}\ N);}
+\DoxyCodeLine{00077\ }
+\DoxyCodeLine{00078\ \textcolor{keywordtype}{void}\ callCNVFromFile\_SEQ\ (\mbox{\hyperlink{struct_c_h_m_m}{CHMM}}\ hmm,\ \textcolor{keywordtype}{int}\ T,\ FILE\ *fp,\ \textcolor{keywordtype}{int}\ *mlstate,\ \textcolor{keywordtype}{double}\ gamma\_k,\ \textcolor{keywordtype}{double}\ gamma\_theta);}
+\DoxyCodeLine{00079\ \textcolor{keywordtype}{void}\ ViterbiLogNP\_SEQ\ (\mbox{\hyperlink{struct_c_h_m_m}{CHMM}}\ *phmm,\ \textcolor{keywordtype}{int}\ T,\ \textcolor{keywordtype}{double}\ k,\ \textcolor{keywordtype}{double}\ theta,\ \textcolor{keywordtype}{double}\ *O1,\ \textcolor{keywordtype}{int}\ *O2,\ \textcolor{keywordtype}{double}\ *pfb,\ \textcolor{keywordtype}{int}\ *length,\ \textcolor{keywordtype}{double}\ **delta,\ \textcolor{keywordtype}{int}\ **psi,\ \textcolor{keywordtype}{int}\ *q);}
+\DoxyCodeLine{00080\ \textcolor{keywordtype}{double}\ b4iot\ (\textcolor{keywordtype}{int}\ state,\ \textcolor{keywordtype}{double}\ *mean,\ \textcolor{keywordtype}{double}\ *sd,\ \textcolor{keywordtype}{double}\ uf,\ \textcolor{keywordtype}{double}\ pfb,\ \textcolor{keywordtype}{int}\ o1,\ \textcolor{keywordtype}{int}\ o2);}
+\DoxyCodeLine{00081\ \textcolor{keywordtype}{double}\ b3iot\ (\textcolor{keywordtype}{int}\ state,\ \textcolor{keywordtype}{double}\ *mean,\ \textcolor{keywordtype}{double}\ *sd,\ \textcolor{keywordtype}{double}\ uf,\ \textcolor{keywordtype}{double}\ o1,\ \textcolor{keywordtype}{int}\ length);}
+\DoxyCodeLine{00082\ \textcolor{keywordtype}{void}\ adjustHMMExpected\ (\mbox{\hyperlink{struct_c_h_m_m}{CHMM}}\ *phmm,\ \textcolor{keywordtype}{double}\ coverage);}
+\DoxyCodeLine{00083\ }
+\DoxyCodeLine{00084\ \textcolor{preprocessor}{\#endif\ }\textcolor{comment}{//\ \_HMM\_H\_}}
+
+\end{DoxyCode}

@@ -1,0 +1,42 @@
+\doxysection{sv\+\_\+caller.\+h}
+\hypertarget{sv__caller_8h_source}{}\label{sv__caller_8h_source}\index{include/sv\_caller.h@{include/sv\_caller.h}}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00001\ \textcolor{comment}{//\ SVCaller:\ Detect\ SVs\ from\ long\ read\ alignments}}
+\DoxyCodeLine{00002\ }
+\DoxyCodeLine{00003\ \textcolor{preprocessor}{\#ifndef\ SV\_CALLER\_H}}
+\DoxyCodeLine{00004\ \textcolor{preprocessor}{\#define\ SV\_CALLER\_H}}
+\DoxyCodeLine{00005\ }
+\DoxyCodeLine{00006\ \textcolor{preprocessor}{\#include\ "{}input\_data.h"{}}}
+\DoxyCodeLine{00007\ \textcolor{preprocessor}{\#include\ "{}cnv\_data.h"{}}}
+\DoxyCodeLine{00008\ \textcolor{preprocessor}{\#include\ "{}sv\_data.h"{}}}
+\DoxyCodeLine{00009\ \textcolor{preprocessor}{\#include\ "{}types.h"{}}}
+\DoxyCodeLine{00010\ }
+\DoxyCodeLine{00011\ }
+\DoxyCodeLine{00012\ \textcolor{keyword}{class\ }\mbox{\hyperlink{class_s_v_caller}{SVCaller}}\ \{}
+\DoxyCodeLine{00013\ \ \ \ \ \textcolor{keyword}{private}:}
+\DoxyCodeLine{00014\ \ \ \ \ \ \ \ \ \textcolor{comment}{//int\ max\_indel\_dist\ =\ 1000;\ \ //\ Maximum\ distance\ between\ two\ indels\ to}}
+\DoxyCodeLine{00015\ \ \ \ \ \ \ \ \ \textcolor{comment}{//be\ considered\ as\ a\ single\ SV}}
+\DoxyCodeLine{00016\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{int}\ max\_indel\_dist\ =\ 10;\ \ \textcolor{comment}{//\ Maximum\ distance\ between\ two\ indels\ to\ be\ considered\ as\ a\ single\ SV}}
+\DoxyCodeLine{00017\ \ \ \ \ \ \ \ \ \textcolor{comment}{//int\ min\_sv\_size\ =\ 50;\ \ \ \ \ \ \ //\ Minimum\ SV\ size\ to\ be\ considered}}
+\DoxyCodeLine{00018\ \ \ \ \ \ \ \ \ \textcolor{comment}{//int\ min\_sv\_size\ =\ 30;\ \ \ \ \ \ \ //\ Minimum\ SV\ size\ to\ be\ considered}}
+\DoxyCodeLine{00019\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{int}\ min\_sv\_size\ =\ 50;\ \ \ \ \ \ \ \textcolor{comment}{//\ Minimum\ SV\ size\ to\ be\ considered}}
+\DoxyCodeLine{00020\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{int}\ min\_mapq\ =\ 20;\ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Minimum\ mapping\ quality\ to\ be\ considered}}
+\DoxyCodeLine{00021\ \ \ \ \ \ \ \ \ \mbox{\hyperlink{class_input_data}{InputData}}*\ input\_data;}
+\DoxyCodeLine{00022\ }
+\DoxyCodeLine{00023\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Detect\ SVs\ from\ long\ read\ alignments\ in\ the\ CIGAR\ string}}
+\DoxyCodeLine{00024\ \ \ \ \ \ \ \ \ \mbox{\hyperlink{class_s_v_data}{SVData}}\ detectSVsFromCIGAR(std::string\ chr,\ int32\_t\ pos,\ uint32\_t*\ cigar,\ \textcolor{keywordtype}{int}\ cigar\_len);}
+\DoxyCodeLine{00025\ }
+\DoxyCodeLine{00026\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Detect\ SVs\ from\ split-\/read\ alignments\ (primary\ and\ supplementary)}}
+\DoxyCodeLine{00027\ \ \ \ \ \ \ \ \ \mbox{\hyperlink{class_s_v_data}{SVData}}\ detectSVsFromSplitReads();}
+\DoxyCodeLine{00028\ }
+\DoxyCodeLine{00029\ \ \ \ \ \textcolor{keyword}{public}:}
+\DoxyCodeLine{00030\ \ \ \ \ \ \ \ \ \mbox{\hyperlink{class_s_v_caller}{SVCaller}}(\mbox{\hyperlink{class_input_data}{InputData}}\&\ input\_data);}
+\DoxyCodeLine{00031\ }
+\DoxyCodeLine{00032\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Detect\ SVs\ and\ predict\ SV\ type\ from\ long\ read\ alignments\ and\ CNV\ calls}}
+\DoxyCodeLine{00033\ \ \ \ \ \ \ \ \ \mbox{\hyperlink{class_s_v_data}{SVData}}\ run();}
+\DoxyCodeLine{00034\ \};}
+\DoxyCodeLine{00035\ }
+\DoxyCodeLine{00036\ \textcolor{preprocessor}{\#endif\ }\textcolor{comment}{//\ SV\_CALLER\_H}}
+
+\end{DoxyCode}

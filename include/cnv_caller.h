@@ -11,12 +11,6 @@
 #include <string>
 #include <vector>
 
-struct RegionCoverage {
-    bool valid  = false;
-    uint64_t length  = 0;
-    double mean = 0;
-    double baf  = 0;
-};
 
 class CNVCaller {
     private:

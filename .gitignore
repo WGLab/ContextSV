@@ -50,10 +50,6 @@ __pycache__/
 *.code-workspace
 CMakeSettings.json
 
-# Doxygen
-doc/doxygen
-*.code-workspace
-
 # Shell scripts
 *.sh
 
