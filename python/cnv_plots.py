@@ -6,6 +6,7 @@ import os
 import sys
 import logging as log
 import plotly
+from plotly.subplots import make_subplots
 import pandas as pd
 
 # Set up logging.
@@ -43,6 +44,18 @@ def get_info_field_value(info_field, field_name):
     return field_value
 
 def run(vcf_path, cnv_data_path, output_path):
+    """
+    Saves a plot of the CNVs and their log2 ratio and B-allele frequency
+    values.
+    
+    Args:
+        vcf_path (str): The path to the VCF file.
+        cnv_data_path (str): The path to the CNV data file.
+        output_path (str): The path to the output directory.
+
+    Returns:
+        None
+    """
     # Get the CNV data.
     vcf_file = open(vcf_path, "r")
     cnv_data = pd.read_csv(cnv_data_path, sep="\t")
@@ -53,10 +66,6 @@ def run(vcf_path, cnv_data_path, output_path):
     # Get the log2_ratio and BAF values.
     l2r_values = cnv_data["log2_ratio"]
     baf_values = cnv_data["b_allele_freq"]
-
-    # # Get the CNV types as a list of integers (non-64 bit integers) using numpy.
-    # cnv_states = cnv_data["cnv_state"].to_numpy()
-    # cnv_states = cnv_states.astype(int)
 
     # Get the CNV colors.
     cnv_colors = []
@@ -80,18 +89,39 @@ def run(vcf_path, cnv_data_path, output_path):
     for index, row in cnv_data.iterrows():
         cnv_hover_text.append(f"TYPE: {cnv_types[row['cnv_state']]}<br>CHR: {row['chromosome']}<br>POS: {row['position']}<br>L2R: {row['log2_ratio']}<br>BAF: {row['b_allele_freq']}")
 
-    # Plot the CNVs.
+    # Plot the CNV log2 ratio values.
     cnv_trace = plotly.graph_objs.Scatter(
         x = cnv_data["position"],
         y = cnv_data["log2_ratio"],
         mode = "markers+lines",
-        name = "CNVs",
+        name = "Log2 Ratio",
         text = cnv_hover_text,
         hoverinfo = "text",
         marker = dict(
             color = cnv_colors,
             size = 10,
+        ),
+        line = dict(
+            color = "gray",
+            width = 2
         )
+    )
+
+    # Plot the BAF values.
+    baf_trace = plotly.graph_objs.Scatter(
+        x = cnv_data["position"],
+        y = cnv_data["b_allele_freq"],
+        mode = "markers+lines",
+        name = "B-Allele Frequency",
+        text = cnv_hover_text,
+        marker = dict(
+            color = cnv_colors,
+            size = 10,
+        ),
+        line = dict(
+            color = "gray",
+            width = 2
+        ),
     )
 
     # Read the VCF file.
@@ -132,32 +162,42 @@ def run(vcf_path, cnv_data_path, output_path):
             cnv_start_positions.append(start_position)
             cnv_end_positions.append(end_position)
 
-    # # Create the figure.
-    # fig = plotly.graph_objs.Figure(
-    #     data = [cnv_trace]
-    # )
-
-
-    # # Create the figure.
-    # fig = plotly.graph_objs.Figure(
-    #     data = [cnv_trace]
-    # )
-
-    # Define the layout.
-    layout = plotly.graph_objs.Layout(
-        title = f"CNVs for region {cnv_data['chromosome'][0]}:{cnv_data['position'][0]}-{cnv_data['position'][len(cnv_data) - 1]}",
-        xaxis = dict(
-            title = "Chromosome Position"
-        ),
-        yaxis = dict(
-            title = r"Log<sub>2</sub> Ratio "
-        )
+    # Create a subplot for the CNV plot and the BAF plot.
+    fig = make_subplots(
+        rows=2,
+        cols=1,
+        shared_xaxes=True,
+        vertical_spacing=0.05,
+        subplot_titles=(r"SNP Log<sub>2</sub> Ratio", "SNP B-Allele Frequency")
     )
 
-    # Create the figure.
-    fig = plotly.graph_objs.Figure(
-        data = [cnv_trace],
-        layout = layout
+    # Add the CNV trace and BAF trace to the figure.
+    fig.append_trace(cnv_trace, 1, 1)
+    fig.append_trace(baf_trace, 2, 1)
+
+    # Set the x-axis title.
+    fig.update_xaxes(
+        title_text = "Chromosome Position",
+        row = 2,
+        col = 1
+    )
+
+    # Set the y-axis titles.
+    fig.update_yaxes(
+        title_text = r"Log<sub>2</sub> Ratio",
+        row = 1,
+        col = 1
+    )
+
+    fig.update_yaxes(
+        title_text = "B-Allele Frequency",
+        row = 2,
+        col = 1
+    )
+
+    # Set the figure title.
+    fig.update_layout(
+        title_text = f"CNVs for region {cnv_data['chromosome'][0]}:{cnv_data['position'][0]}-{cnv_data['position'][len(cnv_data) - 1]}"
     )
 
     # Create a shaded rectangle for each CNV, layering them below the CNV trace
@@ -179,24 +219,22 @@ def run(vcf_path, cnv_data_path, output_path):
         # Add vertical lines at the start and end positions of the CNV.
         fig.add_vline(
             x = cnv_start_positions[i],
-            line_width = 1,
+            line_width = 2,
             line_color = "black",
             layer = "below"
         )
 
         fig.add_vline(
             x = cnv_end_positions[i],
-            line_width = 1,
+            line_width = 2,
             line_color = "black",
             layer = "below"
         )
 
-        log.info("Added CNV rectangle for {}:{}-{}, SVLEN={}".format(
-            cnv_chromosomes[i],
-            cnv_start_positions[i],
-            cnv_end_positions[i],
-            cnv_end_positions[i] - cnv_start_positions[i]
-        ))
+    # Hide the legends.
+    fig.update_layout(
+        showlegend = False
+    )
 
     # Save the figure.
     filepath = os.path.join(output_path, "cnv_plot.html")
