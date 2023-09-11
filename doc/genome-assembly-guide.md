@@ -2,12 +2,13 @@
 
 ## Download Test Data
 Input data is from GIAB: Oxford Nanopore ultralong (guppy-V3.2.4_2020-01-22)
+
 https://github.com/genome-in-a-bottle/giab_data_indexes
 
 ## De novo Assembly
 We will perform de novo assembly of the hg002 data using miniasm (instructions from https://github.com/lh3/miniasm)
 
-Also see Optical Kermit's optical map guided assembly script, which uses the
+- Also see Optical Kermit's optical map guided assembly script, which uses the
 same tools and approach (https://github.com/Denopia/kermit-optical-maps/blob/master/genome-assembly.sh)
 
 ### Set up the software environment:
