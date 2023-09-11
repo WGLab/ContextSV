@@ -1,5 +1,3 @@
-#!/bin/bash
-
 # Hybrid Optical Map-Guided Assembly
 
 ## Download Test Data
