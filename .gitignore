@@ -55,3 +55,6 @@ CMakeSettings.json
 
 # Output folder
 output/
+
+# Doxygen
+html/
