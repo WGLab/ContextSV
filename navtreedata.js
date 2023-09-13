@@ -54,6 +54,7 @@ var NAVTREE =
     [ "Classes", "annotated.html", [
       [ "Class List", "annotated.html", "annotated_dup" ],
       [ "Class Index", "classes.html", null ],
+      [ "Class Hierarchy", "hierarchy.html", "hierarchy" ],
       [ "Class Members", "functions.html", [
         [ "All", "functions.html", null ],
         [ "Functions", "functions_func.html", null ],
@@ -65,6 +66,7 @@ var NAVTREE =
       [ "File Members", "globals.html", [
         [ "All", "globals.html", "globals_dup" ],
         [ "Functions", "globals_func.html", "globals_func" ],
+        [ "Variables", "globals_vars.html", null ],
         [ "Typedefs", "globals_type.html", null ],
         [ "Macros", "globals_defs.html", null ]
       ] ]
@@ -75,8 +77,10 @@ var NAVTREE =
 var NAVTREEINDEX =
 [
 "____init_____8py.html",
-"kc_8cpp.html#a71a16b3fb6e64dabbd74bfa358b6e6f0",
-"kc_8h.html#ad641c37850b1195f2501e65ccb8efdcc"
+"kc_8cpp.html#a43a29f653177107c327548f14d5f2a33",
+"kc_8h.html#aa1745417f9696825bc7cc68538800b5b",
+"structswig__cast__info.html#afc685bcf38a5a06c6601775138c5999c",
+"swig__wrapper_8cpp.html#ae3360186a49695b175fca7590941bf26"
 ];
 
 var SYNCONMSG = 'click to disable panel synchronisation';

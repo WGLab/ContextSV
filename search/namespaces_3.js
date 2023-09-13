@@ -1,5 +1,6 @@
 var searchData=
 [
-  ['test_5fgeneral_0',['test_general',['../namespacetest__general.html',1,'']]],
-  ['train_5fmodel_1',['train_model',['../namespacetrain__model.html',1,'']]]
+  ['scoring_5fmodel_0',['scoring_model',['../namespacescoring__model.html',1,'']]],
+  ['setup_1',['setup',['../namespacesetup.html',1,'']]],
+  ['swig_2',['swig',['../namespaceswig.html',1,'']]]
 ];

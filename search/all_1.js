@@ -11,10 +11,11 @@ var searchData=
   ['alignmentvector_8',['AlignmentVector',['../types_8h.html#ad231dd6851b89d7c4054377c6e43ff0d',1,'types.h']]],
   ['allocxi_9',['AllocXi',['../khmm_8h.html#a47b39138668ac7fa02ad3bbad1d084e1',1,'khmm.h']]],
   ['analysis_10',['Convert GFA file to FASTA for downstream analysis',['../md_docs_2genome-assembly-guide.html#autotoc_md6',1,'']]],
-  ['assemble_20the_20self_20aligned_20data_3a_11',['Use miniasm to assemble the self-aligned data:',['../md_docs_2genome-assembly-guide.html#autotoc_md5',1,'']]],
-  ['assembly_12',['assembly',['../md_docs_2genome-assembly-guide.html#autotoc_md2',1,'De novo Assembly'],['../md_docs_2genome-assembly-guide.html',1,'Hybrid Optical Map-Guided Assembly']]],
-  ['author_13',['author',['../namespacesetup.html#a3a57a4772d418a06835249cbade0d86a',1,'setup']]],
-  ['averms_14',['averms',['../kc_8cpp.html#ae62de561257c307cae1c731732aeaf90',1,'averms(double *data, int n, double *ave, double *rms):&#160;kc.cpp'],['../kc_8h.html#ae62de561257c307cae1c731732aeaf90',1,'averms(double *data, int n, double *ave, double *rms):&#160;kc.cpp']]],
-  ['avevar_15',['avevar',['../kc_8h.html#ae263d464ebb9d7304f3c8043c41622b7',1,'avevar(double *data, int n, double *ave, double *var):&#160;kc.cpp'],['../kc_8cpp.html#ae263d464ebb9d7304f3c8043c41622b7',1,'avevar(double *data, int n, double *ave, double *var):&#160;kc.cpp']]],
-  ['avevar2_16',['avevar2',['../kc_8h.html#ab1a75880788408871996b8697b240e42',1,'avevar2(double *data, int n, double *ave, double *var):&#160;kc.cpp'],['../kc_8cpp.html#ab1a75880788408871996b8697b240e42',1,'avevar2(double *data, int n, double *ave, double *var):&#160;kc.cpp']]]
+  ['arguments_11',['arguments',['../_h_g002_2log_8txt.html#ab2b5313974342dc4af8113929e2feaea',1,'log.txt']]],
+  ['assemble_20the_20self_20aligned_20data_3a_12',['Use miniasm to assemble the self-aligned data:',['../md_docs_2genome-assembly-guide.html#autotoc_md5',1,'']]],
+  ['assembly_13',['assembly',['../md_docs_2genome-assembly-guide.html#autotoc_md2',1,'De novo Assembly'],['../md_docs_2genome-assembly-guide.html',1,'Hybrid Optical Map-Guided Assembly']]],
+  ['author_14',['author',['../namespacesetup.html#a3a57a4772d418a06835249cbade0d86a',1,'setup']]],
+  ['averms_15',['averms',['../kc_8cpp.html#ae62de561257c307cae1c731732aeaf90',1,'averms(double *data, int n, double *ave, double *rms):&#160;kc.cpp'],['../kc_8h.html#ae62de561257c307cae1c731732aeaf90',1,'averms(double *data, int n, double *ave, double *rms):&#160;kc.cpp']]],
+  ['avevar_16',['avevar',['../kc_8h.html#ae263d464ebb9d7304f3c8043c41622b7',1,'avevar(double *data, int n, double *ave, double *var):&#160;kc.cpp'],['../kc_8cpp.html#ae263d464ebb9d7304f3c8043c41622b7',1,'avevar(double *data, int n, double *ave, double *var):&#160;kc.cpp']]],
+  ['avevar2_17',['avevar2',['../kc_8h.html#ab1a75880788408871996b8697b240e42',1,'avevar2(double *data, int n, double *ave, double *var):&#160;kc.cpp'],['../kc_8cpp.html#ab1a75880788408871996b8697b240e42',1,'avevar2(double *data, int n, double *ave, double *var):&#160;kc.cpp']]]
 ];

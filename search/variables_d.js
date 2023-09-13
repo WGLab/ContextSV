@@ -1,10 +1,9 @@
 var searchData=
 [
-  ['ref_5ffilepath_0',['ref_filepath',['../class_input_data.html#ad08a2b52c1dee18ee6e4c892aab7b507',1,'InputData']]],
-  ['ref_5fgenome_1',['ref_genome',['../class_s_v_data.html#a1f4067a854bbf35cea3afb765fc78d11',1,'SVData']]],
-  ['region_2',['region',['../class_input_data.html#a88b70d68e432893afa44a670c1348def',1,'InputData']]],
-  ['region_5fchr_3',['region_chr',['../class_input_data.html#a2061d124444cc1ae88a8766ad683a68d',1,'InputData']]],
-  ['region_5fend_4',['region_end',['../class_input_data.html#ac9619687c7bffdf9db5cf3df9f5623b1',1,'InputData']]],
-  ['region_5fset_5',['region_set',['../class_input_data.html#a0f6beefe92beaad8c557da8253cccd11',1,'InputData']]],
-  ['region_5fstart_6',['region_start',['../class_input_data.html#a00a569ecc8bcf1bce714da4e4a6846e5',1,'InputData']]]
+  ['n_0',['N',['../struct_c_h_m_m.html#a9d2517fed9a25a2362348855af502cdb',1,'CHMM']]],
+  ['name_1',['name',['../structswig__type__info.html#a90a9c6a25aa3e923978005ecbe23ad60',1,'swig_type_info::name'],['../structswig__const__info.html#a0e22becc2b5b8fb084626b84c9524627',1,'swig_const_info::name'],['../structswig__globalvar.html#a32fcb5efb741f97e5c53e1a253cafdd9',1,'swig_globalvar::name'],['../namespacesetup.html#ab3a7a0638d76a01367c5bc3cc699447f',1,'setup.name']]],
+  ['newargs_2',['newargs',['../struct_swig_py_client_data.html#a8f6dacca2c445f175d622fb9264e3715',1,'SwigPyClientData']]],
+  ['newraw_3',['newraw',['../struct_swig_py_client_data.html#a4da9e7723a1319cb42cda4ad186f65a3',1,'SwigPyClientData']]],
+  ['next_4',['next',['../structswig__cast__info.html#ae79c6fa058a9d908bbdac14db0c9db5e',1,'swig_cast_info::next'],['../structswig__module__info.html#ac177d150b85ab77122089acf1f06d9c6',1,'swig_module_info::next'],['../struct_swig_py_object.html#af7b93d7ae49a6f3bdf6511043fe8e839',1,'SwigPyObject::next'],['../structswig__globalvar.html#a6b7f8fdec3a5c39a52b33c916d7ba028',1,'swig_globalvar::next']]],
+  ['np_5fflag_5',['NP_flag',['../struct_c_h_m_m.html#ac97f3000c27b0a2fb232f9b9d22784c4',1,'CHMM']]]
 ];

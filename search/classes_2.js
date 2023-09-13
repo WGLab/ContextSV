@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['inputdata_0',['InputData',['../class_input_data.html',1,'']]]
+  ['fastaquery_0',['FASTAQuery',['../class_f_a_s_t_a_query.html',1,'']]]
 ];

@@ -13,6 +13,7 @@ var namespaces_dup =
       [ "handlers", "namespacecnv__plots.html#ac51a34af541af387b38b86f1cdbd5c26", null ],
       [ "level", "namespacecnv__plots.html#a77128b49bb0ae6d6b6462e3de5a2fa8b", null ]
     ] ],
+    [ "lib", "namespacelib.html", "namespacelib" ],
     [ "scoring_model", "namespacescoring__model.html", null ],
     [ "setup", "namespacesetup.html", [
       [ "author", "namespacesetup.html#a3a57a4772d418a06835249cbade0d86a", null ],
@@ -33,6 +34,7 @@ var namespaces_dup =
       [ "test_suite", "namespacesetup.html#afd7a7f31bfa5027bfe335aedfcc1b70e", null ],
       [ "version", "namespacesetup.html#a2aa722b36a933088812b50ea79b97a5c", null ]
     ] ],
+    [ "swig", "namespaceswig.html", "namespaceswig" ],
     [ "test_general", "namespacetest__general.html", [
       [ "test_run", "namespacetest__general.html#af712689d0c644f9029a77d9190c85065", null ],
       [ "TEST_BAM_FILE", "namespacetest__general.html#a5aae10fdb70367efbdf929796aa6fa65", null ],

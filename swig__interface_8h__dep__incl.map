@@ -1,5 +1,7 @@
 <map id="include/swig_interface.h" name="include/swig_interface.h">
-<area shape="rect" id="Node000001" title=" " alt="" coords="5,5,166,31"/>
-<area shape="rect" id="Node000002" href="$swig__interface_8cpp.html" title=" " alt="" coords="10,79,161,105"/>
-<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="88,46,88,79,83,79,83,46"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="89,5,252,31"/>
+<area shape="rect" id="Node000002" href="$swig__interface_8cpp.html" title=" " alt="" coords="5,79,160,104"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="148,41,99,81,95,76,144,37"/>
+<area shape="rect" id="Node000003" href="$swig__wrapper_8cpp.html" title=" " alt="" coords="184,79,333,104"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="197,37,246,76,243,81,194,41"/>
 </map>

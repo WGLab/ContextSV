@@ -1,4 +1,5 @@
 var searchData=
 [
-  ['output_5fdir_0',['output_dir',['../class_input_data.html#a43bfa9dc240caebb8161290a859e74b5',1,'InputData::output_dir'],['../namespacetrain__model.html#a25710b740be9e126188054246b533d50',1,'train_model.output_dir']]]
+  ['level_0',['level',['../namespace____main____.html#a7c67a3bb6592d506d2d6139d3f5ff48a',1,'__main__.level'],['../namespacecnv__plots.html#a77128b49bb0ae6d6b6462e3de5a2fa8b',1,'cnv_plots.level']]],
+  ['lvalue_1',['lvalue',['../structswig__const__info.html#af142e4c21ad4fe61f6c2624bff034583',1,'swig_const_info']]]
 ];

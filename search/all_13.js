@@ -12,7 +12,7 @@ var searchData=
   ['test_5frun_9',['test_run',['../namespacetest__general.html#af712689d0c644f9029a77d9190c85065',1,'test_general']]],
   ['test_5fsnps_5ffile_10',['TEST_SNPS_FILE',['../namespacetest__general.html#a961857b15073234012844b793eb53175',1,'test_general']]],
   ['test_5fsuite_11',['test_suite',['../namespacesetup.html#afd7a7f31bfa5027bfe335aedfcc1b70e',1,'setup']]],
-  ['testvit_5fchmm_12',['testvit_chmm',['../khmm_8h.html#ac44ba55ccbb73d2b015ca7537479381e',1,'testVit_CHMM(CHMM hmm, int T, double *O1, double *O2, double *pfb, int *snpdist, double *plogproba):&#160;khmm.cpp'],['../khmm_8cpp.html#ac44ba55ccbb73d2b015ca7537479381e',1,'testVit_CHMM(CHMM hmm, int T, double *O1, double *O2, double *pfb, int *snpdist, double *plogproba):&#160;khmm.cpp']]],
+  ['testvit_5fchmm_12',['testvit_chmm',['../khmm_8cpp.html#ac44ba55ccbb73d2b015ca7537479381e',1,'testVit_CHMM(CHMM hmm, int T, double *O1, double *O2, double *pfb, int *snpdist, double *plogproba):&#160;khmm.cpp'],['../khmm_8h.html#ac44ba55ccbb73d2b015ca7537479381e',1,'testVit_CHMM(CHMM hmm, int T, double *O1, double *O2, double *pfb, int *snpdist, double *plogproba):&#160;khmm.cpp']]],
   ['testvittrio_5fchmm_13',['testVitTrio_CHMM',['../khmm_8h.html#a25ec0cabe3ffd0421bf5644b8faa568d',1,'khmm.h']]],
   ['the_20hg002_20data_3a_14',['Use minimap2 to self-align the hg002 data:',['../md_docs_2genome-assembly-guide.html#autotoc_md4',1,'']]],
   ['the_20model_15',['Training the model',['../md_docs_2project-outline.html#autotoc_md10',1,'']]],
@@ -29,9 +29,13 @@ var searchData=
   ['train_5fmodel_2epy_26',['train_model.py',['../train__model_8py.html',1,'']]],
   ['training_20the_20model_27',['Training the model',['../md_docs_2project-outline.html#autotoc_md10',1,'']]],
   ['triotransition_28',['trioTransition',['../khmm_8h.html#acdd24c0b1b8412e623943657991e14c8',1,'khmm.h']]],
-  ['ttest_5fev_29',['ttest_ev',['../kc_8cpp.html#a9e38b2816c8d12a153ea2a22d1241ba2',1,'ttest_ev(double *data1, long n1, double *data2, long n2, double *t, double *p):&#160;kc.cpp'],['../kc_8h.html#a9e38b2816c8d12a153ea2a22d1241ba2',1,'ttest_ev(double *data1, long n1, double *data2, long n2, double *t, double *p):&#160;kc.cpp']]],
-  ['ttest_5fonesample_30',['ttest_onesample',['../kc_8cpp.html#a74f76187c76268c668bfe62efddb21d3',1,'ttest_onesample(double *data, long n, double expected, double *t, double *p):&#160;kc.cpp'],['../kc_8h.html#a74f76187c76268c668bfe62efddb21d3',1,'ttest_onesample(double *data, long n, double expected, double *t, double *p):&#160;kc.cpp']]],
-  ['ttest_5fuev_31',['ttest_uev',['../kc_8h.html#a99f03c3631c210c7091d184e108d57a5',1,'ttest_uev(double *data1, long n1, double *data2, long n2, double *t, double *p):&#160;kc.cpp'],['../kc_8cpp.html#a99f03c3631c210c7091d184e108d57a5',1,'ttest_uev(double *data1, long n1, double *data2, long n2, double *t, double *p):&#160;kc.cpp']]],
+  ['ttest_5fev_29',['ttest_ev',['../kc_8h.html#a9e38b2816c8d12a153ea2a22d1241ba2',1,'ttest_ev(double *data1, long n1, double *data2, long n2, double *t, double *p):&#160;kc.cpp'],['../kc_8cpp.html#a9e38b2816c8d12a153ea2a22d1241ba2',1,'ttest_ev(double *data1, long n1, double *data2, long n2, double *t, double *p):&#160;kc.cpp']]],
+  ['ttest_5fonesample_30',['ttest_onesample',['../kc_8h.html#a74f76187c76268c668bfe62efddb21d3',1,'ttest_onesample(double *data, long n, double expected, double *t, double *p):&#160;kc.cpp'],['../kc_8cpp.html#a74f76187c76268c668bfe62efddb21d3',1,'ttest_onesample(double *data, long n, double expected, double *t, double *p):&#160;kc.cpp']]],
+  ['ttest_5fuev_31',['ttest_uev',['../kc_8cpp.html#a99f03c3631c210c7091d184e108d57a5',1,'ttest_uev(double *data1, long n1, double *data2, long n2, double *t, double *p):&#160;kc.cpp'],['../kc_8h.html#a99f03c3631c210c7091d184e108d57a5',1,'ttest_uev(double *data1, long n1, double *data2, long n2, double *t, double *p):&#160;kc.cpp']]],
   ['tumorvit_5fchmm_32',['tumorVit_CHMM',['../khmm_8h.html#a03eff718b459de4384ffe2e8779e2059',1,'khmm.h']]],
-  ['types_2eh_33',['types.h',['../types_8h.html',1,'']]]
+  ['ty_33',['ty',['../struct_swig_py_object.html#a510b5a6f66a8a33c0a54c3eeb83e5ba5',1,'SwigPyObject::ty'],['../struct_swig_py_packed.html#aa6f6be0a8a1bff7710200fbe8d51acf0',1,'SwigPyPacked::ty']]],
+  ['type_34',['type',['../structswig__cast__info.html#a1c9023a301c8d6806209f4e10df6e9e0',1,'swig_cast_info::type'],['../structswig__const__info.html#ae8bbc99e1cda11f24e306365cbf33893',1,'swig_const_info::type']]],
+  ['type_5finitial_35',['type_initial',['../structswig__module__info.html#a76c7d5b0fc10371748616d0b6c815a17',1,'swig_module_info']]],
+  ['types_36',['types',['../structswig__module__info.html#ad658c7738e9a035ef8eea865322fbf13',1,'swig_module_info']]],
+  ['types_2eh_37',['types.h',['../types_8h.html',1,'']]]
 ];
