@@ -1,5 +1,4 @@
 var searchData=
 [
-  ['contextsv_0',['ContextSV',['../md__r_e_a_d_m_e.html',1,'']]],
-  ['contextsv_20outline_1',['ContextSV Outline',['../md_docs_2project-outline.html',1,'']]]
+  ['project_20overview_0',['Project Overview',['../md_docs_2project-overview.html',1,'']]]
 ];

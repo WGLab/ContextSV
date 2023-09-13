@@ -1,4 +1,6 @@
 var searchData=
 [
-  ['output_5fdir_0',['output_dir',['../class_input_data.html#a43bfa9dc240caebb8161290a859e74b5',1,'InputData::output_dir'],['../namespacetrain__model.html#a25710b740be9e126188054246b533d50',1,'train_model.output_dir']]]
+  ['snp_5fvcf_5ffilepath_0',['snp_vcf_filepath',['../class_input_data.html#ab07708435ee720164305783a83cb9907',1,'InputData']]],
+  ['sv_5fcalls_1',['sv_calls',['../class_s_v_data.html#ae65f13de410510297d73bf748b1ccb15',1,'SVData']]],
+  ['sv_5ftype_5fmap_2',['sv_type_map',['../class_s_v_data.html#a21cff8271152509dea18b9d3926bf107',1,'SVData']]]
 ];

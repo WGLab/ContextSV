@@ -25,31 +25,12 @@
 var NAVTREE =
 [
   [ "ContextSV", "index.html", [
-    [ "Hybrid Optical Map-Guided Assembly", "md_docs_2genome-assembly-guide.html", [
-      [ "Download Test Data", "md_docs_2genome-assembly-guide.html#autotoc_md1", null ],
-      [ "De novo Assembly", "md_docs_2genome-assembly-guide.html#autotoc_md2", [
-        [ "Set up the software environment:", "md_docs_2genome-assembly-guide.html#autotoc_md3", null ],
-        [ "Use minimap2 to self-align the hg002 data:", "md_docs_2genome-assembly-guide.html#autotoc_md4", null ],
-        [ "Use miniasm to assemble the self-aligned data:", "md_docs_2genome-assembly-guide.html#autotoc_md5", null ],
-        [ "Convert GFA file to FASTA for downstream analysis", "md_docs_2genome-assembly-guide.html#autotoc_md6", null ]
-      ] ]
-    ] ],
-    [ "ContextSV Outline", "md_docs_2project-outline.html", [
-      [ "External dependencies", "md_docs_2project-outline.html#autotoc_md8", null ],
-      [ "SV scoring model", "md_docs_2project-outline.html#autotoc_md9", [
-        [ "Training the model", "md_docs_2project-outline.html#autotoc_md10", null ]
+    [ "Project Overview", "md_docs_2project-overview.html", [
+      [ "External dependencies", "md_docs_2project-overview.html#autotoc_md1", null ],
+      [ "SV scoring model", "md_docs_2project-overview.html#autotoc_md2", [
+        [ "Training the model", "md_docs_2project-overview.html#autotoc_md3", null ]
       ] ],
-      [ "Project structure", "md_docs_2project-outline.html#autotoc_md11", null ],
-      [ "Tasks by order", "md_docs_2project-outline.html#autotoc_md12", null ]
-    ] ],
-    [ "ContextSV", "md__r_e_a_d_m_e.html", null ],
-    [ "Namespaces", "namespaces.html", [
-      [ "Namespace List", "namespaces.html", "namespaces_dup" ],
-      [ "Namespace Members", "namespacemembers.html", [
-        [ "All", "namespacemembers.html", null ],
-        [ "Functions", "namespacemembers_func.html", null ],
-        [ "Variables", "namespacemembers_vars.html", null ]
-      ] ]
+      [ "Project structure", "md_docs_2project-overview.html#autotoc_md4", null ]
     ] ],
     [ "Classes", "annotated.html", [
       [ "Class List", "annotated.html", "annotated_dup" ],
@@ -74,9 +55,9 @@ var NAVTREE =
 
 var NAVTREEINDEX =
 [
-"____init_____8py.html",
-"kc_8cpp.html#a71a16b3fb6e64dabbd74bfa358b6e6f0",
-"kc_8h.html#ad641c37850b1195f2501e65ccb8efdcc"
+"annotated.html",
+"kc_8cpp.html#a87641ce749a5333d4e9878c879532f54",
+"kc_8h.html#aeb063515d33aaf1d9131611c38b21fa4"
 ];
 
 var SYNCONMSG = 'click to disable panel synchronisation';
