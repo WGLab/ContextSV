@@ -20,18 +20,16 @@ jobs:
     # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
     - uses: actions/checkout@v2
         
-    - name: Doxygen Action
-      uses: mattnotmitt/doxygen-action@v1.1.0
+    - name: Generate Doxygen Documentation
+      uses: doxygen/doxygen-action@v1.1.0
       with:
-        # Path to Doxyfile
-        doxyfile-path: "./Doxyfile" # default is ./Doxyfile
-        # Working directory in which to run Doxygen
-        working-directory: "." # default is .
-    
-    - name: Deploy
+        config-file: ./Doxyfile
+        output-directory: ./docs
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Deploy to GitHub Pages
       uses: peaceiris/actions-gh-pages@v3
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
-        # Default Doxyfile build documentation to docs directory. 
-        # Change the directory if changes in Doxyfile
-        publish_dir: ./html
+        publish_dir: ./docs/html
+      
