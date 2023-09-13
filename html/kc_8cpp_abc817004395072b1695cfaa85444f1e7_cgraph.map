@@ -1,7 +1,0 @@
-<map id="bitest" name="bitest">
-<area shape="rect" id="Node000001" title=" " alt="" coords="5,5,60,31"/>
-<area shape="rect" id="Node000002" href="$kc_8cpp.html#a16ca21352ca6ebe67c4ba6142b0a6e1b" title=" " alt="" coords="108,5,155,31"/>
-<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="60,15,94,15,94,21,60,21"/>
-<area shape="rect" id="Node000003" href="$kc_8cpp.html#a69cc1b545a83a4d9f187e131500aee45" title=" " alt="" coords="203,5,271,31"/>
-<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="155,15,189,15,189,21,155,21"/>
-</map>

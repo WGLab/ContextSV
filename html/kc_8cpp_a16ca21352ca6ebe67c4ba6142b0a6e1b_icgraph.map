@@ -1,9 +1,0 @@
-<map id="bico" name="bico">
-<area shape="rect" id="Node000001" title=" " alt="" coords="189,55,236,80"/>
-<area shape="rect" id="Node000002" href="$kc_8cpp.html#abc817004395072b1695cfaa85444f1e7" title=" " alt="" coords="46,5,101,31"/>
-<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="175,57,140,45,100,30,102,25,142,39,177,52"/>
-<area shape="rect" id="Node000003" href="$kc_8cpp.html#aa46a006334c47841787f731dc8549788" title=" " alt="" coords="26,55,121,80"/>
-<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="175,70,121,70,121,65,175,65"/>
-<area shape="rect" id="Node000004" href="$kc_8cpp.html#a71a16b3fb6e64dabbd74bfa358b6e6f0" title=" " alt="" coords="5,104,141,129"/>
-<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="177,83,111,106,109,101,175,78"/>
-</map>
