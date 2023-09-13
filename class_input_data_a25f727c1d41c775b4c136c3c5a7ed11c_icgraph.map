@@ -1,0 +1,22 @@
+<map id="InputData::getBAMFilepath" name="InputData::getBAMFilepath">
+<area shape="rect" id="Node000001" title=" " alt="" coords="902,72,1078,98"/>
+<area shape="rect" id="Node000002" href="$class_c_n_v_caller.html#a1a4f00ed62c012caa5d5139ee8be81a9" title=" " alt="" coords="402,64,611,105"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="955,66,908,41,853,22,799,11,756,8,714,12,659,22,598,41,545,66,543,61,596,36,658,17,713,7,756,3,800,6,855,17,910,36,957,61"/>
+<area shape="rect" id="Node000006" href="$class_c_n_v_caller.html#adf3674729125dd11ec7c6ba9d5781b30" title="Calculate the mean chromosome coverage." alt="" coords="670,31,843,72"/>
+<area shape="poly" id="edge5_Node000001_Node000006" title=" " alt="" coords="886,73,843,66,843,61,887,67"/>
+<area shape="rect" id="Node000007" href="$class_c_n_v_caller.html#ad4fa39b6107dc8fd88e45ed988fc5ece" title=" " alt="" coords="663,96,850,137"/>
+<area shape="poly" id="edge7_Node000001_Node000007" title=" " alt="" coords="887,101,850,107,849,101,886,96"/>
+<area shape="rect" id="Node000008" href="$class_s_v_caller.html#a8d587b8fffa1948abd8a78a376b2df23" title=" " alt="" coords="659,162,854,202"/>
+<area shape="poly" id="edge9_Node000001_Node000008" title=" " alt="" coords="951,107,855,151,822,164,820,159,853,146,948,102"/>
+<area shape="rect" id="Node000003" href="$class_c_n_v_caller.html#a49824c662095f9af9a38056dadc8933f" title=" " alt="" coords="248,79,354,104"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="387,91,355,92,355,87,387,86"/>
+<area shape="rect" id="Node000004" href="$class_context_s_v.html#ac9d32b6e28e5bfdf10e314db0e90e4cd" title=" " alt="" coords="93,105,200,131"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="233,106,201,111,200,106,232,100"/>
+<area shape="rect" id="Node000005" href="$swig__interface_8cpp.html#aad43500a0528f571edecd2310dfb0ef6" title=" " alt="" coords="5,105,45,131"/>
+<area shape="poly" id="edge4_Node000004_Node000005" title=" " alt="" coords="77,121,45,121,45,115,77,115"/>
+<area shape="poly" id="edge6_Node000006_Node000002" title=" " alt="" coords="655,67,612,73,611,68,654,62"/>
+<area shape="poly" id="edge8_Node000007_Node000002" title=" " alt="" coords="647,105,611,101,612,95,648,100"/>
+<area shape="rect" id="Node000009" href="$class_s_v_caller.html#a61ab472662c7fa46bf2d6e6d71f0441f" title=" " alt="" coords="253,129,349,155"/>
+<area shape="poly" id="edge10_Node000008_Node000009" title=" " alt="" coords="643,175,349,149,350,144,644,170"/>
+<area shape="poly" id="edge11_Node000009_Node000004" title=" " alt="" coords="237,135,200,129,201,124,238,130"/>
+</map>

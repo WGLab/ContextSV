@@ -1,0 +1,19 @@
+var searchData=
+[
+  ['factorial_0',['factorial',['../kc_8cpp.html#a20614b0260f5c699044c6514b6479e34',1,'factorial(int x):&#160;kc.cpp'],['../kc_8h.html#a20614b0260f5c699044c6514b6479e34',1,'factorial(int x):&#160;kc.cpp']]],
+  ['fh_5fstderr_1',['fh_stderr',['../kc_8h.html#a5a78aba3780860d110c596288ac54635',1,'fh_stderr():&#160;kc.cpp'],['../kc_8cpp.html#a5a78aba3780860d110c596288ac54635',1,'fh_stderr():&#160;kc.cpp']]],
+  ['fh_5fstdin_2',['fh_stdin',['../kc_8h.html#a31d09d90dfdeb57129a49d908744db53',1,'fh_stdin():&#160;kc.cpp'],['../kc_8cpp.html#a31d09d90dfdeb57129a49d908744db53',1,'fh_stdin():&#160;kc.cpp']]],
+  ['fh_5fstdout_3',['fh_stdout',['../kc_8h.html#aed4cb56a6b5cda1f865aefedcf7649a2',1,'fh_stdout():&#160;kc.cpp'],['../kc_8cpp.html#aed4cb56a6b5cda1f865aefedcf7649a2',1,'fh_stdout():&#160;kc.cpp']]],
+  ['fisher_5fexact_5f1sided_4',['fisher_exact_1sided',['../kc_8h.html#ab2a4b7063b009f90e6db6deface43386',1,'fisher_exact_1sided(int a, int b, int c, int d):&#160;kc.cpp'],['../kc_8cpp.html#ab2a4b7063b009f90e6db6deface43386',1,'fisher_exact_1sided(int a, int b, int c, int d):&#160;kc.cpp']]],
+  ['fisher_5fexact_5f2sided_5',['fisher_exact_2sided',['../kc_8h.html#a5879c832b572d6cf16d7fe0dea2af315',1,'fisher_exact_2sided(int a, int b, int c, int d):&#160;kc.cpp'],['../kc_8cpp.html#a5879c832b572d6cf16d7fe0dea2af315',1,'fisher_exact_2sided(int a, int b, int c, int d):&#160;kc.cpp']]],
+  ['forwardwithscale_5fchmm_6',['ForwardWithScale_CHMM',['../khmm_8h.html#af60e73fa08ba0e0cc59e30075ae5569a',1,'khmm.h']]],
+  ['free_5fcvector_7',['free_cvector',['../kc_8h.html#adcf016abc500425950a6ca3c21bb6224',1,'free_cvector(unsigned char *v, long nl, long nh):&#160;kc.cpp'],['../kc_8cpp.html#adcf016abc500425950a6ca3c21bb6224',1,'free_cvector(unsigned char *v, long nl, long nh):&#160;kc.cpp']]],
+  ['free_5fdmatrix_8',['free_dmatrix',['../kc_8h.html#a04fbc9bc53e6303830eb4338bc1f3259',1,'free_dmatrix(double **m, long nrl, long nrh, long ncl, long nch):&#160;kc.cpp'],['../kc_8cpp.html#a04fbc9bc53e6303830eb4338bc1f3259',1,'free_dmatrix(double **m, long nrl, long nrh, long ncl, long nch):&#160;kc.cpp']]],
+  ['free_5fdvector_9',['free_dvector',['../kc_8h.html#ac7ec1a76a4b8d3d8423246676977c919',1,'free_dvector(double *v, long nl, long nh):&#160;kc.cpp'],['../kc_8cpp.html#ac7ec1a76a4b8d3d8423246676977c919',1,'free_dvector(double *v, long nl, long nh):&#160;kc.cpp']]],
+  ['free_5fimatrix_10',['free_imatrix',['../kc_8h.html#aefc01b3e130f9ecc15c4a376ba987bae',1,'free_imatrix(int **m, long nrl, long nrh, long ncl, long nch):&#160;kc.cpp'],['../kc_8cpp.html#aefc01b3e130f9ecc15c4a376ba987bae',1,'free_imatrix(int **m, long nrl, long nrh, long ncl, long nch):&#160;kc.cpp']]],
+  ['free_5fivector_11',['free_ivector',['../kc_8h.html#a15d431001f2a68ce4669efe823266e7e',1,'free_ivector(int *v, long nl, long nh):&#160;kc.cpp'],['../kc_8cpp.html#a15d431001f2a68ce4669efe823266e7e',1,'free_ivector(int *v, long nl, long nh):&#160;kc.cpp']]],
+  ['free_5fsubdmatrix_12',['free_subdmatrix',['../kc_8h.html#a963279adf9a24652715df49e8598fb64',1,'free_subdmatrix(double **b, long nrl, long nrh, long ncl, long nch):&#160;kc.cpp'],['../kc_8cpp.html#a963279adf9a24652715df49e8598fb64',1,'free_subdmatrix(double **b, long nrl, long nrh, long ncl, long nch):&#160;kc.cpp']]],
+  ['freechmm_13',['freechmm',['../khmm_8h.html#ae1a70c28c22aa817cf0ecdfe2d8bd0d8',1,'FreeCHMM(CHMM *phmm):&#160;khmm.cpp'],['../khmm_8cpp.html#ae1a70c28c22aa817cf0ecdfe2d8bd0d8',1,'FreeCHMM(CHMM *phmm):&#160;khmm.cpp']]],
+  ['freexi_14',['FreeXi',['../khmm_8h.html#a9d76f35dff082fa217d3db952afc5963',1,'khmm.h']]],
+  ['ftest_15',['ftest',['../kc_8h.html#aeb063515d33aaf1d9131611c38b21fa4',1,'ftest(double *data1, long n1, double *data2, long n2, double *f, double *p):&#160;kc.cpp'],['../kc_8cpp.html#aeb063515d33aaf1d9131611c38b21fa4',1,'ftest(double *data1, long n1, double *data2, long n2, double *f, double *p):&#160;kc.cpp']]]
+];

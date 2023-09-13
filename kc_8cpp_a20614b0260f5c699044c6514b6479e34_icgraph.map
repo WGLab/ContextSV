@@ -1,0 +1,10 @@
+<map id="factorial" name="factorial">
+<area shape="rect" id="Node000001" title=" " alt="" coords="308,31,375,56"/>
+<area shape="rect" id="Node000002" href="$kc_8cpp.html#a1f7aff47eacc48937a5dd3ae419c6066" title=" " alt="" coords="169,5,260,31"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="292,36,260,30,261,25,293,31"/>
+<area shape="rect" id="Node000004" href="$kc_8cpp.html#ad402504da1d8913d034b6db754886e90" title=" " alt="" coords="169,55,260,80"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="293,55,261,62,260,56,292,50"/>
+<area shape="rect" id="Node000003" href="$kc_8cpp.html#a5e787a5eb2287b478478048a9a621fca" title=" " alt="" coords="5,31,121,56"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="154,31,121,36,121,31,153,26"/>
+<area shape="poly" id="edge4_Node000004_Node000003" title=" " alt="" coords="153,61,121,55,121,50,154,55"/>
+</map>

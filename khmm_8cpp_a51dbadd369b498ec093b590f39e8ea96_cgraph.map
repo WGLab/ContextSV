@@ -1,0 +1,30 @@
+<map id="ViterbiLogNP_CHMM" name="ViterbiLogNP_CHMM">
+<area shape="rect" id="Node000001" title=" " alt="" coords="5,80,153,106"/>
+<area shape="rect" id="Node000002" href="$khmm_8cpp.html#a02dc04d07f642f9756939ef10af76319" title=" " alt="" coords="222,5,271,31"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="109,77,207,33,209,38,111,82"/>
+<area shape="rect" id="Node000005" href="$khmm_8cpp.html#a652a672a2d4cba451fe4f5a0af94d977" title=" " alt="" coords="222,55,271,80"/>
+<area shape="poly" id="edge4_Node000001_Node000005" title=" " alt="" coords="153,79,206,71,207,76,154,84"/>
+<area shape="rect" id="Node000012" href="$kc_8cpp.html#ab1a02a50dfbc26318f6bb296731b6f3a" title=" " alt="" coords="215,104,278,130"/>
+<area shape="poly" id="edge14_Node000001_Node000012" title=" " alt="" coords="154,101,200,108,200,113,153,106"/>
+<area shape="rect" id="Node000013" href="$kc_8cpp.html#a04fbc9bc53e6303830eb4338bc1f3259" title=" " alt="" coords="201,153,293,179"/>
+<area shape="poly" id="edge15_Node000001_Node000013" title=" " alt="" coords="112,104,203,144,201,149,110,109"/>
+<area shape="rect" id="Node000003" href="$kc_8cpp.html#ab01d6eb051febfe28b8ac2987dcfe524" title=" " alt="" coords="357,55,410,80"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="273,24,343,50,342,55,271,29"/>
+<area shape="rect" id="Node000004" href="$kc_8cpp.html#a2b0a97c4c082620572646f0324ea6fc7" title=" " alt="" coords="341,5,426,31"/>
+<area shape="poly" id="edge3_Node000002_Node000004" title=" " alt="" coords="272,16,325,16,325,21,272,21"/>
+<area shape="poly" id="edge12_Node000005_Node000003" title=" " alt="" coords="272,65,342,65,342,70,272,70"/>
+<area shape="poly" id="edge13_Node000005_Node000004" title=" " alt="" coords="271,56,331,34,332,39,273,61"/>
+<area shape="rect" id="Node000006" href="$kc_8cpp.html#ad7f21bf6ad62e142c785825e00a546e3" title=" " alt="" coords="341,104,426,130"/>
+<area shape="poly" id="edge5_Node000005_Node000006" title=" " alt="" coords="273,74,332,96,331,101,271,79"/>
+<area shape="rect" id="Node000007" href="$kc_8cpp.html#aa8b35382a71885eed509a5f87bf5e266" title=" " alt="" coords="474,104,513,130"/>
+<area shape="poly" id="edge6_Node000006_Node000007" title=" " alt="" coords="427,114,459,114,459,120,427,120"/>
+<area shape="rect" id="Node000008" href="$kc_8cpp.html#aa1745417f9696825bc7cc68538800b5b" title=" " alt="" coords="561,104,625,130"/>
+<area shape="poly" id="edge7_Node000007_Node000008" title=" " alt="" coords="513,114,545,114,545,120,513,120"/>
+<area shape="rect" id="Node000009" href="$kc_8cpp.html#a5b446e3e8ec13c8e2383ac156f0cf77f" title=" " alt="" coords="677,79,716,104"/>
+<area shape="poly" id="edge8_Node000008_Node000009" title=" " alt="" coords="625,106,661,97,662,102,626,112"/>
+<area shape="rect" id="Node000011" href="$kc_8cpp.html#a5277079b0c65d166db9553deb8a92de2" title=" " alt="" coords="673,128,719,154"/>
+<area shape="poly" id="edge10_Node000008_Node000011" title=" " alt="" coords="626,122,658,129,657,135,625,127"/>
+<area shape="rect" id="Node000010" href="$kc_8cpp.html#a69cc1b545a83a4d9f187e131500aee45" title=" " alt="" coords="767,104,835,130"/>
+<area shape="poly" id="edge9_Node000009_Node000010" title=" " alt="" coords="717,94,753,103,752,108,716,99"/>
+<area shape="poly" id="edge11_Node000011_Node000010" title=" " alt="" coords="719,133,752,125,753,131,720,138"/>
+</map>

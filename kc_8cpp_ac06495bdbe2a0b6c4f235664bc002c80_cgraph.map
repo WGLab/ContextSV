@@ -1,0 +1,14 @@
+<map id="chi2test_2by2table" name="chi2test_2by2table">
+<area shape="rect" id="Node000001" title=" " alt="" coords="5,31,135,56"/>
+<area shape="rect" id="Node000002" href="$kc_8cpp.html#ab600bf758ebb6d37ebd914533e27691d" title=" " alt="" coords="183,31,253,56"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="135,41,167,41,167,46,135,46"/>
+<area shape="rect" id="Node000003" href="$kc_8cpp.html#aa1745417f9696825bc7cc68538800b5b" title=" " alt="" coords="301,31,365,56"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="254,41,286,41,286,46,254,46"/>
+<area shape="rect" id="Node000004" href="$kc_8cpp.html#a5b446e3e8ec13c8e2383ac156f0cf77f" title=" " alt="" coords="417,5,456,31"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="365,33,401,24,402,29,366,38"/>
+<area shape="rect" id="Node000006" href="$kc_8cpp.html#a5277079b0c65d166db9553deb8a92de2" title=" " alt="" coords="413,55,460,80"/>
+<area shape="poly" id="edge5_Node000003_Node000006" title=" " alt="" coords="366,48,399,56,398,61,365,54"/>
+<area shape="rect" id="Node000005" href="$kc_8cpp.html#a69cc1b545a83a4d9f187e131500aee45" title=" " alt="" coords="508,31,575,56"/>
+<area shape="poly" id="edge4_Node000004_Node000005" title=" " alt="" coords="457,20,493,29,492,34,456,25"/>
+<area shape="poly" id="edge6_Node000006_Node000005" title=" " alt="" coords="459,60,492,52,493,57,461,65"/>
+</map>
