@@ -1,0 +1,12 @@
+<map id="cdf_chi2" name="cdf_chi2">
+<area shape="rect" id="Node000001" title=" " alt="" coords="5,31,76,56"/>
+<area shape="rect" id="Node000002" href="$kc_8cpp.html#aa1745417f9696825bc7cc68538800b5b" title=" " alt="" coords="124,31,189,56"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="76,41,110,41,110,46,76,46"/>
+<area shape="rect" id="Node000003" href="$kc_8cpp.html#a5b446e3e8ec13c8e2383ac156f0cf77f" title=" " alt="" coords="241,5,281,31"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="189,33,227,23,228,29,190,38"/>
+<area shape="rect" id="Node000005" href="$kc_8cpp.html#a5277079b0c65d166db9553deb8a92de2" title=" " alt="" coords="237,55,284,80"/>
+<area shape="poly" id="edge4_Node000002_Node000005" title=" " alt="" coords="190,48,224,56,223,61,189,53"/>
+<area shape="rect" id="Node000004" href="$kc_8cpp.html#a69cc1b545a83a4d9f187e131500aee45" title=" " alt="" coords="332,31,400,56"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="281,20,319,29,318,35,280,25"/>
+<area shape="poly" id="edge5_Node000005_Node000004" title=" " alt="" coords="284,60,318,51,319,57,285,65"/>
+</map>

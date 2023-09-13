@@ -1,0 +1,19 @@
+<map id="dmatrix" name="dmatrix">
+<area shape="rect" id="Node000001" title=" " alt="" coords="892,55,957,80"/>
+<area shape="rect" id="Node000002" href="$khmm_8cpp.html#a5ee9a227e8068bbf43d6fb3a19221cc1" title="Read an HMM from a file." alt="" coords="547,5,641,31"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="878,59,844,51,734,35,641,25,641,19,735,30,844,46,879,53"/>
+<area shape="rect" id="Node000007" href="$khmm_8cpp.html#ac44ba55ccbb73d2b015ca7537479381e" title=" " alt="" coords="540,55,648,80"/>
+<area shape="poly" id="edge6_Node000001_Node000007" title=" " alt="" coords="878,70,648,70,648,65,878,65"/>
+<area shape="rect" id="Node000008" href="$khmm_8cpp.html#a51dbadd369b498ec093b590f39e8ea96" title=" " alt="" coords="696,105,844,131"/>
+<area shape="poly" id="edge8_Node000001_Node000008" title=" " alt="" coords="880,85,811,108,809,103,878,80"/>
+<area shape="rect" id="Node000003" href="$class_c_n_v_caller.html#a49824c662095f9af9a38056dadc8933f" title=" " alt="" coords="383,31,492,56"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="534,30,493,37,492,32,534,25"/>
+<area shape="rect" id="Node000004" href="$class_context_s_v.html#ac9d32b6e28e5bfdf10e314db0e90e4cd" title=" " alt="" coords="224,31,335,56"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="369,46,335,46,335,41,369,41"/>
+<area shape="rect" id="Node000005" href="$swig__interface_8cpp.html#aad43500a0528f571edecd2310dfb0ef6" title=" " alt="" coords="136,31,176,56"/>
+<area shape="poly" id="edge4_Node000004_Node000005" title=" " alt="" coords="210,46,176,46,176,41,210,41"/>
+<area shape="rect" id="Node000006" href="$swig__wrapper_8cpp.html#a1b076861020162aaddb732376042f729" title=" " alt="" coords="5,31,88,56"/>
+<area shape="poly" id="edge5_Node000005_Node000006" title=" " alt="" coords="122,46,88,46,88,41,122,41"/>
+<area shape="poly" id="edge7_Node000007_Node000003" title=" " alt="" coords="526,60,492,54,493,49,527,54"/>
+<area shape="poly" id="edge9_Node000008_Node000007" title=" " alt="" coords="711,104,638,83,640,78,712,99"/>
+</map>
