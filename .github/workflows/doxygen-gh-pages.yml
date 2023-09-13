@@ -7,8 +7,6 @@ name: Doxygen Action
 on:
   push:
     branches: [ 2-alignment-based-sv-calling ]
-
-
   
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
@@ -27,13 +25,13 @@ jobs:
       with:
         # Path to Doxyfile
         doxyfile-path: "./Doxyfile" # default is ./Doxyfile
-        # Working directory
+        # Working directory in which to run Doxygen
         working-directory: "." # default is .
     
     - name: Deploy
       uses: peaceiris/actions-gh-pages@v3
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
-        # Default Doxyfile build documentation to html directory. 
+        # Default Doxyfile build documentation to docs directory. 
         # Change the directory if changes in Doxyfile
-        publish_dir: ./html
+        publish_dir: ./docs
