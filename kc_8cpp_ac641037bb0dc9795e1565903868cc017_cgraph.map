@@ -1,9 +1,0 @@
-<map id="matrix_svd" name="matrix_svd">
-<area shape="rect" id="Node000001" title=" " alt="" coords="5,55,92,80"/>
-<area shape="rect" id="Node000002" href="$kc_8cpp.html#a7f43e2c062f2de6dbd14da6799d78030" title=" " alt="" coords="153,5,215,31"/>
-<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="83,52,140,31,141,36,85,57"/>
-<area shape="rect" id="Node000003" href="$kc_8cpp.html#afc00baa57142e5db16101ade3200eea8" title=" " alt="" coords="141,55,227,80"/>
-<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="92,65,127,65,127,70,92,70"/>
-<area shape="rect" id="Node000004" href="$kc_8cpp.html#a155bb2cc033bfd9bafbde8d31432f7ad" title=" " alt="" coords="140,104,228,129"/>
-<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="85,78,137,97,135,102,83,83"/>
-</map>

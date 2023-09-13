@@ -1,7 +1,0 @@
-<map id="ReadCHMM" name="ReadCHMM">
-<area shape="rect" id="Node000001" title="Read an HMM from a file." alt="" coords="5,31,99,56"/>
-<area shape="rect" id="Node000002" href="$kc_8cpp.html#ab1a02a50dfbc26318f6bb296731b6f3a" title=" " alt="" coords="147,5,212,31"/>
-<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="98,32,133,24,134,30,99,37"/>
-<area shape="rect" id="Node000003" href="$kc_8cpp.html#ae21c4c252ad5d5710ebd03d6f07e40de" title=" " alt="" coords="147,55,211,80"/>
-<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="99,49,134,56,133,61,98,55"/>
-</map>
