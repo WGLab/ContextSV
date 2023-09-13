@@ -20,16 +20,17 @@ jobs:
     # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
     - uses: actions/checkout@v2
         
-    - name: Generate Doxygen Documentation
-      uses: doxygen/doxygen-action@v1.1.0
-      with:
-        config-file: ./Doxyfile
-        output-directory: ./docs
-        github-token: ${{ secrets.GITHUB_TOKEN }}
+    - name: Install Doxygen
+      run: sudo apt-get install doxygen -y
+
+    - name: Install Graphviz
+      run: sudo apt-get install graphviz -y
+
+    - name: Run Doxygen
+      run: doxygen Doxyfile
 
     - name: Deploy to GitHub Pages
       uses: peaceiris/actions-gh-pages@v3
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
         publish_dir: ./docs/html
-      
