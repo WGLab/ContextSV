@@ -1,7 +1,0 @@
-<map id="matrix_tridiag" name="matrix_tridiag">
-<area shape="rect" id="Node000001" title=" " alt="" coords="5,31,105,56"/>
-<area shape="rect" id="Node000002" href="$kc_8cpp.html#afc00baa57142e5db16101ade3200eea8" title=" " alt="" coords="154,5,241,31"/>
-<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="105,32,140,25,141,31,106,37"/>
-<area shape="rect" id="Node000003" href="$kc_8cpp.html#a155bb2cc033bfd9bafbde8d31432f7ad" title=" " alt="" coords="153,55,241,80"/>
-<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="106,49,140,55,139,60,105,54"/>
-</map>
