@@ -57,4 +57,4 @@ CMakeSettings.json
 output/
 
 # Doxygen
-html/
+docs/html/
