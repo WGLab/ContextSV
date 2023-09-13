@@ -123,7 +123,7 @@ std::vector<double> CNVCaller::calculateLogRRatiosAtSNPS(std::vector<int> snp_po
         region_end = std::min(region_end, this->input_data->getRegionEnd());
     }
 
-    std::cout << "Beginning analysis of region: " << chr << ":" << region_start << "-" << region_end << std::endl;
+    std::cout << "Predicting CNV states for SNPs in region: " << chr << ":" << region_start << "-" << region_end << std::endl;
 
     // Loop through each SNP and calculate the LRR
     std::vector<double> snp_lrr;
@@ -197,6 +197,9 @@ double CNVCaller::calculateMeanChromosomeCoverage()
         {
             // Calculate the mean chromosome coverage
             mean_chr_cov = (double) cum_depth / (double) pos_count;
+        } else {
+            fprintf(stderr, "Failed to parse output\n");
+            exit(EXIT_FAILURE);
         }
     }
     pclose(fp);  // Close the process

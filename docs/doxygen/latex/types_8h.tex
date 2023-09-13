@@ -1,0 +1,91 @@
+\doxysection{include/types.h File Reference}
+\hypertarget{types_8h}{}\label{types_8h}\index{include/types.h@{include/types.h}}
+{\ttfamily \#include $<$string$>$}\newline
+{\ttfamily \#include $<$vector$>$}\newline
+{\ttfamily \#include $<$map$>$}\newline
+Include dependency graph for types.\+h\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=235pt]{types_8h__incl}
+\end{center}
+\end{figure}
+This graph shows which files directly or indirectly include this file\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{types_8h__dep__incl}
+\end{center}
+\end{figure}
+\doxysubsubsection*{Typedefs}
+\begin{DoxyCompactItemize}
+\item 
+using \mbox{\hyperlink{types_8h_a39777dcfe89d5b75f64b126552fe86dc}{SNPLocation}} = std\+::pair$<$ std\+::string, int $>$
+\item 
+using \mbox{\hyperlink{types_8h_a23f683a850e00162b98e19a431c7f823}{SNPTo\+CNVMap}} = std\+::map$<$ \mbox{\hyperlink{types_8h_a39777dcfe89d5b75f64b126552fe86dc}{SNPLocation}}, int $>$
+\item 
+using \mbox{\hyperlink{types_8h_aaafad4003f2a0a654b88a22b9fc5483f}{SVCandidate}} = std\+::tuple$<$ std\+::string, int, int, std\+::string $>$
+\item 
+using \mbox{\hyperlink{types_8h_af4be4fc52fc3889ad47df3c232ff1842}{SVInfo}} = std\+::pair$<$ int, int $>$
+\item 
+using \mbox{\hyperlink{types_8h_a321371bd66bdaaec284bb2f17c6b3366}{SVDepth\+Map}} = std\+::map$<$ \mbox{\hyperlink{types_8h_aaafad4003f2a0a654b88a22b9fc5483f}{SVCandidate}}, \mbox{\hyperlink{types_8h_af4be4fc52fc3889ad47df3c232ff1842}{SVInfo}} $>$
+\item 
+using \mbox{\hyperlink{types_8h_a8ce55b7059b8895f8c9b23d248e4faea}{Alignment\+Data}} = std\+::tuple$<$ std\+::string, int, int, int $>$
+\item 
+using \mbox{\hyperlink{types_8h_ad231dd6851b89d7c4054377c6e43ff0d}{Alignment\+Vector}} = std\+::vector$<$ \mbox{\hyperlink{types_8h_a8ce55b7059b8895f8c9b23d248e4faea}{Alignment\+Data}} $>$
+\item 
+using \mbox{\hyperlink{types_8h_aa761cbb96ee89699a05e8ba4850ef6ca}{Query\+Map}} = std\+::map$<$ std\+::string, \mbox{\hyperlink{types_8h_ad231dd6851b89d7c4054377c6e43ff0d}{Alignment\+Vector}} $>$
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Typedef Documentation}
+\Hypertarget{types_8h_a8ce55b7059b8895f8c9b23d248e4faea}\label{types_8h_a8ce55b7059b8895f8c9b23d248e4faea} 
+\index{types.h@{types.h}!AlignmentData@{AlignmentData}}
+\index{AlignmentData@{AlignmentData}!types.h@{types.h}}
+\doxysubsubsection{\texorpdfstring{AlignmentData}{AlignmentData}}
+{\footnotesize\ttfamily using \mbox{\hyperlink{types_8h_a8ce55b7059b8895f8c9b23d248e4faea}{Alignment\+Data}} =  std\+::tuple$<$std\+::string, int, int, int$>$}
+
+\Hypertarget{types_8h_ad231dd6851b89d7c4054377c6e43ff0d}\label{types_8h_ad231dd6851b89d7c4054377c6e43ff0d} 
+\index{types.h@{types.h}!AlignmentVector@{AlignmentVector}}
+\index{AlignmentVector@{AlignmentVector}!types.h@{types.h}}
+\doxysubsubsection{\texorpdfstring{AlignmentVector}{AlignmentVector}}
+{\footnotesize\ttfamily using \mbox{\hyperlink{types_8h_ad231dd6851b89d7c4054377c6e43ff0d}{Alignment\+Vector}} =  std\+::vector$<$\mbox{\hyperlink{types_8h_a8ce55b7059b8895f8c9b23d248e4faea}{Alignment\+Data}}$>$}
+
+\Hypertarget{types_8h_aa761cbb96ee89699a05e8ba4850ef6ca}\label{types_8h_aa761cbb96ee89699a05e8ba4850ef6ca} 
+\index{types.h@{types.h}!QueryMap@{QueryMap}}
+\index{QueryMap@{QueryMap}!types.h@{types.h}}
+\doxysubsubsection{\texorpdfstring{QueryMap}{QueryMap}}
+{\footnotesize\ttfamily using \mbox{\hyperlink{types_8h_aa761cbb96ee89699a05e8ba4850ef6ca}{Query\+Map}} =  std\+::map$<$std\+::string, \mbox{\hyperlink{types_8h_ad231dd6851b89d7c4054377c6e43ff0d}{Alignment\+Vector}}$>$}
+
+\Hypertarget{types_8h_a39777dcfe89d5b75f64b126552fe86dc}\label{types_8h_a39777dcfe89d5b75f64b126552fe86dc} 
+\index{types.h@{types.h}!SNPLocation@{SNPLocation}}
+\index{SNPLocation@{SNPLocation}!types.h@{types.h}}
+\doxysubsubsection{\texorpdfstring{SNPLocation}{SNPLocation}}
+{\footnotesize\ttfamily using \mbox{\hyperlink{types_8h_a39777dcfe89d5b75f64b126552fe86dc}{SNPLocation}} =  std\+::pair$<$std\+::string, int$>$}
+
+\Hypertarget{types_8h_a23f683a850e00162b98e19a431c7f823}\label{types_8h_a23f683a850e00162b98e19a431c7f823} 
+\index{types.h@{types.h}!SNPToCNVMap@{SNPToCNVMap}}
+\index{SNPToCNVMap@{SNPToCNVMap}!types.h@{types.h}}
+\doxysubsubsection{\texorpdfstring{SNPToCNVMap}{SNPToCNVMap}}
+{\footnotesize\ttfamily using \mbox{\hyperlink{types_8h_a23f683a850e00162b98e19a431c7f823}{SNPTo\+CNVMap}} =  std\+::map$<$\mbox{\hyperlink{types_8h_a39777dcfe89d5b75f64b126552fe86dc}{SNPLocation}}, int$>$}
+
+\Hypertarget{types_8h_aaafad4003f2a0a654b88a22b9fc5483f}\label{types_8h_aaafad4003f2a0a654b88a22b9fc5483f} 
+\index{types.h@{types.h}!SVCandidate@{SVCandidate}}
+\index{SVCandidate@{SVCandidate}!types.h@{types.h}}
+\doxysubsubsection{\texorpdfstring{SVCandidate}{SVCandidate}}
+{\footnotesize\ttfamily using \mbox{\hyperlink{types_8h_aaafad4003f2a0a654b88a22b9fc5483f}{SVCandidate}} =  std\+::tuple$<$std\+::string, int, int, std\+::string$>$}
+
+\Hypertarget{types_8h_a321371bd66bdaaec284bb2f17c6b3366}\label{types_8h_a321371bd66bdaaec284bb2f17c6b3366} 
+\index{types.h@{types.h}!SVDepthMap@{SVDepthMap}}
+\index{SVDepthMap@{SVDepthMap}!types.h@{types.h}}
+\doxysubsubsection{\texorpdfstring{SVDepthMap}{SVDepthMap}}
+{\footnotesize\ttfamily using \mbox{\hyperlink{types_8h_a321371bd66bdaaec284bb2f17c6b3366}{SVDepth\+Map}} =  std\+::map$<$\mbox{\hyperlink{types_8h_aaafad4003f2a0a654b88a22b9fc5483f}{SVCandidate}}, \mbox{\hyperlink{types_8h_af4be4fc52fc3889ad47df3c232ff1842}{SVInfo}}$>$}
+
+\Hypertarget{types_8h_af4be4fc52fc3889ad47df3c232ff1842}\label{types_8h_af4be4fc52fc3889ad47df3c232ff1842} 
+\index{types.h@{types.h}!SVInfo@{SVInfo}}
+\index{SVInfo@{SVInfo}!types.h@{types.h}}
+\doxysubsubsection{\texorpdfstring{SVInfo}{SVInfo}}
+{\footnotesize\ttfamily using \mbox{\hyperlink{types_8h_af4be4fc52fc3889ad47df3c232ff1842}{SVInfo}} =  std\+::pair$<$int, int$>$}
+

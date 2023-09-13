@@ -1,0 +1,261 @@
+\doxysection{kc.\+h}
+\hypertarget{kc_8h_source}{}\label{kc_8h_source}\index{include/kc.h@{include/kc.h}}
+\mbox{\hyperlink{kc_8h}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00001\ \textcolor{preprocessor}{\#ifndef\ KC\_H}}
+\DoxyCodeLine{00002\ \textcolor{preprocessor}{\#define\ KC\_H}}
+\DoxyCodeLine{00003\ }
+\DoxyCodeLine{00004\ \textcolor{preprocessor}{\#include\ <stdio.h>}}
+\DoxyCodeLine{00005\ \textcolor{comment}{//\ \#include\ "{}EXTERN.h"{}\ \ \ /*\ std\ perl\ include\ */}}
+\DoxyCodeLine{00006\ \textcolor{comment}{//\ \#include\ "{}perl.h"{}\ \ \ \ \ /*\ std\ perl\ include\ */}}
+\DoxyCodeLine{00007\ \textcolor{comment}{//\ \#include\ "{}XSUB.h"{}\ \ \ \ \ /*\ XSUB\ include\ */}}
+\DoxyCodeLine{00008\ }
+\DoxyCodeLine{00009\ }
+\DoxyCodeLine{00010\ }
+\DoxyCodeLine{00011\ \textcolor{comment}{/********************}}
+\DoxyCodeLine{00012\ \textcolor{comment}{Perl-\/C\ interface}}
+\DoxyCodeLine{00013\ \textcolor{comment}{********************/}}
+\DoxyCodeLine{00014\ }
+\DoxyCodeLine{00015\ FILE\ *\mbox{\hyperlink{kc_8h_aed4cb56a6b5cda1f865aefedcf7649a2}{fh\_stdout}}\ ();}
+\DoxyCodeLine{00016\ FILE\ *\mbox{\hyperlink{kc_8h_a5a78aba3780860d110c596288ac54635}{fh\_stderr}}\ ();}
+\DoxyCodeLine{00017\ FILE\ *\mbox{\hyperlink{kc_8h_a31d09d90dfdeb57129a49d908744db53}{fh\_stdin}}\ ();}
+\DoxyCodeLine{00018\ \textcolor{comment}{//\ void\ kcerror(char\ *error\_text);}}
+\DoxyCodeLine{00019\ \textcolor{comment}{//\ void\ kcwarn(char\ *error\_text);}}
+\DoxyCodeLine{00020\ \textcolor{comment}{//\ SV*\ C2perl\_vector\ (double\ *vector,\ int\ n);}}
+\DoxyCodeLine{00021\ \textcolor{comment}{//\ SV*\ C2perl\_vectori\ (int\ *vector,\ int\ n);}}
+\DoxyCodeLine{00022\ \textcolor{comment}{//\ double*\ perl2C\_vector\ (SV*\ arg);}}
+\DoxyCodeLine{00023\ \textcolor{comment}{//\ int*\ perl2C\_vectori\ (SV*\ arg);}}
+\DoxyCodeLine{00024\ \textcolor{comment}{//\ SV*\ C2perl\_matrix\ (double**\ mat,\ int\ n1,\ int\ n2);}}
+\DoxyCodeLine{00025\ \textcolor{comment}{//\ SV*\ C2perl\_matrixi\ (int**\ mat,\ int\ n1,\ int\ n2);}}
+\DoxyCodeLine{00026\ \textcolor{comment}{//\ double\ **perl2C\_matrix\ (SV*\ arg);}}
+\DoxyCodeLine{00027\ \textcolor{comment}{//\ int**\ perl2C\_matrixi\ (SV*\ arg);}}
+\DoxyCodeLine{00028\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{kc_8h_a8a8ffc38946e016056d176c4a5bc672c}{print\_vectori}}\ (\textcolor{keywordtype}{int}\ *array,\ \textcolor{keywordtype}{int}\ n);}
+\DoxyCodeLine{00029\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{kc_8h_a05e1b2a77c22ae4e595c1c9078f186b2}{print\_vector}}\ (\textcolor{keywordtype}{double}\ *array,\ \textcolor{keywordtype}{int}\ n);}
+\DoxyCodeLine{00030\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{kc_8h_ad4f0e377e6998c4aeb731b82e3c55fb4}{print\_matrixi}}\ (\textcolor{keywordtype}{int}**\ A,\ \textcolor{keywordtype}{int}\ m,\ \textcolor{keywordtype}{int}\ n);}
+\DoxyCodeLine{00031\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{kc_8h_ab63511006258ab28c09d3f4825e1a863}{print\_matrix}}\ (\textcolor{keywordtype}{double}**\ A,\ \textcolor{keywordtype}{int}\ m,\ \textcolor{keywordtype}{int}\ n);}
+\DoxyCodeLine{00032\ }
+\DoxyCodeLine{00033\ \textcolor{comment}{//\ int\ is\_scalar\_ref\ (SV*\ arg);}}
+\DoxyCodeLine{00034\ \textcolor{comment}{//\ void*\ pack1D(SV*\ arg,\ char\ packtype);}}
+\DoxyCodeLine{00035\ \textcolor{comment}{//\ void\ \ unpack1D(SV*\ arg,\ void\ *\ var,\ char\ packtype,\ int\ n);}}
+\DoxyCodeLine{00036\ \textcolor{comment}{//\ AV*\ \ \ coerce1D\ (\ SV*\ arg,\ int\ n\ );}}
+\DoxyCodeLine{00037\ \textcolor{comment}{//\ void*\ get\_mortalspace(\ int\ n,\ char\ packtype\ );}}
+\DoxyCodeLine{00038\ }
+\DoxyCodeLine{00039\ \textcolor{comment}{/***********************}}
+\DoxyCodeLine{00040\ \textcolor{comment}{Matrix\ memory\ allocation}}
+\DoxyCodeLine{00041\ \textcolor{comment}{***********************/}}
+\DoxyCodeLine{00042\ \textcolor{keywordtype}{double}\ **\mbox{\hyperlink{kc_8h_ac75528b11a2997977101b6e9ded2c7cf}{matrix\_new}}\ (\textcolor{keywordtype}{int}\ row,\ \textcolor{keywordtype}{int}\ col);}
+\DoxyCodeLine{00043\ \textcolor{keywordtype}{int}\ **\mbox{\hyperlink{kc_8h_afdfe6b0ce1cd121a9da3ec09755bc55e}{matrixi\_new}}\ (\textcolor{keywordtype}{int}\ row,\ \textcolor{keywordtype}{int}\ col);}
+\DoxyCodeLine{00044\ \textcolor{keywordtype}{char}\ **\mbox{\hyperlink{kc_8h_aa06789031d28c171d7314fbe65448541}{matrixc\_new}}\ (\textcolor{keywordtype}{int}\ row,\ \textcolor{keywordtype}{int}\ col);}
+\DoxyCodeLine{00045\ \textcolor{keywordtype}{int}**\ \mbox{\hyperlink{kc_8h_a601585a3e7b819a147843979d9e807b2}{matrix\_toMatrixi}}\ (\textcolor{keywordtype}{double}**\ A,\ \textcolor{keywordtype}{int}\ m,\ \textcolor{keywordtype}{int}\ n);}
+\DoxyCodeLine{00046\ \textcolor{keywordtype}{double}**\ \mbox{\hyperlink{kc_8h_afdf0c39719eaa36901b5b91ee867ad25}{matrixi\_toMatrix}}\ (\textcolor{keywordtype}{int}**\ A,\ \textcolor{keywordtype}{int}\ m,\ \textcolor{keywordtype}{int}\ n);}
+\DoxyCodeLine{00047\ \textcolor{keywordtype}{double}\ *\mbox{\hyperlink{kc_8h_a155bb2cc033bfd9bafbde8d31432f7ad}{vector\_new}}\ (\textcolor{keywordtype}{int}\ n);}
+\DoxyCodeLine{00048\ \textcolor{keywordtype}{int}\ *\mbox{\hyperlink{kc_8h_a0fad130527c83326c9dfe7da022700e0}{vectori\_new}}\ (\textcolor{keywordtype}{int}\ n);}
+\DoxyCodeLine{00049\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{kc_8h_aa517f6dc1cd623e0f2fdc5f0f9ab8534}{matrix\_free}}\ (\textcolor{keywordtype}{double}\ **m);}
+\DoxyCodeLine{00050\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{kc_8h_af207c315e95f48fdd8f376002b0e5596}{matrixi\_free}}\ (\textcolor{keywordtype}{int}\ **m);}
+\DoxyCodeLine{00051\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{kc_8h_aad80174168d3ccf98675200f2bbc66c2}{vector\_free}}\ (\textcolor{keywordtype}{double}\ *m);}
+\DoxyCodeLine{00052\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{kc_8h_a24f2b2f3906921db3287a65c72cdc2b1}{vectori\_free}}\ (\textcolor{keywordtype}{int}\ *m);}
+\DoxyCodeLine{00053\ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{kc_8h_ad7e8269ade877b1c256224e3170a43d1}{matrix\_at}}\ (\textcolor{keywordtype}{double}\ **A,\ \textcolor{keywordtype}{int}\ m,\ \textcolor{keywordtype}{int}\ n);}
+\DoxyCodeLine{00054\ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{kc_8h_a433e109482ad4487026cfed377d7a302}{matrixi\_at}}\ (\textcolor{keywordtype}{int}\ **A,\ \textcolor{keywordtype}{int}\ m,\ \textcolor{keywordtype}{int}\ n);}
+\DoxyCodeLine{00055\ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{kc_8h_a3eb411d825906ab91a203650b1d055dd}{vector\_at}}\ (\textcolor{keywordtype}{double}\ *A,\ \textcolor{keywordtype}{int}\ n);}
+\DoxyCodeLine{00056\ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{kc_8h_ab21c63978eec887cdffcd0c6aa791578}{vectori\_at}}\ (\textcolor{keywordtype}{int}\ *A,\ \textcolor{keywordtype}{int}\ n);}
+\DoxyCodeLine{00057\ \textcolor{keywordtype}{double}*\ \mbox{\hyperlink{kc_8h_a551c44bbe1dfb82808f03d8c2ec65fdd}{matrix\_row}}\ (\textcolor{keywordtype}{double}**\ A,\ \textcolor{keywordtype}{int}\ m);}
+\DoxyCodeLine{00058\ \textcolor{keywordtype}{int}*\ \mbox{\hyperlink{kc_8h_ae3309e005b107ae3181f65b5917d29e7}{matrixi\_row}}\ (\textcolor{keywordtype}{int}**\ A,\ \textcolor{keywordtype}{int}\ m);}
+\DoxyCodeLine{00059\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{kc_8h_a779b3e1038e5853848b8a039d8d2e7c1}{matrix\_change}}\ (\textcolor{keywordtype}{double}\ **A,\ \textcolor{keywordtype}{int}\ m,\ \textcolor{keywordtype}{int}\ n,\ \textcolor{keywordtype}{double}\ a);}
+\DoxyCodeLine{00060\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{kc_8h_a77bf129b2a52c43d3a6526f617ce4de8}{matrixi\_change}}\ (\textcolor{keywordtype}{int}\ **A,\ \textcolor{keywordtype}{int}\ m,\ \textcolor{keywordtype}{int}\ n,\ \textcolor{keywordtype}{int}\ a);}
+\DoxyCodeLine{00061\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{kc_8h_ad484b35279fc5f841c995e4850254c35}{vector\_change}}\ (\textcolor{keywordtype}{double}\ *A,\ \textcolor{keywordtype}{int}\ n,\ \textcolor{keywordtype}{double}\ a);}
+\DoxyCodeLine{00062\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{kc_8h_a71c4e97a48b8dc0f1ee0c41752e99d4f}{vectori\_change}}\ (\textcolor{keywordtype}{int}\ *A,\ \textcolor{keywordtype}{int}\ n,\ \textcolor{keywordtype}{int}\ a);}
+\DoxyCodeLine{00063\ \textcolor{keywordtype}{int}*\ \mbox{\hyperlink{kc_8h_ad88cc38b4dca64717a3149003bda35a1}{vector\_toVectori}}\ (\textcolor{keywordtype}{double}*\ A,\ \textcolor{keywordtype}{int}\ n);}
+\DoxyCodeLine{00064\ \textcolor{keywordtype}{double}*\ \mbox{\hyperlink{kc_8h_aadde5fe08df3343588334adfdb8934fb}{vectori\_toVector}}\ (\textcolor{keywordtype}{int}*\ A,\ \textcolor{keywordtype}{int}\ n);}
+\DoxyCodeLine{00065\ }
+\DoxyCodeLine{00066\ }
+\DoxyCodeLine{00067\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{kc_8h_a208e98f19b2f252315399d02c0594a46}{nrerror}}(\textcolor{keywordtype}{char}\ *error\_text);}
+\DoxyCodeLine{00068\ \textcolor{keywordtype}{int}\ *\mbox{\hyperlink{kc_8h_aa80706cb014e1b52634f8c88adc0cc28}{ivector}}(\textcolor{keywordtype}{long}\ nl,\ \textcolor{keywordtype}{long}\ nh);}
+\DoxyCodeLine{00069\ \textcolor{keywordtype}{unsigned}\ \textcolor{keywordtype}{char}\ *\mbox{\hyperlink{kc_8h_a16a18b0e44cbd9b64e5c546c0f0f6720}{cvector}}(\textcolor{keywordtype}{long}\ nl,\ \textcolor{keywordtype}{long}\ nh);}
+\DoxyCodeLine{00070\ \textcolor{keywordtype}{double}\ *\mbox{\hyperlink{kc_8h_ae21c4c252ad5d5710ebd03d6f07e40de}{dvector}}(\textcolor{keywordtype}{long}\ nl,\ \textcolor{keywordtype}{long}\ nh);}
+\DoxyCodeLine{00071\ \textcolor{keywordtype}{double}\ **\mbox{\hyperlink{kc_8h_ab1a02a50dfbc26318f6bb296731b6f3a}{dmatrix}}(\textcolor{keywordtype}{long}\ nrl,\ \textcolor{keywordtype}{long}\ nrh,\ \textcolor{keywordtype}{long}\ ncl,\ \textcolor{keywordtype}{long}\ nch);}
+\DoxyCodeLine{00072\ \textcolor{keywordtype}{int}\ **\mbox{\hyperlink{kc_8h_abf1b4d8302f62d6a4c71bfc56c4e0527}{imatrix}}(\textcolor{keywordtype}{long}\ nrl,\ \textcolor{keywordtype}{long}\ nrh,\ \textcolor{keywordtype}{long}\ ncl,\ \textcolor{keywordtype}{long}\ nch);}
+\DoxyCodeLine{00073\ \textcolor{keywordtype}{double}\ **\mbox{\hyperlink{kc_8h_a1c146fa87b8915bf1e4b29f10b5c2943}{submatrix}}(\textcolor{keywordtype}{double}\ **a,\ \textcolor{keywordtype}{long}\ oldrl,\ \textcolor{keywordtype}{long}\ oldrh,\ \textcolor{keywordtype}{long}\ oldcl,\ \textcolor{keywordtype}{long}\ oldch,\ \textcolor{keywordtype}{long}\ newrl,\ \textcolor{keywordtype}{long}\ newcl);}
+\DoxyCodeLine{00074\ \textcolor{keywordtype}{double}\ **\mbox{\hyperlink{kc_8h_a061fd4b0c96655cebfb921357615d6a0}{convert\_matrix}}(\textcolor{keywordtype}{double}\ *a,\ \textcolor{keywordtype}{long}\ nrl,\ \textcolor{keywordtype}{long}\ nrh,\ \textcolor{keywordtype}{long}\ ncl,\ \textcolor{keywordtype}{long}\ nch);}
+\DoxyCodeLine{00075\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{kc_8h_a15d431001f2a68ce4669efe823266e7e}{free\_ivector}}(\textcolor{keywordtype}{int}\ *v,\ \textcolor{keywordtype}{long}\ nl,\ \textcolor{keywordtype}{long}\ nh);}
+\DoxyCodeLine{00076\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{kc_8h_adcf016abc500425950a6ca3c21bb6224}{free\_cvector}}(\textcolor{keywordtype}{unsigned}\ \textcolor{keywordtype}{char}\ *v,\ \textcolor{keywordtype}{long}\ nl,\ \textcolor{keywordtype}{long}\ nh);}
+\DoxyCodeLine{00077\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{kc_8h_ac7ec1a76a4b8d3d8423246676977c919}{free\_dvector}}(\textcolor{keywordtype}{double}\ *v,\ \textcolor{keywordtype}{long}\ nl,\ \textcolor{keywordtype}{long}\ nh);}
+\DoxyCodeLine{00078\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{kc_8h_a04fbc9bc53e6303830eb4338bc1f3259}{free\_dmatrix}}(\textcolor{keywordtype}{double}\ **m,\ \textcolor{keywordtype}{long}\ nrl,\ \textcolor{keywordtype}{long}\ nrh,\ \textcolor{keywordtype}{long}\ ncl,\ \textcolor{keywordtype}{long}\ nch);}
+\DoxyCodeLine{00079\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{kc_8h_aefc01b3e130f9ecc15c4a376ba987bae}{free\_imatrix}}(\textcolor{keywordtype}{int}\ **m,\ \textcolor{keywordtype}{long}\ nrl,\ \textcolor{keywordtype}{long}\ nrh,\ \textcolor{keywordtype}{long}\ ncl,\ \textcolor{keywordtype}{long}\ nch);}
+\DoxyCodeLine{00080\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{kc_8h_a963279adf9a24652715df49e8598fb64}{free\_subdmatrix}}(\textcolor{keywordtype}{double}\ **b,\ \textcolor{keywordtype}{long}\ nrl,\ \textcolor{keywordtype}{long}\ nrh,\ \textcolor{keywordtype}{long}\ ncl,\ \textcolor{keywordtype}{long}\ nch);}
+\DoxyCodeLine{00081\ }
+\DoxyCodeLine{00082\ }
+\DoxyCodeLine{00083\ \textcolor{comment}{/**********************}}
+\DoxyCodeLine{00084\ \textcolor{comment}{Basic\ matrix\ operations}}
+\DoxyCodeLine{00085\ \textcolor{comment}{*********************/}}
+\DoxyCodeLine{00086\ \textcolor{keywordtype}{double}**\ \mbox{\hyperlink{kc_8h_a487b6171c617a9bdb3b3337dab2fc046}{matrix\_copy}}\ (\textcolor{keywordtype}{double}\ **A,\ \textcolor{keywordtype}{int}\ m,\ \textcolor{keywordtype}{int}\ n);}
+\DoxyCodeLine{00087\ \textcolor{keywordtype}{int}**\ \mbox{\hyperlink{kc_8h_a3a2b7cc7f10f08176242f1d85983c3e9}{matrixi\_copy}}\ (\textcolor{keywordtype}{int}\ **A,\ \textcolor{keywordtype}{int}\ m,\ \textcolor{keywordtype}{int}\ n);}
+\DoxyCodeLine{00088\ \textcolor{keywordtype}{double}**\ \mbox{\hyperlink{kc_8h_a89a2987a60a852f56603492790999aba}{matrix\_transpose}}\ (\textcolor{keywordtype}{double}\ **A,\ \textcolor{keywordtype}{int}\ m,\ \textcolor{keywordtype}{int}\ n);}
+\DoxyCodeLine{00089\ \textcolor{keywordtype}{int}**\ \mbox{\hyperlink{kc_8h_a1142f8e34ec4c4cee7c9a7a3b09e3863}{matrixi\_transpose}}\ (\textcolor{keywordtype}{int}\ **A,\ \textcolor{keywordtype}{int}\ m,\ \textcolor{keywordtype}{int}\ n);}
+\DoxyCodeLine{00090\ \textcolor{keywordtype}{double}**\ \mbox{\hyperlink{kc_8h_a34fc6bc5065be03e054201ca6ea792b1}{matrix\_newSeq}}\ (\textcolor{keywordtype}{int}\ m,\ \textcolor{keywordtype}{int}\ n);}
+\DoxyCodeLine{00091\ \textcolor{keywordtype}{int}**\ \mbox{\hyperlink{kc_8h_a291c00821c2fba1622f7851ce6e38332}{matrixi\_newSeq}}\ (\textcolor{keywordtype}{int}\ m,\ \textcolor{keywordtype}{int}\ n);}
+\DoxyCodeLine{00092\ \textcolor{keywordtype}{double}**\ \mbox{\hyperlink{kc_8h_ab7b71e4683cf71e5accd72c9f4ee2520}{matrix\_newRandom}}\ (\textcolor{keywordtype}{int}\ m,\ \textcolor{keywordtype}{int}\ n,\ \textcolor{keywordtype}{int}\ seed);}
+\DoxyCodeLine{00093\ \textcolor{keywordtype}{double}**\ \mbox{\hyperlink{kc_8h_a609d0838618bb6305e85dd167ec08238}{matrix\_newDiagonal}}\ (\textcolor{keywordtype}{double}*\ cell,\ \textcolor{keywordtype}{int}\ length,\ \textcolor{keywordtype}{int}\ m,\ \textcolor{keywordtype}{int}\ n);}
+\DoxyCodeLine{00094\ \textcolor{keywordtype}{double}**\ \mbox{\hyperlink{kc_8h_a71f8fde7da24c3d7ff2accceda310498}{matrix\_newIdentity}}\ (\textcolor{keywordtype}{int}\ m);}
+\DoxyCodeLine{00095\ \textcolor{keywordtype}{double}**\ \mbox{\hyperlink{kc_8h_a265ea641a46882404b8a295c106869e6}{matrix\_newSubrow}}\ (\textcolor{keywordtype}{double}**\ A,\ \textcolor{keywordtype}{int}\ m,\ \textcolor{keywordtype}{int}\ n,\ \textcolor{keywordtype}{int}\ r1,\ \textcolor{keywordtype}{int}\ r2);}
+\DoxyCodeLine{00096\ \textcolor{keywordtype}{double}**\ \mbox{\hyperlink{kc_8h_abb5b3d84ab0088a0df21b669e3405b5b}{matrix\_newSubcol}}\ (\textcolor{keywordtype}{double}**\ A,\ \textcolor{keywordtype}{int}\ m,\ \textcolor{keywordtype}{int}\ n,\ \textcolor{keywordtype}{int}\ c1,\ \textcolor{keywordtype}{int}\ c2);}
+\DoxyCodeLine{00097\ \textcolor{keywordtype}{double}**\ \mbox{\hyperlink{kc_8h_a6be7a4660fd4fa28de1e39c8c3289e6d}{matrix\_newSubmat}}\ (\textcolor{keywordtype}{double}**\ A,\ \textcolor{keywordtype}{int}\ m,\ \textcolor{keywordtype}{int}\ n,\ \textcolor{keywordtype}{int}\ r1,\ \textcolor{keywordtype}{int}\ r2,\ \textcolor{keywordtype}{int}\ c1,\ \textcolor{keywordtype}{int}\ c2);}
+\DoxyCodeLine{00098\ \textcolor{keywordtype}{double}**\ \mbox{\hyperlink{kc_8h_a941f97f06dc11db76a0f4464bcb71e00}{matrix\_delRow}}\ (\textcolor{keywordtype}{double}**\ A,\ \textcolor{keywordtype}{int}\ m,\ \textcolor{keywordtype}{int}\ n,\ \textcolor{keywordtype}{int}\ row);}
+\DoxyCodeLine{00099\ \textcolor{keywordtype}{double}**\ \mbox{\hyperlink{kc_8h_af9848a5ae0abf30166d7ca76011014b2}{matrix\_delCol}}\ (\textcolor{keywordtype}{double}**\ A,\ \textcolor{keywordtype}{int}\ m,\ \textcolor{keywordtype}{int}\ n,\ \textcolor{keywordtype}{int}\ col);}
+\DoxyCodeLine{00100\ \textcolor{keywordtype}{double}**\ \mbox{\hyperlink{kc_8h_afe422ba8b591cae1c441249f6075436a}{matrix\_cat}}\ (\textcolor{keywordtype}{double}**\ A,\ \textcolor{keywordtype}{double}**\ B,\ \textcolor{keywordtype}{int}\ m1,\ \textcolor{keywordtype}{int}\ m2,\ \textcolor{keywordtype}{int}\ n);}
+\DoxyCodeLine{00101\ \textcolor{keywordtype}{double}**\ \mbox{\hyperlink{kc_8h_a1d846becb4123e2b9484de623f92c727}{matrix\_paste}}\ (\textcolor{keywordtype}{double}**\ A,\ \textcolor{keywordtype}{double}**\ B,\ \textcolor{keywordtype}{int}\ m,\ \textcolor{keywordtype}{int}\ n1,\ \textcolor{keywordtype}{int}\ n2);}
+\DoxyCodeLine{00102\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{kc_8h_adbdc6116401c49523c4c62dde6147310}{matrix\_zero}}\ (\textcolor{keywordtype}{double}**A,\ \textcolor{keywordtype}{int}\ m,\ \textcolor{keywordtype}{int}\ n);}
+\DoxyCodeLine{00103\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{kc_8h_a434b0afbcca14a331a887ef5f456cef9}{matrix\_multiply}}\ (\textcolor{keywordtype}{double}**\ A,\ \textcolor{keywordtype}{int}\ m,\ \textcolor{keywordtype}{int}\ n,\ \textcolor{keywordtype}{double}\ scale);}
+\DoxyCodeLine{00104\ \textcolor{keywordtype}{double}**\ \mbox{\hyperlink{kc_8h_aef4d42f4197a1db7f6667dc7ea67956b}{matrix\_product}}\ (\textcolor{keywordtype}{double}**\ A,\ \textcolor{keywordtype}{double}**\ B,\ \textcolor{keywordtype}{int}\ m,\ \textcolor{keywordtype}{int}\ n,\ \textcolor{keywordtype}{int}\ o);}
+\DoxyCodeLine{00105\ \textcolor{keywordtype}{double}**\ \mbox{\hyperlink{kc_8h_a00f5b59ec000eae7a009cd437008050d}{matrix\_product3}}\ (\textcolor{keywordtype}{double}**\ A,\ \textcolor{keywordtype}{double}**\ B,\ \textcolor{keywordtype}{double}**\ C,\ \textcolor{keywordtype}{int}\ m,\ \textcolor{keywordtype}{int}\ n,\ \textcolor{keywordtype}{int}\ o,\ \textcolor{keywordtype}{int}\ p);}
+\DoxyCodeLine{00106\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{kc_8h_a9bfecf719895e2a905f208911be65e4b}{matrix\_add}}\ (\textcolor{keywordtype}{double}**\ A,\ \textcolor{keywordtype}{int}\ m,\ \textcolor{keywordtype}{int}\ n,\ \textcolor{keywordtype}{double}\ a);}
+\DoxyCodeLine{00107\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{kc_8h_ad641c37850b1195f2501e65ccb8efdcc}{matrix\_sum}}\ (\textcolor{keywordtype}{double}**\ A,\ \textcolor{keywordtype}{double}**\ B,\ \textcolor{keywordtype}{int}\ m,\ \textcolor{keywordtype}{int}\ n);}
+\DoxyCodeLine{00108\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{kc_8h_a8b035cf48fefe5a08c76d2593984eb55}{matrix\_subtract}}\ (\textcolor{keywordtype}{double}**\ A,\ \textcolor{keywordtype}{double}**\ B,\ \textcolor{keywordtype}{int}\ m,\ \textcolor{keywordtype}{int}\ n);}
+\DoxyCodeLine{00109\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{kc_8h_a1e079ca755a3861bccd94f64677e1d54}{matrix\_stdRow}}\ (\textcolor{keywordtype}{double}**\ A,\ \textcolor{keywordtype}{int}\ m,\ \textcolor{keywordtype}{int}\ n);}
+\DoxyCodeLine{00110\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{kc_8h_aa824316c0d7768e230ae809a3e679a66}{matrix\_stdCol}}\ (\textcolor{keywordtype}{double}**\ A,\ \textcolor{keywordtype}{int}\ m,\ \textcolor{keywordtype}{int}\ n);}
+\DoxyCodeLine{00111\ \textcolor{keywordtype}{double}*\ \mbox{\hyperlink{kc_8h_a76900cdbfa88f73145d4be6b0e796fcd}{matrix\_rowMean}}\ (\textcolor{keywordtype}{double}**\ A,\ \textcolor{keywordtype}{int}\ m,\ \textcolor{keywordtype}{int}\ n);}
+\DoxyCodeLine{00112\ \textcolor{keywordtype}{double}*\ \mbox{\hyperlink{kc_8h_a865598a7017730b2bdf24cf6269d0f23}{matrix\_colMean}}\ (\textcolor{keywordtype}{double}**\ A,\ \textcolor{keywordtype}{int}\ m,\ \textcolor{keywordtype}{int}\ n);}
+\DoxyCodeLine{00113\ \textcolor{keywordtype}{double}*\ \mbox{\hyperlink{kc_8h_a92e391e59a08cba2c92774a03b97f038}{matrix\_rowVar}}\ (\textcolor{keywordtype}{double}**\ A,\ \textcolor{keywordtype}{int}\ m,\ \textcolor{keywordtype}{int}\ n);}
+\DoxyCodeLine{00114\ \textcolor{keywordtype}{double}*\ \mbox{\hyperlink{kc_8h_ad5ea42776f7ed1dcb54d04db645487c3}{matrix\_colVar}}\ (\textcolor{keywordtype}{double}**\ A,\ \textcolor{keywordtype}{int}\ m,\ \textcolor{keywordtype}{int}\ n);}
+\DoxyCodeLine{00115\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{kc_8h_a6f44909f9dcb95b38fe728721b011fca}{matrix\_sortByVector}}(\textcolor{keywordtype}{double}**\ A,\ \textcolor{keywordtype}{int}\ m,\ \textcolor{keywordtype}{int}\ n,\ \textcolor{keywordtype}{double}*\ v);}
+\DoxyCodeLine{00116\ }
+\DoxyCodeLine{00117\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{kc_8h_aaa2a453c704de36a8f120f155f762c62}{vector\_zero}}\ (\textcolor{keywordtype}{double}*\ A,\ \textcolor{keywordtype}{int}\ n);}
+\DoxyCodeLine{00118\ \textcolor{keywordtype}{double}*\ \mbox{\hyperlink{kc_8h_a16f2581527695cfe549555c5a4d79df4}{vector\_copy}}\ (\textcolor{keywordtype}{double}\ *A,\ \textcolor{keywordtype}{int}\ n);}
+\DoxyCodeLine{00119\ \textcolor{keywordtype}{int}*\ \mbox{\hyperlink{kc_8h_a4dbb823fcb47138656221cd90a59bac2}{vectori\_copy}}\ (\textcolor{keywordtype}{int}\ *A,\ \textcolor{keywordtype}{int}\ n);}
+\DoxyCodeLine{00120\ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{kc_8h_a2506166a706bc777aa71785af0051e15}{vector\_innerProduct}}\ (\textcolor{keywordtype}{double}\ *A,\ \textcolor{keywordtype}{double}\ *B,\ \textcolor{keywordtype}{int}\ n);}
+\DoxyCodeLine{00121\ \textcolor{keywordtype}{double}**\ \mbox{\hyperlink{kc_8h_a43a29f653177107c327548f14d5f2a33}{vector\_outerProduct}}\ (\textcolor{keywordtype}{double}\ *A,\ \textcolor{keywordtype}{double}\ *B,\ \textcolor{keywordtype}{int}\ n);}
+\DoxyCodeLine{00122\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{kc_8h_a4f429aee3cfa0bb4410c66555f0a6df0}{vector\_normalize}}\ (\textcolor{keywordtype}{double}*\ A,\ \textcolor{keywordtype}{int}\ n);}
+\DoxyCodeLine{00123\ \textcolor{keywordtype}{double}**\ \mbox{\hyperlink{kc_8h_a1a5bdb44faf7a9f65d5aadd9f393a996}{vector\_toMatrix}}\ (\textcolor{keywordtype}{double}*\ A,\ \textcolor{keywordtype}{int}\ n);}
+\DoxyCodeLine{00124\ \textcolor{keywordtype}{double}*\ \mbox{\hyperlink{kc_8h_a2eab47d949124ded160b9de53426ff11}{matrix\_toVector}}\ (\textcolor{keywordtype}{double}**\ A,\ \textcolor{keywordtype}{int}\ n);}
+\DoxyCodeLine{00125\ }
+\DoxyCodeLine{00126\ \textcolor{comment}{/**************************}}
+\DoxyCodeLine{00127\ \textcolor{comment}{Advanced\ matrix\ operations}}
+\DoxyCodeLine{00128\ \textcolor{comment}{**************************/}}
+\DoxyCodeLine{00129\ \textcolor{keywordtype}{double}**\ \mbox{\hyperlink{kc_8h_a673ed8b4d0eee5e7e60df48435e0d8ba}{matrix\_corMatrix}}\ (\textcolor{keywordtype}{double}**\ A,\ \textcolor{keywordtype}{int}\ m,\ \textcolor{keywordtype}{int}\ n);}
+\DoxyCodeLine{00130\ \textcolor{keywordtype}{double}**\ \mbox{\hyperlink{kc_8h_aa51dbc9f02003e376630381db9eab42c}{matrix\_covMatrix}}\ (\textcolor{keywordtype}{double}**\ A,\ \textcolor{keywordtype}{int}\ m,\ \textcolor{keywordtype}{int}\ n);}
+\DoxyCodeLine{00131\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{kc_8h_a7d45b4d89c9e4dfd5cf06ff773c4f048}{matrix\_solve}}(\textcolor{keywordtype}{double}\ **a,\ \textcolor{keywordtype}{int}\ n,\ \textcolor{keywordtype}{double}\ **b,\ \textcolor{keywordtype}{int}\ m);}
+\DoxyCodeLine{00132\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{kc_8h_a85a2f9c7ff758c36a67d0b8a58424404}{matrix\_ludecomp}}(\textcolor{keywordtype}{double}\ **a,\ \textcolor{keywordtype}{int}\ n,\ \textcolor{keywordtype}{int}\ *indx,\ \textcolor{keywordtype}{double}\ *d);}
+\DoxyCodeLine{00133\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{kc_8h_ad99cb91ebff0903217880cd395ccef58}{matrix\_lusubst}}(\textcolor{keywordtype}{double}\ **a,\ \textcolor{keywordtype}{int}\ n,\ \textcolor{keywordtype}{int}\ *indx,\ \textcolor{keywordtype}{double}*\ b);}
+\DoxyCodeLine{00134\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{kc_8h_af0e16ee0cbf76fe1a067c0f4132e8774}{matrix\_inverse}}\ (\textcolor{keywordtype}{double}\ **a,\ \textcolor{keywordtype}{int}\ n);}
+\DoxyCodeLine{00135\ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{kc_8h_a4709c372281713ec9baaf5fb939cb10e}{matrix\_det}}\ (\textcolor{keywordtype}{double}\ **a,\ \textcolor{keywordtype}{int}\ n);}
+\DoxyCodeLine{00136\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{kc_8h_ac42e23a54fc054272c49120386afd1e7}{matrix\_ludecomp2}}\ (\textcolor{keyword}{const}\ \textcolor{keywordtype}{int}\ n,\ \textcolor{keywordtype}{double}\ **a,\ \textcolor{keywordtype}{int}\ *p);}
+\DoxyCodeLine{00137\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{kc_8h_a946d5288784bd06ff1ba6f09d5eb1f11}{matrix\_lusubst2}}(\textcolor{keyword}{const}\ \textcolor{keywordtype}{int}\ n,\ \textcolor{keywordtype}{double}\ **a,\ \textcolor{keywordtype}{int}\ *p,\ \textcolor{keywordtype}{double}\ *b);}
+\DoxyCodeLine{00138\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{kc_8h_a81683e0787ad3491e6e65a83bf05124f}{matrix\_inverse2}}\ (\textcolor{keywordtype}{double}\ **a,\ \textcolor{keywordtype}{int}\ n);}
+\DoxyCodeLine{00139\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{kc_8h_ac39612a3850b3db9639ce7b945b33217}{matrix\_tridiag}}(\textcolor{keyword}{const}\ \textcolor{keywordtype}{int}\ n,\ \textcolor{keywordtype}{double}\ *a,\ \textcolor{keywordtype}{double}\ *d,\ \textcolor{keywordtype}{double}\ *c,\ \textcolor{keywordtype}{double}\ *b);}
+\DoxyCodeLine{00140\ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{kc_8h_a7f43e2c062f2de6dbd14da6799d78030}{pythag}}(\textcolor{keywordtype}{double}\ a,\ \textcolor{keywordtype}{double}\ b);}
+\DoxyCodeLine{00141\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{kc_8h_ac641037bb0dc9795e1565903868cc017}{matrix\_svd}}(\textcolor{keywordtype}{double}\ **a,\ \textcolor{keywordtype}{int}\ m,\ \textcolor{keywordtype}{int}\ n,\ \textcolor{keywordtype}{double}\ *w,\ \textcolor{keywordtype}{double}\ **v);}
+\DoxyCodeLine{00142\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{kc_8h_ad821d5e02ace8034e9be2ddc6cebd47c}{matrix\_svd2}}\ (\textcolor{keywordtype}{double}\ *W,\ \textcolor{keywordtype}{double}\ *Z,\ \textcolor{keywordtype}{int}\ nRow,\ \textcolor{keywordtype}{int}\ nCol);}
+\DoxyCodeLine{00143\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{kc_8h_a68b4f000503d404e2dcd3b4cdbae952f}{matrix\_eigen}}(\textcolor{keywordtype}{double}\ **a,\ \textcolor{keywordtype}{int}\ n,\ \textcolor{keywordtype}{double}\ *d,\ \textcolor{keywordtype}{double}\ **v,\ \textcolor{keywordtype}{int}\ *nrot);}
+\DoxyCodeLine{00144\ \textcolor{keywordtype}{double}**\ \mbox{\hyperlink{kc_8h_a165e97bd10a48d3c5da908938468212b}{matrix\_pcaCor}}\ (\textcolor{keywordtype}{double}**\ A,\ \textcolor{keywordtype}{int}\ m,\ \textcolor{keywordtype}{int}\ n,\ \textcolor{keywordtype}{double}*\ eval);}
+\DoxyCodeLine{00145\ \textcolor{keywordtype}{double}**\ \mbox{\hyperlink{kc_8h_ae64a3eb3736d5788d72eaf7ad6927421}{matrix\_pcaCov}}\ (\textcolor{keywordtype}{double}**\ A,\ \textcolor{keywordtype}{int}\ m,\ \textcolor{keywordtype}{int}\ n,\ \textcolor{keywordtype}{double}*\ eval);}
+\DoxyCodeLine{00146\ \textcolor{keywordtype}{double}**\ \mbox{\hyperlink{kc_8h_a32977ea97f5f917acfc83aec5817a0e0}{matrix\_pcaScore}}\ (\textcolor{keywordtype}{double}**\ A,\ \textcolor{keywordtype}{int}\ m,\ \textcolor{keywordtype}{int}\ n,\ \textcolor{keywordtype}{double}**\ evec,\ \textcolor{keywordtype}{int}\ k);}
+\DoxyCodeLine{00147\ \textcolor{keywordtype}{double}*\ \mbox{\hyperlink{kc_8h_aa04426b6994cdcfbbf77c3bb77e7a021}{matrix\_pcaComVar}}\ (\textcolor{keywordtype}{double}**\ A,\ \textcolor{keywordtype}{int}\ m,\ \textcolor{keywordtype}{int}\ n,\ \textcolor{keywordtype}{double}**\ evec);}
+\DoxyCodeLine{00148\ \textcolor{keywordtype}{double}**\ \mbox{\hyperlink{kc_8h_a0458e14ed6d01fb333ea0b2a06035d87}{matrix\_reg}}\ (\textcolor{keywordtype}{double}**\ X,\ \textcolor{keywordtype}{int}\ m,\ \textcolor{keywordtype}{int}\ n,\ \textcolor{keywordtype}{double}**\ Y);}
+\DoxyCodeLine{00149\ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{kc_8h_ad57651ec26e71d842d15f65ae9484098}{matrix\_regMSE}}\ (\textcolor{keywordtype}{double}**\ X,\ \textcolor{keywordtype}{int}\ m,\ \textcolor{keywordtype}{int}\ n,\ \textcolor{keywordtype}{double}**\ Y,\ \textcolor{keywordtype}{double}**\ B);}
+\DoxyCodeLine{00150\ \textcolor{keywordtype}{double}*\ \mbox{\hyperlink{kc_8h_acf18fe54721a1ca7a61f70f4fdc637e3}{matrix\_regModelStat}}\ (\textcolor{keywordtype}{double}**\ X,\ \textcolor{keywordtype}{int}\ m,\ \textcolor{keywordtype}{int}\ n,\ \textcolor{keywordtype}{double}**\ Y,\ \textcolor{keywordtype}{double}**\ B);}
+\DoxyCodeLine{00151\ \textcolor{keywordtype}{double}**\ \mbox{\hyperlink{kc_8h_a77077c3de17b2dd212a275a4e0ff1750}{matrix\_regCoefStat}}\ (\textcolor{keywordtype}{double}**\ X,\ \textcolor{keywordtype}{int}\ m,\ \textcolor{keywordtype}{int}\ n,\ \textcolor{keywordtype}{double}**\ Y,\ \textcolor{keywordtype}{double}**\ B);}
+\DoxyCodeLine{00152\ \textcolor{keywordtype}{double}**\ \mbox{\hyperlink{kc_8h_ad66fdb823fdc1c7260a0459c1912203f}{matrix\_regObsStat}}\ (\textcolor{keywordtype}{double}**\ X,\ \textcolor{keywordtype}{int}\ m,\ \textcolor{keywordtype}{int}\ n,\ \textcolor{keywordtype}{double}**\ Y,\ \textcolor{keywordtype}{double}**\ B);}
+\DoxyCodeLine{00153\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{kc_8h_a1440a7779ac56f47a3f355ce4a8c7da0}{test1}}\ ();}
+\DoxyCodeLine{00154\ }
+\DoxyCodeLine{00155\ }
+\DoxyCodeLine{00156\ }
+\DoxyCodeLine{00157\ \textcolor{comment}{/***************************}}
+\DoxyCodeLine{00158\ \textcolor{comment}{statistical\ distributions}}
+\DoxyCodeLine{00159\ \textcolor{comment}{**************************/}}
+\DoxyCodeLine{00160\ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{kc_8h_a42a8993650aee30084689ad35b6c5ea8}{cdf\_binomial}}\ (\textcolor{keywordtype}{int}\ n,\ \textcolor{keywordtype}{int}\ k,\ \textcolor{keywordtype}{double}\ p);}
+\DoxyCodeLine{00161\ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{kc_8h_ab600bf758ebb6d37ebd914533e27691d}{cdf\_chi2}}\ (\textcolor{keywordtype}{double}\ df,\ \textcolor{keywordtype}{double}\ x);}
+\DoxyCodeLine{00162\ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{kc_8h_a1f7aff47eacc48937a5dd3ae419c6066}{cdf\_poisson}}\ (\textcolor{keywordtype}{int}\ k,\ \textcolor{keywordtype}{double}\ x);}
+\DoxyCodeLine{00163\ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{kc_8h_a5e787a5eb2287b478478048a9a621fca}{cdf\_poisson\_inc}}\ (\textcolor{keywordtype}{int}\ k,\ \textcolor{keywordtype}{double}\ x);}
+\DoxyCodeLine{00164\ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{kc_8h_ad7f21bf6ad62e142c785825e00a546e3}{cdf\_normal}}\ (\textcolor{keywordtype}{double}\ x,\ \textcolor{keywordtype}{double}\ mu,\ \textcolor{keywordtype}{double}\ sigma);}
+\DoxyCodeLine{00165\ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{kc_8h_a05188c3bfc69f9c84a6e22f6b0e11cc7}{cdf\_stdnormal}}\ (\textcolor{keywordtype}{double}\ x);}
+\DoxyCodeLine{00166\ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{kc_8h_a44281fba5e514c76d3867c7cc899eb7c}{cdf\_f}}\ (\textcolor{keywordtype}{double}\ df1,\ \textcolor{keywordtype}{double}\ df2,\ \textcolor{keywordtype}{double}\ x);}
+\DoxyCodeLine{00167\ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{kc_8h_a996626bdadc539b36a6ddce1f8262f1e}{cdf\_t}}\ (\textcolor{keywordtype}{double}\ df,\ \textcolor{keywordtype}{double}\ x);}
+\DoxyCodeLine{00168\ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{kc_8h_aeca8344f58357afa063ffc8cc119f8b7}{cdfinv\_t}}\ (\textcolor{keywordtype}{double}\ df,\ \textcolor{keywordtype}{double}\ p);}
+\DoxyCodeLine{00169\ }
+\DoxyCodeLine{00170\ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{kc_8h_a8887b0b13be8a5363eb40c66811a4614}{pdf\_stdnormal}}\ (\textcolor{keywordtype}{double}\ x);}
+\DoxyCodeLine{00171\ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{kc_8h_a2b0a97c4c082620572646f0324ea6fc7}{pdf\_normal}}\ (\textcolor{keywordtype}{double}\ x,\ \textcolor{keywordtype}{double}\ mu,\ \textcolor{keywordtype}{double}\ sigma);}
+\DoxyCodeLine{00172\ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{kc_8h_aa46a006334c47841787f731dc8549788}{pdf\_binomial}}\ (\textcolor{keywordtype}{int}\ n,\ \textcolor{keywordtype}{int}\ k,\ \textcolor{keywordtype}{double}\ p);}
+\DoxyCodeLine{00173\ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{kc_8h_a69c8440b22fa5a24aa3fde1f09e5ac95}{pdf\_beta}}\ (\textcolor{keywordtype}{double}\ a,\ \textcolor{keywordtype}{double}\ b,\ \textcolor{keywordtype}{double}\ x);}
+\DoxyCodeLine{00174\ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{kc_8h_ad402504da1d8913d034b6db754886e90}{pdf\_poisson}}\ (\textcolor{keywordtype}{int}\ k,\ \textcolor{keywordtype}{double}\ x);}
+\DoxyCodeLine{00175\ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{kc_8h_ab2ea3aa0454578da3a05c2fa3c811d10}{pdf\_geometric}}\ (\textcolor{keywordtype}{int}\ k,\ \textcolor{keywordtype}{double}\ p);}
+\DoxyCodeLine{00176\ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{kc_8h_a71a16b3fb6e64dabbd74bfa358b6e6f0}{pdf\_hypergeometric}}\ (\textcolor{keywordtype}{int}\ a,\ \textcolor{keywordtype}{int}\ b,\ \textcolor{keywordtype}{int}\ c,\ \textcolor{keywordtype}{int}\ d);}
+\DoxyCodeLine{00177\ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{kc_8h_a16ca21352ca6ebe67c4ba6142b0a6e1b}{bico}}\ (\textcolor{keywordtype}{int}\ n,\ \textcolor{keywordtype}{int}\ k);}
+\DoxyCodeLine{00178\ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{kc_8h_aa25b6ecd23d45f7dcaa2932138388c74}{lnbico}}\ (\textcolor{keywordtype}{int}\ n,\ \textcolor{keywordtype}{int}\ k);}
+\DoxyCodeLine{00179\ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{kc_8h_a760799d47f2410b689c0c9f35907a118}{invnormal}}\ (\textcolor{keywordtype}{double}\ x);}
+\DoxyCodeLine{00180\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{kc_8h_a66d8af160cff194f4aa44bf2bd5eb2f5}{reg\_linear}}\ (\textcolor{keywordtype}{double}\ *x,\ \textcolor{keywordtype}{double}\ *y,\ \textcolor{keywordtype}{int}\ ndata,\ \textcolor{keywordtype}{double}\ *a,\ \textcolor{keywordtype}{double}\ *b,\ \textcolor{keywordtype}{double}\ *F,\ \textcolor{keywordtype}{double}\ *P);}
+\DoxyCodeLine{00181\ }
+\DoxyCodeLine{00182\ }
+\DoxyCodeLine{00183\ }
+\DoxyCodeLine{00184\ \textcolor{comment}{/*********************}}
+\DoxyCodeLine{00185\ \textcolor{comment}{summary\ statistics}}
+\DoxyCodeLine{00186\ \textcolor{comment}{**********************/}}
+\DoxyCodeLine{00187\ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{kc_8h_ab01d6eb051febfe28b8ac2987dcfe524}{mean}}(\textcolor{keywordtype}{double}\ *data,\ \textcolor{keywordtype}{int}\ n);}
+\DoxyCodeLine{00188\ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{kc_8h_a02ac3a853164d76bd42d4a0979148546}{mean2}}(\textcolor{keywordtype}{double}\ *data,\ \textcolor{keywordtype}{int}\ n);}
+\DoxyCodeLine{00189\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{kc_8h_ae263d464ebb9d7304f3c8043c41622b7}{avevar}}(\textcolor{keywordtype}{double}\ *data,\ \textcolor{keywordtype}{int}\ n,\ \textcolor{keywordtype}{double}\ *ave,\ \textcolor{keywordtype}{double}\ *var);}
+\DoxyCodeLine{00190\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{kc_8h_ab1a75880788408871996b8697b240e42}{avevar2}}(\textcolor{keywordtype}{double}\ *data,\ \textcolor{keywordtype}{int}\ n,\ \textcolor{keywordtype}{double}\ *ave,\ \textcolor{keywordtype}{double}\ *var);}
+\DoxyCodeLine{00191\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{kc_8h_ae62de561257c307cae1c731732aeaf90}{averms}}(\textcolor{keywordtype}{double}\ *data,\ \textcolor{keywordtype}{int}\ n,\ \textcolor{keywordtype}{double}\ *ave,\ \textcolor{keywordtype}{double}\ *rms);}
+\DoxyCodeLine{00192\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{kc_8h_a48dcbe28309bee24dfa8604b67c8c594}{moment}}(\textcolor{keywordtype}{double}\ *data,\ \textcolor{keywordtype}{int}\ n,\ \textcolor{keywordtype}{double}\ *ave,\ \textcolor{keywordtype}{double}\ *adev,\ \textcolor{keywordtype}{double}\ *sdev,\ \textcolor{keywordtype}{double}\ *var,\ \textcolor{keywordtype}{double}\ *skew,\ \textcolor{keywordtype}{double}\ *curt);}
+\DoxyCodeLine{00193\ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{kc_8h_a77ac293f1f1af7e15b3b733713179372}{cc}}(\textcolor{keywordtype}{double}*\ x,\ \textcolor{keywordtype}{double}*\ y,\ \textcolor{keywordtype}{int}\ n);}
+\DoxyCodeLine{00194\ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{kc_8h_a26084b7a5f02a520fedea796faec8a89}{cov}}(\textcolor{keywordtype}{double}*\ x,\ \textcolor{keywordtype}{double}*\ y,\ \textcolor{keywordtype}{int}\ n);}
+\DoxyCodeLine{00195\ }
+\DoxyCodeLine{00196\ \textcolor{comment}{/********************}}
+\DoxyCodeLine{00197\ \textcolor{comment}{statistical\ tests}}
+\DoxyCodeLine{00198\ \textcolor{comment}{********************/}}
+\DoxyCodeLine{00199\ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{kc_8h_abc817004395072b1695cfaa85444f1e7}{bitest}}\ (\textcolor{keywordtype}{int}\ n,\ \textcolor{keywordtype}{int}\ k,\ \textcolor{keywordtype}{double}\ proportion);}
+\DoxyCodeLine{00200\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{kc_8h_a74f76187c76268c668bfe62efddb21d3}{ttest\_onesample}}\ (\textcolor{keywordtype}{double}\ *data,\ \textcolor{keywordtype}{long}\ n,\ \textcolor{keywordtype}{double}\ expected,\ \textcolor{keywordtype}{double}\ *t,\ \textcolor{keywordtype}{double}\ *p);}
+\DoxyCodeLine{00201\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{kc_8h_a9e38b2816c8d12a153ea2a22d1241ba2}{ttest\_ev}}(\textcolor{keywordtype}{double}\ *data1,\ \textcolor{keywordtype}{long}\ n1,\ \textcolor{keywordtype}{double}\ *data2,\ \textcolor{keywordtype}{long}\ n2,\ \textcolor{keywordtype}{double}\ *t,\ \textcolor{keywordtype}{double}\ *p);}
+\DoxyCodeLine{00202\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{kc_8h_a99f03c3631c210c7091d184e108d57a5}{ttest\_uev}}(\textcolor{keywordtype}{double}\ *data1,\ \textcolor{keywordtype}{long}\ n1,\ \textcolor{keywordtype}{double}\ *data2,\ \textcolor{keywordtype}{long}\ n2,\ \textcolor{keywordtype}{double}\ *t,\ \textcolor{keywordtype}{double}\ *p);}
+\DoxyCodeLine{00203\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{kc_8h_aeb063515d33aaf1d9131611c38b21fa4}{ftest}}(\textcolor{keywordtype}{double}\ *data1,\ \textcolor{keywordtype}{long}\ n1,\ \textcolor{keywordtype}{double}\ *data2,\ \textcolor{keywordtype}{long}\ n2,\ \textcolor{keywordtype}{double}\ *f,\ \textcolor{keywordtype}{double}\ *p);}
+\DoxyCodeLine{00204\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{kc_8h_adf37c70a909881088c54291500d5f848}{chi2test}}(\textcolor{keywordtype}{double}\ *bins1,\ \textcolor{keywordtype}{double}\ *bins2,\ \textcolor{keywordtype}{int}\ nbins,\ \textcolor{keywordtype}{int}\ knstrn,\ \textcolor{keywordtype}{double}\ *df,\ \textcolor{keywordtype}{double}\ *chi2,\ \textcolor{keywordtype}{double}\ *p);}
+\DoxyCodeLine{00205\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{kc_8h_a6f7008da290a84b7ba4e26e232a645dc}{chi2test\_onesample}}(\textcolor{keywordtype}{double}\ *bins,\ \textcolor{keywordtype}{double}\ *ebins,\ \textcolor{keywordtype}{int}\ nbins,\ \textcolor{keywordtype}{int}\ knstrn,\ \textcolor{keywordtype}{double}\ *df,\ \textcolor{keywordtype}{double}\ *chi2,\ \textcolor{keywordtype}{double}\ *p);}
+\DoxyCodeLine{00206\ }
+\DoxyCodeLine{00207\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{kc_8h_a229578c847d01eeceb5d7bfe5ddf6c37}{chi2test\_trend\_2by3table}}\ (\textcolor{keywordtype}{double}\ *bins,\ \textcolor{keywordtype}{double}\ *chi2,\ \textcolor{keywordtype}{double}\ *p);}
+\DoxyCodeLine{00208\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{kc_8h_a5ac369578aba21ff5f35f9e2c7320fa4}{chi2test\_trend\_3by2table}}(\textcolor{keywordtype}{double}\ *bins,\ \textcolor{keywordtype}{double}\ *chi2,\ \textcolor{keywordtype}{double}\ *p);}
+\DoxyCodeLine{00209\ }
+\DoxyCodeLine{00210\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{kc_8h_ac06495bdbe2a0b6c4f235664bc002c80}{chi2test\_2by2table}}(\textcolor{keywordtype}{double}\ *bins,\ \textcolor{keywordtype}{double}\ *chi2,\ \textcolor{keywordtype}{double}\ *p);}
+\DoxyCodeLine{00211\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{kc_8h_a3208fdc700d8fc604d6446c1180e58cd}{chi2test\_3by2table}}(\textcolor{keywordtype}{double}\ *bins,\ \textcolor{keywordtype}{double}\ *chi2,\ \textcolor{keywordtype}{double}\ *p);}
+\DoxyCodeLine{00212\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{kc_8h_a96ec673538c48e142ea769df221d2ca9}{chi2test\_2by3table}}(\textcolor{keywordtype}{double}\ *bins,\ \textcolor{keywordtype}{double}\ *chi2,\ \textcolor{keywordtype}{double}\ *p);}
+\DoxyCodeLine{00213\ }
+\DoxyCodeLine{00214\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{kc_8h_af6ec36938a2387245faa43e8799ed03f}{kstest}}(\textcolor{keywordtype}{double}\ *data1,\ \textcolor{keywordtype}{long}\ n1,\ \textcolor{keywordtype}{double}\ *data2,\ \textcolor{keywordtype}{long}\ n2,\ \textcolor{keywordtype}{double}\ *d,\ \textcolor{keywordtype}{double}\ *prob);}
+\DoxyCodeLine{00215\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{kc_8h_adf02e6b141f0fbfb89ffdd700c7f5f51}{kstest\_onesample}}(\textcolor{keywordtype}{double}\ *data,\ \textcolor{keywordtype}{long}\ n,\ \textcolor{keywordtype}{double}\ (*func)(\textcolor{keywordtype}{double}),\ \textcolor{keywordtype}{double}\ *d,\ \textcolor{keywordtype}{double}\ *prob);}
+\DoxyCodeLine{00216\ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{kc_8h_a143f0d120ce98a745cf55be12076967a}{probks}}(\textcolor{keywordtype}{double}\ alam);}
+\DoxyCodeLine{00217\ }
+\DoxyCodeLine{00218\ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{kc_8h_ab2a4b7063b009f90e6db6deface43386}{fisher\_exact\_1sided}}\ (\textcolor{keywordtype}{int}\ a,\ \textcolor{keywordtype}{int}\ b,\ \textcolor{keywordtype}{int}\ c,\ \textcolor{keywordtype}{int}\ d);}
+\DoxyCodeLine{00219\ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{kc_8h_a5879c832b572d6cf16d7fe0dea2af315}{fisher\_exact\_2sided}}\ (\textcolor{keywordtype}{int}\ a,\ \textcolor{keywordtype}{int}\ b,\ \textcolor{keywordtype}{int}\ c,\ \textcolor{keywordtype}{int}\ d);}
+\DoxyCodeLine{00220\ }
+\DoxyCodeLine{00221\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{kc_8h_a09f1787a49a1a27fcfaa05325d628b57}{quick\_sort}}(\textcolor{keywordtype}{int}\ elements,\ \textcolor{keywordtype}{double}\ *arr);}
+\DoxyCodeLine{00222\ }
+\DoxyCodeLine{00223\ }
+\DoxyCodeLine{00224\ \textcolor{comment}{/*******************}}
+\DoxyCodeLine{00225\ \textcolor{comment}{mathematical\ functions}}
+\DoxyCodeLine{00226\ \textcolor{comment}{********************/}}
+\DoxyCodeLine{00227\ }
+\DoxyCodeLine{00228\ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{kc_8h_a69cc1b545a83a4d9f187e131500aee45}{gammln}}(\textcolor{keywordtype}{double}\ x);}
+\DoxyCodeLine{00229\ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{kc_8h_a1b8ed1e5e0530035c186d182ebe747b3}{lnfactorial}}\ (\textcolor{keywordtype}{double}\ x);}
+\DoxyCodeLine{00230\ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{kc_8h_a20614b0260f5c699044c6514b6479e34}{factorial}}\ (\textcolor{keywordtype}{int}\ x);}
+\DoxyCodeLine{00231\ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{kc_8h_aa1745417f9696825bc7cc68538800b5b}{gammp}}(\textcolor{keywordtype}{double}\ a,\ \textcolor{keywordtype}{double}\ x);}
+\DoxyCodeLine{00232\ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{kc_8h_a3875415d74d3aaf6f58d9e58fc061efd}{gammq}}(\textcolor{keywordtype}{double}\ a,\ \textcolor{keywordtype}{double}\ x);}
+\DoxyCodeLine{00233\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{kc_8h_a5277079b0c65d166db9553deb8a92de2}{gser}}(\textcolor{keywordtype}{double}\ *gamser,\ \textcolor{keywordtype}{double}\ a,\ \textcolor{keywordtype}{double}\ x,\ \textcolor{keywordtype}{double}\ *gln);}
+\DoxyCodeLine{00234\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{kc_8h_a5b446e3e8ec13c8e2383ac156f0cf77f}{gcf}}(\textcolor{keywordtype}{double}\ *gammcf,\ \textcolor{keywordtype}{double}\ a,\ \textcolor{keywordtype}{double}\ x,\ \textcolor{keywordtype}{double}\ *gln);}
+\DoxyCodeLine{00235\ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{kc_8h_a226dce75202a4f2ed57a6ee91ccabd93}{beta}}(\textcolor{keywordtype}{double}\ z,\ \textcolor{keywordtype}{double}\ w);}
+\DoxyCodeLine{00236\ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{kc_8h_aff974d448122c33ebffbaf2666c42092}{betai}}(\textcolor{keywordtype}{double}\ a,\ \textcolor{keywordtype}{double}\ b,\ \textcolor{keywordtype}{double}\ x);}
+\DoxyCodeLine{00237\ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{kc_8h_a1d6e649feccbc1d73424037ed02d7418}{betacf}}(\textcolor{keywordtype}{double}\ a,\ \textcolor{keywordtype}{double}\ b,\ \textcolor{keywordtype}{double}\ x);}
+\DoxyCodeLine{00238\ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{kc_8h_aec2bb078b76a5c291f8bac42c63c153d}{inverff}}\ (\textcolor{keywordtype}{double}\ x);}
+\DoxyCodeLine{00239\ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{kc_8h_aa8b35382a71885eed509a5f87bf5e266}{erf}}(\textcolor{keywordtype}{double}\ x);}
+\DoxyCodeLine{00240\ }
+\DoxyCodeLine{00241\ \textcolor{comment}{/****************}}
+\DoxyCodeLine{00242\ \textcolor{comment}{random\ number}}
+\DoxyCodeLine{00243\ \textcolor{comment}{****************/}}
+\DoxyCodeLine{00244\ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{kc_8h_af69cc9a91ed9648c8ac7a66026aa77d2}{ran}}\ ();}
+\DoxyCodeLine{00245\ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{kc_8h_a6d9dfbda8c4ccf755c505ac31a5817d1}{ran3}}(\textcolor{keywordtype}{int}\ *idum);}
+\DoxyCodeLine{00246\ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{kc_8h_a69a4bf2250052e68ef90fa0dbc0c85ff}{random\_exp}}(\textcolor{keywordtype}{double}\ lamda,\ \textcolor{keywordtype}{int}\ *idum);}
+\DoxyCodeLine{00247\ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{kc_8h_a66f8e089376af0493659445c359577fe}{random\_stdnormal}}\ (\textcolor{keywordtype}{int}\ *idum);}
+\DoxyCodeLine{00248\ }
+\DoxyCodeLine{00249\ }
+\DoxyCodeLine{00250\ \textcolor{comment}{/******************}}
+\DoxyCodeLine{00251\ \textcolor{comment}{3rd\ party\ code}}
+\DoxyCodeLine{00252\ \textcolor{comment}{******************/}}
+\DoxyCodeLine{00253\ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{kc_8h_a28e29e986181ac84e42f8996086c64d2}{SNPHWE}}(\textcolor{keywordtype}{int}\ obs\_hets,\ \textcolor{keywordtype}{int}\ obs\_hom1,\ \textcolor{keywordtype}{int}\ obs\_hom2);}
+\DoxyCodeLine{00254\ }
+\DoxyCodeLine{00255\ \textcolor{preprocessor}{\#endif\ \ }\textcolor{comment}{/*\ KC\_H\ */}\textcolor{preprocessor}{}}
+
+\end{DoxyCode}

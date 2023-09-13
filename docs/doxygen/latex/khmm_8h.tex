@@ -1,0 +1,402 @@
+\doxysection{include/khmm.h File Reference}
+\hypertarget{khmm_8h}{}\label{khmm_8h}\index{include/khmm.h@{include/khmm.h}}
+{\ttfamily \#include $<$stdio.\+h$>$}\newline
+{\ttfamily \#include $<$stdlib.\+h$>$}\newline
+{\ttfamily \#include $<$math.\+h$>$}\newline
+{\ttfamily \#include $<$string.\+h$>$}\newline
+{\ttfamily \#include $<$vector$>$}\newline
+Include dependency graph for khmm.\+h\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{khmm_8h__incl}
+\end{center}
+\end{figure}
+This graph shows which files directly or indirectly include this file\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=333pt]{khmm_8h__dep__incl}
+\end{center}
+\end{figure}
+\doxysubsubsection*{Classes}
+\begin{DoxyCompactItemize}
+\item 
+struct \mbox{\hyperlink{struct_c_h_m_m}{CHMM}}
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{struct_c_h_m_m}{CHMM}} \mbox{\hyperlink{khmm_8h_a5ee9a227e8068bbf43d6fb3a19221cc1}{Read\+CHMM}} (const char \texorpdfstring{$\ast$}{*}filename)
+\begin{DoxyCompactList}\small\item\em Read an HMM from a file. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{struct_c_h_m_m}{CHMM}} \mbox{\hyperlink{khmm_8h_a733c168119619839730dcbfdc8f931a3}{Get\+Default\+CHMM}} ()
+\begin{DoxyCompactList}\small\item\em Generate an HMM with default parameters. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{khmm_8h_ab48b68300b34a8e1875bd0c89a81175b}{Print\+CHMM}} (FILE \texorpdfstring{$\ast$}{*}fp, \mbox{\hyperlink{struct_c_h_m_m}{CHMM}} \texorpdfstring{$\ast$}{*}phmm)
+\item 
+void \mbox{\hyperlink{khmm_8h_ab7f4c4bac006b001622e9aca60a31d9d}{Copy\+CHMM}} (\mbox{\hyperlink{struct_c_h_m_m}{CHMM}} \texorpdfstring{$\ast$}{*}phmm1, \mbox{\hyperlink{struct_c_h_m_m}{CHMM}} \texorpdfstring{$\ast$}{*}phmm2)
+\item 
+void \mbox{\hyperlink{khmm_8h_ae1a70c28c22aa817cf0ecdfe2d8bd0d8}{Free\+CHMM}} (\mbox{\hyperlink{struct_c_h_m_m}{CHMM}} \texorpdfstring{$\ast$}{*}phmm)
+\item 
+std\+::vector$<$ int $>$ \mbox{\hyperlink{khmm_8h_ac44ba55ccbb73d2b015ca7537479381e}{test\+Vit\+\_\+\+CHMM}} (\mbox{\hyperlink{struct_c_h_m_m}{CHMM}} hmm, int T, double \texorpdfstring{$\ast$}{*}O1, double \texorpdfstring{$\ast$}{*}O2, double \texorpdfstring{$\ast$}{*}pfb, int \texorpdfstring{$\ast$}{*}snpdist, double \texorpdfstring{$\ast$}{*}plogproba)
+\item 
+void \mbox{\hyperlink{khmm_8h_a03eff718b459de4384ffe2e8779e2059}{tumor\+Vit\+\_\+\+CHMM}} (\mbox{\hyperlink{struct_c_h_m_m}{CHMM}} hmm, int T, double \texorpdfstring{$\ast$}{*}O1, double \texorpdfstring{$\ast$}{*}O2, double \texorpdfstring{$\ast$}{*}pfb, int \texorpdfstring{$\ast$}{*}snpdist, double \texorpdfstring{$\ast$}{*}plogproba, double stroma)
+\item 
+std\+::vector$<$ int $>$ \mbox{\hyperlink{khmm_8h_a51dbadd369b498ec093b590f39e8ea96}{Viterbi\+Log\+NP\+\_\+\+CHMM}} (\mbox{\hyperlink{struct_c_h_m_m}{CHMM}} \texorpdfstring{$\ast$}{*}phmm, int T, double \texorpdfstring{$\ast$}{*}O1, double \texorpdfstring{$\ast$}{*}O2, double \texorpdfstring{$\ast$}{*}pfb, int \texorpdfstring{$\ast$}{*}snpdist, double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}delta, int \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}psi, double \texorpdfstring{$\ast$}{*}pprob)
+\item 
+void \mbox{\hyperlink{khmm_8h_a176e2369b08e7d399b8e33e65e5d1423}{Viterbi\+Log\+NPStroma\+\_\+\+CHMM}} (\mbox{\hyperlink{struct_c_h_m_m}{CHMM}} \texorpdfstring{$\ast$}{*}phmm, int T, double \texorpdfstring{$\ast$}{*}O1, double \texorpdfstring{$\ast$}{*}O2, double \texorpdfstring{$\ast$}{*}pfb, int \texorpdfstring{$\ast$}{*}snpdist, double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}delta, int \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}psi, int \texorpdfstring{$\ast$}{*}q, double \texorpdfstring{$\ast$}{*}pprob, double stroma)
+\item 
+void \mbox{\hyperlink{khmm_8h_a18fff762037a60827d40facd74ceeaad}{est\+HMMFrom\+File\+\_\+\+CHMM}} (\mbox{\hyperlink{struct_c_h_m_m}{CHMM}} hmm, int T, FILE \texorpdfstring{$\ast$}{*}fp, int \texorpdfstring{$\ast$}{*}niter, double \texorpdfstring{$\ast$}{*}logprobinit, double \texorpdfstring{$\ast$}{*}logprobfinal)
+\item 
+void \mbox{\hyperlink{khmm_8h_a6656eb4ef2d85002ae855e590deb1234}{Baum\+Welch\+NP\+\_\+\+CHMM}} (\mbox{\hyperlink{struct_c_h_m_m}{CHMM}} \texorpdfstring{$\ast$}{*}phmm, int T, double \texorpdfstring{$\ast$}{*}O1, double \texorpdfstring{$\ast$}{*}O2, double \texorpdfstring{$\ast$}{*}pfb, int \texorpdfstring{$\ast$}{*}snpdist, double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}alpha, double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}\mbox{\hyperlink{kc_8h_a226dce75202a4f2ed57a6ee91ccabd93}{beta}}, double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}gamma, int \texorpdfstring{$\ast$}{*}pniter, double \texorpdfstring{$\ast$}{*}plogprobinit, double \texorpdfstring{$\ast$}{*}plogprobfinal)
+\item 
+void \mbox{\hyperlink{khmm_8h_a6923f598854169c33b55c551787c248d}{Compute\+Xi\+\_\+\+CHMM}} (\mbox{\hyperlink{struct_c_h_m_m}{CHMM}} \texorpdfstring{$\ast$}{*}phmm, int T, double \texorpdfstring{$\ast$}{*}O1, double \texorpdfstring{$\ast$}{*}O2, double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}biot, int \texorpdfstring{$\ast$}{*}snpdist, double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}alpha, double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}\mbox{\hyperlink{kc_8h_a226dce75202a4f2ed57a6ee91ccabd93}{beta}}, double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}xi)
+\item 
+void \mbox{\hyperlink{khmm_8h_a85f0f78bdeaa0553bf70e54a30dafb44}{Compute\+Gamma\+\_\+\+CHMM}} (\mbox{\hyperlink{struct_c_h_m_m}{CHMM}} \texorpdfstring{$\ast$}{*}phmm, int T, double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}alpha, double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}\mbox{\hyperlink{kc_8h_a226dce75202a4f2ed57a6ee91ccabd93}{beta}}, double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}gamma)
+\item 
+void \mbox{\hyperlink{khmm_8h_a9d4276ff898540229b7d19b9be14edba}{Backward\+With\+Scale\+\_\+\+CHMM}} (\mbox{\hyperlink{struct_c_h_m_m}{CHMM}} \texorpdfstring{$\ast$}{*}phmm, int T, double \texorpdfstring{$\ast$}{*}O1, double \texorpdfstring{$\ast$}{*}O2, double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}biot, int \texorpdfstring{$\ast$}{*}snpdist, double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}\mbox{\hyperlink{kc_8h_a226dce75202a4f2ed57a6ee91ccabd93}{beta}}, double \texorpdfstring{$\ast$}{*}scale, double \texorpdfstring{$\ast$}{*}pprob)
+\item 
+void \mbox{\hyperlink{khmm_8h_af60e73fa08ba0e0cc59e30075ae5569a}{Forward\+With\+Scale\+\_\+\+CHMM}} (\mbox{\hyperlink{struct_c_h_m_m}{CHMM}} \texorpdfstring{$\ast$}{*}phmm, int T, double \texorpdfstring{$\ast$}{*}O1, double \texorpdfstring{$\ast$}{*}O2, double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}biot, int \texorpdfstring{$\ast$}{*}snpdist, double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}alpha, double \texorpdfstring{$\ast$}{*}scale, double \texorpdfstring{$\ast$}{*}pprob)
+\item 
+void \mbox{\hyperlink{khmm_8h_a447e2142aeb1441a755a93caa9735814}{Get\+State\+Prob\+\_\+\+CHMM}} (\mbox{\hyperlink{struct_c_h_m_m}{CHMM}} \texorpdfstring{$\ast$}{*}phmm, int T, double \texorpdfstring{$\ast$}{*}O1, double \texorpdfstring{$\ast$}{*}O2, double \texorpdfstring{$\ast$}{*}pfb, int \texorpdfstring{$\ast$}{*}snpdist, double \texorpdfstring{$\ast$}{*}pprob, int state)
+\item 
+void \mbox{\hyperlink{khmm_8h_acc36ab5f2ea6c345e731f966b40c2b2e}{convert\+HMMTransition}} (\mbox{\hyperlink{struct_c_h_m_m}{CHMM}} \texorpdfstring{$\ast$}{*}phmm, double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}A1, int dist)
+\item 
+void \mbox{\hyperlink{khmm_8h_a9a1264a88e568a9d5b63f69f6ddd150a}{adjust\+BSD}} (\mbox{\hyperlink{struct_c_h_m_m}{CHMM}} \texorpdfstring{$\ast$}{*}phmm, double sdo)
+\item 
+double \mbox{\hyperlink{khmm_8h_a02dc04d07f642f9756939ef10af76319}{b1iot}} (int state, double \texorpdfstring{$\ast$}{*}\mbox{\hyperlink{kc_8h_ab01d6eb051febfe28b8ac2987dcfe524}{mean}}, double \texorpdfstring{$\ast$}{*}sd, double uf, double o)
+\item 
+double \mbox{\hyperlink{khmm_8h_a652a672a2d4cba451fe4f5a0af94d977}{b2iot}} (int state, double \texorpdfstring{$\ast$}{*}\mbox{\hyperlink{kc_8h_ab01d6eb051febfe28b8ac2987dcfe524}{mean}}, double \texorpdfstring{$\ast$}{*}sd, double uf, double pfb, double b)
+\item 
+double \mbox{\hyperlink{khmm_8h_aec91b70d9af2b9bb8c393fdc5ce69843}{b5iot}} (int state, double \texorpdfstring{$\ast$}{*}\mbox{\hyperlink{kc_8h_ab01d6eb051febfe28b8ac2987dcfe524}{mean}}, double \texorpdfstring{$\ast$}{*}sd, double uf, double o, double stroma)
+\item 
+double \mbox{\hyperlink{khmm_8h_a17af7b5ed25dd07035991cbde7886e54}{b6iot}} (int state, double \texorpdfstring{$\ast$}{*}\mbox{\hyperlink{kc_8h_ab01d6eb051febfe28b8ac2987dcfe524}{mean}}, double \texorpdfstring{$\ast$}{*}sd, double uf, double pfb, double b, double stroma)
+\item 
+void \mbox{\hyperlink{khmm_8h_a25ec0cabe3ffd0421bf5644b8faa568d}{test\+Vit\+Trio\+\_\+\+CHMM}} (\mbox{\hyperlink{struct_c_h_m_m}{CHMM}} \texorpdfstring{$\ast$}{*}phmm, int T, double \texorpdfstring{$\ast$}{*}Of1, double \texorpdfstring{$\ast$}{*}Of2, double \texorpdfstring{$\ast$}{*}Om1, double \texorpdfstring{$\ast$}{*}Om2, double \texorpdfstring{$\ast$}{*}Oo1, double \texorpdfstring{$\ast$}{*}Oo2, double \texorpdfstring{$\ast$}{*}pfb, int \texorpdfstring{$\ast$}{*}snpdist, double \texorpdfstring{$\ast$}{*}plogproba, double \texorpdfstring{$\ast$}{*}trio\+\_\+lrr\+\_\+sd, int osex, int chrx\+\_\+flag)
+\item 
+double \mbox{\hyperlink{khmm_8h_acdd24c0b1b8412e623943657991e14c8}{trio\+Transition}} (double cimcell, double chit, double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}A1, double e1, double e2, int dist, int pdn, int pifat, int pimot, int pioff, int dn, int ifat, int imot, int ioff)
+\item 
+void \mbox{\hyperlink{khmm_8h_a6d25d57bf6378e3515230cbd67ed6962}{calculate\+CHIT}} (double a, double M\mbox{[}5\mbox{]}\mbox{[}5\mbox{]}\mbox{[}5\mbox{]}\mbox{[}5\mbox{]}\mbox{[}5\mbox{]}\mbox{[}5\mbox{]})
+\item 
+void \mbox{\hyperlink{khmm_8h_a1f12f93bc10d18630ad767bf6148dbde}{calculate\+CHIT\+\_\+male\+\_\+x}} (double a, double M\mbox{[}5\mbox{]}\mbox{[}5\mbox{]}\mbox{[}5\mbox{]}\mbox{[}5\mbox{]}\mbox{[}5\mbox{]}\mbox{[}5\mbox{]})
+\item 
+void \mbox{\hyperlink{khmm_8h_a895b3508c333b19b3dae3d5ca09551cf}{calculate\+CHIT\+\_\+female\+\_\+x}} (double a, double M\mbox{[}5\mbox{]}\mbox{[}5\mbox{]}\mbox{[}5\mbox{]}\mbox{[}5\mbox{]}\mbox{[}5\mbox{]}\mbox{[}5\mbox{]})
+\item 
+double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*} \mbox{\hyperlink{khmm_8h_a47b39138668ac7fa02ad3bbad1d084e1}{Alloc\+Xi}} (int T, int N)
+\item 
+void \mbox{\hyperlink{khmm_8h_a9d76f35dff082fa217d3db952afc5963}{Free\+Xi}} (double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}xi, int T, int N)
+\item 
+void \mbox{\hyperlink{khmm_8h_af0c9c56300b8121ad07b175d6d3ffbc1}{call\+CNVFrom\+File\+\_\+\+SEQ}} (\mbox{\hyperlink{struct_c_h_m_m}{CHMM}} hmm, int T, FILE \texorpdfstring{$\ast$}{*}fp, int \texorpdfstring{$\ast$}{*}mlstate, double gamma\+\_\+k, double gamma\+\_\+theta)
+\item 
+void \mbox{\hyperlink{khmm_8h_a93e3a2e3dec365c8c29fd4a701ee56d1}{Viterbi\+Log\+NP\+\_\+\+SEQ}} (\mbox{\hyperlink{struct_c_h_m_m}{CHMM}} \texorpdfstring{$\ast$}{*}phmm, int T, double k, double theta, double \texorpdfstring{$\ast$}{*}O1, int \texorpdfstring{$\ast$}{*}O2, double \texorpdfstring{$\ast$}{*}pfb, int \texorpdfstring{$\ast$}{*}length, double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}delta, int \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}psi, int \texorpdfstring{$\ast$}{*}q)
+\item 
+double \mbox{\hyperlink{khmm_8h_a95c792b34169296bc01348d9e5d5dd8a}{b4iot}} (int state, double \texorpdfstring{$\ast$}{*}\mbox{\hyperlink{kc_8h_ab01d6eb051febfe28b8ac2987dcfe524}{mean}}, double \texorpdfstring{$\ast$}{*}sd, double uf, double pfb, int o1, int o2)
+\item 
+double \mbox{\hyperlink{khmm_8h_aebba509d694a3aa136bfdb0f41a6529d}{b3iot}} (int state, double \texorpdfstring{$\ast$}{*}\mbox{\hyperlink{kc_8h_ab01d6eb051febfe28b8ac2987dcfe524}{mean}}, double \texorpdfstring{$\ast$}{*}sd, double uf, double o1, int length)
+\item 
+void \mbox{\hyperlink{khmm_8h_a0f4a52f9b89bfd8bbc78fd211405ba34}{adjust\+HMMExpected}} (\mbox{\hyperlink{struct_c_h_m_m}{CHMM}} \texorpdfstring{$\ast$}{*}phmm, double coverage)
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Function Documentation}
+\Hypertarget{khmm_8h_a9a1264a88e568a9d5b63f69f6ddd150a}\label{khmm_8h_a9a1264a88e568a9d5b63f69f6ddd150a} 
+\index{khmm.h@{khmm.h}!adjustBSD@{adjustBSD}}
+\index{adjustBSD@{adjustBSD}!khmm.h@{khmm.h}}
+\doxysubsubsection{\texorpdfstring{adjustBSD()}{adjustBSD()}}
+{\footnotesize\ttfamily void adjust\+BSD (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{struct_c_h_m_m}{CHMM}} \texorpdfstring{$\ast$}{*}}]{phmm,  }\item[{double}]{sdo }\end{DoxyParamCaption})}
+
+\Hypertarget{khmm_8h_a0f4a52f9b89bfd8bbc78fd211405ba34}\label{khmm_8h_a0f4a52f9b89bfd8bbc78fd211405ba34} 
+\index{khmm.h@{khmm.h}!adjustHMMExpected@{adjustHMMExpected}}
+\index{adjustHMMExpected@{adjustHMMExpected}!khmm.h@{khmm.h}}
+\doxysubsubsection{\texorpdfstring{adjustHMMExpected()}{adjustHMMExpected()}}
+{\footnotesize\ttfamily void adjust\+HMMExpected (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{struct_c_h_m_m}{CHMM}} \texorpdfstring{$\ast$}{*}}]{phmm,  }\item[{double}]{coverage }\end{DoxyParamCaption})}
+
+\Hypertarget{khmm_8h_a47b39138668ac7fa02ad3bbad1d084e1}\label{khmm_8h_a47b39138668ac7fa02ad3bbad1d084e1} 
+\index{khmm.h@{khmm.h}!AllocXi@{AllocXi}}
+\index{AllocXi@{AllocXi}!khmm.h@{khmm.h}}
+\doxysubsubsection{\texorpdfstring{AllocXi()}{AllocXi()}}
+{\footnotesize\ttfamily double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*} Alloc\+Xi (\begin{DoxyParamCaption}\item[{int}]{T,  }\item[{int}]{N }\end{DoxyParamCaption})}
+
+\Hypertarget{khmm_8h_a02dc04d07f642f9756939ef10af76319}\label{khmm_8h_a02dc04d07f642f9756939ef10af76319} 
+\index{khmm.h@{khmm.h}!b1iot@{b1iot}}
+\index{b1iot@{b1iot}!khmm.h@{khmm.h}}
+\doxysubsubsection{\texorpdfstring{b1iot()}{b1iot()}}
+{\footnotesize\ttfamily double b1iot (\begin{DoxyParamCaption}\item[{int}]{state,  }\item[{double \texorpdfstring{$\ast$}{*}}]{mean,  }\item[{double \texorpdfstring{$\ast$}{*}}]{sd,  }\item[{double}]{uf,  }\item[{double}]{o }\end{DoxyParamCaption})}
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=219pt]{khmm_8h_a02dc04d07f642f9756939ef10af76319_cgraph}
+\end{center}
+\end{figure}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{khmm_8h_a02dc04d07f642f9756939ef10af76319_icgraph}
+\end{center}
+\end{figure}
+\Hypertarget{khmm_8h_a652a672a2d4cba451fe4f5a0af94d977}\label{khmm_8h_a652a672a2d4cba451fe4f5a0af94d977} 
+\index{khmm.h@{khmm.h}!b2iot@{b2iot}}
+\index{b2iot@{b2iot}!khmm.h@{khmm.h}}
+\doxysubsubsection{\texorpdfstring{b2iot()}{b2iot()}}
+{\footnotesize\ttfamily double b2iot (\begin{DoxyParamCaption}\item[{int}]{state,  }\item[{double \texorpdfstring{$\ast$}{*}}]{mean,  }\item[{double \texorpdfstring{$\ast$}{*}}]{sd,  }\item[{double}]{uf,  }\item[{double}]{pfb,  }\item[{double}]{b }\end{DoxyParamCaption})}
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{khmm_8h_a652a672a2d4cba451fe4f5a0af94d977_cgraph}
+\end{center}
+\end{figure}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{khmm_8h_a652a672a2d4cba451fe4f5a0af94d977_icgraph}
+\end{center}
+\end{figure}
+\Hypertarget{khmm_8h_aebba509d694a3aa136bfdb0f41a6529d}\label{khmm_8h_aebba509d694a3aa136bfdb0f41a6529d} 
+\index{khmm.h@{khmm.h}!b3iot@{b3iot}}
+\index{b3iot@{b3iot}!khmm.h@{khmm.h}}
+\doxysubsubsection{\texorpdfstring{b3iot()}{b3iot()}}
+{\footnotesize\ttfamily double b3iot (\begin{DoxyParamCaption}\item[{int}]{state,  }\item[{double \texorpdfstring{$\ast$}{*}}]{mean,  }\item[{double \texorpdfstring{$\ast$}{*}}]{sd,  }\item[{double}]{uf,  }\item[{double}]{o1,  }\item[{int}]{length }\end{DoxyParamCaption})}
+
+\Hypertarget{khmm_8h_a95c792b34169296bc01348d9e5d5dd8a}\label{khmm_8h_a95c792b34169296bc01348d9e5d5dd8a} 
+\index{khmm.h@{khmm.h}!b4iot@{b4iot}}
+\index{b4iot@{b4iot}!khmm.h@{khmm.h}}
+\doxysubsubsection{\texorpdfstring{b4iot()}{b4iot()}}
+{\footnotesize\ttfamily double b4iot (\begin{DoxyParamCaption}\item[{int}]{state,  }\item[{double \texorpdfstring{$\ast$}{*}}]{mean,  }\item[{double \texorpdfstring{$\ast$}{*}}]{sd,  }\item[{double}]{uf,  }\item[{double}]{pfb,  }\item[{int}]{o1,  }\item[{int}]{o2 }\end{DoxyParamCaption})}
+
+\Hypertarget{khmm_8h_aec91b70d9af2b9bb8c393fdc5ce69843}\label{khmm_8h_aec91b70d9af2b9bb8c393fdc5ce69843} 
+\index{khmm.h@{khmm.h}!b5iot@{b5iot}}
+\index{b5iot@{b5iot}!khmm.h@{khmm.h}}
+\doxysubsubsection{\texorpdfstring{b5iot()}{b5iot()}}
+{\footnotesize\ttfamily double b5iot (\begin{DoxyParamCaption}\item[{int}]{state,  }\item[{double \texorpdfstring{$\ast$}{*}}]{mean,  }\item[{double \texorpdfstring{$\ast$}{*}}]{sd,  }\item[{double}]{uf,  }\item[{double}]{o,  }\item[{double}]{stroma }\end{DoxyParamCaption})}
+
+\Hypertarget{khmm_8h_a17af7b5ed25dd07035991cbde7886e54}\label{khmm_8h_a17af7b5ed25dd07035991cbde7886e54} 
+\index{khmm.h@{khmm.h}!b6iot@{b6iot}}
+\index{b6iot@{b6iot}!khmm.h@{khmm.h}}
+\doxysubsubsection{\texorpdfstring{b6iot()}{b6iot()}}
+{\footnotesize\ttfamily double b6iot (\begin{DoxyParamCaption}\item[{int}]{state,  }\item[{double \texorpdfstring{$\ast$}{*}}]{mean,  }\item[{double \texorpdfstring{$\ast$}{*}}]{sd,  }\item[{double}]{uf,  }\item[{double}]{pfb,  }\item[{double}]{b,  }\item[{double}]{stroma }\end{DoxyParamCaption})}
+
+\Hypertarget{khmm_8h_a9d4276ff898540229b7d19b9be14edba}\label{khmm_8h_a9d4276ff898540229b7d19b9be14edba} 
+\index{khmm.h@{khmm.h}!BackwardWithScale\_CHMM@{BackwardWithScale\_CHMM}}
+\index{BackwardWithScale\_CHMM@{BackwardWithScale\_CHMM}!khmm.h@{khmm.h}}
+\doxysubsubsection{\texorpdfstring{BackwardWithScale\_CHMM()}{BackwardWithScale\_CHMM()}}
+{\footnotesize\ttfamily void Backward\+With\+Scale\+\_\+\+CHMM (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{struct_c_h_m_m}{CHMM}} \texorpdfstring{$\ast$}{*}}]{phmm,  }\item[{int}]{T,  }\item[{double \texorpdfstring{$\ast$}{*}}]{O1,  }\item[{double \texorpdfstring{$\ast$}{*}}]{O2,  }\item[{double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}}]{biot,  }\item[{int \texorpdfstring{$\ast$}{*}}]{snpdist,  }\item[{double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}}]{beta,  }\item[{double \texorpdfstring{$\ast$}{*}}]{scale,  }\item[{double \texorpdfstring{$\ast$}{*}}]{pprob }\end{DoxyParamCaption})}
+
+\Hypertarget{khmm_8h_a6656eb4ef2d85002ae855e590deb1234}\label{khmm_8h_a6656eb4ef2d85002ae855e590deb1234} 
+\index{khmm.h@{khmm.h}!BaumWelchNP\_CHMM@{BaumWelchNP\_CHMM}}
+\index{BaumWelchNP\_CHMM@{BaumWelchNP\_CHMM}!khmm.h@{khmm.h}}
+\doxysubsubsection{\texorpdfstring{BaumWelchNP\_CHMM()}{BaumWelchNP\_CHMM()}}
+{\footnotesize\ttfamily void Baum\+Welch\+NP\+\_\+\+CHMM (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{struct_c_h_m_m}{CHMM}} \texorpdfstring{$\ast$}{*}}]{phmm,  }\item[{int}]{T,  }\item[{double \texorpdfstring{$\ast$}{*}}]{O1,  }\item[{double \texorpdfstring{$\ast$}{*}}]{O2,  }\item[{double \texorpdfstring{$\ast$}{*}}]{pfb,  }\item[{int \texorpdfstring{$\ast$}{*}}]{snpdist,  }\item[{double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}}]{alpha,  }\item[{double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}}]{beta,  }\item[{double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}}]{gamma,  }\item[{int \texorpdfstring{$\ast$}{*}}]{pniter,  }\item[{double \texorpdfstring{$\ast$}{*}}]{plogprobinit,  }\item[{double \texorpdfstring{$\ast$}{*}}]{plogprobfinal }\end{DoxyParamCaption})}
+
+\Hypertarget{khmm_8h_a6d25d57bf6378e3515230cbd67ed6962}\label{khmm_8h_a6d25d57bf6378e3515230cbd67ed6962} 
+\index{khmm.h@{khmm.h}!calculateCHIT@{calculateCHIT}}
+\index{calculateCHIT@{calculateCHIT}!khmm.h@{khmm.h}}
+\doxysubsubsection{\texorpdfstring{calculateCHIT()}{calculateCHIT()}}
+{\footnotesize\ttfamily void calculate\+CHIT (\begin{DoxyParamCaption}\item[{double}]{a,  }\item[{double}]{M\mbox{[}5\mbox{]}\mbox{[}5\mbox{]}\mbox{[}5\mbox{]}\mbox{[}5\mbox{]}\mbox{[}5\mbox{]}\mbox{[}5\mbox{]} }\end{DoxyParamCaption})}
+
+\Hypertarget{khmm_8h_a895b3508c333b19b3dae3d5ca09551cf}\label{khmm_8h_a895b3508c333b19b3dae3d5ca09551cf} 
+\index{khmm.h@{khmm.h}!calculateCHIT\_female\_x@{calculateCHIT\_female\_x}}
+\index{calculateCHIT\_female\_x@{calculateCHIT\_female\_x}!khmm.h@{khmm.h}}
+\doxysubsubsection{\texorpdfstring{calculateCHIT\_female\_x()}{calculateCHIT\_female\_x()}}
+{\footnotesize\ttfamily void calculate\+CHIT\+\_\+female\+\_\+x (\begin{DoxyParamCaption}\item[{double}]{a,  }\item[{double}]{M\mbox{[}5\mbox{]}\mbox{[}5\mbox{]}\mbox{[}5\mbox{]}\mbox{[}5\mbox{]}\mbox{[}5\mbox{]}\mbox{[}5\mbox{]} }\end{DoxyParamCaption})}
+
+\Hypertarget{khmm_8h_a1f12f93bc10d18630ad767bf6148dbde}\label{khmm_8h_a1f12f93bc10d18630ad767bf6148dbde} 
+\index{khmm.h@{khmm.h}!calculateCHIT\_male\_x@{calculateCHIT\_male\_x}}
+\index{calculateCHIT\_male\_x@{calculateCHIT\_male\_x}!khmm.h@{khmm.h}}
+\doxysubsubsection{\texorpdfstring{calculateCHIT\_male\_x()}{calculateCHIT\_male\_x()}}
+{\footnotesize\ttfamily void calculate\+CHIT\+\_\+male\+\_\+x (\begin{DoxyParamCaption}\item[{double}]{a,  }\item[{double}]{M\mbox{[}5\mbox{]}\mbox{[}5\mbox{]}\mbox{[}5\mbox{]}\mbox{[}5\mbox{]}\mbox{[}5\mbox{]}\mbox{[}5\mbox{]} }\end{DoxyParamCaption})}
+
+\Hypertarget{khmm_8h_af0c9c56300b8121ad07b175d6d3ffbc1}\label{khmm_8h_af0c9c56300b8121ad07b175d6d3ffbc1} 
+\index{khmm.h@{khmm.h}!callCNVFromFile\_SEQ@{callCNVFromFile\_SEQ}}
+\index{callCNVFromFile\_SEQ@{callCNVFromFile\_SEQ}!khmm.h@{khmm.h}}
+\doxysubsubsection{\texorpdfstring{callCNVFromFile\_SEQ()}{callCNVFromFile\_SEQ()}}
+{\footnotesize\ttfamily void call\+CNVFrom\+File\+\_\+\+SEQ (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{struct_c_h_m_m}{CHMM}}}]{hmm,  }\item[{int}]{T,  }\item[{FILE \texorpdfstring{$\ast$}{*}}]{fp,  }\item[{int \texorpdfstring{$\ast$}{*}}]{mlstate,  }\item[{double}]{gamma\+\_\+k,  }\item[{double}]{gamma\+\_\+theta }\end{DoxyParamCaption})}
+
+\Hypertarget{khmm_8h_a85f0f78bdeaa0553bf70e54a30dafb44}\label{khmm_8h_a85f0f78bdeaa0553bf70e54a30dafb44} 
+\index{khmm.h@{khmm.h}!ComputeGamma\_CHMM@{ComputeGamma\_CHMM}}
+\index{ComputeGamma\_CHMM@{ComputeGamma\_CHMM}!khmm.h@{khmm.h}}
+\doxysubsubsection{\texorpdfstring{ComputeGamma\_CHMM()}{ComputeGamma\_CHMM()}}
+{\footnotesize\ttfamily void Compute\+Gamma\+\_\+\+CHMM (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{struct_c_h_m_m}{CHMM}} \texorpdfstring{$\ast$}{*}}]{phmm,  }\item[{int}]{T,  }\item[{double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}}]{alpha,  }\item[{double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}}]{beta,  }\item[{double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}}]{gamma }\end{DoxyParamCaption})}
+
+\Hypertarget{khmm_8h_a6923f598854169c33b55c551787c248d}\label{khmm_8h_a6923f598854169c33b55c551787c248d} 
+\index{khmm.h@{khmm.h}!ComputeXi\_CHMM@{ComputeXi\_CHMM}}
+\index{ComputeXi\_CHMM@{ComputeXi\_CHMM}!khmm.h@{khmm.h}}
+\doxysubsubsection{\texorpdfstring{ComputeXi\_CHMM()}{ComputeXi\_CHMM()}}
+{\footnotesize\ttfamily void Compute\+Xi\+\_\+\+CHMM (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{struct_c_h_m_m}{CHMM}} \texorpdfstring{$\ast$}{*}}]{phmm,  }\item[{int}]{T,  }\item[{double \texorpdfstring{$\ast$}{*}}]{O1,  }\item[{double \texorpdfstring{$\ast$}{*}}]{O2,  }\item[{double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}}]{biot,  }\item[{int \texorpdfstring{$\ast$}{*}}]{snpdist,  }\item[{double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}}]{alpha,  }\item[{double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}}]{beta,  }\item[{double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}}]{xi }\end{DoxyParamCaption})}
+
+\Hypertarget{khmm_8h_acc36ab5f2ea6c345e731f966b40c2b2e}\label{khmm_8h_acc36ab5f2ea6c345e731f966b40c2b2e} 
+\index{khmm.h@{khmm.h}!convertHMMTransition@{convertHMMTransition}}
+\index{convertHMMTransition@{convertHMMTransition}!khmm.h@{khmm.h}}
+\doxysubsubsection{\texorpdfstring{convertHMMTransition()}{convertHMMTransition()}}
+{\footnotesize\ttfamily void convert\+HMMTransition (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{struct_c_h_m_m}{CHMM}} \texorpdfstring{$\ast$}{*}}]{phmm,  }\item[{double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}}]{A1,  }\item[{int}]{dist }\end{DoxyParamCaption})}
+
+\Hypertarget{khmm_8h_ab7f4c4bac006b001622e9aca60a31d9d}\label{khmm_8h_ab7f4c4bac006b001622e9aca60a31d9d} 
+\index{khmm.h@{khmm.h}!CopyCHMM@{CopyCHMM}}
+\index{CopyCHMM@{CopyCHMM}!khmm.h@{khmm.h}}
+\doxysubsubsection{\texorpdfstring{CopyCHMM()}{CopyCHMM()}}
+{\footnotesize\ttfamily void Copy\+CHMM (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{struct_c_h_m_m}{CHMM}} \texorpdfstring{$\ast$}{*}}]{phmm1,  }\item[{\mbox{\hyperlink{struct_c_h_m_m}{CHMM}} \texorpdfstring{$\ast$}{*}}]{phmm2 }\end{DoxyParamCaption})}
+
+\Hypertarget{khmm_8h_a18fff762037a60827d40facd74ceeaad}\label{khmm_8h_a18fff762037a60827d40facd74ceeaad} 
+\index{khmm.h@{khmm.h}!estHMMFromFile\_CHMM@{estHMMFromFile\_CHMM}}
+\index{estHMMFromFile\_CHMM@{estHMMFromFile\_CHMM}!khmm.h@{khmm.h}}
+\doxysubsubsection{\texorpdfstring{estHMMFromFile\_CHMM()}{estHMMFromFile\_CHMM()}}
+{\footnotesize\ttfamily void est\+HMMFrom\+File\+\_\+\+CHMM (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{struct_c_h_m_m}{CHMM}}}]{hmm,  }\item[{int}]{T,  }\item[{FILE \texorpdfstring{$\ast$}{*}}]{fp,  }\item[{int \texorpdfstring{$\ast$}{*}}]{niter,  }\item[{double \texorpdfstring{$\ast$}{*}}]{logprobinit,  }\item[{double \texorpdfstring{$\ast$}{*}}]{logprobfinal }\end{DoxyParamCaption})}
+
+\Hypertarget{khmm_8h_af60e73fa08ba0e0cc59e30075ae5569a}\label{khmm_8h_af60e73fa08ba0e0cc59e30075ae5569a} 
+\index{khmm.h@{khmm.h}!ForwardWithScale\_CHMM@{ForwardWithScale\_CHMM}}
+\index{ForwardWithScale\_CHMM@{ForwardWithScale\_CHMM}!khmm.h@{khmm.h}}
+\doxysubsubsection{\texorpdfstring{ForwardWithScale\_CHMM()}{ForwardWithScale\_CHMM()}}
+{\footnotesize\ttfamily void Forward\+With\+Scale\+\_\+\+CHMM (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{struct_c_h_m_m}{CHMM}} \texorpdfstring{$\ast$}{*}}]{phmm,  }\item[{int}]{T,  }\item[{double \texorpdfstring{$\ast$}{*}}]{O1,  }\item[{double \texorpdfstring{$\ast$}{*}}]{O2,  }\item[{double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}}]{biot,  }\item[{int \texorpdfstring{$\ast$}{*}}]{snpdist,  }\item[{double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}}]{alpha,  }\item[{double \texorpdfstring{$\ast$}{*}}]{scale,  }\item[{double \texorpdfstring{$\ast$}{*}}]{pprob }\end{DoxyParamCaption})}
+
+\Hypertarget{khmm_8h_ae1a70c28c22aa817cf0ecdfe2d8bd0d8}\label{khmm_8h_ae1a70c28c22aa817cf0ecdfe2d8bd0d8} 
+\index{khmm.h@{khmm.h}!FreeCHMM@{FreeCHMM}}
+\index{FreeCHMM@{FreeCHMM}!khmm.h@{khmm.h}}
+\doxysubsubsection{\texorpdfstring{FreeCHMM()}{FreeCHMM()}}
+{\footnotesize\ttfamily void Free\+CHMM (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{struct_c_h_m_m}{CHMM}} \texorpdfstring{$\ast$}{*}}]{phmm }\end{DoxyParamCaption})}
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=254pt]{khmm_8h_ae1a70c28c22aa817cf0ecdfe2d8bd0d8_cgraph}
+\end{center}
+\end{figure}
+\Hypertarget{khmm_8h_a9d76f35dff082fa217d3db952afc5963}\label{khmm_8h_a9d76f35dff082fa217d3db952afc5963} 
+\index{khmm.h@{khmm.h}!FreeXi@{FreeXi}}
+\index{FreeXi@{FreeXi}!khmm.h@{khmm.h}}
+\doxysubsubsection{\texorpdfstring{FreeXi()}{FreeXi()}}
+{\footnotesize\ttfamily void Free\+Xi (\begin{DoxyParamCaption}\item[{double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}}]{xi,  }\item[{int}]{T,  }\item[{int}]{N }\end{DoxyParamCaption})}
+
+\Hypertarget{khmm_8h_a733c168119619839730dcbfdc8f931a3}\label{khmm_8h_a733c168119619839730dcbfdc8f931a3} 
+\index{khmm.h@{khmm.h}!GetDefaultCHMM@{GetDefaultCHMM}}
+\index{GetDefaultCHMM@{GetDefaultCHMM}!khmm.h@{khmm.h}}
+\doxysubsubsection{\texorpdfstring{GetDefaultCHMM()}{GetDefaultCHMM()}}
+{\footnotesize\ttfamily \mbox{\hyperlink{struct_c_h_m_m}{CHMM}} Get\+Default\+CHMM (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+
+Generate an HMM with default parameters. 
+
+\Hypertarget{khmm_8h_a447e2142aeb1441a755a93caa9735814}\label{khmm_8h_a447e2142aeb1441a755a93caa9735814} 
+\index{khmm.h@{khmm.h}!GetStateProb\_CHMM@{GetStateProb\_CHMM}}
+\index{GetStateProb\_CHMM@{GetStateProb\_CHMM}!khmm.h@{khmm.h}}
+\doxysubsubsection{\texorpdfstring{GetStateProb\_CHMM()}{GetStateProb\_CHMM()}}
+{\footnotesize\ttfamily void Get\+State\+Prob\+\_\+\+CHMM (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{struct_c_h_m_m}{CHMM}} \texorpdfstring{$\ast$}{*}}]{phmm,  }\item[{int}]{T,  }\item[{double \texorpdfstring{$\ast$}{*}}]{O1,  }\item[{double \texorpdfstring{$\ast$}{*}}]{O2,  }\item[{double \texorpdfstring{$\ast$}{*}}]{pfb,  }\item[{int \texorpdfstring{$\ast$}{*}}]{snpdist,  }\item[{double \texorpdfstring{$\ast$}{*}}]{pprob,  }\item[{int}]{state }\end{DoxyParamCaption})}
+
+\Hypertarget{khmm_8h_ab48b68300b34a8e1875bd0c89a81175b}\label{khmm_8h_ab48b68300b34a8e1875bd0c89a81175b} 
+\index{khmm.h@{khmm.h}!PrintCHMM@{PrintCHMM}}
+\index{PrintCHMM@{PrintCHMM}!khmm.h@{khmm.h}}
+\doxysubsubsection{\texorpdfstring{PrintCHMM()}{PrintCHMM()}}
+{\footnotesize\ttfamily void Print\+CHMM (\begin{DoxyParamCaption}\item[{FILE \texorpdfstring{$\ast$}{*}}]{fp,  }\item[{\mbox{\hyperlink{struct_c_h_m_m}{CHMM}} \texorpdfstring{$\ast$}{*}}]{phmm }\end{DoxyParamCaption})}
+
+\Hypertarget{khmm_8h_a5ee9a227e8068bbf43d6fb3a19221cc1}\label{khmm_8h_a5ee9a227e8068bbf43d6fb3a19221cc1} 
+\index{khmm.h@{khmm.h}!ReadCHMM@{ReadCHMM}}
+\index{ReadCHMM@{ReadCHMM}!khmm.h@{khmm.h}}
+\doxysubsubsection{\texorpdfstring{ReadCHMM()}{ReadCHMM()}}
+{\footnotesize\ttfamily \mbox{\hyperlink{struct_c_h_m_m}{CHMM}} Read\+CHMM (\begin{DoxyParamCaption}\item[{const char \texorpdfstring{$\ast$}{*}}]{filename }\end{DoxyParamCaption})}
+
+
+
+Read an HMM from a file. 
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=235pt]{khmm_8h_a5ee9a227e8068bbf43d6fb3a19221cc1_cgraph}
+\end{center}
+\end{figure}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{khmm_8h_a5ee9a227e8068bbf43d6fb3a19221cc1_icgraph}
+\end{center}
+\end{figure}
+\Hypertarget{khmm_8h_ac44ba55ccbb73d2b015ca7537479381e}\label{khmm_8h_ac44ba55ccbb73d2b015ca7537479381e} 
+\index{khmm.h@{khmm.h}!testVit\_CHMM@{testVit\_CHMM}}
+\index{testVit\_CHMM@{testVit\_CHMM}!khmm.h@{khmm.h}}
+\doxysubsubsection{\texorpdfstring{testVit\_CHMM()}{testVit\_CHMM()}}
+{\footnotesize\ttfamily std\+::vector$<$ int $>$ test\+Vit\+\_\+\+CHMM (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{struct_c_h_m_m}{CHMM}}}]{hmm,  }\item[{int}]{T,  }\item[{double \texorpdfstring{$\ast$}{*}}]{O1,  }\item[{double \texorpdfstring{$\ast$}{*}}]{O2,  }\item[{double \texorpdfstring{$\ast$}{*}}]{pfb,  }\item[{int \texorpdfstring{$\ast$}{*}}]{snpdist,  }\item[{double \texorpdfstring{$\ast$}{*}}]{plogproba }\end{DoxyParamCaption})}
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{khmm_8h_ac44ba55ccbb73d2b015ca7537479381e_cgraph}
+\end{center}
+\end{figure}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{khmm_8h_ac44ba55ccbb73d2b015ca7537479381e_icgraph}
+\end{center}
+\end{figure}
+\Hypertarget{khmm_8h_a25ec0cabe3ffd0421bf5644b8faa568d}\label{khmm_8h_a25ec0cabe3ffd0421bf5644b8faa568d} 
+\index{khmm.h@{khmm.h}!testVitTrio\_CHMM@{testVitTrio\_CHMM}}
+\index{testVitTrio\_CHMM@{testVitTrio\_CHMM}!khmm.h@{khmm.h}}
+\doxysubsubsection{\texorpdfstring{testVitTrio\_CHMM()}{testVitTrio\_CHMM()}}
+{\footnotesize\ttfamily void test\+Vit\+Trio\+\_\+\+CHMM (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{struct_c_h_m_m}{CHMM}} \texorpdfstring{$\ast$}{*}}]{phmm,  }\item[{int}]{T,  }\item[{double \texorpdfstring{$\ast$}{*}}]{Of1,  }\item[{double \texorpdfstring{$\ast$}{*}}]{Of2,  }\item[{double \texorpdfstring{$\ast$}{*}}]{Om1,  }\item[{double \texorpdfstring{$\ast$}{*}}]{Om2,  }\item[{double \texorpdfstring{$\ast$}{*}}]{Oo1,  }\item[{double \texorpdfstring{$\ast$}{*}}]{Oo2,  }\item[{double \texorpdfstring{$\ast$}{*}}]{pfb,  }\item[{int \texorpdfstring{$\ast$}{*}}]{snpdist,  }\item[{double \texorpdfstring{$\ast$}{*}}]{plogproba,  }\item[{double \texorpdfstring{$\ast$}{*}}]{trio\+\_\+lrr\+\_\+sd,  }\item[{int}]{osex,  }\item[{int}]{chrx\+\_\+flag }\end{DoxyParamCaption})}
+
+\Hypertarget{khmm_8h_acdd24c0b1b8412e623943657991e14c8}\label{khmm_8h_acdd24c0b1b8412e623943657991e14c8} 
+\index{khmm.h@{khmm.h}!trioTransition@{trioTransition}}
+\index{trioTransition@{trioTransition}!khmm.h@{khmm.h}}
+\doxysubsubsection{\texorpdfstring{trioTransition()}{trioTransition()}}
+{\footnotesize\ttfamily double trio\+Transition (\begin{DoxyParamCaption}\item[{double}]{cimcell,  }\item[{double}]{chit,  }\item[{double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}}]{A1,  }\item[{double}]{e1,  }\item[{double}]{e2,  }\item[{int}]{dist,  }\item[{int}]{pdn,  }\item[{int}]{pifat,  }\item[{int}]{pimot,  }\item[{int}]{pioff,  }\item[{int}]{dn,  }\item[{int}]{ifat,  }\item[{int}]{imot,  }\item[{int}]{ioff }\end{DoxyParamCaption})}
+
+\Hypertarget{khmm_8h_a03eff718b459de4384ffe2e8779e2059}\label{khmm_8h_a03eff718b459de4384ffe2e8779e2059} 
+\index{khmm.h@{khmm.h}!tumorVit\_CHMM@{tumorVit\_CHMM}}
+\index{tumorVit\_CHMM@{tumorVit\_CHMM}!khmm.h@{khmm.h}}
+\doxysubsubsection{\texorpdfstring{tumorVit\_CHMM()}{tumorVit\_CHMM()}}
+{\footnotesize\ttfamily void tumor\+Vit\+\_\+\+CHMM (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{struct_c_h_m_m}{CHMM}}}]{hmm,  }\item[{int}]{T,  }\item[{double \texorpdfstring{$\ast$}{*}}]{O1,  }\item[{double \texorpdfstring{$\ast$}{*}}]{O2,  }\item[{double \texorpdfstring{$\ast$}{*}}]{pfb,  }\item[{int \texorpdfstring{$\ast$}{*}}]{snpdist,  }\item[{double \texorpdfstring{$\ast$}{*}}]{plogproba,  }\item[{double}]{stroma }\end{DoxyParamCaption})}
+
+\Hypertarget{khmm_8h_a51dbadd369b498ec093b590f39e8ea96}\label{khmm_8h_a51dbadd369b498ec093b590f39e8ea96} 
+\index{khmm.h@{khmm.h}!ViterbiLogNP\_CHMM@{ViterbiLogNP\_CHMM}}
+\index{ViterbiLogNP\_CHMM@{ViterbiLogNP\_CHMM}!khmm.h@{khmm.h}}
+\doxysubsubsection{\texorpdfstring{ViterbiLogNP\_CHMM()}{ViterbiLogNP\_CHMM()}}
+{\footnotesize\ttfamily std\+::vector$<$ int $>$ Viterbi\+Log\+NP\+\_\+\+CHMM (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{struct_c_h_m_m}{CHMM}} \texorpdfstring{$\ast$}{*}}]{phmm,  }\item[{int}]{T,  }\item[{double \texorpdfstring{$\ast$}{*}}]{O1,  }\item[{double \texorpdfstring{$\ast$}{*}}]{O2,  }\item[{double \texorpdfstring{$\ast$}{*}}]{pfb,  }\item[{int \texorpdfstring{$\ast$}{*}}]{snpdist,  }\item[{double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}}]{delta,  }\item[{int \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}}]{psi,  }\item[{double \texorpdfstring{$\ast$}{*}}]{pprob }\end{DoxyParamCaption})}
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{khmm_8h_a51dbadd369b498ec093b590f39e8ea96_cgraph}
+\end{center}
+\end{figure}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{khmm_8h_a51dbadd369b498ec093b590f39e8ea96_icgraph}
+\end{center}
+\end{figure}
+\Hypertarget{khmm_8h_a93e3a2e3dec365c8c29fd4a701ee56d1}\label{khmm_8h_a93e3a2e3dec365c8c29fd4a701ee56d1} 
+\index{khmm.h@{khmm.h}!ViterbiLogNP\_SEQ@{ViterbiLogNP\_SEQ}}
+\index{ViterbiLogNP\_SEQ@{ViterbiLogNP\_SEQ}!khmm.h@{khmm.h}}
+\doxysubsubsection{\texorpdfstring{ViterbiLogNP\_SEQ()}{ViterbiLogNP\_SEQ()}}
+{\footnotesize\ttfamily void Viterbi\+Log\+NP\+\_\+\+SEQ (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{struct_c_h_m_m}{CHMM}} \texorpdfstring{$\ast$}{*}}]{phmm,  }\item[{int}]{T,  }\item[{double}]{k,  }\item[{double}]{theta,  }\item[{double \texorpdfstring{$\ast$}{*}}]{O1,  }\item[{int \texorpdfstring{$\ast$}{*}}]{O2,  }\item[{double \texorpdfstring{$\ast$}{*}}]{pfb,  }\item[{int \texorpdfstring{$\ast$}{*}}]{length,  }\item[{double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}}]{delta,  }\item[{int \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}}]{psi,  }\item[{int \texorpdfstring{$\ast$}{*}}]{q }\end{DoxyParamCaption})}
+
+\Hypertarget{khmm_8h_a176e2369b08e7d399b8e33e65e5d1423}\label{khmm_8h_a176e2369b08e7d399b8e33e65e5d1423} 
+\index{khmm.h@{khmm.h}!ViterbiLogNPStroma\_CHMM@{ViterbiLogNPStroma\_CHMM}}
+\index{ViterbiLogNPStroma\_CHMM@{ViterbiLogNPStroma\_CHMM}!khmm.h@{khmm.h}}
+\doxysubsubsection{\texorpdfstring{ViterbiLogNPStroma\_CHMM()}{ViterbiLogNPStroma\_CHMM()}}
+{\footnotesize\ttfamily void Viterbi\+Log\+NPStroma\+\_\+\+CHMM (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{struct_c_h_m_m}{CHMM}} \texorpdfstring{$\ast$}{*}}]{phmm,  }\item[{int}]{T,  }\item[{double \texorpdfstring{$\ast$}{*}}]{O1,  }\item[{double \texorpdfstring{$\ast$}{*}}]{O2,  }\item[{double \texorpdfstring{$\ast$}{*}}]{pfb,  }\item[{int \texorpdfstring{$\ast$}{*}}]{snpdist,  }\item[{double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}}]{delta,  }\item[{int \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}}]{psi,  }\item[{int \texorpdfstring{$\ast$}{*}}]{q,  }\item[{double \texorpdfstring{$\ast$}{*}}]{pprob,  }\item[{double}]{stroma }\end{DoxyParamCaption})}
+

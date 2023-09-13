@@ -1,0 +1,197 @@
+\doxysection{src/khmm.cpp File Reference}
+\hypertarget{khmm_8cpp}{}\label{khmm_8cpp}\index{src/khmm.cpp@{src/khmm.cpp}}
+{\ttfamily \#include $<$iostream$>$}\newline
+{\ttfamily \#include "{}khmm.\+h"{}}\newline
+{\ttfamily \#include "{}kc.\+h"{}}\newline
+Include dependency graph for khmm.\+cpp\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{khmm_8cpp__incl}
+\end{center}
+\end{figure}
+\doxysubsubsection*{Macros}
+\begin{DoxyCompactItemize}
+\item 
+\#define \mbox{\hyperlink{khmm_8cpp_a921cc0b96e9153cc7f874bd6a44b6d51}{STATE\+\_\+\+CHANGE}}~100000.\+0 /\texorpdfstring{$\ast$}{*}this is the expected changes (D value) in the transition matrix\texorpdfstring{$\ast$}{*}/
+\item 
+\#define \mbox{\hyperlink{khmm_8cpp_af58f308b630715030c772e4ecced3475}{VITHUGE}}~100000000000.\+0
+\item 
+\#define \mbox{\hyperlink{khmm_8cpp_aa76dba1435083c21600074a1471be0d9}{FLOAT\+\_\+\+MINIMUM}}~1.\+175494351e-\/38; /\texorpdfstring{$\ast$}{*}this is indeed machine dependent\texorpdfstring{$\ast$}{*}/
+\item 
+\#define \mbox{\hyperlink{khmm_8cpp_a3fd2b1bcd7ddcf506237987ad780f495}{DELTA}}~1
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+std\+::vector$<$ int $>$ \mbox{\hyperlink{khmm_8cpp_ac44ba55ccbb73d2b015ca7537479381e}{test\+Vit\+\_\+\+CHMM}} (\mbox{\hyperlink{struct_c_h_m_m}{CHMM}} hmm, int T, double \texorpdfstring{$\ast$}{*}O1, double \texorpdfstring{$\ast$}{*}O2, double \texorpdfstring{$\ast$}{*}pfb, int \texorpdfstring{$\ast$}{*}snpdist, double \texorpdfstring{$\ast$}{*}plogproba)
+\item 
+double \mbox{\hyperlink{khmm_8cpp_a02dc04d07f642f9756939ef10af76319}{b1iot}} (int state, double \texorpdfstring{$\ast$}{*}\mbox{\hyperlink{kc_8h_ab01d6eb051febfe28b8ac2987dcfe524}{mean}}, double \texorpdfstring{$\ast$}{*}sd, double uf, double o)
+\item 
+double \mbox{\hyperlink{khmm_8cpp_a652a672a2d4cba451fe4f5a0af94d977}{b2iot}} (int state, double \texorpdfstring{$\ast$}{*}\mbox{\hyperlink{kc_8h_ab01d6eb051febfe28b8ac2987dcfe524}{mean}}, double \texorpdfstring{$\ast$}{*}sd, double uf, double pfb, double b)
+\item 
+std\+::vector$<$ int $>$ \mbox{\hyperlink{khmm_8cpp_a51dbadd369b498ec093b590f39e8ea96}{Viterbi\+Log\+NP\+\_\+\+CHMM}} (\mbox{\hyperlink{struct_c_h_m_m}{CHMM}} \texorpdfstring{$\ast$}{*}phmm, int T, double \texorpdfstring{$\ast$}{*}O1, double \texorpdfstring{$\ast$}{*}O2, double \texorpdfstring{$\ast$}{*}pfb, int \texorpdfstring{$\ast$}{*}snpdist, double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}delta, int \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}psi, double \texorpdfstring{$\ast$}{*}pprob)
+\item 
+\mbox{\hyperlink{struct_c_h_m_m}{CHMM}} \mbox{\hyperlink{khmm_8cpp_a5ee9a227e8068bbf43d6fb3a19221cc1}{Read\+CHMM}} (const char \texorpdfstring{$\ast$}{*}filename)
+\begin{DoxyCompactList}\small\item\em Read an HMM from a file. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{khmm_8cpp_ae1a70c28c22aa817cf0ecdfe2d8bd0d8}{Free\+CHMM}} (\mbox{\hyperlink{struct_c_h_m_m}{CHMM}} \texorpdfstring{$\ast$}{*}phmm)
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Macro Definition Documentation}
+\Hypertarget{khmm_8cpp_a3fd2b1bcd7ddcf506237987ad780f495}\label{khmm_8cpp_a3fd2b1bcd7ddcf506237987ad780f495} 
+\index{khmm.cpp@{khmm.cpp}!DELTA@{DELTA}}
+\index{DELTA@{DELTA}!khmm.cpp@{khmm.cpp}}
+\doxysubsubsection{\texorpdfstring{DELTA}{DELTA}}
+{\footnotesize\ttfamily \#define DELTA~1}
+
+\Hypertarget{khmm_8cpp_aa76dba1435083c21600074a1471be0d9}\label{khmm_8cpp_aa76dba1435083c21600074a1471be0d9} 
+\index{khmm.cpp@{khmm.cpp}!FLOAT\_MINIMUM@{FLOAT\_MINIMUM}}
+\index{FLOAT\_MINIMUM@{FLOAT\_MINIMUM}!khmm.cpp@{khmm.cpp}}
+\doxysubsubsection{\texorpdfstring{FLOAT\_MINIMUM}{FLOAT\_MINIMUM}}
+{\footnotesize\ttfamily \#define FLOAT\+\_\+\+MINIMUM~1.\+175494351e-\/38; /\texorpdfstring{$\ast$}{*}this is indeed machine dependent\texorpdfstring{$\ast$}{*}/}
+
+\Hypertarget{khmm_8cpp_a921cc0b96e9153cc7f874bd6a44b6d51}\label{khmm_8cpp_a921cc0b96e9153cc7f874bd6a44b6d51} 
+\index{khmm.cpp@{khmm.cpp}!STATE\_CHANGE@{STATE\_CHANGE}}
+\index{STATE\_CHANGE@{STATE\_CHANGE}!khmm.cpp@{khmm.cpp}}
+\doxysubsubsection{\texorpdfstring{STATE\_CHANGE}{STATE\_CHANGE}}
+{\footnotesize\ttfamily \#define STATE\+\_\+\+CHANGE~100000.\+0 /\texorpdfstring{$\ast$}{*}this is the expected changes (D value) in the transition matrix\texorpdfstring{$\ast$}{*}/}
+
+\Hypertarget{khmm_8cpp_af58f308b630715030c772e4ecced3475}\label{khmm_8cpp_af58f308b630715030c772e4ecced3475} 
+\index{khmm.cpp@{khmm.cpp}!VITHUGE@{VITHUGE}}
+\index{VITHUGE@{VITHUGE}!khmm.cpp@{khmm.cpp}}
+\doxysubsubsection{\texorpdfstring{VITHUGE}{VITHUGE}}
+{\footnotesize\ttfamily \#define VITHUGE~100000000000.\+0}
+
+
+
+\doxysubsection{Function Documentation}
+\Hypertarget{khmm_8cpp_a02dc04d07f642f9756939ef10af76319}\label{khmm_8cpp_a02dc04d07f642f9756939ef10af76319} 
+\index{khmm.cpp@{khmm.cpp}!b1iot@{b1iot}}
+\index{b1iot@{b1iot}!khmm.cpp@{khmm.cpp}}
+\doxysubsubsection{\texorpdfstring{b1iot()}{b1iot()}}
+{\footnotesize\ttfamily double b1iot (\begin{DoxyParamCaption}\item[{int}]{state,  }\item[{double \texorpdfstring{$\ast$}{*}}]{mean,  }\item[{double \texorpdfstring{$\ast$}{*}}]{sd,  }\item[{double}]{uf,  }\item[{double}]{o }\end{DoxyParamCaption})}
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=219pt]{khmm_8cpp_a02dc04d07f642f9756939ef10af76319_cgraph}
+\end{center}
+\end{figure}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{khmm_8cpp_a02dc04d07f642f9756939ef10af76319_icgraph}
+\end{center}
+\end{figure}
+\Hypertarget{khmm_8cpp_a652a672a2d4cba451fe4f5a0af94d977}\label{khmm_8cpp_a652a672a2d4cba451fe4f5a0af94d977} 
+\index{khmm.cpp@{khmm.cpp}!b2iot@{b2iot}}
+\index{b2iot@{b2iot}!khmm.cpp@{khmm.cpp}}
+\doxysubsubsection{\texorpdfstring{b2iot()}{b2iot()}}
+{\footnotesize\ttfamily double b2iot (\begin{DoxyParamCaption}\item[{int}]{state,  }\item[{double \texorpdfstring{$\ast$}{*}}]{mean,  }\item[{double \texorpdfstring{$\ast$}{*}}]{sd,  }\item[{double}]{uf,  }\item[{double}]{pfb,  }\item[{double}]{b }\end{DoxyParamCaption})}
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{khmm_8cpp_a652a672a2d4cba451fe4f5a0af94d977_cgraph}
+\end{center}
+\end{figure}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{khmm_8cpp_a652a672a2d4cba451fe4f5a0af94d977_icgraph}
+\end{center}
+\end{figure}
+\Hypertarget{khmm_8cpp_ae1a70c28c22aa817cf0ecdfe2d8bd0d8}\label{khmm_8cpp_ae1a70c28c22aa817cf0ecdfe2d8bd0d8} 
+\index{khmm.cpp@{khmm.cpp}!FreeCHMM@{FreeCHMM}}
+\index{FreeCHMM@{FreeCHMM}!khmm.cpp@{khmm.cpp}}
+\doxysubsubsection{\texorpdfstring{FreeCHMM()}{FreeCHMM()}}
+{\footnotesize\ttfamily void Free\+CHMM (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{struct_c_h_m_m}{CHMM}} \texorpdfstring{$\ast$}{*}}]{phmm }\end{DoxyParamCaption})}
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=254pt]{khmm_8cpp_ae1a70c28c22aa817cf0ecdfe2d8bd0d8_cgraph}
+\end{center}
+\end{figure}
+\Hypertarget{khmm_8cpp_a5ee9a227e8068bbf43d6fb3a19221cc1}\label{khmm_8cpp_a5ee9a227e8068bbf43d6fb3a19221cc1} 
+\index{khmm.cpp@{khmm.cpp}!ReadCHMM@{ReadCHMM}}
+\index{ReadCHMM@{ReadCHMM}!khmm.cpp@{khmm.cpp}}
+\doxysubsubsection{\texorpdfstring{ReadCHMM()}{ReadCHMM()}}
+{\footnotesize\ttfamily \mbox{\hyperlink{struct_c_h_m_m}{CHMM}} Read\+CHMM (\begin{DoxyParamCaption}\item[{const char \texorpdfstring{$\ast$}{*}}]{filename }\end{DoxyParamCaption})}
+
+
+
+Read an HMM from a file. 
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=235pt]{khmm_8cpp_a5ee9a227e8068bbf43d6fb3a19221cc1_cgraph}
+\end{center}
+\end{figure}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{khmm_8cpp_a5ee9a227e8068bbf43d6fb3a19221cc1_icgraph}
+\end{center}
+\end{figure}
+\Hypertarget{khmm_8cpp_ac44ba55ccbb73d2b015ca7537479381e}\label{khmm_8cpp_ac44ba55ccbb73d2b015ca7537479381e} 
+\index{khmm.cpp@{khmm.cpp}!testVit\_CHMM@{testVit\_CHMM}}
+\index{testVit\_CHMM@{testVit\_CHMM}!khmm.cpp@{khmm.cpp}}
+\doxysubsubsection{\texorpdfstring{testVit\_CHMM()}{testVit\_CHMM()}}
+{\footnotesize\ttfamily std\+::vector$<$ int $>$ test\+Vit\+\_\+\+CHMM (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{struct_c_h_m_m}{CHMM}}}]{hmm,  }\item[{int}]{T,  }\item[{double \texorpdfstring{$\ast$}{*}}]{O1,  }\item[{double \texorpdfstring{$\ast$}{*}}]{O2,  }\item[{double \texorpdfstring{$\ast$}{*}}]{pfb,  }\item[{int \texorpdfstring{$\ast$}{*}}]{snpdist,  }\item[{double \texorpdfstring{$\ast$}{*}}]{plogproba }\end{DoxyParamCaption})}
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{khmm_8cpp_ac44ba55ccbb73d2b015ca7537479381e_cgraph}
+\end{center}
+\end{figure}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{khmm_8cpp_ac44ba55ccbb73d2b015ca7537479381e_icgraph}
+\end{center}
+\end{figure}
+\Hypertarget{khmm_8cpp_a51dbadd369b498ec093b590f39e8ea96}\label{khmm_8cpp_a51dbadd369b498ec093b590f39e8ea96} 
+\index{khmm.cpp@{khmm.cpp}!ViterbiLogNP\_CHMM@{ViterbiLogNP\_CHMM}}
+\index{ViterbiLogNP\_CHMM@{ViterbiLogNP\_CHMM}!khmm.cpp@{khmm.cpp}}
+\doxysubsubsection{\texorpdfstring{ViterbiLogNP\_CHMM()}{ViterbiLogNP\_CHMM()}}
+{\footnotesize\ttfamily std\+::vector$<$ int $>$ Viterbi\+Log\+NP\+\_\+\+CHMM (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{struct_c_h_m_m}{CHMM}} \texorpdfstring{$\ast$}{*}}]{phmm,  }\item[{int}]{T,  }\item[{double \texorpdfstring{$\ast$}{*}}]{O1,  }\item[{double \texorpdfstring{$\ast$}{*}}]{O2,  }\item[{double \texorpdfstring{$\ast$}{*}}]{pfb,  }\item[{int \texorpdfstring{$\ast$}{*}}]{snpdist,  }\item[{double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}}]{delta,  }\item[{int \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}}]{psi,  }\item[{double \texorpdfstring{$\ast$}{*}}]{pprob }\end{DoxyParamCaption})}
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{khmm_8cpp_a51dbadd369b498ec093b590f39e8ea96_cgraph}
+\end{center}
+\end{figure}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{khmm_8cpp_a51dbadd369b498ec093b590f39e8ea96_icgraph}
+\end{center}
+\end{figure}

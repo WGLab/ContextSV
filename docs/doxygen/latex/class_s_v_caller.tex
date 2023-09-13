@@ -1,0 +1,144 @@
+\doxysection{SVCaller Class Reference}
+\hypertarget{class_s_v_caller}{}\label{class_s_v_caller}\index{SVCaller@{SVCaller}}
+
+
+{\ttfamily \#include $<$sv\+\_\+caller.\+h$>$}
+
+
+
+Collaboration diagram for SVCaller\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=172pt]{class_s_v_caller__coll__graph}
+\end{center}
+\end{figure}
+\doxysubsubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{class_s_v_caller_a61af1b92108f3f38cbac86205e39b3f2}{SVCaller}} (\mbox{\hyperlink{class_input_data}{Input\+Data}} \&\mbox{\hyperlink{class_s_v_caller_a21249ac2a0ce7c2faf97aabb29b61d00}{input\+\_\+data}})
+\item 
+\mbox{\hyperlink{class_s_v_data}{SVData}} \mbox{\hyperlink{class_s_v_caller_a61ab472662c7fa46bf2d6e6d71f0441f}{run}} ()
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Private Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{class_s_v_data}{SVData}} \mbox{\hyperlink{class_s_v_caller_a3dc207ba0e851cfd643e70d3b08783cf}{detect\+SVs\+From\+CIGAR}} (std\+::string chr, int32\+\_\+t pos, uint32\+\_\+t \texorpdfstring{$\ast$}{*}cigar, int cigar\+\_\+len)
+\item 
+\mbox{\hyperlink{class_s_v_data}{SVData}} \mbox{\hyperlink{class_s_v_caller_a8d587b8fffa1948abd8a78a376b2df23}{detect\+SVs\+From\+Split\+Reads}} ()
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Private Attributes}
+\begin{DoxyCompactItemize}
+\item 
+int \mbox{\hyperlink{class_s_v_caller_a0e01dbbcd76c6c8ee06a6361c0f0e8ff}{max\+\_\+indel\+\_\+dist}} = 10
+\item 
+int \mbox{\hyperlink{class_s_v_caller_a83578e9692ea9d52a9c4de3e23624bab}{min\+\_\+sv\+\_\+size}} = 50
+\item 
+int \mbox{\hyperlink{class_s_v_caller_a50ae938a6e255636aa0616e2066a2361}{min\+\_\+mapq}} = 20
+\item 
+\mbox{\hyperlink{class_input_data}{Input\+Data}} \texorpdfstring{$\ast$}{*} \mbox{\hyperlink{class_s_v_caller_a21249ac2a0ce7c2faf97aabb29b61d00}{input\+\_\+data}}
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Constructor \& Destructor Documentation}
+\Hypertarget{class_s_v_caller_a61af1b92108f3f38cbac86205e39b3f2}\label{class_s_v_caller_a61af1b92108f3f38cbac86205e39b3f2} 
+\index{SVCaller@{SVCaller}!SVCaller@{SVCaller}}
+\index{SVCaller@{SVCaller}!SVCaller@{SVCaller}}
+\doxysubsubsection{\texorpdfstring{SVCaller()}{SVCaller()}}
+{\footnotesize\ttfamily SVCaller\+::\+SVCaller (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{class_input_data}{Input\+Data}} \&}]{input\+\_\+data }\end{DoxyParamCaption})}
+
+
+
+\doxysubsection{Member Function Documentation}
+\Hypertarget{class_s_v_caller_a3dc207ba0e851cfd643e70d3b08783cf}\label{class_s_v_caller_a3dc207ba0e851cfd643e70d3b08783cf} 
+\index{SVCaller@{SVCaller}!detectSVsFromCIGAR@{detectSVsFromCIGAR}}
+\index{detectSVsFromCIGAR@{detectSVsFromCIGAR}!SVCaller@{SVCaller}}
+\doxysubsubsection{\texorpdfstring{detectSVsFromCIGAR()}{detectSVsFromCIGAR()}}
+{\footnotesize\ttfamily \mbox{\hyperlink{class_s_v_data}{SVData}} SVCaller\+::detect\+SVs\+From\+CIGAR (\begin{DoxyParamCaption}\item[{std\+::string}]{chr,  }\item[{int32\+\_\+t}]{pos,  }\item[{uint32\+\_\+t \texorpdfstring{$\ast$}{*}}]{cigar,  }\item[{int}]{cigar\+\_\+len }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [private]}}
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{class_s_v_caller_a3dc207ba0e851cfd643e70d3b08783cf_cgraph}
+\end{center}
+\end{figure}
+\Hypertarget{class_s_v_caller_a8d587b8fffa1948abd8a78a376b2df23}\label{class_s_v_caller_a8d587b8fffa1948abd8a78a376b2df23} 
+\index{SVCaller@{SVCaller}!detectSVsFromSplitReads@{detectSVsFromSplitReads}}
+\index{detectSVsFromSplitReads@{detectSVsFromSplitReads}!SVCaller@{SVCaller}}
+\doxysubsubsection{\texorpdfstring{detectSVsFromSplitReads()}{detectSVsFromSplitReads()}}
+{\footnotesize\ttfamily \mbox{\hyperlink{class_s_v_data}{SVData}} SVCaller\+::detect\+SVs\+From\+Split\+Reads (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [private]}}
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{class_s_v_caller_a8d587b8fffa1948abd8a78a376b2df23_cgraph}
+\end{center}
+\end{figure}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{class_s_v_caller_a8d587b8fffa1948abd8a78a376b2df23_icgraph}
+\end{center}
+\end{figure}
+\Hypertarget{class_s_v_caller_a61ab472662c7fa46bf2d6e6d71f0441f}\label{class_s_v_caller_a61ab472662c7fa46bf2d6e6d71f0441f} 
+\index{SVCaller@{SVCaller}!run@{run}}
+\index{run@{run}!SVCaller@{SVCaller}}
+\doxysubsubsection{\texorpdfstring{run()}{run()}}
+{\footnotesize\ttfamily \mbox{\hyperlink{class_s_v_data}{SVData}} SVCaller\+::run (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{class_s_v_caller_a61ab472662c7fa46bf2d6e6d71f0441f_cgraph}
+\end{center}
+\end{figure}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{class_s_v_caller_a61ab472662c7fa46bf2d6e6d71f0441f_icgraph}
+\end{center}
+\end{figure}
+
+
+\doxysubsection{Member Data Documentation}
+\Hypertarget{class_s_v_caller_a21249ac2a0ce7c2faf97aabb29b61d00}\label{class_s_v_caller_a21249ac2a0ce7c2faf97aabb29b61d00} 
+\index{SVCaller@{SVCaller}!input\_data@{input\_data}}
+\index{input\_data@{input\_data}!SVCaller@{SVCaller}}
+\doxysubsubsection{\texorpdfstring{input\_data}{input\_data}}
+{\footnotesize\ttfamily \mbox{\hyperlink{class_input_data}{Input\+Data}}\texorpdfstring{$\ast$}{*} SVCaller\+::input\+\_\+data\hspace{0.3cm}{\ttfamily [private]}}
+
+\Hypertarget{class_s_v_caller_a0e01dbbcd76c6c8ee06a6361c0f0e8ff}\label{class_s_v_caller_a0e01dbbcd76c6c8ee06a6361c0f0e8ff} 
+\index{SVCaller@{SVCaller}!max\_indel\_dist@{max\_indel\_dist}}
+\index{max\_indel\_dist@{max\_indel\_dist}!SVCaller@{SVCaller}}
+\doxysubsubsection{\texorpdfstring{max\_indel\_dist}{max\_indel\_dist}}
+{\footnotesize\ttfamily int SVCaller\+::max\+\_\+indel\+\_\+dist = 10\hspace{0.3cm}{\ttfamily [private]}}
+
+\Hypertarget{class_s_v_caller_a50ae938a6e255636aa0616e2066a2361}\label{class_s_v_caller_a50ae938a6e255636aa0616e2066a2361} 
+\index{SVCaller@{SVCaller}!min\_mapq@{min\_mapq}}
+\index{min\_mapq@{min\_mapq}!SVCaller@{SVCaller}}
+\doxysubsubsection{\texorpdfstring{min\_mapq}{min\_mapq}}
+{\footnotesize\ttfamily int SVCaller\+::min\+\_\+mapq = 20\hspace{0.3cm}{\ttfamily [private]}}
+
+\Hypertarget{class_s_v_caller_a83578e9692ea9d52a9c4de3e23624bab}\label{class_s_v_caller_a83578e9692ea9d52a9c4de3e23624bab} 
+\index{SVCaller@{SVCaller}!min\_sv\_size@{min\_sv\_size}}
+\index{min\_sv\_size@{min\_sv\_size}!SVCaller@{SVCaller}}
+\doxysubsubsection{\texorpdfstring{min\_sv\_size}{min\_sv\_size}}
+{\footnotesize\ttfamily int SVCaller\+::min\+\_\+sv\+\_\+size = 50\hspace{0.3cm}{\ttfamily [private]}}
+
+
+
+The documentation for this class was generated from the following files\+:\begin{DoxyCompactItemize}
+\item 
+include/\mbox{\hyperlink{sv__caller_8h}{sv\+\_\+caller.\+h}}\item 
+src/\mbox{\hyperlink{sv__caller_8cpp}{sv\+\_\+caller.\+cpp}}\end{DoxyCompactItemize}

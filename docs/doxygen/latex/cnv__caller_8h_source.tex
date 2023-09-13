@@ -1,0 +1,49 @@
+\doxysection{cnv\+\_\+caller.\+h}
+\hypertarget{cnv__caller_8h_source}{}\label{cnv__caller_8h_source}\index{include/cnv\_caller.h@{include/cnv\_caller.h}}
+\mbox{\hyperlink{cnv__caller_8h}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00001\ \textcolor{comment}{//\ CNVCaller:\ Detect\ CNVs\ and\ return\ the\ state\ sequence\ by\ SNP\ position}}
+\DoxyCodeLine{00002\ \textcolor{comment}{//\ (key\ =\ [chromosome,\ SNP\ position],\ value\ =\ state)}}
+\DoxyCodeLine{00003\ }
+\DoxyCodeLine{00004\ \textcolor{preprocessor}{\#ifndef\ CNV\_CALLER\_H}}
+\DoxyCodeLine{00005\ \textcolor{preprocessor}{\#define\ CNV\_CALLER\_H}}
+\DoxyCodeLine{00006\ }
+\DoxyCodeLine{00007\ \textcolor{preprocessor}{\#include\ "{}\mbox{\hyperlink{khmm_8h}{khmm.h}}"{}}}
+\DoxyCodeLine{00008\ \textcolor{preprocessor}{\#include\ "{}\mbox{\hyperlink{input__data_8h}{input\_data.h}}"{}}}
+\DoxyCodeLine{00009\ \textcolor{preprocessor}{\#include\ "{}\mbox{\hyperlink{cnv__data_8h}{cnv\_data.h}}"{}}}
+\DoxyCodeLine{00010\ }
+\DoxyCodeLine{00011\ \textcolor{preprocessor}{\#include\ <string>}}
+\DoxyCodeLine{00012\ \textcolor{preprocessor}{\#include\ <vector>}}
+\DoxyCodeLine{00013\ }
+\DoxyCodeLine{00014\ }
+\DoxyCodeLine{00015\ \textcolor{keyword}{class\ }\mbox{\hyperlink{class_c_n_v_caller}{CNVCaller}}\ \{}
+\DoxyCodeLine{00016\ \ \ \ \ \textcolor{keyword}{private}:}
+\DoxyCodeLine{00017\ \ \ \ \ \ \ \ \ \mbox{\hyperlink{class_input_data}{InputData}}*\ \mbox{\hyperlink{class_c_n_v_caller_ae081007e48ba79c16a733685274ea554}{input\_data}};}
+\DoxyCodeLine{00018\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{class_c_n_v_caller_a5d62b983aad5fbd2101fefd821372a82}{chr\_mean\_coverage}}\ =\ 0;}
+\DoxyCodeLine{00019\ }
+\DoxyCodeLine{00020\ \ \ \ \ \textcolor{keyword}{public}:}
+\DoxyCodeLine{00021\ \ \ \ \ \ \ \ \ \mbox{\hyperlink{class_c_n_v_caller}{CNVCaller}}(\mbox{\hyperlink{class_input_data}{InputData}}\&\ \mbox{\hyperlink{class_c_n_v_caller_ae081007e48ba79c16a733685274ea554}{input\_data}});}
+\DoxyCodeLine{00022\ }
+\DoxyCodeLine{00023\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Detect\ CNVs\ and\ return\ the\ state\ sequence\ by\ SNP\ position}}
+\DoxyCodeLine{00024\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ (key\ =\ [chromosome,\ SNP\ position],\ value\ =\ state)}}
+\DoxyCodeLine{00025\ \ \ \ \ \ \ \ \ \mbox{\hyperlink{class_c_n_v_data}{CNVData}}\ \mbox{\hyperlink{class_c_n_v_caller_a49824c662095f9af9a38056dadc8933f}{run}}();}
+\DoxyCodeLine{00026\ }
+\DoxyCodeLine{00027\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Calculate\ Log\ R\ Ratios}}
+\DoxyCodeLine{00028\ \ \ \ \ \ \ \ \ std::vector<double>\ \mbox{\hyperlink{class_c_n_v_caller_a1a4f00ed62c012caa5d5139ee8be81a9}{calculateLogRRatiosAtSNPS}}(std::vector<int>\ snp\_positions);}
+\DoxyCodeLine{00029\ }
+\DoxyCodeLine{00030\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Calculate\ the\ mean\ chromosome\ coverage}}
+\DoxyCodeLine{00031\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{class_c_n_v_caller_adf3674729125dd11ec7c6ba9d5781b30}{calculateMeanChromosomeCoverage}}();}
+\DoxyCodeLine{00032\ }
+\DoxyCodeLine{00033\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Calculate\ region\ mean\ coverage}}
+\DoxyCodeLine{00034\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{class_c_n_v_caller_ad4fa39b6107dc8fd88e45ed988fc5ece}{calculateWindowLogRRatio}}(\textcolor{keywordtype}{double}\ mean\_chr\_cov,\ \textcolor{keywordtype}{int}\ start\_pos,\ \textcolor{keywordtype}{int}\ end\_pos);}
+\DoxyCodeLine{00035\ }
+\DoxyCodeLine{00036\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Read\ SNP\ positions\ and\ BAF\ values\ from\ the\ VCF\ file}}
+\DoxyCodeLine{00037\ \ \ \ \ \ \ \ \ std::pair<std::vector<int>,\ std::vector<double>>\ \mbox{\hyperlink{class_c_n_v_caller_ab4e2177c5253c6e3ce276939644824ee}{readSNPBAFs}}();}
+\DoxyCodeLine{00038\ }
+\DoxyCodeLine{00039\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Save\ a\ CSV\ with\ SNP\ positions,\ BAF\ values\ and\ Log\ R\ Ratios}}
+\DoxyCodeLine{00040\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{class_c_n_v_caller_a9b137fddf79a60e29198c0b11651efac}{saveToTSV}}(std::string\ filepath,\ std::vector<int>\ snp\_positions,\ std::vector<double>\ bafs,\ std::vector<double>\ logr\_ratios,\ std::vector<int>\ state\_sequence);}
+\DoxyCodeLine{00041\ \};}
+\DoxyCodeLine{00042\ }
+\DoxyCodeLine{00043\ \textcolor{preprocessor}{\#endif\ }\textcolor{comment}{//\ CNV\_CALLER\_H}}
+
+\end{DoxyCode}

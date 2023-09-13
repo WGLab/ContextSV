@@ -1,0 +1,2713 @@
+\doxysection{include/kc.h File Reference}
+\hypertarget{kc_8h}{}\label{kc_8h}\index{include/kc.h@{include/kc.h}}
+{\ttfamily \#include $<$stdio.\+h$>$}\newline
+Include dependency graph for kc.\+h\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=148pt]{kc_8h__incl}
+\end{center}
+\end{figure}
+This graph shows which files directly or indirectly include this file\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=240pt]{kc_8h__dep__incl}
+\end{center}
+\end{figure}
+\doxysubsubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+FILE \texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kc_8h_aed4cb56a6b5cda1f865aefedcf7649a2}{fh\+\_\+stdout}} ()
+\item 
+FILE \texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kc_8h_a5a78aba3780860d110c596288ac54635}{fh\+\_\+stderr}} ()
+\item 
+FILE \texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kc_8h_a31d09d90dfdeb57129a49d908744db53}{fh\+\_\+stdin}} ()
+\item 
+void \mbox{\hyperlink{kc_8h_a8a8ffc38946e016056d176c4a5bc672c}{print\+\_\+vectori}} (int \texorpdfstring{$\ast$}{*}array, int n)
+\item 
+void \mbox{\hyperlink{kc_8h_a05e1b2a77c22ae4e595c1c9078f186b2}{print\+\_\+vector}} (double \texorpdfstring{$\ast$}{*}array, int n)
+\item 
+void \mbox{\hyperlink{kc_8h_ad4f0e377e6998c4aeb731b82e3c55fb4}{print\+\_\+matrixi}} (int \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}A, int m, int n)
+\item 
+void \mbox{\hyperlink{kc_8h_ab63511006258ab28c09d3f4825e1a863}{print\+\_\+matrix}} (double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}A, int m, int n)
+\item 
+double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kc_8h_ac75528b11a2997977101b6e9ded2c7cf}{matrix\+\_\+new}} (int row, int col)
+\item 
+int \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kc_8h_afdfe6b0ce1cd121a9da3ec09755bc55e}{matrixi\+\_\+new}} (int row, int col)
+\item 
+char \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kc_8h_aa06789031d28c171d7314fbe65448541}{matrixc\+\_\+new}} (int row, int col)
+\item 
+int \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kc_8h_a601585a3e7b819a147843979d9e807b2}{matrix\+\_\+to\+Matrixi}} (double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}A, int m, int n)
+\item 
+double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kc_8h_afdf0c39719eaa36901b5b91ee867ad25}{matrixi\+\_\+to\+Matrix}} (int \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}A, int m, int n)
+\item 
+double \texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kc_8h_a155bb2cc033bfd9bafbde8d31432f7ad}{vector\+\_\+new}} (int n)
+\item 
+int \texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kc_8h_a0fad130527c83326c9dfe7da022700e0}{vectori\+\_\+new}} (int n)
+\item 
+void \mbox{\hyperlink{kc_8h_aa517f6dc1cd623e0f2fdc5f0f9ab8534}{matrix\+\_\+free}} (double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}m)
+\item 
+void \mbox{\hyperlink{kc_8h_af207c315e95f48fdd8f376002b0e5596}{matrixi\+\_\+free}} (int \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}m)
+\item 
+void \mbox{\hyperlink{kc_8h_aad80174168d3ccf98675200f2bbc66c2}{vector\+\_\+free}} (double \texorpdfstring{$\ast$}{*}m)
+\item 
+void \mbox{\hyperlink{kc_8h_a24f2b2f3906921db3287a65c72cdc2b1}{vectori\+\_\+free}} (int \texorpdfstring{$\ast$}{*}m)
+\item 
+double \mbox{\hyperlink{kc_8h_ad7e8269ade877b1c256224e3170a43d1}{matrix\+\_\+at}} (double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}A, int m, int n)
+\item 
+int \mbox{\hyperlink{kc_8h_a433e109482ad4487026cfed377d7a302}{matrixi\+\_\+at}} (int \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}A, int m, int n)
+\item 
+double \mbox{\hyperlink{kc_8h_a3eb411d825906ab91a203650b1d055dd}{vector\+\_\+at}} (double \texorpdfstring{$\ast$}{*}A, int n)
+\item 
+int \mbox{\hyperlink{kc_8h_ab21c63978eec887cdffcd0c6aa791578}{vectori\+\_\+at}} (int \texorpdfstring{$\ast$}{*}A, int n)
+\item 
+double \texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kc_8h_a551c44bbe1dfb82808f03d8c2ec65fdd}{matrix\+\_\+row}} (double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}A, int m)
+\item 
+int \texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kc_8h_ae3309e005b107ae3181f65b5917d29e7}{matrixi\+\_\+row}} (int \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}A, int m)
+\item 
+void \mbox{\hyperlink{kc_8h_a779b3e1038e5853848b8a039d8d2e7c1}{matrix\+\_\+change}} (double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}A, int m, int n, double a)
+\item 
+void \mbox{\hyperlink{kc_8h_a77bf129b2a52c43d3a6526f617ce4de8}{matrixi\+\_\+change}} (int \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}A, int m, int n, int a)
+\item 
+void \mbox{\hyperlink{kc_8h_ad484b35279fc5f841c995e4850254c35}{vector\+\_\+change}} (double \texorpdfstring{$\ast$}{*}A, int n, double a)
+\item 
+void \mbox{\hyperlink{kc_8h_a71c4e97a48b8dc0f1ee0c41752e99d4f}{vectori\+\_\+change}} (int \texorpdfstring{$\ast$}{*}A, int n, int a)
+\item 
+int \texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kc_8h_ad88cc38b4dca64717a3149003bda35a1}{vector\+\_\+to\+Vectori}} (double \texorpdfstring{$\ast$}{*}A, int n)
+\item 
+double \texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kc_8h_aadde5fe08df3343588334adfdb8934fb}{vectori\+\_\+to\+Vector}} (int \texorpdfstring{$\ast$}{*}A, int n)
+\item 
+void \mbox{\hyperlink{kc_8h_a208e98f19b2f252315399d02c0594a46}{nrerror}} (char \texorpdfstring{$\ast$}{*}error\+\_\+text)
+\item 
+int \texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kc_8h_aa80706cb014e1b52634f8c88adc0cc28}{ivector}} (long nl, long nh)
+\item 
+unsigned char \texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kc_8h_a16a18b0e44cbd9b64e5c546c0f0f6720}{cvector}} (long nl, long nh)
+\item 
+double \texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kc_8h_ae21c4c252ad5d5710ebd03d6f07e40de}{dvector}} (long nl, long nh)
+\item 
+double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kc_8h_ab1a02a50dfbc26318f6bb296731b6f3a}{dmatrix}} (long nrl, long nrh, long ncl, long nch)
+\item 
+int \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kc_8h_abf1b4d8302f62d6a4c71bfc56c4e0527}{imatrix}} (long nrl, long nrh, long ncl, long nch)
+\item 
+double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kc_8h_a1c146fa87b8915bf1e4b29f10b5c2943}{submatrix}} (double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}a, long oldrl, long oldrh, long oldcl, long oldch, long newrl, long newcl)
+\item 
+double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kc_8h_a061fd4b0c96655cebfb921357615d6a0}{convert\+\_\+matrix}} (double \texorpdfstring{$\ast$}{*}a, long nrl, long nrh, long ncl, long nch)
+\item 
+void \mbox{\hyperlink{kc_8h_a15d431001f2a68ce4669efe823266e7e}{free\+\_\+ivector}} (int \texorpdfstring{$\ast$}{*}v, long nl, long nh)
+\item 
+void \mbox{\hyperlink{kc_8h_adcf016abc500425950a6ca3c21bb6224}{free\+\_\+cvector}} (unsigned char \texorpdfstring{$\ast$}{*}v, long nl, long nh)
+\item 
+void \mbox{\hyperlink{kc_8h_ac7ec1a76a4b8d3d8423246676977c919}{free\+\_\+dvector}} (double \texorpdfstring{$\ast$}{*}v, long nl, long nh)
+\item 
+void \mbox{\hyperlink{kc_8h_a04fbc9bc53e6303830eb4338bc1f3259}{free\+\_\+dmatrix}} (double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}m, long nrl, long nrh, long ncl, long nch)
+\item 
+void \mbox{\hyperlink{kc_8h_aefc01b3e130f9ecc15c4a376ba987bae}{free\+\_\+imatrix}} (int \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}m, long nrl, long nrh, long ncl, long nch)
+\item 
+void \mbox{\hyperlink{kc_8h_a963279adf9a24652715df49e8598fb64}{free\+\_\+subdmatrix}} (double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}b, long nrl, long nrh, long ncl, long nch)
+\item 
+double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kc_8h_a487b6171c617a9bdb3b3337dab2fc046}{matrix\+\_\+copy}} (double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}A, int m, int n)
+\item 
+int \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kc_8h_a3a2b7cc7f10f08176242f1d85983c3e9}{matrixi\+\_\+copy}} (int \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}A, int m, int n)
+\item 
+double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kc_8h_a89a2987a60a852f56603492790999aba}{matrix\+\_\+transpose}} (double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}A, int m, int n)
+\item 
+int \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kc_8h_a1142f8e34ec4c4cee7c9a7a3b09e3863}{matrixi\+\_\+transpose}} (int \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}A, int m, int n)
+\item 
+double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kc_8h_a34fc6bc5065be03e054201ca6ea792b1}{matrix\+\_\+new\+Seq}} (int m, int n)
+\item 
+int \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kc_8h_a291c00821c2fba1622f7851ce6e38332}{matrixi\+\_\+new\+Seq}} (int m, int n)
+\item 
+double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kc_8h_ab7b71e4683cf71e5accd72c9f4ee2520}{matrix\+\_\+new\+Random}} (int m, int n, int seed)
+\item 
+double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kc_8h_a609d0838618bb6305e85dd167ec08238}{matrix\+\_\+new\+Diagonal}} (double \texorpdfstring{$\ast$}{*}cell, int length, int m, int n)
+\item 
+double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kc_8h_a71f8fde7da24c3d7ff2accceda310498}{matrix\+\_\+new\+Identity}} (int m)
+\item 
+double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kc_8h_a265ea641a46882404b8a295c106869e6}{matrix\+\_\+new\+Subrow}} (double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}A, int m, int n, int r1, int r2)
+\item 
+double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kc_8h_abb5b3d84ab0088a0df21b669e3405b5b}{matrix\+\_\+new\+Subcol}} (double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}A, int m, int n, int c1, int c2)
+\item 
+double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kc_8h_a6be7a4660fd4fa28de1e39c8c3289e6d}{matrix\+\_\+new\+Submat}} (double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}A, int m, int n, int r1, int r2, int c1, int c2)
+\item 
+double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kc_8h_a941f97f06dc11db76a0f4464bcb71e00}{matrix\+\_\+del\+Row}} (double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}A, int m, int n, int row)
+\item 
+double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kc_8h_af9848a5ae0abf30166d7ca76011014b2}{matrix\+\_\+del\+Col}} (double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}A, int m, int n, int col)
+\item 
+double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kc_8h_afe422ba8b591cae1c441249f6075436a}{matrix\+\_\+cat}} (double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}A, double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}B, int m1, int m2, int n)
+\item 
+double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kc_8h_a1d846becb4123e2b9484de623f92c727}{matrix\+\_\+paste}} (double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}A, double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}B, int m, int n1, int n2)
+\item 
+void \mbox{\hyperlink{kc_8h_adbdc6116401c49523c4c62dde6147310}{matrix\+\_\+zero}} (double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}A, int m, int n)
+\item 
+void \mbox{\hyperlink{kc_8h_a434b0afbcca14a331a887ef5f456cef9}{matrix\+\_\+multiply}} (double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}A, int m, int n, double scale)
+\item 
+double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kc_8h_aef4d42f4197a1db7f6667dc7ea67956b}{matrix\+\_\+product}} (double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}A, double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}B, int m, int n, int o)
+\item 
+double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kc_8h_a00f5b59ec000eae7a009cd437008050d}{matrix\+\_\+product3}} (double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}A, double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}B, double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}C, int m, int n, int o, int p)
+\item 
+void \mbox{\hyperlink{kc_8h_a9bfecf719895e2a905f208911be65e4b}{matrix\+\_\+add}} (double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}A, int m, int n, double a)
+\item 
+void \mbox{\hyperlink{kc_8h_ad641c37850b1195f2501e65ccb8efdcc}{matrix\+\_\+sum}} (double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}A, double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}B, int m, int n)
+\item 
+void \mbox{\hyperlink{kc_8h_a8b035cf48fefe5a08c76d2593984eb55}{matrix\+\_\+subtract}} (double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}A, double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}B, int m, int n)
+\item 
+void \mbox{\hyperlink{kc_8h_a1e079ca755a3861bccd94f64677e1d54}{matrix\+\_\+std\+Row}} (double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}A, int m, int n)
+\item 
+void \mbox{\hyperlink{kc_8h_aa824316c0d7768e230ae809a3e679a66}{matrix\+\_\+std\+Col}} (double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}A, int m, int n)
+\item 
+double \texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kc_8h_a76900cdbfa88f73145d4be6b0e796fcd}{matrix\+\_\+row\+Mean}} (double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}A, int m, int n)
+\item 
+double \texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kc_8h_a865598a7017730b2bdf24cf6269d0f23}{matrix\+\_\+col\+Mean}} (double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}A, int m, int n)
+\item 
+double \texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kc_8h_a92e391e59a08cba2c92774a03b97f038}{matrix\+\_\+row\+Var}} (double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}A, int m, int n)
+\item 
+double \texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kc_8h_ad5ea42776f7ed1dcb54d04db645487c3}{matrix\+\_\+col\+Var}} (double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}A, int m, int n)
+\item 
+void \mbox{\hyperlink{kc_8h_a6f44909f9dcb95b38fe728721b011fca}{matrix\+\_\+sort\+By\+Vector}} (double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}A, int m, int n, double \texorpdfstring{$\ast$}{*}v)
+\item 
+void \mbox{\hyperlink{kc_8h_aaa2a453c704de36a8f120f155f762c62}{vector\+\_\+zero}} (double \texorpdfstring{$\ast$}{*}A, int n)
+\item 
+double \texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kc_8h_a16f2581527695cfe549555c5a4d79df4}{vector\+\_\+copy}} (double \texorpdfstring{$\ast$}{*}A, int n)
+\item 
+int \texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kc_8h_a4dbb823fcb47138656221cd90a59bac2}{vectori\+\_\+copy}} (int \texorpdfstring{$\ast$}{*}A, int n)
+\item 
+double \mbox{\hyperlink{kc_8h_a2506166a706bc777aa71785af0051e15}{vector\+\_\+inner\+Product}} (double \texorpdfstring{$\ast$}{*}A, double \texorpdfstring{$\ast$}{*}B, int n)
+\item 
+double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kc_8h_a43a29f653177107c327548f14d5f2a33}{vector\+\_\+outer\+Product}} (double \texorpdfstring{$\ast$}{*}A, double \texorpdfstring{$\ast$}{*}B, int n)
+\item 
+void \mbox{\hyperlink{kc_8h_a4f429aee3cfa0bb4410c66555f0a6df0}{vector\+\_\+normalize}} (double \texorpdfstring{$\ast$}{*}A, int n)
+\item 
+double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kc_8h_a1a5bdb44faf7a9f65d5aadd9f393a996}{vector\+\_\+to\+Matrix}} (double \texorpdfstring{$\ast$}{*}A, int n)
+\item 
+double \texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kc_8h_a2eab47d949124ded160b9de53426ff11}{matrix\+\_\+to\+Vector}} (double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}A, int n)
+\item 
+double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kc_8h_a673ed8b4d0eee5e7e60df48435e0d8ba}{matrix\+\_\+cor\+Matrix}} (double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}A, int m, int n)
+\item 
+double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kc_8h_aa51dbc9f02003e376630381db9eab42c}{matrix\+\_\+cov\+Matrix}} (double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}A, int m, int n)
+\item 
+void \mbox{\hyperlink{kc_8h_a7d45b4d89c9e4dfd5cf06ff773c4f048}{matrix\+\_\+solve}} (double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}a, int n, double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}b, int m)
+\item 
+void \mbox{\hyperlink{kc_8h_a85a2f9c7ff758c36a67d0b8a58424404}{matrix\+\_\+ludecomp}} (double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}a, int n, int \texorpdfstring{$\ast$}{*}indx, double \texorpdfstring{$\ast$}{*}d)
+\item 
+void \mbox{\hyperlink{kc_8h_ad99cb91ebff0903217880cd395ccef58}{matrix\+\_\+lusubst}} (double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}a, int n, int \texorpdfstring{$\ast$}{*}indx, double \texorpdfstring{$\ast$}{*}b)
+\item 
+void \mbox{\hyperlink{kc_8h_af0e16ee0cbf76fe1a067c0f4132e8774}{matrix\+\_\+inverse}} (double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}a, int n)
+\item 
+double \mbox{\hyperlink{kc_8h_a4709c372281713ec9baaf5fb939cb10e}{matrix\+\_\+det}} (double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}a, int n)
+\item 
+void \mbox{\hyperlink{kc_8h_ac42e23a54fc054272c49120386afd1e7}{matrix\+\_\+ludecomp2}} (const int n, double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}a, int \texorpdfstring{$\ast$}{*}p)
+\item 
+void \mbox{\hyperlink{kc_8h_a946d5288784bd06ff1ba6f09d5eb1f11}{matrix\+\_\+lusubst2}} (const int n, double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}a, int \texorpdfstring{$\ast$}{*}p, double \texorpdfstring{$\ast$}{*}b)
+\item 
+void \mbox{\hyperlink{kc_8h_a81683e0787ad3491e6e65a83bf05124f}{matrix\+\_\+inverse2}} (double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}a, int n)
+\item 
+void \mbox{\hyperlink{kc_8h_ac39612a3850b3db9639ce7b945b33217}{matrix\+\_\+tridiag}} (const int n, double \texorpdfstring{$\ast$}{*}a, double \texorpdfstring{$\ast$}{*}d, double \texorpdfstring{$\ast$}{*}c, double \texorpdfstring{$\ast$}{*}b)
+\item 
+double \mbox{\hyperlink{kc_8h_a7f43e2c062f2de6dbd14da6799d78030}{pythag}} (double a, double b)
+\item 
+void \mbox{\hyperlink{kc_8h_ac641037bb0dc9795e1565903868cc017}{matrix\+\_\+svd}} (double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}a, int m, int n, double \texorpdfstring{$\ast$}{*}w, double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}v)
+\item 
+void \mbox{\hyperlink{kc_8h_ad821d5e02ace8034e9be2ddc6cebd47c}{matrix\+\_\+svd2}} (double \texorpdfstring{$\ast$}{*}W, double \texorpdfstring{$\ast$}{*}Z, int n\+Row, int n\+Col)
+\item 
+void \mbox{\hyperlink{kc_8h_a68b4f000503d404e2dcd3b4cdbae952f}{matrix\+\_\+eigen}} (double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}a, int n, double \texorpdfstring{$\ast$}{*}d, double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}v, int \texorpdfstring{$\ast$}{*}nrot)
+\item 
+double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kc_8h_a165e97bd10a48d3c5da908938468212b}{matrix\+\_\+pca\+Cor}} (double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}A, int m, int n, double \texorpdfstring{$\ast$}{*}eval)
+\item 
+double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kc_8h_ae64a3eb3736d5788d72eaf7ad6927421}{matrix\+\_\+pca\+Cov}} (double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}A, int m, int n, double \texorpdfstring{$\ast$}{*}eval)
+\item 
+double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kc_8h_a32977ea97f5f917acfc83aec5817a0e0}{matrix\+\_\+pca\+Score}} (double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}A, int m, int n, double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}evec, int k)
+\item 
+double \texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kc_8h_aa04426b6994cdcfbbf77c3bb77e7a021}{matrix\+\_\+pca\+Com\+Var}} (double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}A, int m, int n, double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}evec)
+\item 
+double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kc_8h_a0458e14ed6d01fb333ea0b2a06035d87}{matrix\+\_\+reg}} (double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}X, int m, int n, double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}Y)
+\item 
+double \mbox{\hyperlink{kc_8h_ad57651ec26e71d842d15f65ae9484098}{matrix\+\_\+reg\+MSE}} (double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}X, int m, int n, double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}Y, double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}B)
+\item 
+double \texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kc_8h_acf18fe54721a1ca7a61f70f4fdc637e3}{matrix\+\_\+reg\+Model\+Stat}} (double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}X, int m, int n, double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}Y, double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}B)
+\item 
+double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kc_8h_a77077c3de17b2dd212a275a4e0ff1750}{matrix\+\_\+reg\+Coef\+Stat}} (double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}X, int m, int n, double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}Y, double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}B)
+\item 
+double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kc_8h_ad66fdb823fdc1c7260a0459c1912203f}{matrix\+\_\+reg\+Obs\+Stat}} (double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}X, int m, int n, double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}Y, double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}B)
+\item 
+void \mbox{\hyperlink{kc_8h_a1440a7779ac56f47a3f355ce4a8c7da0}{test1}} ()
+\item 
+double \mbox{\hyperlink{kc_8h_a42a8993650aee30084689ad35b6c5ea8}{cdf\+\_\+binomial}} (int n, int k, double p)
+\item 
+double \mbox{\hyperlink{kc_8h_ab600bf758ebb6d37ebd914533e27691d}{cdf\+\_\+chi2}} (double df, double x)
+\item 
+double \mbox{\hyperlink{kc_8h_a1f7aff47eacc48937a5dd3ae419c6066}{cdf\+\_\+poisson}} (int k, double x)
+\item 
+double \mbox{\hyperlink{kc_8h_a5e787a5eb2287b478478048a9a621fca}{cdf\+\_\+poisson\+\_\+inc}} (int k, double x)
+\item 
+double \mbox{\hyperlink{kc_8h_ad7f21bf6ad62e142c785825e00a546e3}{cdf\+\_\+normal}} (double x, double mu, double sigma)
+\item 
+double \mbox{\hyperlink{kc_8h_a05188c3bfc69f9c84a6e22f6b0e11cc7}{cdf\+\_\+stdnormal}} (double x)
+\item 
+double \mbox{\hyperlink{kc_8h_a44281fba5e514c76d3867c7cc899eb7c}{cdf\+\_\+f}} (double df1, double df2, double x)
+\item 
+double \mbox{\hyperlink{kc_8h_a996626bdadc539b36a6ddce1f8262f1e}{cdf\+\_\+t}} (double df, double x)
+\item 
+double \mbox{\hyperlink{kc_8h_aeca8344f58357afa063ffc8cc119f8b7}{cdfinv\+\_\+t}} (double df, double p)
+\item 
+double \mbox{\hyperlink{kc_8h_a8887b0b13be8a5363eb40c66811a4614}{pdf\+\_\+stdnormal}} (double x)
+\item 
+double \mbox{\hyperlink{kc_8h_a2b0a97c4c082620572646f0324ea6fc7}{pdf\+\_\+normal}} (double x, double mu, double sigma)
+\item 
+double \mbox{\hyperlink{kc_8h_aa46a006334c47841787f731dc8549788}{pdf\+\_\+binomial}} (int n, int k, double p)
+\item 
+double \mbox{\hyperlink{kc_8h_a69c8440b22fa5a24aa3fde1f09e5ac95}{pdf\+\_\+beta}} (double a, double b, double x)
+\item 
+double \mbox{\hyperlink{kc_8h_ad402504da1d8913d034b6db754886e90}{pdf\+\_\+poisson}} (int k, double x)
+\item 
+double \mbox{\hyperlink{kc_8h_ab2ea3aa0454578da3a05c2fa3c811d10}{pdf\+\_\+geometric}} (int k, double p)
+\item 
+double \mbox{\hyperlink{kc_8h_a71a16b3fb6e64dabbd74bfa358b6e6f0}{pdf\+\_\+hypergeometric}} (int a, int b, int c, int d)
+\item 
+double \mbox{\hyperlink{kc_8h_a16ca21352ca6ebe67c4ba6142b0a6e1b}{bico}} (int n, int k)
+\item 
+double \mbox{\hyperlink{kc_8h_aa25b6ecd23d45f7dcaa2932138388c74}{lnbico}} (int n, int k)
+\item 
+double \mbox{\hyperlink{kc_8h_a760799d47f2410b689c0c9f35907a118}{invnormal}} (double x)
+\item 
+void \mbox{\hyperlink{kc_8h_a66d8af160cff194f4aa44bf2bd5eb2f5}{reg\+\_\+linear}} (double \texorpdfstring{$\ast$}{*}x, double \texorpdfstring{$\ast$}{*}y, int ndata, double \texorpdfstring{$\ast$}{*}a, double \texorpdfstring{$\ast$}{*}b, double \texorpdfstring{$\ast$}{*}F, double \texorpdfstring{$\ast$}{*}P)
+\item 
+double \mbox{\hyperlink{kc_8h_ab01d6eb051febfe28b8ac2987dcfe524}{mean}} (double \texorpdfstring{$\ast$}{*}data, int n)
+\item 
+double \mbox{\hyperlink{kc_8h_a02ac3a853164d76bd42d4a0979148546}{mean2}} (double \texorpdfstring{$\ast$}{*}data, int n)
+\item 
+void \mbox{\hyperlink{kc_8h_ae263d464ebb9d7304f3c8043c41622b7}{avevar}} (double \texorpdfstring{$\ast$}{*}data, int n, double \texorpdfstring{$\ast$}{*}ave, double \texorpdfstring{$\ast$}{*}var)
+\item 
+void \mbox{\hyperlink{kc_8h_ab1a75880788408871996b8697b240e42}{avevar2}} (double \texorpdfstring{$\ast$}{*}data, int n, double \texorpdfstring{$\ast$}{*}ave, double \texorpdfstring{$\ast$}{*}var)
+\item 
+void \mbox{\hyperlink{kc_8h_ae62de561257c307cae1c731732aeaf90}{averms}} (double \texorpdfstring{$\ast$}{*}data, int n, double \texorpdfstring{$\ast$}{*}ave, double \texorpdfstring{$\ast$}{*}rms)
+\item 
+void \mbox{\hyperlink{kc_8h_a48dcbe28309bee24dfa8604b67c8c594}{moment}} (double \texorpdfstring{$\ast$}{*}data, int n, double \texorpdfstring{$\ast$}{*}ave, double \texorpdfstring{$\ast$}{*}adev, double \texorpdfstring{$\ast$}{*}sdev, double \texorpdfstring{$\ast$}{*}var, double \texorpdfstring{$\ast$}{*}skew, double \texorpdfstring{$\ast$}{*}curt)
+\item 
+double \mbox{\hyperlink{kc_8h_a77ac293f1f1af7e15b3b733713179372}{cc}} (double \texorpdfstring{$\ast$}{*}x, double \texorpdfstring{$\ast$}{*}y, int n)
+\item 
+double \mbox{\hyperlink{kc_8h_a26084b7a5f02a520fedea796faec8a89}{cov}} (double \texorpdfstring{$\ast$}{*}x, double \texorpdfstring{$\ast$}{*}y, int n)
+\item 
+double \mbox{\hyperlink{kc_8h_abc817004395072b1695cfaa85444f1e7}{bitest}} (int n, int k, double proportion)
+\item 
+void \mbox{\hyperlink{kc_8h_a74f76187c76268c668bfe62efddb21d3}{ttest\+\_\+onesample}} (double \texorpdfstring{$\ast$}{*}data, long n, double expected, double \texorpdfstring{$\ast$}{*}t, double \texorpdfstring{$\ast$}{*}p)
+\item 
+void \mbox{\hyperlink{kc_8h_a9e38b2816c8d12a153ea2a22d1241ba2}{ttest\+\_\+ev}} (double \texorpdfstring{$\ast$}{*}data1, long n1, double \texorpdfstring{$\ast$}{*}data2, long n2, double \texorpdfstring{$\ast$}{*}t, double \texorpdfstring{$\ast$}{*}p)
+\item 
+void \mbox{\hyperlink{kc_8h_a99f03c3631c210c7091d184e108d57a5}{ttest\+\_\+uev}} (double \texorpdfstring{$\ast$}{*}data1, long n1, double \texorpdfstring{$\ast$}{*}data2, long n2, double \texorpdfstring{$\ast$}{*}t, double \texorpdfstring{$\ast$}{*}p)
+\item 
+void \mbox{\hyperlink{kc_8h_aeb063515d33aaf1d9131611c38b21fa4}{ftest}} (double \texorpdfstring{$\ast$}{*}data1, long n1, double \texorpdfstring{$\ast$}{*}data2, long n2, double \texorpdfstring{$\ast$}{*}f, double \texorpdfstring{$\ast$}{*}p)
+\item 
+void \mbox{\hyperlink{kc_8h_adf37c70a909881088c54291500d5f848}{chi2test}} (double \texorpdfstring{$\ast$}{*}bins1, double \texorpdfstring{$\ast$}{*}bins2, int nbins, int knstrn, double \texorpdfstring{$\ast$}{*}df, double \texorpdfstring{$\ast$}{*}chi2, double \texorpdfstring{$\ast$}{*}p)
+\item 
+void \mbox{\hyperlink{kc_8h_a6f7008da290a84b7ba4e26e232a645dc}{chi2test\+\_\+onesample}} (double \texorpdfstring{$\ast$}{*}bins, double \texorpdfstring{$\ast$}{*}ebins, int nbins, int knstrn, double \texorpdfstring{$\ast$}{*}df, double \texorpdfstring{$\ast$}{*}chi2, double \texorpdfstring{$\ast$}{*}p)
+\item 
+void \mbox{\hyperlink{kc_8h_a229578c847d01eeceb5d7bfe5ddf6c37}{chi2test\+\_\+trend\+\_\+2by3table}} (double \texorpdfstring{$\ast$}{*}bins, double \texorpdfstring{$\ast$}{*}chi2, double \texorpdfstring{$\ast$}{*}p)
+\item 
+void \mbox{\hyperlink{kc_8h_a5ac369578aba21ff5f35f9e2c7320fa4}{chi2test\+\_\+trend\+\_\+3by2table}} (double \texorpdfstring{$\ast$}{*}bins, double \texorpdfstring{$\ast$}{*}chi2, double \texorpdfstring{$\ast$}{*}p)
+\item 
+void \mbox{\hyperlink{kc_8h_ac06495bdbe2a0b6c4f235664bc002c80}{chi2test\+\_\+2by2table}} (double \texorpdfstring{$\ast$}{*}bins, double \texorpdfstring{$\ast$}{*}chi2, double \texorpdfstring{$\ast$}{*}p)
+\item 
+void \mbox{\hyperlink{kc_8h_a3208fdc700d8fc604d6446c1180e58cd}{chi2test\+\_\+3by2table}} (double \texorpdfstring{$\ast$}{*}bins, double \texorpdfstring{$\ast$}{*}chi2, double \texorpdfstring{$\ast$}{*}p)
+\item 
+void \mbox{\hyperlink{kc_8h_a96ec673538c48e142ea769df221d2ca9}{chi2test\+\_\+2by3table}} (double \texorpdfstring{$\ast$}{*}bins, double \texorpdfstring{$\ast$}{*}chi2, double \texorpdfstring{$\ast$}{*}p)
+\item 
+void \mbox{\hyperlink{kc_8h_af6ec36938a2387245faa43e8799ed03f}{kstest}} (double \texorpdfstring{$\ast$}{*}data1, long n1, double \texorpdfstring{$\ast$}{*}data2, long n2, double \texorpdfstring{$\ast$}{*}d, double \texorpdfstring{$\ast$}{*}prob)
+\item 
+void \mbox{\hyperlink{kc_8h_adf02e6b141f0fbfb89ffdd700c7f5f51}{kstest\+\_\+onesample}} (double \texorpdfstring{$\ast$}{*}data, long n, double(\texorpdfstring{$\ast$}{*}func)(double), double \texorpdfstring{$\ast$}{*}d, double \texorpdfstring{$\ast$}{*}prob)
+\item 
+double \mbox{\hyperlink{kc_8h_a143f0d120ce98a745cf55be12076967a}{probks}} (double alam)
+\item 
+double \mbox{\hyperlink{kc_8h_ab2a4b7063b009f90e6db6deface43386}{fisher\+\_\+exact\+\_\+1sided}} (int a, int b, int c, int d)
+\item 
+double \mbox{\hyperlink{kc_8h_a5879c832b572d6cf16d7fe0dea2af315}{fisher\+\_\+exact\+\_\+2sided}} (int a, int b, int c, int d)
+\item 
+void \mbox{\hyperlink{kc_8h_a09f1787a49a1a27fcfaa05325d628b57}{quick\+\_\+sort}} (int elements, double \texorpdfstring{$\ast$}{*}arr)
+\item 
+double \mbox{\hyperlink{kc_8h_a69cc1b545a83a4d9f187e131500aee45}{gammln}} (double x)
+\item 
+double \mbox{\hyperlink{kc_8h_a1b8ed1e5e0530035c186d182ebe747b3}{lnfactorial}} (double x)
+\item 
+int \mbox{\hyperlink{kc_8h_a20614b0260f5c699044c6514b6479e34}{factorial}} (int x)
+\item 
+double \mbox{\hyperlink{kc_8h_aa1745417f9696825bc7cc68538800b5b}{gammp}} (double a, double x)
+\item 
+double \mbox{\hyperlink{kc_8h_a3875415d74d3aaf6f58d9e58fc061efd}{gammq}} (double a, double x)
+\item 
+void \mbox{\hyperlink{kc_8h_a5277079b0c65d166db9553deb8a92de2}{gser}} (double \texorpdfstring{$\ast$}{*}gamser, double a, double x, double \texorpdfstring{$\ast$}{*}gln)
+\item 
+void \mbox{\hyperlink{kc_8h_a5b446e3e8ec13c8e2383ac156f0cf77f}{gcf}} (double \texorpdfstring{$\ast$}{*}gammcf, double a, double x, double \texorpdfstring{$\ast$}{*}gln)
+\item 
+double \mbox{\hyperlink{kc_8h_a226dce75202a4f2ed57a6ee91ccabd93}{beta}} (double z, double w)
+\item 
+double \mbox{\hyperlink{kc_8h_aff974d448122c33ebffbaf2666c42092}{betai}} (double a, double b, double x)
+\item 
+double \mbox{\hyperlink{kc_8h_a1d6e649feccbc1d73424037ed02d7418}{betacf}} (double a, double b, double x)
+\item 
+double \mbox{\hyperlink{kc_8h_aec2bb078b76a5c291f8bac42c63c153d}{inverff}} (double x)
+\item 
+double \mbox{\hyperlink{kc_8h_aa8b35382a71885eed509a5f87bf5e266}{erf}} (double x)
+\item 
+double \mbox{\hyperlink{kc_8h_af69cc9a91ed9648c8ac7a66026aa77d2}{ran}} ()
+\item 
+double \mbox{\hyperlink{kc_8h_a6d9dfbda8c4ccf755c505ac31a5817d1}{ran3}} (int \texorpdfstring{$\ast$}{*}idum)
+\item 
+double \mbox{\hyperlink{kc_8h_a69a4bf2250052e68ef90fa0dbc0c85ff}{random\+\_\+exp}} (double lamda, int \texorpdfstring{$\ast$}{*}idum)
+\item 
+double \mbox{\hyperlink{kc_8h_a66f8e089376af0493659445c359577fe}{random\+\_\+stdnormal}} (int \texorpdfstring{$\ast$}{*}idum)
+\item 
+double \mbox{\hyperlink{kc_8h_a28e29e986181ac84e42f8996086c64d2}{SNPHWE}} (int obs\+\_\+hets, int obs\+\_\+hom1, int obs\+\_\+hom2)
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Function Documentation}
+\Hypertarget{kc_8h_ae62de561257c307cae1c731732aeaf90}\label{kc_8h_ae62de561257c307cae1c731732aeaf90} 
+\index{kc.h@{kc.h}!averms@{averms}}
+\index{averms@{averms}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{averms()}{averms()}}
+{\footnotesize\ttfamily void averms (\begin{DoxyParamCaption}\item[{double \texorpdfstring{$\ast$}{*}}]{data,  }\item[{int}]{n,  }\item[{double \texorpdfstring{$\ast$}{*}}]{ave,  }\item[{double \texorpdfstring{$\ast$}{*}}]{rms }\end{DoxyParamCaption})}
+
+\Hypertarget{kc_8h_ae263d464ebb9d7304f3c8043c41622b7}\label{kc_8h_ae263d464ebb9d7304f3c8043c41622b7} 
+\index{kc.h@{kc.h}!avevar@{avevar}}
+\index{avevar@{avevar}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{avevar()}{avevar()}}
+{\footnotesize\ttfamily void avevar (\begin{DoxyParamCaption}\item[{double \texorpdfstring{$\ast$}{*}}]{data,  }\item[{int}]{n,  }\item[{double \texorpdfstring{$\ast$}{*}}]{ave,  }\item[{double \texorpdfstring{$\ast$}{*}}]{var }\end{DoxyParamCaption})}
+
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kc_8h_ae263d464ebb9d7304f3c8043c41622b7_icgraph}
+\end{center}
+\end{figure}
+\Hypertarget{kc_8h_ab1a75880788408871996b8697b240e42}\label{kc_8h_ab1a75880788408871996b8697b240e42} 
+\index{kc.h@{kc.h}!avevar2@{avevar2}}
+\index{avevar2@{avevar2}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{avevar2()}{avevar2()}}
+{\footnotesize\ttfamily void avevar2 (\begin{DoxyParamCaption}\item[{double \texorpdfstring{$\ast$}{*}}]{data,  }\item[{int}]{n,  }\item[{double \texorpdfstring{$\ast$}{*}}]{ave,  }\item[{double \texorpdfstring{$\ast$}{*}}]{var }\end{DoxyParamCaption})}
+
+\Hypertarget{kc_8h_a226dce75202a4f2ed57a6ee91ccabd93}\label{kc_8h_a226dce75202a4f2ed57a6ee91ccabd93} 
+\index{kc.h@{kc.h}!beta@{beta}}
+\index{beta@{beta}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{beta()}{beta()}}
+{\footnotesize\ttfamily double beta (\begin{DoxyParamCaption}\item[{double}]{z,  }\item[{double}]{w }\end{DoxyParamCaption})}
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=202pt]{kc_8h_a226dce75202a4f2ed57a6ee91ccabd93_cgraph}
+\end{center}
+\end{figure}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=205pt]{kc_8h_a226dce75202a4f2ed57a6ee91ccabd93_icgraph}
+\end{center}
+\end{figure}
+\Hypertarget{kc_8h_a1d6e649feccbc1d73424037ed02d7418}\label{kc_8h_a1d6e649feccbc1d73424037ed02d7418} 
+\index{kc.h@{kc.h}!betacf@{betacf}}
+\index{betacf@{betacf}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{betacf()}{betacf()}}
+{\footnotesize\ttfamily double betacf (\begin{DoxyParamCaption}\item[{double}]{a,  }\item[{double}]{b,  }\item[{double}]{x }\end{DoxyParamCaption})}
+
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kc_8h_a1d6e649feccbc1d73424037ed02d7418_icgraph}
+\end{center}
+\end{figure}
+\Hypertarget{kc_8h_aff974d448122c33ebffbaf2666c42092}\label{kc_8h_aff974d448122c33ebffbaf2666c42092} 
+\index{kc.h@{kc.h}!betai@{betai}}
+\index{betai@{betai}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{betai()}{betai()}}
+{\footnotesize\ttfamily double betai (\begin{DoxyParamCaption}\item[{double}]{a,  }\item[{double}]{b,  }\item[{double}]{x }\end{DoxyParamCaption})}
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=205pt]{kc_8h_aff974d448122c33ebffbaf2666c42092_cgraph}
+\end{center}
+\end{figure}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kc_8h_aff974d448122c33ebffbaf2666c42092_icgraph}
+\end{center}
+\end{figure}
+\Hypertarget{kc_8h_a16ca21352ca6ebe67c4ba6142b0a6e1b}\label{kc_8h_a16ca21352ca6ebe67c4ba6142b0a6e1b} 
+\index{kc.h@{kc.h}!bico@{bico}}
+\index{bico@{bico}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{bico()}{bico()}}
+{\footnotesize\ttfamily double bico (\begin{DoxyParamCaption}\item[{int}]{n,  }\item[{int}]{k }\end{DoxyParamCaption})}
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=202pt]{kc_8h_a16ca21352ca6ebe67c4ba6142b0a6e1b_cgraph}
+\end{center}
+\end{figure}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=253pt]{kc_8h_a16ca21352ca6ebe67c4ba6142b0a6e1b_icgraph}
+\end{center}
+\end{figure}
+\Hypertarget{kc_8h_abc817004395072b1695cfaa85444f1e7}\label{kc_8h_abc817004395072b1695cfaa85444f1e7} 
+\index{kc.h@{kc.h}!bitest@{bitest}}
+\index{bitest@{bitest}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{bitest()}{bitest()}}
+{\footnotesize\ttfamily double bitest (\begin{DoxyParamCaption}\item[{int}]{n,  }\item[{int}]{k,  }\item[{double}]{proportion }\end{DoxyParamCaption})}
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=279pt]{kc_8h_abc817004395072b1695cfaa85444f1e7_cgraph}
+\end{center}
+\end{figure}
+\Hypertarget{kc_8h_a77ac293f1f1af7e15b3b733713179372}\label{kc_8h_a77ac293f1f1af7e15b3b733713179372} 
+\index{kc.h@{kc.h}!cc@{cc}}
+\index{cc@{cc}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{cc()}{cc()}}
+{\footnotesize\ttfamily double cc (\begin{DoxyParamCaption}\item[{double \texorpdfstring{$\ast$}{*}}]{x,  }\item[{double \texorpdfstring{$\ast$}{*}}]{y,  }\item[{int}]{n }\end{DoxyParamCaption})}
+
+\Hypertarget{kc_8h_a42a8993650aee30084689ad35b6c5ea8}\label{kc_8h_a42a8993650aee30084689ad35b6c5ea8} 
+\index{kc.h@{kc.h}!cdf\_binomial@{cdf\_binomial}}
+\index{cdf\_binomial@{cdf\_binomial}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{cdf\_binomial()}{cdf\_binomial()}}
+{\footnotesize\ttfamily double cdf\+\_\+binomial (\begin{DoxyParamCaption}\item[{int}]{n,  }\item[{int}]{k,  }\item[{double}]{p }\end{DoxyParamCaption})}
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=312pt]{kc_8h_a42a8993650aee30084689ad35b6c5ea8_cgraph}
+\end{center}
+\end{figure}
+\Hypertarget{kc_8h_ab600bf758ebb6d37ebd914533e27691d}\label{kc_8h_ab600bf758ebb6d37ebd914533e27691d} 
+\index{kc.h@{kc.h}!cdf\_chi2@{cdf\_chi2}}
+\index{cdf\_chi2@{cdf\_chi2}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{cdf\_chi2()}{cdf\_chi2()}}
+{\footnotesize\ttfamily double cdf\+\_\+chi2 (\begin{DoxyParamCaption}\item[{double}]{df,  }\item[{double}]{x }\end{DoxyParamCaption})}
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kc_8h_ab600bf758ebb6d37ebd914533e27691d_cgraph}
+\end{center}
+\end{figure}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kc_8h_ab600bf758ebb6d37ebd914533e27691d_icgraph}
+\end{center}
+\end{figure}
+\Hypertarget{kc_8h_a44281fba5e514c76d3867c7cc899eb7c}\label{kc_8h_a44281fba5e514c76d3867c7cc899eb7c} 
+\index{kc.h@{kc.h}!cdf\_f@{cdf\_f}}
+\index{cdf\_f@{cdf\_f}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{cdf\_f()}{cdf\_f()}}
+{\footnotesize\ttfamily double cdf\+\_\+f (\begin{DoxyParamCaption}\item[{double}]{df1,  }\item[{double}]{df2,  }\item[{double}]{x }\end{DoxyParamCaption})}
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=279pt]{kc_8h_a44281fba5e514c76d3867c7cc899eb7c_cgraph}
+\end{center}
+\end{figure}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=261pt]{kc_8h_a44281fba5e514c76d3867c7cc899eb7c_icgraph}
+\end{center}
+\end{figure}
+\Hypertarget{kc_8h_ad7f21bf6ad62e142c785825e00a546e3}\label{kc_8h_ad7f21bf6ad62e142c785825e00a546e3} 
+\index{kc.h@{kc.h}!cdf\_normal@{cdf\_normal}}
+\index{cdf\_normal@{cdf\_normal}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{cdf\_normal()}{cdf\_normal()}}
+{\footnotesize\ttfamily double cdf\+\_\+normal (\begin{DoxyParamCaption}\item[{double}]{x,  }\item[{double}]{mu,  }\item[{double}]{sigma }\end{DoxyParamCaption})}
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kc_8h_ad7f21bf6ad62e142c785825e00a546e3_cgraph}
+\end{center}
+\end{figure}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kc_8h_ad7f21bf6ad62e142c785825e00a546e3_icgraph}
+\end{center}
+\end{figure}
+\Hypertarget{kc_8h_a1f7aff47eacc48937a5dd3ae419c6066}\label{kc_8h_a1f7aff47eacc48937a5dd3ae419c6066} 
+\index{kc.h@{kc.h}!cdf\_poisson@{cdf\_poisson}}
+\index{cdf\_poisson@{cdf\_poisson}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{cdf\_poisson()}{cdf\_poisson()}}
+{\footnotesize\ttfamily double cdf\+\_\+poisson (\begin{DoxyParamCaption}\item[{int}]{k,  }\item[{double}]{x }\end{DoxyParamCaption})}
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kc_8h_a1f7aff47eacc48937a5dd3ae419c6066_cgraph}
+\end{center}
+\end{figure}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=272pt]{kc_8h_a1f7aff47eacc48937a5dd3ae419c6066_icgraph}
+\end{center}
+\end{figure}
+\Hypertarget{kc_8h_a5e787a5eb2287b478478048a9a621fca}\label{kc_8h_a5e787a5eb2287b478478048a9a621fca} 
+\index{kc.h@{kc.h}!cdf\_poisson\_inc@{cdf\_poisson\_inc}}
+\index{cdf\_poisson\_inc@{cdf\_poisson\_inc}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{cdf\_poisson\_inc()}{cdf\_poisson\_inc()}}
+{\footnotesize\ttfamily double cdf\+\_\+poisson\+\_\+inc (\begin{DoxyParamCaption}\item[{int}]{k,  }\item[{double}]{x }\end{DoxyParamCaption})}
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kc_8h_a5e787a5eb2287b478478048a9a621fca_cgraph}
+\end{center}
+\end{figure}
+\Hypertarget{kc_8h_a05188c3bfc69f9c84a6e22f6b0e11cc7}\label{kc_8h_a05188c3bfc69f9c84a6e22f6b0e11cc7} 
+\index{kc.h@{kc.h}!cdf\_stdnormal@{cdf\_stdnormal}}
+\index{cdf\_stdnormal@{cdf\_stdnormal}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{cdf\_stdnormal()}{cdf\_stdnormal()}}
+{\footnotesize\ttfamily double cdf\+\_\+stdnormal (\begin{DoxyParamCaption}\item[{double}]{x }\end{DoxyParamCaption})}
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kc_8h_a05188c3bfc69f9c84a6e22f6b0e11cc7_cgraph}
+\end{center}
+\end{figure}
+\Hypertarget{kc_8h_a996626bdadc539b36a6ddce1f8262f1e}\label{kc_8h_a996626bdadc539b36a6ddce1f8262f1e} 
+\index{kc.h@{kc.h}!cdf\_t@{cdf\_t}}
+\index{cdf\_t@{cdf\_t}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{cdf\_t()}{cdf\_t()}}
+{\footnotesize\ttfamily double cdf\+\_\+t (\begin{DoxyParamCaption}\item[{double}]{df,  }\item[{double}]{x }\end{DoxyParamCaption})}
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=279pt]{kc_8h_a996626bdadc539b36a6ddce1f8262f1e_cgraph}
+\end{center}
+\end{figure}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kc_8h_a996626bdadc539b36a6ddce1f8262f1e_icgraph}
+\end{center}
+\end{figure}
+\Hypertarget{kc_8h_aeca8344f58357afa063ffc8cc119f8b7}\label{kc_8h_aeca8344f58357afa063ffc8cc119f8b7} 
+\index{kc.h@{kc.h}!cdfinv\_t@{cdfinv\_t}}
+\index{cdfinv\_t@{cdfinv\_t}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{cdfinv\_t()}{cdfinv\_t()}}
+{\footnotesize\ttfamily double cdfinv\+\_\+t (\begin{DoxyParamCaption}\item[{double}]{df,  }\item[{double}]{p }\end{DoxyParamCaption})}
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kc_8h_aeca8344f58357afa063ffc8cc119f8b7_cgraph}
+\end{center}
+\end{figure}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=268pt]{kc_8h_aeca8344f58357afa063ffc8cc119f8b7_icgraph}
+\end{center}
+\end{figure}
+\Hypertarget{kc_8h_adf37c70a909881088c54291500d5f848}\label{kc_8h_adf37c70a909881088c54291500d5f848} 
+\index{kc.h@{kc.h}!chi2test@{chi2test}}
+\index{chi2test@{chi2test}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{chi2test()}{chi2test()}}
+{\footnotesize\ttfamily void chi2test (\begin{DoxyParamCaption}\item[{double \texorpdfstring{$\ast$}{*}}]{bins1,  }\item[{double \texorpdfstring{$\ast$}{*}}]{bins2,  }\item[{int}]{nbins,  }\item[{int}]{knstrn,  }\item[{double \texorpdfstring{$\ast$}{*}}]{df,  }\item[{double \texorpdfstring{$\ast$}{*}}]{chi2,  }\item[{double \texorpdfstring{$\ast$}{*}}]{p }\end{DoxyParamCaption})}
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kc_8h_adf37c70a909881088c54291500d5f848_cgraph}
+\end{center}
+\end{figure}
+\Hypertarget{kc_8h_ac06495bdbe2a0b6c4f235664bc002c80}\label{kc_8h_ac06495bdbe2a0b6c4f235664bc002c80} 
+\index{kc.h@{kc.h}!chi2test\_2by2table@{chi2test\_2by2table}}
+\index{chi2test\_2by2table@{chi2test\_2by2table}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{chi2test\_2by2table()}{chi2test\_2by2table()}}
+{\footnotesize\ttfamily void chi2test\+\_\+2by2table (\begin{DoxyParamCaption}\item[{double \texorpdfstring{$\ast$}{*}}]{bins,  }\item[{double \texorpdfstring{$\ast$}{*}}]{chi2,  }\item[{double \texorpdfstring{$\ast$}{*}}]{p }\end{DoxyParamCaption})}
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kc_8h_ac06495bdbe2a0b6c4f235664bc002c80_cgraph}
+\end{center}
+\end{figure}
+\Hypertarget{kc_8h_a96ec673538c48e142ea769df221d2ca9}\label{kc_8h_a96ec673538c48e142ea769df221d2ca9} 
+\index{kc.h@{kc.h}!chi2test\_2by3table@{chi2test\_2by3table}}
+\index{chi2test\_2by3table@{chi2test\_2by3table}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{chi2test\_2by3table()}{chi2test\_2by3table()}}
+{\footnotesize\ttfamily void chi2test\+\_\+2by3table (\begin{DoxyParamCaption}\item[{double \texorpdfstring{$\ast$}{*}}]{bins,  }\item[{double \texorpdfstring{$\ast$}{*}}]{chi2,  }\item[{double \texorpdfstring{$\ast$}{*}}]{p }\end{DoxyParamCaption})}
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kc_8h_a96ec673538c48e142ea769df221d2ca9_cgraph}
+\end{center}
+\end{figure}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=312pt]{kc_8h_a96ec673538c48e142ea769df221d2ca9_icgraph}
+\end{center}
+\end{figure}
+\Hypertarget{kc_8h_a3208fdc700d8fc604d6446c1180e58cd}\label{kc_8h_a3208fdc700d8fc604d6446c1180e58cd} 
+\index{kc.h@{kc.h}!chi2test\_3by2table@{chi2test\_3by2table}}
+\index{chi2test\_3by2table@{chi2test\_3by2table}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{chi2test\_3by2table()}{chi2test\_3by2table()}}
+{\footnotesize\ttfamily void chi2test\+\_\+3by2table (\begin{DoxyParamCaption}\item[{double \texorpdfstring{$\ast$}{*}}]{bins,  }\item[{double \texorpdfstring{$\ast$}{*}}]{chi2,  }\item[{double \texorpdfstring{$\ast$}{*}}]{p }\end{DoxyParamCaption})}
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kc_8h_a3208fdc700d8fc604d6446c1180e58cd_cgraph}
+\end{center}
+\end{figure}
+\Hypertarget{kc_8h_a6f7008da290a84b7ba4e26e232a645dc}\label{kc_8h_a6f7008da290a84b7ba4e26e232a645dc} 
+\index{kc.h@{kc.h}!chi2test\_onesample@{chi2test\_onesample}}
+\index{chi2test\_onesample@{chi2test\_onesample}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{chi2test\_onesample()}{chi2test\_onesample()}}
+{\footnotesize\ttfamily void chi2test\+\_\+onesample (\begin{DoxyParamCaption}\item[{double \texorpdfstring{$\ast$}{*}}]{bins,  }\item[{double \texorpdfstring{$\ast$}{*}}]{ebins,  }\item[{int}]{nbins,  }\item[{int}]{knstrn,  }\item[{double \texorpdfstring{$\ast$}{*}}]{df,  }\item[{double \texorpdfstring{$\ast$}{*}}]{chi2,  }\item[{double \texorpdfstring{$\ast$}{*}}]{p }\end{DoxyParamCaption})}
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kc_8h_a6f7008da290a84b7ba4e26e232a645dc_cgraph}
+\end{center}
+\end{figure}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kc_8h_a6f7008da290a84b7ba4e26e232a645dc_icgraph}
+\end{center}
+\end{figure}
+\Hypertarget{kc_8h_a229578c847d01eeceb5d7bfe5ddf6c37}\label{kc_8h_a229578c847d01eeceb5d7bfe5ddf6c37} 
+\index{kc.h@{kc.h}!chi2test\_trend\_2by3table@{chi2test\_trend\_2by3table}}
+\index{chi2test\_trend\_2by3table@{chi2test\_trend\_2by3table}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{chi2test\_trend\_2by3table()}{chi2test\_trend\_2by3table()}}
+{\footnotesize\ttfamily void chi2test\+\_\+trend\+\_\+2by3table (\begin{DoxyParamCaption}\item[{double \texorpdfstring{$\ast$}{*}}]{bins,  }\item[{double \texorpdfstring{$\ast$}{*}}]{chi2,  }\item[{double \texorpdfstring{$\ast$}{*}}]{p }\end{DoxyParamCaption})}
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kc_8h_a229578c847d01eeceb5d7bfe5ddf6c37_cgraph}
+\end{center}
+\end{figure}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kc_8h_a229578c847d01eeceb5d7bfe5ddf6c37_icgraph}
+\end{center}
+\end{figure}
+\Hypertarget{kc_8h_a5ac369578aba21ff5f35f9e2c7320fa4}\label{kc_8h_a5ac369578aba21ff5f35f9e2c7320fa4} 
+\index{kc.h@{kc.h}!chi2test\_trend\_3by2table@{chi2test\_trend\_3by2table}}
+\index{chi2test\_trend\_3by2table@{chi2test\_trend\_3by2table}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{chi2test\_trend\_3by2table()}{chi2test\_trend\_3by2table()}}
+{\footnotesize\ttfamily void chi2test\+\_\+trend\+\_\+3by2table (\begin{DoxyParamCaption}\item[{double \texorpdfstring{$\ast$}{*}}]{bins,  }\item[{double \texorpdfstring{$\ast$}{*}}]{chi2,  }\item[{double \texorpdfstring{$\ast$}{*}}]{p }\end{DoxyParamCaption})}
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kc_8h_a5ac369578aba21ff5f35f9e2c7320fa4_cgraph}
+\end{center}
+\end{figure}
+\Hypertarget{kc_8h_a061fd4b0c96655cebfb921357615d6a0}\label{kc_8h_a061fd4b0c96655cebfb921357615d6a0} 
+\index{kc.h@{kc.h}!convert\_matrix@{convert\_matrix}}
+\index{convert\_matrix@{convert\_matrix}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{convert\_matrix()}{convert\_matrix()}}
+{\footnotesize\ttfamily double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*} convert\+\_\+matrix (\begin{DoxyParamCaption}\item[{double \texorpdfstring{$\ast$}{*}}]{a,  }\item[{long}]{nrl,  }\item[{long}]{nrh,  }\item[{long}]{ncl,  }\item[{long}]{nch }\end{DoxyParamCaption})}
+
+\Hypertarget{kc_8h_a26084b7a5f02a520fedea796faec8a89}\label{kc_8h_a26084b7a5f02a520fedea796faec8a89} 
+\index{kc.h@{kc.h}!cov@{cov}}
+\index{cov@{cov}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{cov()}{cov()}}
+{\footnotesize\ttfamily double cov (\begin{DoxyParamCaption}\item[{double \texorpdfstring{$\ast$}{*}}]{x,  }\item[{double \texorpdfstring{$\ast$}{*}}]{y,  }\item[{int}]{n }\end{DoxyParamCaption})}
+
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kc_8h_a26084b7a5f02a520fedea796faec8a89_icgraph}
+\end{center}
+\end{figure}
+\Hypertarget{kc_8h_a16a18b0e44cbd9b64e5c546c0f0f6720}\label{kc_8h_a16a18b0e44cbd9b64e5c546c0f0f6720} 
+\index{kc.h@{kc.h}!cvector@{cvector}}
+\index{cvector@{cvector}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{cvector()}{cvector()}}
+{\footnotesize\ttfamily unsigned char \texorpdfstring{$\ast$}{*} cvector (\begin{DoxyParamCaption}\item[{long}]{nl,  }\item[{long}]{nh }\end{DoxyParamCaption})}
+
+\Hypertarget{kc_8h_ab1a02a50dfbc26318f6bb296731b6f3a}\label{kc_8h_ab1a02a50dfbc26318f6bb296731b6f3a} 
+\index{kc.h@{kc.h}!dmatrix@{dmatrix}}
+\index{dmatrix@{dmatrix}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{dmatrix()}{dmatrix()}}
+{\footnotesize\ttfamily double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*} dmatrix (\begin{DoxyParamCaption}\item[{long}]{nrl,  }\item[{long}]{nrh,  }\item[{long}]{ncl,  }\item[{long}]{nch }\end{DoxyParamCaption})}
+
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kc_8h_ab1a02a50dfbc26318f6bb296731b6f3a_icgraph}
+\end{center}
+\end{figure}
+\Hypertarget{kc_8h_ae21c4c252ad5d5710ebd03d6f07e40de}\label{kc_8h_ae21c4c252ad5d5710ebd03d6f07e40de} 
+\index{kc.h@{kc.h}!dvector@{dvector}}
+\index{dvector@{dvector}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{dvector()}{dvector()}}
+{\footnotesize\ttfamily double \texorpdfstring{$\ast$}{*} dvector (\begin{DoxyParamCaption}\item[{long}]{nl,  }\item[{long}]{nh }\end{DoxyParamCaption})}
+
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kc_8h_ae21c4c252ad5d5710ebd03d6f07e40de_icgraph}
+\end{center}
+\end{figure}
+\Hypertarget{kc_8h_aa8b35382a71885eed509a5f87bf5e266}\label{kc_8h_aa8b35382a71885eed509a5f87bf5e266} 
+\index{kc.h@{kc.h}!erf@{erf}}
+\index{erf@{erf}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{erf()}{erf()}}
+{\footnotesize\ttfamily double erf (\begin{DoxyParamCaption}\item[{double}]{x }\end{DoxyParamCaption})}
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kc_8h_aa8b35382a71885eed509a5f87bf5e266_cgraph}
+\end{center}
+\end{figure}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kc_8h_aa8b35382a71885eed509a5f87bf5e266_icgraph}
+\end{center}
+\end{figure}
+\Hypertarget{kc_8h_a20614b0260f5c699044c6514b6479e34}\label{kc_8h_a20614b0260f5c699044c6514b6479e34} 
+\index{kc.h@{kc.h}!factorial@{factorial}}
+\index{factorial@{factorial}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{factorial()}{factorial()}}
+{\footnotesize\ttfamily int factorial (\begin{DoxyParamCaption}\item[{int}]{x }\end{DoxyParamCaption})}
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=313pt]{kc_8h_a20614b0260f5c699044c6514b6479e34_cgraph}
+\end{center}
+\end{figure}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kc_8h_a20614b0260f5c699044c6514b6479e34_icgraph}
+\end{center}
+\end{figure}
+\Hypertarget{kc_8h_a5a78aba3780860d110c596288ac54635}\label{kc_8h_a5a78aba3780860d110c596288ac54635} 
+\index{kc.h@{kc.h}!fh\_stderr@{fh\_stderr}}
+\index{fh\_stderr@{fh\_stderr}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{fh\_stderr()}{fh\_stderr()}}
+{\footnotesize\ttfamily FILE \texorpdfstring{$\ast$}{*} fh\+\_\+stderr (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+\Hypertarget{kc_8h_a31d09d90dfdeb57129a49d908744db53}\label{kc_8h_a31d09d90dfdeb57129a49d908744db53} 
+\index{kc.h@{kc.h}!fh\_stdin@{fh\_stdin}}
+\index{fh\_stdin@{fh\_stdin}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{fh\_stdin()}{fh\_stdin()}}
+{\footnotesize\ttfamily FILE \texorpdfstring{$\ast$}{*} fh\+\_\+stdin (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+\Hypertarget{kc_8h_aed4cb56a6b5cda1f865aefedcf7649a2}\label{kc_8h_aed4cb56a6b5cda1f865aefedcf7649a2} 
+\index{kc.h@{kc.h}!fh\_stdout@{fh\_stdout}}
+\index{fh\_stdout@{fh\_stdout}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{fh\_stdout()}{fh\_stdout()}}
+{\footnotesize\ttfamily FILE \texorpdfstring{$\ast$}{*} fh\+\_\+stdout (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+\Hypertarget{kc_8h_ab2a4b7063b009f90e6db6deface43386}\label{kc_8h_ab2a4b7063b009f90e6db6deface43386} 
+\index{kc.h@{kc.h}!fisher\_exact\_1sided@{fisher\_exact\_1sided}}
+\index{fisher\_exact\_1sided@{fisher\_exact\_1sided}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{fisher\_exact\_1sided()}{fisher\_exact\_1sided()}}
+{\footnotesize\ttfamily double fisher\+\_\+exact\+\_\+1sided (\begin{DoxyParamCaption}\item[{int}]{a,  }\item[{int}]{b,  }\item[{int}]{c,  }\item[{int}]{d }\end{DoxyParamCaption})}
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kc_8h_ab2a4b7063b009f90e6db6deface43386_cgraph}
+\end{center}
+\end{figure}
+\Hypertarget{kc_8h_a5879c832b572d6cf16d7fe0dea2af315}\label{kc_8h_a5879c832b572d6cf16d7fe0dea2af315} 
+\index{kc.h@{kc.h}!fisher\_exact\_2sided@{fisher\_exact\_2sided}}
+\index{fisher\_exact\_2sided@{fisher\_exact\_2sided}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{fisher\_exact\_2sided()}{fisher\_exact\_2sided()}}
+{\footnotesize\ttfamily double fisher\+\_\+exact\+\_\+2sided (\begin{DoxyParamCaption}\item[{int}]{a,  }\item[{int}]{b,  }\item[{int}]{c,  }\item[{int}]{d }\end{DoxyParamCaption})}
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kc_8h_a5879c832b572d6cf16d7fe0dea2af315_cgraph}
+\end{center}
+\end{figure}
+\Hypertarget{kc_8h_adcf016abc500425950a6ca3c21bb6224}\label{kc_8h_adcf016abc500425950a6ca3c21bb6224} 
+\index{kc.h@{kc.h}!free\_cvector@{free\_cvector}}
+\index{free\_cvector@{free\_cvector}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{free\_cvector()}{free\_cvector()}}
+{\footnotesize\ttfamily void free\+\_\+cvector (\begin{DoxyParamCaption}\item[{unsigned char \texorpdfstring{$\ast$}{*}}]{v,  }\item[{long}]{nl,  }\item[{long}]{nh }\end{DoxyParamCaption})}
+
+\Hypertarget{kc_8h_a04fbc9bc53e6303830eb4338bc1f3259}\label{kc_8h_a04fbc9bc53e6303830eb4338bc1f3259} 
+\index{kc.h@{kc.h}!free\_dmatrix@{free\_dmatrix}}
+\index{free\_dmatrix@{free\_dmatrix}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{free\_dmatrix()}{free\_dmatrix()}}
+{\footnotesize\ttfamily void free\+\_\+dmatrix (\begin{DoxyParamCaption}\item[{double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}}]{m,  }\item[{long}]{nrl,  }\item[{long}]{nrh,  }\item[{long}]{ncl,  }\item[{long}]{nch }\end{DoxyParamCaption})}
+
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kc_8h_a04fbc9bc53e6303830eb4338bc1f3259_icgraph}
+\end{center}
+\end{figure}
+\Hypertarget{kc_8h_ac7ec1a76a4b8d3d8423246676977c919}\label{kc_8h_ac7ec1a76a4b8d3d8423246676977c919} 
+\index{kc.h@{kc.h}!free\_dvector@{free\_dvector}}
+\index{free\_dvector@{free\_dvector}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{free\_dvector()}{free\_dvector()}}
+{\footnotesize\ttfamily void free\+\_\+dvector (\begin{DoxyParamCaption}\item[{double \texorpdfstring{$\ast$}{*}}]{v,  }\item[{long}]{nl,  }\item[{long}]{nh }\end{DoxyParamCaption})}
+
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kc_8h_ac7ec1a76a4b8d3d8423246676977c919_icgraph}
+\end{center}
+\end{figure}
+\Hypertarget{kc_8h_aefc01b3e130f9ecc15c4a376ba987bae}\label{kc_8h_aefc01b3e130f9ecc15c4a376ba987bae} 
+\index{kc.h@{kc.h}!free\_imatrix@{free\_imatrix}}
+\index{free\_imatrix@{free\_imatrix}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{free\_imatrix()}{free\_imatrix()}}
+{\footnotesize\ttfamily void free\+\_\+imatrix (\begin{DoxyParamCaption}\item[{int \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}}]{m,  }\item[{long}]{nrl,  }\item[{long}]{nrh,  }\item[{long}]{ncl,  }\item[{long}]{nch }\end{DoxyParamCaption})}
+
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kc_8h_aefc01b3e130f9ecc15c4a376ba987bae_icgraph}
+\end{center}
+\end{figure}
+\Hypertarget{kc_8h_a15d431001f2a68ce4669efe823266e7e}\label{kc_8h_a15d431001f2a68ce4669efe823266e7e} 
+\index{kc.h@{kc.h}!free\_ivector@{free\_ivector}}
+\index{free\_ivector@{free\_ivector}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{free\_ivector()}{free\_ivector()}}
+{\footnotesize\ttfamily void free\+\_\+ivector (\begin{DoxyParamCaption}\item[{int \texorpdfstring{$\ast$}{*}}]{v,  }\item[{long}]{nl,  }\item[{long}]{nh }\end{DoxyParamCaption})}
+
+\Hypertarget{kc_8h_a963279adf9a24652715df49e8598fb64}\label{kc_8h_a963279adf9a24652715df49e8598fb64} 
+\index{kc.h@{kc.h}!free\_subdmatrix@{free\_subdmatrix}}
+\index{free\_subdmatrix@{free\_subdmatrix}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{free\_subdmatrix()}{free\_subdmatrix()}}
+{\footnotesize\ttfamily void free\+\_\+subdmatrix (\begin{DoxyParamCaption}\item[{double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}}]{b,  }\item[{long}]{nrl,  }\item[{long}]{nrh,  }\item[{long}]{ncl,  }\item[{long}]{nch }\end{DoxyParamCaption})}
+
+\Hypertarget{kc_8h_aeb063515d33aaf1d9131611c38b21fa4}\label{kc_8h_aeb063515d33aaf1d9131611c38b21fa4} 
+\index{kc.h@{kc.h}!ftest@{ftest}}
+\index{ftest@{ftest}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{ftest()}{ftest()}}
+{\footnotesize\ttfamily void ftest (\begin{DoxyParamCaption}\item[{double \texorpdfstring{$\ast$}{*}}]{data1,  }\item[{long}]{n1,  }\item[{double \texorpdfstring{$\ast$}{*}}]{data2,  }\item[{long}]{n2,  }\item[{double \texorpdfstring{$\ast$}{*}}]{f,  }\item[{double \texorpdfstring{$\ast$}{*}}]{p }\end{DoxyParamCaption})}
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kc_8h_aeb063515d33aaf1d9131611c38b21fa4_cgraph}
+\end{center}
+\end{figure}
+\Hypertarget{kc_8h_a69cc1b545a83a4d9f187e131500aee45}\label{kc_8h_a69cc1b545a83a4d9f187e131500aee45} 
+\index{kc.h@{kc.h}!gammln@{gammln}}
+\index{gammln@{gammln}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{gammln()}{gammln()}}
+{\footnotesize\ttfamily double gammln (\begin{DoxyParamCaption}\item[{double}]{x }\end{DoxyParamCaption})}
+
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kc_8h_a69cc1b545a83a4d9f187e131500aee45_icgraph}
+\end{center}
+\end{figure}
+\Hypertarget{kc_8h_aa1745417f9696825bc7cc68538800b5b}\label{kc_8h_aa1745417f9696825bc7cc68538800b5b} 
+\index{kc.h@{kc.h}!gammp@{gammp}}
+\index{gammp@{gammp}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{gammp()}{gammp()}}
+{\footnotesize\ttfamily double gammp (\begin{DoxyParamCaption}\item[{double}]{a,  }\item[{double}]{x }\end{DoxyParamCaption})}
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=287pt]{kc_8h_aa1745417f9696825bc7cc68538800b5b_cgraph}
+\end{center}
+\end{figure}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kc_8h_aa1745417f9696825bc7cc68538800b5b_icgraph}
+\end{center}
+\end{figure}
+\Hypertarget{kc_8h_a3875415d74d3aaf6f58d9e58fc061efd}\label{kc_8h_a3875415d74d3aaf6f58d9e58fc061efd} 
+\index{kc.h@{kc.h}!gammq@{gammq}}
+\index{gammq@{gammq}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{gammq()}{gammq()}}
+{\footnotesize\ttfamily double gammq (\begin{DoxyParamCaption}\item[{double}]{a,  }\item[{double}]{x }\end{DoxyParamCaption})}
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kc_8h_a3875415d74d3aaf6f58d9e58fc061efd_cgraph}
+\end{center}
+\end{figure}
+\Hypertarget{kc_8h_a5b446e3e8ec13c8e2383ac156f0cf77f}\label{kc_8h_a5b446e3e8ec13c8e2383ac156f0cf77f} 
+\index{kc.h@{kc.h}!gcf@{gcf}}
+\index{gcf@{gcf}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{gcf()}{gcf()}}
+{\footnotesize\ttfamily void gcf (\begin{DoxyParamCaption}\item[{double \texorpdfstring{$\ast$}{*}}]{gammcf,  }\item[{double}]{a,  }\item[{double}]{x,  }\item[{double \texorpdfstring{$\ast$}{*}}]{gln }\end{DoxyParamCaption})}
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=197pt]{kc_8h_a5b446e3e8ec13c8e2383ac156f0cf77f_cgraph}
+\end{center}
+\end{figure}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kc_8h_a5b446e3e8ec13c8e2383ac156f0cf77f_icgraph}
+\end{center}
+\end{figure}
+\Hypertarget{kc_8h_a5277079b0c65d166db9553deb8a92de2}\label{kc_8h_a5277079b0c65d166db9553deb8a92de2} 
+\index{kc.h@{kc.h}!gser@{gser}}
+\index{gser@{gser}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{gser()}{gser()}}
+{\footnotesize\ttfamily void gser (\begin{DoxyParamCaption}\item[{double \texorpdfstring{$\ast$}{*}}]{gamser,  }\item[{double}]{a,  }\item[{double}]{x,  }\item[{double \texorpdfstring{$\ast$}{*}}]{gln }\end{DoxyParamCaption})}
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=202pt]{kc_8h_a5277079b0c65d166db9553deb8a92de2_cgraph}
+\end{center}
+\end{figure}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kc_8h_a5277079b0c65d166db9553deb8a92de2_icgraph}
+\end{center}
+\end{figure}
+\Hypertarget{kc_8h_abf1b4d8302f62d6a4c71bfc56c4e0527}\label{kc_8h_abf1b4d8302f62d6a4c71bfc56c4e0527} 
+\index{kc.h@{kc.h}!imatrix@{imatrix}}
+\index{imatrix@{imatrix}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{imatrix()}{imatrix()}}
+{\footnotesize\ttfamily int \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*} imatrix (\begin{DoxyParamCaption}\item[{long}]{nrl,  }\item[{long}]{nrh,  }\item[{long}]{ncl,  }\item[{long}]{nch }\end{DoxyParamCaption})}
+
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kc_8h_abf1b4d8302f62d6a4c71bfc56c4e0527_icgraph}
+\end{center}
+\end{figure}
+\Hypertarget{kc_8h_aec2bb078b76a5c291f8bac42c63c153d}\label{kc_8h_aec2bb078b76a5c291f8bac42c63c153d} 
+\index{kc.h@{kc.h}!inverff@{inverff}}
+\index{inverff@{inverff}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{inverff()}{inverff()}}
+{\footnotesize\ttfamily double inverff (\begin{DoxyParamCaption}\item[{double}]{x }\end{DoxyParamCaption})}
+
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=217pt]{kc_8h_aec2bb078b76a5c291f8bac42c63c153d_icgraph}
+\end{center}
+\end{figure}
+\Hypertarget{kc_8h_a760799d47f2410b689c0c9f35907a118}\label{kc_8h_a760799d47f2410b689c0c9f35907a118} 
+\index{kc.h@{kc.h}!invnormal@{invnormal}}
+\index{invnormal@{invnormal}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{invnormal()}{invnormal()}}
+{\footnotesize\ttfamily double invnormal (\begin{DoxyParamCaption}\item[{double}]{x }\end{DoxyParamCaption})}
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=217pt]{kc_8h_a760799d47f2410b689c0c9f35907a118_cgraph}
+\end{center}
+\end{figure}
+\Hypertarget{kc_8h_aa80706cb014e1b52634f8c88adc0cc28}\label{kc_8h_aa80706cb014e1b52634f8c88adc0cc28} 
+\index{kc.h@{kc.h}!ivector@{ivector}}
+\index{ivector@{ivector}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{ivector()}{ivector()}}
+{\footnotesize\ttfamily int \texorpdfstring{$\ast$}{*} ivector (\begin{DoxyParamCaption}\item[{long}]{nl,  }\item[{long}]{nh }\end{DoxyParamCaption})}
+
+\Hypertarget{kc_8h_af6ec36938a2387245faa43e8799ed03f}\label{kc_8h_af6ec36938a2387245faa43e8799ed03f} 
+\index{kc.h@{kc.h}!kstest@{kstest}}
+\index{kstest@{kstest}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{kstest()}{kstest()}}
+{\footnotesize\ttfamily void kstest (\begin{DoxyParamCaption}\item[{double \texorpdfstring{$\ast$}{*}}]{data1,  }\item[{long}]{n1,  }\item[{double \texorpdfstring{$\ast$}{*}}]{data2,  }\item[{long}]{n2,  }\item[{double \texorpdfstring{$\ast$}{*}}]{d,  }\item[{double \texorpdfstring{$\ast$}{*}}]{prob }\end{DoxyParamCaption})}
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=222pt]{kc_8h_af6ec36938a2387245faa43e8799ed03f_cgraph}
+\end{center}
+\end{figure}
+\Hypertarget{kc_8h_adf02e6b141f0fbfb89ffdd700c7f5f51}\label{kc_8h_adf02e6b141f0fbfb89ffdd700c7f5f51} 
+\index{kc.h@{kc.h}!kstest\_onesample@{kstest\_onesample}}
+\index{kstest\_onesample@{kstest\_onesample}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{kstest\_onesample()}{kstest\_onesample()}}
+{\footnotesize\ttfamily void kstest\+\_\+onesample (\begin{DoxyParamCaption}\item[{double \texorpdfstring{$\ast$}{*}}]{data,  }\item[{long}]{n,  }\item[{double(\texorpdfstring{$\ast$}{*})(double)}]{func,  }\item[{double \texorpdfstring{$\ast$}{*}}]{d,  }\item[{double \texorpdfstring{$\ast$}{*}}]{prob }\end{DoxyParamCaption})}
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=274pt]{kc_8h_adf02e6b141f0fbfb89ffdd700c7f5f51_cgraph}
+\end{center}
+\end{figure}
+\Hypertarget{kc_8h_aa25b6ecd23d45f7dcaa2932138388c74}\label{kc_8h_aa25b6ecd23d45f7dcaa2932138388c74} 
+\index{kc.h@{kc.h}!lnbico@{lnbico}}
+\index{lnbico@{lnbico}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{lnbico()}{lnbico()}}
+{\footnotesize\ttfamily double lnbico (\begin{DoxyParamCaption}\item[{int}]{n,  }\item[{int}]{k }\end{DoxyParamCaption})}
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=209pt]{kc_8h_aa25b6ecd23d45f7dcaa2932138388c74_cgraph}
+\end{center}
+\end{figure}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=229pt]{kc_8h_aa25b6ecd23d45f7dcaa2932138388c74_icgraph}
+\end{center}
+\end{figure}
+\Hypertarget{kc_8h_a1b8ed1e5e0530035c186d182ebe747b3}\label{kc_8h_a1b8ed1e5e0530035c186d182ebe747b3} 
+\index{kc.h@{kc.h}!lnfactorial@{lnfactorial}}
+\index{lnfactorial@{lnfactorial}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{lnfactorial()}{lnfactorial()}}
+{\footnotesize\ttfamily double lnfactorial (\begin{DoxyParamCaption}\item[{double}]{x }\end{DoxyParamCaption})}
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=226pt]{kc_8h_a1b8ed1e5e0530035c186d182ebe747b3_cgraph}
+\end{center}
+\end{figure}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kc_8h_a1b8ed1e5e0530035c186d182ebe747b3_icgraph}
+\end{center}
+\end{figure}
+\Hypertarget{kc_8h_a9bfecf719895e2a905f208911be65e4b}\label{kc_8h_a9bfecf719895e2a905f208911be65e4b} 
+\index{kc.h@{kc.h}!matrix\_add@{matrix\_add}}
+\index{matrix\_add@{matrix\_add}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{matrix\_add()}{matrix\_add()}}
+{\footnotesize\ttfamily void matrix\+\_\+add (\begin{DoxyParamCaption}\item[{double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}}]{A,  }\item[{int}]{m,  }\item[{int}]{n,  }\item[{double}]{a }\end{DoxyParamCaption})}
+
+\Hypertarget{kc_8h_ad7e8269ade877b1c256224e3170a43d1}\label{kc_8h_ad7e8269ade877b1c256224e3170a43d1} 
+\index{kc.h@{kc.h}!matrix\_at@{matrix\_at}}
+\index{matrix\_at@{matrix\_at}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{matrix\_at()}{matrix\_at()}}
+{\footnotesize\ttfamily double matrix\+\_\+at (\begin{DoxyParamCaption}\item[{double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}}]{A,  }\item[{int}]{m,  }\item[{int}]{n }\end{DoxyParamCaption})}
+
+\Hypertarget{kc_8h_afe422ba8b591cae1c441249f6075436a}\label{kc_8h_afe422ba8b591cae1c441249f6075436a} 
+\index{kc.h@{kc.h}!matrix\_cat@{matrix\_cat}}
+\index{matrix\_cat@{matrix\_cat}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{matrix\_cat()}{matrix\_cat()}}
+{\footnotesize\ttfamily double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*} matrix\+\_\+cat (\begin{DoxyParamCaption}\item[{double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}}]{A,  }\item[{double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}}]{B,  }\item[{int}]{m1,  }\item[{int}]{m2,  }\item[{int}]{n }\end{DoxyParamCaption})}
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=245pt]{kc_8h_afe422ba8b591cae1c441249f6075436a_cgraph}
+\end{center}
+\end{figure}
+\Hypertarget{kc_8h_a779b3e1038e5853848b8a039d8d2e7c1}\label{kc_8h_a779b3e1038e5853848b8a039d8d2e7c1} 
+\index{kc.h@{kc.h}!matrix\_change@{matrix\_change}}
+\index{matrix\_change@{matrix\_change}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{matrix\_change()}{matrix\_change()}}
+{\footnotesize\ttfamily void matrix\+\_\+change (\begin{DoxyParamCaption}\item[{double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}}]{A,  }\item[{int}]{m,  }\item[{int}]{n,  }\item[{double}]{a }\end{DoxyParamCaption})}
+
+\Hypertarget{kc_8h_a865598a7017730b2bdf24cf6269d0f23}\label{kc_8h_a865598a7017730b2bdf24cf6269d0f23} 
+\index{kc.h@{kc.h}!matrix\_colMean@{matrix\_colMean}}
+\index{matrix\_colMean@{matrix\_colMean}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{matrix\_colMean()}{matrix\_colMean()}}
+{\footnotesize\ttfamily double \texorpdfstring{$\ast$}{*} matrix\+\_\+col\+Mean (\begin{DoxyParamCaption}\item[{double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}}]{A,  }\item[{int}]{m,  }\item[{int}]{n }\end{DoxyParamCaption})}
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=268pt]{kc_8h_a865598a7017730b2bdf24cf6269d0f23_cgraph}
+\end{center}
+\end{figure}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kc_8h_a865598a7017730b2bdf24cf6269d0f23_icgraph}
+\end{center}
+\end{figure}
+\Hypertarget{kc_8h_ad5ea42776f7ed1dcb54d04db645487c3}\label{kc_8h_ad5ea42776f7ed1dcb54d04db645487c3} 
+\index{kc.h@{kc.h}!matrix\_colVar@{matrix\_colVar}}
+\index{matrix\_colVar@{matrix\_colVar}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{matrix\_colVar()}{matrix\_colVar()}}
+{\footnotesize\ttfamily double \texorpdfstring{$\ast$}{*} matrix\+\_\+col\+Var (\begin{DoxyParamCaption}\item[{double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}}]{A,  }\item[{int}]{m,  }\item[{int}]{n }\end{DoxyParamCaption})}
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=258pt]{kc_8h_ad5ea42776f7ed1dcb54d04db645487c3_cgraph}
+\end{center}
+\end{figure}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=292pt]{kc_8h_ad5ea42776f7ed1dcb54d04db645487c3_icgraph}
+\end{center}
+\end{figure}
+\Hypertarget{kc_8h_a487b6171c617a9bdb3b3337dab2fc046}\label{kc_8h_a487b6171c617a9bdb3b3337dab2fc046} 
+\index{kc.h@{kc.h}!matrix\_copy@{matrix\_copy}}
+\index{matrix\_copy@{matrix\_copy}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{matrix\_copy()}{matrix\_copy()}}
+{\footnotesize\ttfamily double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*} matrix\+\_\+copy (\begin{DoxyParamCaption}\item[{double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}}]{A,  }\item[{int}]{m,  }\item[{int}]{n }\end{DoxyParamCaption})}
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=253pt]{kc_8h_a487b6171c617a9bdb3b3337dab2fc046_cgraph}
+\end{center}
+\end{figure}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kc_8h_a487b6171c617a9bdb3b3337dab2fc046_icgraph}
+\end{center}
+\end{figure}
+\Hypertarget{kc_8h_a673ed8b4d0eee5e7e60df48435e0d8ba}\label{kc_8h_a673ed8b4d0eee5e7e60df48435e0d8ba} 
+\index{kc.h@{kc.h}!matrix\_corMatrix@{matrix\_corMatrix}}
+\index{matrix\_corMatrix@{matrix\_corMatrix}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{matrix\_corMatrix()}{matrix\_corMatrix()}}
+{\footnotesize\ttfamily double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*} matrix\+\_\+cor\+Matrix (\begin{DoxyParamCaption}\item[{double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}}]{A,  }\item[{int}]{m,  }\item[{int}]{n }\end{DoxyParamCaption})}
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kc_8h_a673ed8b4d0eee5e7e60df48435e0d8ba_cgraph}
+\end{center}
+\end{figure}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=285pt]{kc_8h_a673ed8b4d0eee5e7e60df48435e0d8ba_icgraph}
+\end{center}
+\end{figure}
+\Hypertarget{kc_8h_aa51dbc9f02003e376630381db9eab42c}\label{kc_8h_aa51dbc9f02003e376630381db9eab42c} 
+\index{kc.h@{kc.h}!matrix\_covMatrix@{matrix\_covMatrix}}
+\index{matrix\_covMatrix@{matrix\_covMatrix}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{matrix\_covMatrix()}{matrix\_covMatrix()}}
+{\footnotesize\ttfamily double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*} matrix\+\_\+cov\+Matrix (\begin{DoxyParamCaption}\item[{double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}}]{A,  }\item[{int}]{m,  }\item[{int}]{n }\end{DoxyParamCaption})}
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kc_8h_aa51dbc9f02003e376630381db9eab42c_cgraph}
+\end{center}
+\end{figure}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=291pt]{kc_8h_aa51dbc9f02003e376630381db9eab42c_icgraph}
+\end{center}
+\end{figure}
+\Hypertarget{kc_8h_af9848a5ae0abf30166d7ca76011014b2}\label{kc_8h_af9848a5ae0abf30166d7ca76011014b2} 
+\index{kc.h@{kc.h}!matrix\_delCol@{matrix\_delCol}}
+\index{matrix\_delCol@{matrix\_delCol}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{matrix\_delCol()}{matrix\_delCol()}}
+{\footnotesize\ttfamily double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*} matrix\+\_\+del\+Col (\begin{DoxyParamCaption}\item[{double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}}]{A,  }\item[{int}]{m,  }\item[{int}]{n,  }\item[{int}]{col }\end{DoxyParamCaption})}
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=260pt]{kc_8h_af9848a5ae0abf30166d7ca76011014b2_cgraph}
+\end{center}
+\end{figure}
+\Hypertarget{kc_8h_a941f97f06dc11db76a0f4464bcb71e00}\label{kc_8h_a941f97f06dc11db76a0f4464bcb71e00} 
+\index{kc.h@{kc.h}!matrix\_delRow@{matrix\_delRow}}
+\index{matrix\_delRow@{matrix\_delRow}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{matrix\_delRow()}{matrix\_delRow()}}
+{\footnotesize\ttfamily double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*} matrix\+\_\+del\+Row (\begin{DoxyParamCaption}\item[{double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}}]{A,  }\item[{int}]{m,  }\item[{int}]{n,  }\item[{int}]{row }\end{DoxyParamCaption})}
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=265pt]{kc_8h_a941f97f06dc11db76a0f4464bcb71e00_cgraph}
+\end{center}
+\end{figure}
+\Hypertarget{kc_8h_a4709c372281713ec9baaf5fb939cb10e}\label{kc_8h_a4709c372281713ec9baaf5fb939cb10e} 
+\index{kc.h@{kc.h}!matrix\_det@{matrix\_det}}
+\index{matrix\_det@{matrix\_det}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{matrix\_det()}{matrix\_det()}}
+{\footnotesize\ttfamily double matrix\+\_\+det (\begin{DoxyParamCaption}\item[{double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}}]{a,  }\item[{int}]{n }\end{DoxyParamCaption})}
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kc_8h_a4709c372281713ec9baaf5fb939cb10e_cgraph}
+\end{center}
+\end{figure}
+\Hypertarget{kc_8h_a68b4f000503d404e2dcd3b4cdbae952f}\label{kc_8h_a68b4f000503d404e2dcd3b4cdbae952f} 
+\index{kc.h@{kc.h}!matrix\_eigen@{matrix\_eigen}}
+\index{matrix\_eigen@{matrix\_eigen}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{matrix\_eigen()}{matrix\_eigen()}}
+{\footnotesize\ttfamily void matrix\+\_\+eigen (\begin{DoxyParamCaption}\item[{double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}}]{a,  }\item[{int}]{n,  }\item[{double \texorpdfstring{$\ast$}{*}}]{d,  }\item[{double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}}]{v,  }\item[{int \texorpdfstring{$\ast$}{*}}]{nrot }\end{DoxyParamCaption})}
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=254pt]{kc_8h_a68b4f000503d404e2dcd3b4cdbae952f_cgraph}
+\end{center}
+\end{figure}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=271pt]{kc_8h_a68b4f000503d404e2dcd3b4cdbae952f_icgraph}
+\end{center}
+\end{figure}
+\Hypertarget{kc_8h_aa517f6dc1cd623e0f2fdc5f0f9ab8534}\label{kc_8h_aa517f6dc1cd623e0f2fdc5f0f9ab8534} 
+\index{kc.h@{kc.h}!matrix\_free@{matrix\_free}}
+\index{matrix\_free@{matrix\_free}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{matrix\_free()}{matrix\_free()}}
+{\footnotesize\ttfamily void matrix\+\_\+free (\begin{DoxyParamCaption}\item[{double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}}]{m }\end{DoxyParamCaption})}
+
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kc_8h_aa517f6dc1cd623e0f2fdc5f0f9ab8534_icgraph}
+\end{center}
+\end{figure}
+\Hypertarget{kc_8h_af0e16ee0cbf76fe1a067c0f4132e8774}\label{kc_8h_af0e16ee0cbf76fe1a067c0f4132e8774} 
+\index{kc.h@{kc.h}!matrix\_inverse@{matrix\_inverse}}
+\index{matrix\_inverse@{matrix\_inverse}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{matrix\_inverse()}{matrix\_inverse()}}
+{\footnotesize\ttfamily void matrix\+\_\+inverse (\begin{DoxyParamCaption}\item[{double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}}]{a,  }\item[{int}]{n }\end{DoxyParamCaption})}
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kc_8h_af0e16ee0cbf76fe1a067c0f4132e8774_cgraph}
+\end{center}
+\end{figure}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=297pt]{kc_8h_af0e16ee0cbf76fe1a067c0f4132e8774_icgraph}
+\end{center}
+\end{figure}
+\Hypertarget{kc_8h_a81683e0787ad3491e6e65a83bf05124f}\label{kc_8h_a81683e0787ad3491e6e65a83bf05124f} 
+\index{kc.h@{kc.h}!matrix\_inverse2@{matrix\_inverse2}}
+\index{matrix\_inverse2@{matrix\_inverse2}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{matrix\_inverse2()}{matrix\_inverse2()}}
+{\footnotesize\ttfamily void matrix\+\_\+inverse2 (\begin{DoxyParamCaption}\item[{double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}}]{a,  }\item[{int}]{n }\end{DoxyParamCaption})}
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kc_8h_a81683e0787ad3491e6e65a83bf05124f_cgraph}
+\end{center}
+\end{figure}
+\Hypertarget{kc_8h_a85a2f9c7ff758c36a67d0b8a58424404}\label{kc_8h_a85a2f9c7ff758c36a67d0b8a58424404} 
+\index{kc.h@{kc.h}!matrix\_ludecomp@{matrix\_ludecomp}}
+\index{matrix\_ludecomp@{matrix\_ludecomp}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{matrix\_ludecomp()}{matrix\_ludecomp()}}
+{\footnotesize\ttfamily void matrix\+\_\+ludecomp (\begin{DoxyParamCaption}\item[{double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}}]{a,  }\item[{int}]{n,  }\item[{int \texorpdfstring{$\ast$}{*}}]{indx,  }\item[{double \texorpdfstring{$\ast$}{*}}]{d }\end{DoxyParamCaption})}
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=273pt]{kc_8h_a85a2f9c7ff758c36a67d0b8a58424404_cgraph}
+\end{center}
+\end{figure}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kc_8h_a85a2f9c7ff758c36a67d0b8a58424404_icgraph}
+\end{center}
+\end{figure}
+\Hypertarget{kc_8h_ac42e23a54fc054272c49120386afd1e7}\label{kc_8h_ac42e23a54fc054272c49120386afd1e7} 
+\index{kc.h@{kc.h}!matrix\_ludecomp2@{matrix\_ludecomp2}}
+\index{matrix\_ludecomp2@{matrix\_ludecomp2}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{matrix\_ludecomp2()}{matrix\_ludecomp2()}}
+{\footnotesize\ttfamily void matrix\+\_\+ludecomp2 (\begin{DoxyParamCaption}\item[{const int}]{n,  }\item[{double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}}]{a,  }\item[{int \texorpdfstring{$\ast$}{*}}]{p }\end{DoxyParamCaption})}
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=278pt]{kc_8h_ac42e23a54fc054272c49120386afd1e7_cgraph}
+\end{center}
+\end{figure}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=298pt]{kc_8h_ac42e23a54fc054272c49120386afd1e7_icgraph}
+\end{center}
+\end{figure}
+\Hypertarget{kc_8h_ad99cb91ebff0903217880cd395ccef58}\label{kc_8h_ad99cb91ebff0903217880cd395ccef58} 
+\index{kc.h@{kc.h}!matrix\_lusubst@{matrix\_lusubst}}
+\index{matrix\_lusubst@{matrix\_lusubst}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{matrix\_lusubst()}{matrix\_lusubst()}}
+{\footnotesize\ttfamily void matrix\+\_\+lusubst (\begin{DoxyParamCaption}\item[{double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}}]{a,  }\item[{int}]{n,  }\item[{int \texorpdfstring{$\ast$}{*}}]{indx,  }\item[{double \texorpdfstring{$\ast$}{*}}]{b }\end{DoxyParamCaption})}
+
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kc_8h_ad99cb91ebff0903217880cd395ccef58_icgraph}
+\end{center}
+\end{figure}
+\Hypertarget{kc_8h_a946d5288784bd06ff1ba6f09d5eb1f11}\label{kc_8h_a946d5288784bd06ff1ba6f09d5eb1f11} 
+\index{kc.h@{kc.h}!matrix\_lusubst2@{matrix\_lusubst2}}
+\index{matrix\_lusubst2@{matrix\_lusubst2}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{matrix\_lusubst2()}{matrix\_lusubst2()}}
+{\footnotesize\ttfamily void matrix\+\_\+lusubst2 (\begin{DoxyParamCaption}\item[{const int}]{n,  }\item[{double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}}]{a,  }\item[{int \texorpdfstring{$\ast$}{*}}]{p,  }\item[{double \texorpdfstring{$\ast$}{*}}]{b }\end{DoxyParamCaption})}
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=268pt]{kc_8h_a946d5288784bd06ff1ba6f09d5eb1f11_cgraph}
+\end{center}
+\end{figure}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=288pt]{kc_8h_a946d5288784bd06ff1ba6f09d5eb1f11_icgraph}
+\end{center}
+\end{figure}
+\Hypertarget{kc_8h_a434b0afbcca14a331a887ef5f456cef9}\label{kc_8h_a434b0afbcca14a331a887ef5f456cef9} 
+\index{kc.h@{kc.h}!matrix\_multiply@{matrix\_multiply}}
+\index{matrix\_multiply@{matrix\_multiply}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{matrix\_multiply()}{matrix\_multiply()}}
+{\footnotesize\ttfamily void matrix\+\_\+multiply (\begin{DoxyParamCaption}\item[{double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}}]{A,  }\item[{int}]{m,  }\item[{int}]{n,  }\item[{double}]{scale }\end{DoxyParamCaption})}
+
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kc_8h_a434b0afbcca14a331a887ef5f456cef9_icgraph}
+\end{center}
+\end{figure}
+\Hypertarget{kc_8h_ac75528b11a2997977101b6e9ded2c7cf}\label{kc_8h_ac75528b11a2997977101b6e9ded2c7cf} 
+\index{kc.h@{kc.h}!matrix\_new@{matrix\_new}}
+\index{matrix\_new@{matrix\_new}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{matrix\_new()}{matrix\_new()}}
+{\footnotesize\ttfamily double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*} matrix\+\_\+new (\begin{DoxyParamCaption}\item[{int}]{row,  }\item[{int}]{col }\end{DoxyParamCaption})}
+
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=550pt]{kc_8h_ac75528b11a2997977101b6e9ded2c7cf_icgraph}
+\end{center}
+\end{figure}
+\Hypertarget{kc_8h_a609d0838618bb6305e85dd167ec08238}\label{kc_8h_a609d0838618bb6305e85dd167ec08238} 
+\index{kc.h@{kc.h}!matrix\_newDiagonal@{matrix\_newDiagonal}}
+\index{matrix\_newDiagonal@{matrix\_newDiagonal}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{matrix\_newDiagonal()}{matrix\_newDiagonal()}}
+{\footnotesize\ttfamily double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*} matrix\+\_\+new\+Diagonal (\begin{DoxyParamCaption}\item[{double \texorpdfstring{$\ast$}{*}}]{cell,  }\item[{int}]{length,  }\item[{int}]{m,  }\item[{int}]{n }\end{DoxyParamCaption})}
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=288pt]{kc_8h_a609d0838618bb6305e85dd167ec08238_cgraph}
+\end{center}
+\end{figure}
+\Hypertarget{kc_8h_a71f8fde7da24c3d7ff2accceda310498}\label{kc_8h_a71f8fde7da24c3d7ff2accceda310498} 
+\index{kc.h@{kc.h}!matrix\_newIdentity@{matrix\_newIdentity}}
+\index{matrix\_newIdentity@{matrix\_newIdentity}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{matrix\_newIdentity()}{matrix\_newIdentity()}}
+{\footnotesize\ttfamily double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*} matrix\+\_\+new\+Identity (\begin{DoxyParamCaption}\item[{int}]{m }\end{DoxyParamCaption})}
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=282pt]{kc_8h_a71f8fde7da24c3d7ff2accceda310498_cgraph}
+\end{center}
+\end{figure}
+\Hypertarget{kc_8h_ab7b71e4683cf71e5accd72c9f4ee2520}\label{kc_8h_ab7b71e4683cf71e5accd72c9f4ee2520} 
+\index{kc.h@{kc.h}!matrix\_newRandom@{matrix\_newRandom}}
+\index{matrix\_newRandom@{matrix\_newRandom}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{matrix\_newRandom()}{matrix\_newRandom()}}
+{\footnotesize\ttfamily double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*} matrix\+\_\+new\+Random (\begin{DoxyParamCaption}\item[{int}]{m,  }\item[{int}]{n,  }\item[{int}]{seed }\end{DoxyParamCaption})}
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=286pt]{kc_8h_ab7b71e4683cf71e5accd72c9f4ee2520_cgraph}
+\end{center}
+\end{figure}
+\Hypertarget{kc_8h_a34fc6bc5065be03e054201ca6ea792b1}\label{kc_8h_a34fc6bc5065be03e054201ca6ea792b1} 
+\index{kc.h@{kc.h}!matrix\_newSeq@{matrix\_newSeq}}
+\index{matrix\_newSeq@{matrix\_newSeq}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{matrix\_newSeq()}{matrix\_newSeq()}}
+{\footnotesize\ttfamily double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*} matrix\+\_\+new\+Seq (\begin{DoxyParamCaption}\item[{int}]{m,  }\item[{int}]{n }\end{DoxyParamCaption})}
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=267pt]{kc_8h_a34fc6bc5065be03e054201ca6ea792b1_cgraph}
+\end{center}
+\end{figure}
+\Hypertarget{kc_8h_abb5b3d84ab0088a0df21b669e3405b5b}\label{kc_8h_abb5b3d84ab0088a0df21b669e3405b5b} 
+\index{kc.h@{kc.h}!matrix\_newSubcol@{matrix\_newSubcol}}
+\index{matrix\_newSubcol@{matrix\_newSubcol}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{matrix\_newSubcol()}{matrix\_newSubcol()}}
+{\footnotesize\ttfamily double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*} matrix\+\_\+new\+Subcol (\begin{DoxyParamCaption}\item[{double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}}]{A,  }\item[{int}]{m,  }\item[{int}]{n,  }\item[{int}]{c1,  }\item[{int}]{c2 }\end{DoxyParamCaption})}
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=280pt]{kc_8h_abb5b3d84ab0088a0df21b669e3405b5b_cgraph}
+\end{center}
+\end{figure}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=303pt]{kc_8h_abb5b3d84ab0088a0df21b669e3405b5b_icgraph}
+\end{center}
+\end{figure}
+\Hypertarget{kc_8h_a6be7a4660fd4fa28de1e39c8c3289e6d}\label{kc_8h_a6be7a4660fd4fa28de1e39c8c3289e6d} 
+\index{kc.h@{kc.h}!matrix\_newSubmat@{matrix\_newSubmat}}
+\index{matrix\_newSubmat@{matrix\_newSubmat}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{matrix\_newSubmat()}{matrix\_newSubmat()}}
+{\footnotesize\ttfamily double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*} matrix\+\_\+new\+Submat (\begin{DoxyParamCaption}\item[{double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}}]{A,  }\item[{int}]{m,  }\item[{int}]{n,  }\item[{int}]{r1,  }\item[{int}]{r2,  }\item[{int}]{c1,  }\item[{int}]{c2 }\end{DoxyParamCaption})}
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=284pt]{kc_8h_a6be7a4660fd4fa28de1e39c8c3289e6d_cgraph}
+\end{center}
+\end{figure}
+\Hypertarget{kc_8h_a265ea641a46882404b8a295c106869e6}\label{kc_8h_a265ea641a46882404b8a295c106869e6} 
+\index{kc.h@{kc.h}!matrix\_newSubrow@{matrix\_newSubrow}}
+\index{matrix\_newSubrow@{matrix\_newSubrow}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{matrix\_newSubrow()}{matrix\_newSubrow()}}
+{\footnotesize\ttfamily double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*} matrix\+\_\+new\+Subrow (\begin{DoxyParamCaption}\item[{double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}}]{A,  }\item[{int}]{m,  }\item[{int}]{n,  }\item[{int}]{r1,  }\item[{int}]{r2 }\end{DoxyParamCaption})}
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=283pt]{kc_8h_a265ea641a46882404b8a295c106869e6_cgraph}
+\end{center}
+\end{figure}
+\Hypertarget{kc_8h_a1d846becb4123e2b9484de623f92c727}\label{kc_8h_a1d846becb4123e2b9484de623f92c727} 
+\index{kc.h@{kc.h}!matrix\_paste@{matrix\_paste}}
+\index{matrix\_paste@{matrix\_paste}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{matrix\_paste()}{matrix\_paste()}}
+{\footnotesize\ttfamily double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*} matrix\+\_\+paste (\begin{DoxyParamCaption}\item[{double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}}]{A,  }\item[{double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}}]{B,  }\item[{int}]{m,  }\item[{int}]{n1,  }\item[{int}]{n2 }\end{DoxyParamCaption})}
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=256pt]{kc_8h_a1d846becb4123e2b9484de623f92c727_cgraph}
+\end{center}
+\end{figure}
+\Hypertarget{kc_8h_aa04426b6994cdcfbbf77c3bb77e7a021}\label{kc_8h_aa04426b6994cdcfbbf77c3bb77e7a021} 
+\index{kc.h@{kc.h}!matrix\_pcaComVar@{matrix\_pcaComVar}}
+\index{matrix\_pcaComVar@{matrix\_pcaComVar}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{matrix\_pcaComVar()}{matrix\_pcaComVar()}}
+{\footnotesize\ttfamily double \texorpdfstring{$\ast$}{*} matrix\+\_\+pca\+Com\+Var (\begin{DoxyParamCaption}\item[{double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}}]{A,  }\item[{int}]{m,  }\item[{int}]{n,  }\item[{double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}}]{evec }\end{DoxyParamCaption})}
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kc_8h_aa04426b6994cdcfbbf77c3bb77e7a021_cgraph}
+\end{center}
+\end{figure}
+\Hypertarget{kc_8h_a165e97bd10a48d3c5da908938468212b}\label{kc_8h_a165e97bd10a48d3c5da908938468212b} 
+\index{kc.h@{kc.h}!matrix\_pcaCor@{matrix\_pcaCor}}
+\index{matrix\_pcaCor@{matrix\_pcaCor}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{matrix\_pcaCor()}{matrix\_pcaCor()}}
+{\footnotesize\ttfamily double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*} matrix\+\_\+pca\+Cor (\begin{DoxyParamCaption}\item[{double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}}]{A,  }\item[{int}]{m,  }\item[{int}]{n,  }\item[{double \texorpdfstring{$\ast$}{*}}]{eval }\end{DoxyParamCaption})}
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kc_8h_a165e97bd10a48d3c5da908938468212b_cgraph}
+\end{center}
+\end{figure}
+\Hypertarget{kc_8h_ae64a3eb3736d5788d72eaf7ad6927421}\label{kc_8h_ae64a3eb3736d5788d72eaf7ad6927421} 
+\index{kc.h@{kc.h}!matrix\_pcaCov@{matrix\_pcaCov}}
+\index{matrix\_pcaCov@{matrix\_pcaCov}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{matrix\_pcaCov()}{matrix\_pcaCov()}}
+{\footnotesize\ttfamily double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*} matrix\+\_\+pca\+Cov (\begin{DoxyParamCaption}\item[{double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}}]{A,  }\item[{int}]{m,  }\item[{int}]{n,  }\item[{double \texorpdfstring{$\ast$}{*}}]{eval }\end{DoxyParamCaption})}
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kc_8h_ae64a3eb3736d5788d72eaf7ad6927421_cgraph}
+\end{center}
+\end{figure}
+\Hypertarget{kc_8h_a32977ea97f5f917acfc83aec5817a0e0}\label{kc_8h_a32977ea97f5f917acfc83aec5817a0e0} 
+\index{kc.h@{kc.h}!matrix\_pcaScore@{matrix\_pcaScore}}
+\index{matrix\_pcaScore@{matrix\_pcaScore}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{matrix\_pcaScore()}{matrix\_pcaScore()}}
+{\footnotesize\ttfamily double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*} matrix\+\_\+pca\+Score (\begin{DoxyParamCaption}\item[{double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}}]{A,  }\item[{int}]{m,  }\item[{int}]{n,  }\item[{double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}}]{evec,  }\item[{int}]{k }\end{DoxyParamCaption})}
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kc_8h_a32977ea97f5f917acfc83aec5817a0e0_cgraph}
+\end{center}
+\end{figure}
+\Hypertarget{kc_8h_aef4d42f4197a1db7f6667dc7ea67956b}\label{kc_8h_aef4d42f4197a1db7f6667dc7ea67956b} 
+\index{kc.h@{kc.h}!matrix\_product@{matrix\_product}}
+\index{matrix\_product@{matrix\_product}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{matrix\_product()}{matrix\_product()}}
+{\footnotesize\ttfamily double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*} matrix\+\_\+product (\begin{DoxyParamCaption}\item[{double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}}]{A,  }\item[{double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}}]{B,  }\item[{int}]{m,  }\item[{int}]{n,  }\item[{int}]{o }\end{DoxyParamCaption})}
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=264pt]{kc_8h_aef4d42f4197a1db7f6667dc7ea67956b_cgraph}
+\end{center}
+\end{figure}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kc_8h_aef4d42f4197a1db7f6667dc7ea67956b_icgraph}
+\end{center}
+\end{figure}
+\Hypertarget{kc_8h_a00f5b59ec000eae7a009cd437008050d}\label{kc_8h_a00f5b59ec000eae7a009cd437008050d} 
+\index{kc.h@{kc.h}!matrix\_product3@{matrix\_product3}}
+\index{matrix\_product3@{matrix\_product3}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{matrix\_product3()}{matrix\_product3()}}
+{\footnotesize\ttfamily double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*} matrix\+\_\+product3 (\begin{DoxyParamCaption}\item[{double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}}]{A,  }\item[{double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}}]{B,  }\item[{double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}}]{C,  }\item[{int}]{m,  }\item[{int}]{n,  }\item[{int}]{o,  }\item[{int}]{p }\end{DoxyParamCaption})}
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kc_8h_a00f5b59ec000eae7a009cd437008050d_cgraph}
+\end{center}
+\end{figure}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=300pt]{kc_8h_a00f5b59ec000eae7a009cd437008050d_icgraph}
+\end{center}
+\end{figure}
+\Hypertarget{kc_8h_a0458e14ed6d01fb333ea0b2a06035d87}\label{kc_8h_a0458e14ed6d01fb333ea0b2a06035d87} 
+\index{kc.h@{kc.h}!matrix\_reg@{matrix\_reg}}
+\index{matrix\_reg@{matrix\_reg}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{matrix\_reg()}{matrix\_reg()}}
+{\footnotesize\ttfamily double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*} matrix\+\_\+reg (\begin{DoxyParamCaption}\item[{double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}}]{X,  }\item[{int}]{m,  }\item[{int}]{n,  }\item[{double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}}]{Y }\end{DoxyParamCaption})}
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kc_8h_a0458e14ed6d01fb333ea0b2a06035d87_cgraph}
+\end{center}
+\end{figure}
+\Hypertarget{kc_8h_a77077c3de17b2dd212a275a4e0ff1750}\label{kc_8h_a77077c3de17b2dd212a275a4e0ff1750} 
+\index{kc.h@{kc.h}!matrix\_regCoefStat@{matrix\_regCoefStat}}
+\index{matrix\_regCoefStat@{matrix\_regCoefStat}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{matrix\_regCoefStat()}{matrix\_regCoefStat()}}
+{\footnotesize\ttfamily double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*} matrix\+\_\+reg\+Coef\+Stat (\begin{DoxyParamCaption}\item[{double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}}]{X,  }\item[{int}]{m,  }\item[{int}]{n,  }\item[{double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}}]{Y,  }\item[{double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}}]{B }\end{DoxyParamCaption})}
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kc_8h_a77077c3de17b2dd212a275a4e0ff1750_cgraph}
+\end{center}
+\end{figure}
+\Hypertarget{kc_8h_acf18fe54721a1ca7a61f70f4fdc637e3}\label{kc_8h_acf18fe54721a1ca7a61f70f4fdc637e3} 
+\index{kc.h@{kc.h}!matrix\_regModelStat@{matrix\_regModelStat}}
+\index{matrix\_regModelStat@{matrix\_regModelStat}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{matrix\_regModelStat()}{matrix\_regModelStat()}}
+{\footnotesize\ttfamily double \texorpdfstring{$\ast$}{*} matrix\+\_\+reg\+Model\+Stat (\begin{DoxyParamCaption}\item[{double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}}]{X,  }\item[{int}]{m,  }\item[{int}]{n,  }\item[{double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}}]{Y,  }\item[{double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}}]{B }\end{DoxyParamCaption})}
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kc_8h_acf18fe54721a1ca7a61f70f4fdc637e3_cgraph}
+\end{center}
+\end{figure}
+\Hypertarget{kc_8h_ad57651ec26e71d842d15f65ae9484098}\label{kc_8h_ad57651ec26e71d842d15f65ae9484098} 
+\index{kc.h@{kc.h}!matrix\_regMSE@{matrix\_regMSE}}
+\index{matrix\_regMSE@{matrix\_regMSE}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{matrix\_regMSE()}{matrix\_regMSE()}}
+{\footnotesize\ttfamily double matrix\+\_\+reg\+MSE (\begin{DoxyParamCaption}\item[{double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}}]{X,  }\item[{int}]{m,  }\item[{int}]{n,  }\item[{double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}}]{Y,  }\item[{double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}}]{B }\end{DoxyParamCaption})}
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kc_8h_ad57651ec26e71d842d15f65ae9484098_cgraph}
+\end{center}
+\end{figure}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=301pt]{kc_8h_ad57651ec26e71d842d15f65ae9484098_icgraph}
+\end{center}
+\end{figure}
+\Hypertarget{kc_8h_ad66fdb823fdc1c7260a0459c1912203f}\label{kc_8h_ad66fdb823fdc1c7260a0459c1912203f} 
+\index{kc.h@{kc.h}!matrix\_regObsStat@{matrix\_regObsStat}}
+\index{matrix\_regObsStat@{matrix\_regObsStat}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{matrix\_regObsStat()}{matrix\_regObsStat()}}
+{\footnotesize\ttfamily double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*} matrix\+\_\+reg\+Obs\+Stat (\begin{DoxyParamCaption}\item[{double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}}]{X,  }\item[{int}]{m,  }\item[{int}]{n,  }\item[{double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}}]{Y,  }\item[{double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}}]{B }\end{DoxyParamCaption})}
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kc_8h_ad66fdb823fdc1c7260a0459c1912203f_cgraph}
+\end{center}
+\end{figure}
+\Hypertarget{kc_8h_a551c44bbe1dfb82808f03d8c2ec65fdd}\label{kc_8h_a551c44bbe1dfb82808f03d8c2ec65fdd} 
+\index{kc.h@{kc.h}!matrix\_row@{matrix\_row}}
+\index{matrix\_row@{matrix\_row}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{matrix\_row()}{matrix\_row()}}
+{\footnotesize\ttfamily double \texorpdfstring{$\ast$}{*} matrix\+\_\+row (\begin{DoxyParamCaption}\item[{double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}}]{A,  }\item[{int}]{m }\end{DoxyParamCaption})}
+
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=270pt]{kc_8h_a551c44bbe1dfb82808f03d8c2ec65fdd_icgraph}
+\end{center}
+\end{figure}
+\Hypertarget{kc_8h_a76900cdbfa88f73145d4be6b0e796fcd}\label{kc_8h_a76900cdbfa88f73145d4be6b0e796fcd} 
+\index{kc.h@{kc.h}!matrix\_rowMean@{matrix\_rowMean}}
+\index{matrix\_rowMean@{matrix\_rowMean}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{matrix\_rowMean()}{matrix\_rowMean()}}
+{\footnotesize\ttfamily double \texorpdfstring{$\ast$}{*} matrix\+\_\+row\+Mean (\begin{DoxyParamCaption}\item[{double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}}]{A,  }\item[{int}]{m,  }\item[{int}]{n }\end{DoxyParamCaption})}
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=271pt]{kc_8h_a76900cdbfa88f73145d4be6b0e796fcd_cgraph}
+\end{center}
+\end{figure}
+\Hypertarget{kc_8h_a92e391e59a08cba2c92774a03b97f038}\label{kc_8h_a92e391e59a08cba2c92774a03b97f038} 
+\index{kc.h@{kc.h}!matrix\_rowVar@{matrix\_rowVar}}
+\index{matrix\_rowVar@{matrix\_rowVar}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{matrix\_rowVar()}{matrix\_rowVar()}}
+{\footnotesize\ttfamily double \texorpdfstring{$\ast$}{*} matrix\+\_\+row\+Var (\begin{DoxyParamCaption}\item[{double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}}]{A,  }\item[{int}]{m,  }\item[{int}]{n }\end{DoxyParamCaption})}
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=261pt]{kc_8h_a92e391e59a08cba2c92774a03b97f038_cgraph}
+\end{center}
+\end{figure}
+\Hypertarget{kc_8h_a7d45b4d89c9e4dfd5cf06ff773c4f048}\label{kc_8h_a7d45b4d89c9e4dfd5cf06ff773c4f048} 
+\index{kc.h@{kc.h}!matrix\_solve@{matrix\_solve}}
+\index{matrix\_solve@{matrix\_solve}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{matrix\_solve()}{matrix\_solve()}}
+{\footnotesize\ttfamily void matrix\+\_\+solve (\begin{DoxyParamCaption}\item[{double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}}]{a,  }\item[{int}]{n,  }\item[{double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}}]{b,  }\item[{int}]{m }\end{DoxyParamCaption})}
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=255pt]{kc_8h_a7d45b4d89c9e4dfd5cf06ff773c4f048_cgraph}
+\end{center}
+\end{figure}
+\Hypertarget{kc_8h_a6f44909f9dcb95b38fe728721b011fca}\label{kc_8h_a6f44909f9dcb95b38fe728721b011fca} 
+\index{kc.h@{kc.h}!matrix\_sortByVector@{matrix\_sortByVector}}
+\index{matrix\_sortByVector@{matrix\_sortByVector}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{matrix\_sortByVector()}{matrix\_sortByVector()}}
+{\footnotesize\ttfamily void matrix\+\_\+sort\+By\+Vector (\begin{DoxyParamCaption}\item[{double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}}]{A,  }\item[{int}]{m,  }\item[{int}]{n,  }\item[{double \texorpdfstring{$\ast$}{*}}]{v }\end{DoxyParamCaption})}
+
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=305pt]{kc_8h_a6f44909f9dcb95b38fe728721b011fca_icgraph}
+\end{center}
+\end{figure}
+\Hypertarget{kc_8h_aa824316c0d7768e230ae809a3e679a66}\label{kc_8h_aa824316c0d7768e230ae809a3e679a66} 
+\index{kc.h@{kc.h}!matrix\_stdCol@{matrix\_stdCol}}
+\index{matrix\_stdCol@{matrix\_stdCol}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{matrix\_stdCol()}{matrix\_stdCol()}}
+{\footnotesize\ttfamily void matrix\+\_\+std\+Col (\begin{DoxyParamCaption}\item[{double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}}]{A,  }\item[{int}]{m,  }\item[{int}]{n }\end{DoxyParamCaption})}
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kc_8h_aa824316c0d7768e230ae809a3e679a66_cgraph}
+\end{center}
+\end{figure}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kc_8h_aa824316c0d7768e230ae809a3e679a66_icgraph}
+\end{center}
+\end{figure}
+\Hypertarget{kc_8h_a1e079ca755a3861bccd94f64677e1d54}\label{kc_8h_a1e079ca755a3861bccd94f64677e1d54} 
+\index{kc.h@{kc.h}!matrix\_stdRow@{matrix\_stdRow}}
+\index{matrix\_stdRow@{matrix\_stdRow}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{matrix\_stdRow()}{matrix\_stdRow()}}
+{\footnotesize\ttfamily void matrix\+\_\+std\+Row (\begin{DoxyParamCaption}\item[{double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}}]{A,  }\item[{int}]{m,  }\item[{int}]{n }\end{DoxyParamCaption})}
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=243pt]{kc_8h_a1e079ca755a3861bccd94f64677e1d54_cgraph}
+\end{center}
+\end{figure}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kc_8h_a1e079ca755a3861bccd94f64677e1d54_icgraph}
+\end{center}
+\end{figure}
+\Hypertarget{kc_8h_a8b035cf48fefe5a08c76d2593984eb55}\label{kc_8h_a8b035cf48fefe5a08c76d2593984eb55} 
+\index{kc.h@{kc.h}!matrix\_subtract@{matrix\_subtract}}
+\index{matrix\_subtract@{matrix\_subtract}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{matrix\_subtract()}{matrix\_subtract()}}
+{\footnotesize\ttfamily void matrix\+\_\+subtract (\begin{DoxyParamCaption}\item[{double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}}]{A,  }\item[{double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}}]{B,  }\item[{int}]{m,  }\item[{int}]{n }\end{DoxyParamCaption})}
+
+\Hypertarget{kc_8h_ad641c37850b1195f2501e65ccb8efdcc}\label{kc_8h_ad641c37850b1195f2501e65ccb8efdcc} 
+\index{kc.h@{kc.h}!matrix\_sum@{matrix\_sum}}
+\index{matrix\_sum@{matrix\_sum}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{matrix\_sum()}{matrix\_sum()}}
+{\footnotesize\ttfamily void matrix\+\_\+sum (\begin{DoxyParamCaption}\item[{double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}}]{A,  }\item[{double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}}]{B,  }\item[{int}]{m,  }\item[{int}]{n }\end{DoxyParamCaption})}
+
+\Hypertarget{kc_8h_ac641037bb0dc9795e1565903868cc017}\label{kc_8h_ac641037bb0dc9795e1565903868cc017} 
+\index{kc.h@{kc.h}!matrix\_svd@{matrix\_svd}}
+\index{matrix\_svd@{matrix\_svd}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{matrix\_svd()}{matrix\_svd()}}
+{\footnotesize\ttfamily void matrix\+\_\+svd (\begin{DoxyParamCaption}\item[{double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}}]{a,  }\item[{int}]{m,  }\item[{int}]{n,  }\item[{double \texorpdfstring{$\ast$}{*}}]{w,  }\item[{double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}}]{v }\end{DoxyParamCaption})}
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=247pt]{kc_8h_ac641037bb0dc9795e1565903868cc017_cgraph}
+\end{center}
+\end{figure}
+\Hypertarget{kc_8h_ad821d5e02ace8034e9be2ddc6cebd47c}\label{kc_8h_ad821d5e02ace8034e9be2ddc6cebd47c} 
+\index{kc.h@{kc.h}!matrix\_svd2@{matrix\_svd2}}
+\index{matrix\_svd2@{matrix\_svd2}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{matrix\_svd2()}{matrix\_svd2()}}
+{\footnotesize\ttfamily void matrix\+\_\+svd2 (\begin{DoxyParamCaption}\item[{double \texorpdfstring{$\ast$}{*}}]{W,  }\item[{double \texorpdfstring{$\ast$}{*}}]{Z,  }\item[{int}]{n\+Row,  }\item[{int}]{n\+Col }\end{DoxyParamCaption})}
+
+\Hypertarget{kc_8h_a601585a3e7b819a147843979d9e807b2}\label{kc_8h_a601585a3e7b819a147843979d9e807b2} 
+\index{kc.h@{kc.h}!matrix\_toMatrixi@{matrix\_toMatrixi}}
+\index{matrix\_toMatrixi@{matrix\_toMatrixi}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{matrix\_toMatrixi()}{matrix\_toMatrixi()}}
+{\footnotesize\ttfamily int \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*} matrix\+\_\+to\+Matrixi (\begin{DoxyParamCaption}\item[{double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}}]{A,  }\item[{int}]{m,  }\item[{int}]{n }\end{DoxyParamCaption})}
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=271pt]{kc_8h_a601585a3e7b819a147843979d9e807b2_cgraph}
+\end{center}
+\end{figure}
+\Hypertarget{kc_8h_a2eab47d949124ded160b9de53426ff11}\label{kc_8h_a2eab47d949124ded160b9de53426ff11} 
+\index{kc.h@{kc.h}!matrix\_toVector@{matrix\_toVector}}
+\index{matrix\_toVector@{matrix\_toVector}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{matrix\_toVector()}{matrix\_toVector()}}
+{\footnotesize\ttfamily double \texorpdfstring{$\ast$}{*} matrix\+\_\+to\+Vector (\begin{DoxyParamCaption}\item[{double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}}]{A,  }\item[{int}]{n }\end{DoxyParamCaption})}
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=267pt]{kc_8h_a2eab47d949124ded160b9de53426ff11_cgraph}
+\end{center}
+\end{figure}
+\Hypertarget{kc_8h_a89a2987a60a852f56603492790999aba}\label{kc_8h_a89a2987a60a852f56603492790999aba} 
+\index{kc.h@{kc.h}!matrix\_transpose@{matrix\_transpose}}
+\index{matrix\_transpose@{matrix\_transpose}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{matrix\_transpose()}{matrix\_transpose()}}
+{\footnotesize\ttfamily double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*} matrix\+\_\+transpose (\begin{DoxyParamCaption}\item[{double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}}]{A,  }\item[{int}]{m,  }\item[{int}]{n }\end{DoxyParamCaption})}
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=275pt]{kc_8h_a89a2987a60a852f56603492790999aba_cgraph}
+\end{center}
+\end{figure}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kc_8h_a89a2987a60a852f56603492790999aba_icgraph}
+\end{center}
+\end{figure}
+\Hypertarget{kc_8h_ac39612a3850b3db9639ce7b945b33217}\label{kc_8h_ac39612a3850b3db9639ce7b945b33217} 
+\index{kc.h@{kc.h}!matrix\_tridiag@{matrix\_tridiag}}
+\index{matrix\_tridiag@{matrix\_tridiag}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{matrix\_tridiag()}{matrix\_tridiag()}}
+{\footnotesize\ttfamily void matrix\+\_\+tridiag (\begin{DoxyParamCaption}\item[{const int}]{n,  }\item[{double \texorpdfstring{$\ast$}{*}}]{a,  }\item[{double \texorpdfstring{$\ast$}{*}}]{d,  }\item[{double \texorpdfstring{$\ast$}{*}}]{c,  }\item[{double \texorpdfstring{$\ast$}{*}}]{b }\end{DoxyParamCaption})}
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=257pt]{kc_8h_ac39612a3850b3db9639ce7b945b33217_cgraph}
+\end{center}
+\end{figure}
+\Hypertarget{kc_8h_adbdc6116401c49523c4c62dde6147310}\label{kc_8h_adbdc6116401c49523c4c62dde6147310} 
+\index{kc.h@{kc.h}!matrix\_zero@{matrix\_zero}}
+\index{matrix\_zero@{matrix\_zero}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{matrix\_zero()}{matrix\_zero()}}
+{\footnotesize\ttfamily void matrix\+\_\+zero (\begin{DoxyParamCaption}\item[{double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}}]{A,  }\item[{int}]{m,  }\item[{int}]{n }\end{DoxyParamCaption})}
+
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kc_8h_adbdc6116401c49523c4c62dde6147310_icgraph}
+\end{center}
+\end{figure}
+\Hypertarget{kc_8h_aa06789031d28c171d7314fbe65448541}\label{kc_8h_aa06789031d28c171d7314fbe65448541} 
+\index{kc.h@{kc.h}!matrixc\_new@{matrixc\_new}}
+\index{matrixc\_new@{matrixc\_new}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{matrixc\_new()}{matrixc\_new()}}
+{\footnotesize\ttfamily char \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*} matrixc\+\_\+new (\begin{DoxyParamCaption}\item[{int}]{row,  }\item[{int}]{col }\end{DoxyParamCaption})}
+
+\Hypertarget{kc_8h_a433e109482ad4487026cfed377d7a302}\label{kc_8h_a433e109482ad4487026cfed377d7a302} 
+\index{kc.h@{kc.h}!matrixi\_at@{matrixi\_at}}
+\index{matrixi\_at@{matrixi\_at}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{matrixi\_at()}{matrixi\_at()}}
+{\footnotesize\ttfamily int matrixi\+\_\+at (\begin{DoxyParamCaption}\item[{int \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}}]{A,  }\item[{int}]{m,  }\item[{int}]{n }\end{DoxyParamCaption})}
+
+\Hypertarget{kc_8h_a77bf129b2a52c43d3a6526f617ce4de8}\label{kc_8h_a77bf129b2a52c43d3a6526f617ce4de8} 
+\index{kc.h@{kc.h}!matrixi\_change@{matrixi\_change}}
+\index{matrixi\_change@{matrixi\_change}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{matrixi\_change()}{matrixi\_change()}}
+{\footnotesize\ttfamily void matrixi\+\_\+change (\begin{DoxyParamCaption}\item[{int \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}}]{A,  }\item[{int}]{m,  }\item[{int}]{n,  }\item[{int}]{a }\end{DoxyParamCaption})}
+
+\Hypertarget{kc_8h_a3a2b7cc7f10f08176242f1d85983c3e9}\label{kc_8h_a3a2b7cc7f10f08176242f1d85983c3e9} 
+\index{kc.h@{kc.h}!matrixi\_copy@{matrixi\_copy}}
+\index{matrixi\_copy@{matrixi\_copy}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{matrixi\_copy()}{matrixi\_copy()}}
+{\footnotesize\ttfamily int \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*} matrixi\+\_\+copy (\begin{DoxyParamCaption}\item[{int \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}}]{A,  }\item[{int}]{m,  }\item[{int}]{n }\end{DoxyParamCaption})}
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=257pt]{kc_8h_a3a2b7cc7f10f08176242f1d85983c3e9_cgraph}
+\end{center}
+\end{figure}
+\Hypertarget{kc_8h_af207c315e95f48fdd8f376002b0e5596}\label{kc_8h_af207c315e95f48fdd8f376002b0e5596} 
+\index{kc.h@{kc.h}!matrixi\_free@{matrixi\_free}}
+\index{matrixi\_free@{matrixi\_free}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{matrixi\_free()}{matrixi\_free()}}
+{\footnotesize\ttfamily void matrixi\+\_\+free (\begin{DoxyParamCaption}\item[{int \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}}]{m }\end{DoxyParamCaption})}
+
+\Hypertarget{kc_8h_afdfe6b0ce1cd121a9da3ec09755bc55e}\label{kc_8h_afdfe6b0ce1cd121a9da3ec09755bc55e} 
+\index{kc.h@{kc.h}!matrixi\_new@{matrixi\_new}}
+\index{matrixi\_new@{matrixi\_new}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{matrixi\_new()}{matrixi\_new()}}
+{\footnotesize\ttfamily int \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*} matrixi\+\_\+new (\begin{DoxyParamCaption}\item[{int}]{row,  }\item[{int}]{col }\end{DoxyParamCaption})}
+
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=279pt]{kc_8h_afdfe6b0ce1cd121a9da3ec09755bc55e_icgraph}
+\end{center}
+\end{figure}
+\Hypertarget{kc_8h_a291c00821c2fba1622f7851ce6e38332}\label{kc_8h_a291c00821c2fba1622f7851ce6e38332} 
+\index{kc.h@{kc.h}!matrixi\_newSeq@{matrixi\_newSeq}}
+\index{matrixi\_newSeq@{matrixi\_newSeq}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{matrixi\_newSeq()}{matrixi\_newSeq()}}
+{\footnotesize\ttfamily int \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*} matrixi\+\_\+new\+Seq (\begin{DoxyParamCaption}\item[{int}]{m,  }\item[{int}]{n }\end{DoxyParamCaption})}
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=271pt]{kc_8h_a291c00821c2fba1622f7851ce6e38332_cgraph}
+\end{center}
+\end{figure}
+\Hypertarget{kc_8h_ae3309e005b107ae3181f65b5917d29e7}\label{kc_8h_ae3309e005b107ae3181f65b5917d29e7} 
+\index{kc.h@{kc.h}!matrixi\_row@{matrixi\_row}}
+\index{matrixi\_row@{matrixi\_row}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{matrixi\_row()}{matrixi\_row()}}
+{\footnotesize\ttfamily int \texorpdfstring{$\ast$}{*} matrixi\+\_\+row (\begin{DoxyParamCaption}\item[{int \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}}]{A,  }\item[{int}]{m }\end{DoxyParamCaption})}
+
+\Hypertarget{kc_8h_afdf0c39719eaa36901b5b91ee867ad25}\label{kc_8h_afdf0c39719eaa36901b5b91ee867ad25} 
+\index{kc.h@{kc.h}!matrixi\_toMatrix@{matrixi\_toMatrix}}
+\index{matrixi\_toMatrix@{matrixi\_toMatrix}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{matrixi\_toMatrix()}{matrixi\_toMatrix()}}
+{\footnotesize\ttfamily double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*} matrixi\+\_\+to\+Matrix (\begin{DoxyParamCaption}\item[{int \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}}]{A,  }\item[{int}]{m,  }\item[{int}]{n }\end{DoxyParamCaption})}
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=269pt]{kc_8h_afdf0c39719eaa36901b5b91ee867ad25_cgraph}
+\end{center}
+\end{figure}
+\Hypertarget{kc_8h_a1142f8e34ec4c4cee7c9a7a3b09e3863}\label{kc_8h_a1142f8e34ec4c4cee7c9a7a3b09e3863} 
+\index{kc.h@{kc.h}!matrixi\_transpose@{matrixi\_transpose}}
+\index{matrixi\_transpose@{matrixi\_transpose}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{matrixi\_transpose()}{matrixi\_transpose()}}
+{\footnotesize\ttfamily int \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*} matrixi\+\_\+transpose (\begin{DoxyParamCaption}\item[{int \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}}]{A,  }\item[{int}]{m,  }\item[{int}]{n }\end{DoxyParamCaption})}
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=279pt]{kc_8h_a1142f8e34ec4c4cee7c9a7a3b09e3863_cgraph}
+\end{center}
+\end{figure}
+\Hypertarget{kc_8h_ab01d6eb051febfe28b8ac2987dcfe524}\label{kc_8h_ab01d6eb051febfe28b8ac2987dcfe524} 
+\index{kc.h@{kc.h}!mean@{mean}}
+\index{mean@{mean}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{mean()}{mean()}}
+{\footnotesize\ttfamily double mean (\begin{DoxyParamCaption}\item[{double \texorpdfstring{$\ast$}{*}}]{data,  }\item[{int}]{n }\end{DoxyParamCaption})}
+
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kc_8h_ab01d6eb051febfe28b8ac2987dcfe524_icgraph}
+\end{center}
+\end{figure}
+\Hypertarget{kc_8h_a02ac3a853164d76bd42d4a0979148546}\label{kc_8h_a02ac3a853164d76bd42d4a0979148546} 
+\index{kc.h@{kc.h}!mean2@{mean2}}
+\index{mean2@{mean2}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{mean2()}{mean2()}}
+{\footnotesize\ttfamily double mean2 (\begin{DoxyParamCaption}\item[{double \texorpdfstring{$\ast$}{*}}]{data,  }\item[{int}]{n }\end{DoxyParamCaption})}
+
+\Hypertarget{kc_8h_a48dcbe28309bee24dfa8604b67c8c594}\label{kc_8h_a48dcbe28309bee24dfa8604b67c8c594} 
+\index{kc.h@{kc.h}!moment@{moment}}
+\index{moment@{moment}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{moment()}{moment()}}
+{\footnotesize\ttfamily void moment (\begin{DoxyParamCaption}\item[{double \texorpdfstring{$\ast$}{*}}]{data,  }\item[{int}]{n,  }\item[{double \texorpdfstring{$\ast$}{*}}]{ave,  }\item[{double \texorpdfstring{$\ast$}{*}}]{adev,  }\item[{double \texorpdfstring{$\ast$}{*}}]{sdev,  }\item[{double \texorpdfstring{$\ast$}{*}}]{var,  }\item[{double \texorpdfstring{$\ast$}{*}}]{skew,  }\item[{double \texorpdfstring{$\ast$}{*}}]{curt }\end{DoxyParamCaption})}
+
+\Hypertarget{kc_8h_a208e98f19b2f252315399d02c0594a46}\label{kc_8h_a208e98f19b2f252315399d02c0594a46} 
+\index{kc.h@{kc.h}!nrerror@{nrerror}}
+\index{nrerror@{nrerror}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{nrerror()}{nrerror()}}
+{\footnotesize\ttfamily void nrerror (\begin{DoxyParamCaption}\item[{char \texorpdfstring{$\ast$}{*}}]{error\+\_\+text }\end{DoxyParamCaption})}
+
+\Hypertarget{kc_8h_a69c8440b22fa5a24aa3fde1f09e5ac95}\label{kc_8h_a69c8440b22fa5a24aa3fde1f09e5ac95} 
+\index{kc.h@{kc.h}!pdf\_beta@{pdf\_beta}}
+\index{pdf\_beta@{pdf\_beta}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{pdf\_beta()}{pdf\_beta()}}
+{\footnotesize\ttfamily double pdf\+\_\+beta (\begin{DoxyParamCaption}\item[{double}]{a,  }\item[{double}]{b,  }\item[{double}]{x }\end{DoxyParamCaption})}
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=292pt]{kc_8h_a69c8440b22fa5a24aa3fde1f09e5ac95_cgraph}
+\end{center}
+\end{figure}
+\Hypertarget{kc_8h_aa46a006334c47841787f731dc8549788}\label{kc_8h_aa46a006334c47841787f731dc8549788} 
+\index{kc.h@{kc.h}!pdf\_binomial@{pdf\_binomial}}
+\index{pdf\_binomial@{pdf\_binomial}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{pdf\_binomial()}{pdf\_binomial()}}
+{\footnotesize\ttfamily double pdf\+\_\+binomial (\begin{DoxyParamCaption}\item[{int}]{n,  }\item[{int}]{k,  }\item[{double}]{p }\end{DoxyParamCaption})}
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=316pt]{kc_8h_aa46a006334c47841787f731dc8549788_cgraph}
+\end{center}
+\end{figure}
+\Hypertarget{kc_8h_ab2ea3aa0454578da3a05c2fa3c811d10}\label{kc_8h_ab2ea3aa0454578da3a05c2fa3c811d10} 
+\index{kc.h@{kc.h}!pdf\_geometric@{pdf\_geometric}}
+\index{pdf\_geometric@{pdf\_geometric}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{pdf\_geometric()}{pdf\_geometric()}}
+{\footnotesize\ttfamily double pdf\+\_\+geometric (\begin{DoxyParamCaption}\item[{int}]{k,  }\item[{double}]{p }\end{DoxyParamCaption})}
+
+\Hypertarget{kc_8h_a71a16b3fb6e64dabbd74bfa358b6e6f0}\label{kc_8h_a71a16b3fb6e64dabbd74bfa358b6e6f0} 
+\index{kc.h@{kc.h}!pdf\_hypergeometric@{pdf\_hypergeometric}}
+\index{pdf\_hypergeometric@{pdf\_hypergeometric}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{pdf\_hypergeometric()}{pdf\_hypergeometric()}}
+{\footnotesize\ttfamily double pdf\+\_\+hypergeometric (\begin{DoxyParamCaption}\item[{int}]{a,  }\item[{int}]{b,  }\item[{int}]{c,  }\item[{int}]{d }\end{DoxyParamCaption})}
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=340pt]{kc_8h_a71a16b3fb6e64dabbd74bfa358b6e6f0_cgraph}
+\end{center}
+\end{figure}
+\Hypertarget{kc_8h_a2b0a97c4c082620572646f0324ea6fc7}\label{kc_8h_a2b0a97c4c082620572646f0324ea6fc7} 
+\index{kc.h@{kc.h}!pdf\_normal@{pdf\_normal}}
+\index{pdf\_normal@{pdf\_normal}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{pdf\_normal()}{pdf\_normal()}}
+{\footnotesize\ttfamily double pdf\+\_\+normal (\begin{DoxyParamCaption}\item[{double}]{x,  }\item[{double}]{mu,  }\item[{double}]{sigma }\end{DoxyParamCaption})}
+
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kc_8h_a2b0a97c4c082620572646f0324ea6fc7_icgraph}
+\end{center}
+\end{figure}
+\Hypertarget{kc_8h_ad402504da1d8913d034b6db754886e90}\label{kc_8h_ad402504da1d8913d034b6db754886e90} 
+\index{kc.h@{kc.h}!pdf\_poisson@{pdf\_poisson}}
+\index{pdf\_poisson@{pdf\_poisson}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{pdf\_poisson()}{pdf\_poisson()}}
+{\footnotesize\ttfamily double pdf\+\_\+poisson (\begin{DoxyParamCaption}\item[{int}]{k,  }\item[{double}]{x }\end{DoxyParamCaption})}
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kc_8h_ad402504da1d8913d034b6db754886e90_cgraph}
+\end{center}
+\end{figure}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=272pt]{kc_8h_ad402504da1d8913d034b6db754886e90_icgraph}
+\end{center}
+\end{figure}
+\Hypertarget{kc_8h_a8887b0b13be8a5363eb40c66811a4614}\label{kc_8h_a8887b0b13be8a5363eb40c66811a4614} 
+\index{kc.h@{kc.h}!pdf\_stdnormal@{pdf\_stdnormal}}
+\index{pdf\_stdnormal@{pdf\_stdnormal}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{pdf\_stdnormal()}{pdf\_stdnormal()}}
+{\footnotesize\ttfamily double pdf\+\_\+stdnormal (\begin{DoxyParamCaption}\item[{double}]{x }\end{DoxyParamCaption})}
+
+\Hypertarget{kc_8h_ab63511006258ab28c09d3f4825e1a863}\label{kc_8h_ab63511006258ab28c09d3f4825e1a863} 
+\index{kc.h@{kc.h}!print\_matrix@{print\_matrix}}
+\index{print\_matrix@{print\_matrix}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{print\_matrix()}{print\_matrix()}}
+{\footnotesize\ttfamily void print\+\_\+matrix (\begin{DoxyParamCaption}\item[{double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}}]{A,  }\item[{int}]{m,  }\item[{int}]{n }\end{DoxyParamCaption})}
+
+\Hypertarget{kc_8h_ad4f0e377e6998c4aeb731b82e3c55fb4}\label{kc_8h_ad4f0e377e6998c4aeb731b82e3c55fb4} 
+\index{kc.h@{kc.h}!print\_matrixi@{print\_matrixi}}
+\index{print\_matrixi@{print\_matrixi}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{print\_matrixi()}{print\_matrixi()}}
+{\footnotesize\ttfamily void print\+\_\+matrixi (\begin{DoxyParamCaption}\item[{int \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}}]{A,  }\item[{int}]{m,  }\item[{int}]{n }\end{DoxyParamCaption})}
+
+\Hypertarget{kc_8h_a05e1b2a77c22ae4e595c1c9078f186b2}\label{kc_8h_a05e1b2a77c22ae4e595c1c9078f186b2} 
+\index{kc.h@{kc.h}!print\_vector@{print\_vector}}
+\index{print\_vector@{print\_vector}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{print\_vector()}{print\_vector()}}
+{\footnotesize\ttfamily void print\+\_\+vector (\begin{DoxyParamCaption}\item[{double \texorpdfstring{$\ast$}{*}}]{array,  }\item[{int}]{n }\end{DoxyParamCaption})}
+
+\Hypertarget{kc_8h_a8a8ffc38946e016056d176c4a5bc672c}\label{kc_8h_a8a8ffc38946e016056d176c4a5bc672c} 
+\index{kc.h@{kc.h}!print\_vectori@{print\_vectori}}
+\index{print\_vectori@{print\_vectori}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{print\_vectori()}{print\_vectori()}}
+{\footnotesize\ttfamily void print\+\_\+vectori (\begin{DoxyParamCaption}\item[{int \texorpdfstring{$\ast$}{*}}]{array,  }\item[{int}]{n }\end{DoxyParamCaption})}
+
+\Hypertarget{kc_8h_a143f0d120ce98a745cf55be12076967a}\label{kc_8h_a143f0d120ce98a745cf55be12076967a} 
+\index{kc.h@{kc.h}!probks@{probks}}
+\index{probks@{probks}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{probks()}{probks()}}
+{\footnotesize\ttfamily double probks (\begin{DoxyParamCaption}\item[{double}]{alam }\end{DoxyParamCaption})}
+
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=258pt]{kc_8h_a143f0d120ce98a745cf55be12076967a_icgraph}
+\end{center}
+\end{figure}
+\Hypertarget{kc_8h_a7f43e2c062f2de6dbd14da6799d78030}\label{kc_8h_a7f43e2c062f2de6dbd14da6799d78030} 
+\index{kc.h@{kc.h}!pythag@{pythag}}
+\index{pythag@{pythag}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{pythag()}{pythag()}}
+{\footnotesize\ttfamily double pythag (\begin{DoxyParamCaption}\item[{double}]{a,  }\item[{double}]{b }\end{DoxyParamCaption})}
+
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=227pt]{kc_8h_a7f43e2c062f2de6dbd14da6799d78030_icgraph}
+\end{center}
+\end{figure}
+\Hypertarget{kc_8h_a09f1787a49a1a27fcfaa05325d628b57}\label{kc_8h_a09f1787a49a1a27fcfaa05325d628b57} 
+\index{kc.h@{kc.h}!quick\_sort@{quick\_sort}}
+\index{quick\_sort@{quick\_sort}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{quick\_sort()}{quick\_sort()}}
+{\footnotesize\ttfamily void quick\+\_\+sort (\begin{DoxyParamCaption}\item[{int}]{elements,  }\item[{double \texorpdfstring{$\ast$}{*}}]{arr }\end{DoxyParamCaption})}
+
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=274pt]{kc_8h_a09f1787a49a1a27fcfaa05325d628b57_icgraph}
+\end{center}
+\end{figure}
+\Hypertarget{kc_8h_af69cc9a91ed9648c8ac7a66026aa77d2}\label{kc_8h_af69cc9a91ed9648c8ac7a66026aa77d2} 
+\index{kc.h@{kc.h}!ran@{ran}}
+\index{ran@{ran}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{ran()}{ran()}}
+{\footnotesize\ttfamily double ran (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=249pt]{kc_8h_af69cc9a91ed9648c8ac7a66026aa77d2_icgraph}
+\end{center}
+\end{figure}
+\Hypertarget{kc_8h_a6d9dfbda8c4ccf755c505ac31a5817d1}\label{kc_8h_a6d9dfbda8c4ccf755c505ac31a5817d1} 
+\index{kc.h@{kc.h}!ran3@{ran3}}
+\index{ran3@{ran3}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{ran3()}{ran3()}}
+{\footnotesize\ttfamily double ran3 (\begin{DoxyParamCaption}\item[{int \texorpdfstring{$\ast$}{*}}]{idum }\end{DoxyParamCaption})}
+
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=248pt]{kc_8h_a6d9dfbda8c4ccf755c505ac31a5817d1_icgraph}
+\end{center}
+\end{figure}
+\Hypertarget{kc_8h_a69a4bf2250052e68ef90fa0dbc0c85ff}\label{kc_8h_a69a4bf2250052e68ef90fa0dbc0c85ff} 
+\index{kc.h@{kc.h}!random\_exp@{random\_exp}}
+\index{random\_exp@{random\_exp}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{random\_exp()}{random\_exp()}}
+{\footnotesize\ttfamily double random\+\_\+exp (\begin{DoxyParamCaption}\item[{double}]{lamda,  }\item[{int \texorpdfstring{$\ast$}{*}}]{idum }\end{DoxyParamCaption})}
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=221pt]{kc_8h_a69a4bf2250052e68ef90fa0dbc0c85ff_cgraph}
+\end{center}
+\end{figure}
+\Hypertarget{kc_8h_a66f8e089376af0493659445c359577fe}\label{kc_8h_a66f8e089376af0493659445c359577fe} 
+\index{kc.h@{kc.h}!random\_stdnormal@{random\_stdnormal}}
+\index{random\_stdnormal@{random\_stdnormal}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{random\_stdnormal()}{random\_stdnormal()}}
+{\footnotesize\ttfamily double random\+\_\+stdnormal (\begin{DoxyParamCaption}\item[{int \texorpdfstring{$\ast$}{*}}]{idum }\end{DoxyParamCaption})}
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=248pt]{kc_8h_a66f8e089376af0493659445c359577fe_cgraph}
+\end{center}
+\end{figure}
+\Hypertarget{kc_8h_a66d8af160cff194f4aa44bf2bd5eb2f5}\label{kc_8h_a66d8af160cff194f4aa44bf2bd5eb2f5} 
+\index{kc.h@{kc.h}!reg\_linear@{reg\_linear}}
+\index{reg\_linear@{reg\_linear}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{reg\_linear()}{reg\_linear()}}
+{\footnotesize\ttfamily void reg\+\_\+linear (\begin{DoxyParamCaption}\item[{double \texorpdfstring{$\ast$}{*}}]{x,  }\item[{double \texorpdfstring{$\ast$}{*}}]{y,  }\item[{int}]{ndata,  }\item[{double \texorpdfstring{$\ast$}{*}}]{a,  }\item[{double \texorpdfstring{$\ast$}{*}}]{b,  }\item[{double \texorpdfstring{$\ast$}{*}}]{F,  }\item[{double \texorpdfstring{$\ast$}{*}}]{P }\end{DoxyParamCaption})}
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kc_8h_a66d8af160cff194f4aa44bf2bd5eb2f5_cgraph}
+\end{center}
+\end{figure}
+\Hypertarget{kc_8h_a28e29e986181ac84e42f8996086c64d2}\label{kc_8h_a28e29e986181ac84e42f8996086c64d2} 
+\index{kc.h@{kc.h}!SNPHWE@{SNPHWE}}
+\index{SNPHWE@{SNPHWE}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{SNPHWE()}{SNPHWE()}}
+{\footnotesize\ttfamily double SNPHWE (\begin{DoxyParamCaption}\item[{int}]{obs\+\_\+hets,  }\item[{int}]{obs\+\_\+hom1,  }\item[{int}]{obs\+\_\+hom2 }\end{DoxyParamCaption})}
+
+\Hypertarget{kc_8h_a1c146fa87b8915bf1e4b29f10b5c2943}\label{kc_8h_a1c146fa87b8915bf1e4b29f10b5c2943} 
+\index{kc.h@{kc.h}!submatrix@{submatrix}}
+\index{submatrix@{submatrix}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{submatrix()}{submatrix()}}
+{\footnotesize\ttfamily double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*} submatrix (\begin{DoxyParamCaption}\item[{double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}}]{a,  }\item[{long}]{oldrl,  }\item[{long}]{oldrh,  }\item[{long}]{oldcl,  }\item[{long}]{oldch,  }\item[{long}]{newrl,  }\item[{long}]{newcl }\end{DoxyParamCaption})}
+
+\Hypertarget{kc_8h_a1440a7779ac56f47a3f355ce4a8c7da0}\label{kc_8h_a1440a7779ac56f47a3f355ce4a8c7da0} 
+\index{kc.h@{kc.h}!test1@{test1}}
+\index{test1@{test1}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{test1()}{test1()}}
+{\footnotesize\ttfamily void test1 (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+\Hypertarget{kc_8h_a9e38b2816c8d12a153ea2a22d1241ba2}\label{kc_8h_a9e38b2816c8d12a153ea2a22d1241ba2} 
+\index{kc.h@{kc.h}!ttest\_ev@{ttest\_ev}}
+\index{ttest\_ev@{ttest\_ev}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{ttest\_ev()}{ttest\_ev()}}
+{\footnotesize\ttfamily void ttest\+\_\+ev (\begin{DoxyParamCaption}\item[{double \texorpdfstring{$\ast$}{*}}]{data1,  }\item[{long}]{n1,  }\item[{double \texorpdfstring{$\ast$}{*}}]{data2,  }\item[{long}]{n2,  }\item[{double \texorpdfstring{$\ast$}{*}}]{t,  }\item[{double \texorpdfstring{$\ast$}{*}}]{p }\end{DoxyParamCaption})}
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kc_8h_a9e38b2816c8d12a153ea2a22d1241ba2_cgraph}
+\end{center}
+\end{figure}
+\Hypertarget{kc_8h_a74f76187c76268c668bfe62efddb21d3}\label{kc_8h_a74f76187c76268c668bfe62efddb21d3} 
+\index{kc.h@{kc.h}!ttest\_onesample@{ttest\_onesample}}
+\index{ttest\_onesample@{ttest\_onesample}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{ttest\_onesample()}{ttest\_onesample()}}
+{\footnotesize\ttfamily void ttest\+\_\+onesample (\begin{DoxyParamCaption}\item[{double \texorpdfstring{$\ast$}{*}}]{data,  }\item[{long}]{n,  }\item[{double}]{expected,  }\item[{double \texorpdfstring{$\ast$}{*}}]{t,  }\item[{double \texorpdfstring{$\ast$}{*}}]{p }\end{DoxyParamCaption})}
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kc_8h_a74f76187c76268c668bfe62efddb21d3_cgraph}
+\end{center}
+\end{figure}
+\Hypertarget{kc_8h_a99f03c3631c210c7091d184e108d57a5}\label{kc_8h_a99f03c3631c210c7091d184e108d57a5} 
+\index{kc.h@{kc.h}!ttest\_uev@{ttest\_uev}}
+\index{ttest\_uev@{ttest\_uev}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{ttest\_uev()}{ttest\_uev()}}
+{\footnotesize\ttfamily void ttest\+\_\+uev (\begin{DoxyParamCaption}\item[{double \texorpdfstring{$\ast$}{*}}]{data1,  }\item[{long}]{n1,  }\item[{double \texorpdfstring{$\ast$}{*}}]{data2,  }\item[{long}]{n2,  }\item[{double \texorpdfstring{$\ast$}{*}}]{t,  }\item[{double \texorpdfstring{$\ast$}{*}}]{p }\end{DoxyParamCaption})}
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kc_8h_a99f03c3631c210c7091d184e108d57a5_cgraph}
+\end{center}
+\end{figure}
+\Hypertarget{kc_8h_a3eb411d825906ab91a203650b1d055dd}\label{kc_8h_a3eb411d825906ab91a203650b1d055dd} 
+\index{kc.h@{kc.h}!vector\_at@{vector\_at}}
+\index{vector\_at@{vector\_at}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{vector\_at()}{vector\_at()}}
+{\footnotesize\ttfamily double vector\+\_\+at (\begin{DoxyParamCaption}\item[{double \texorpdfstring{$\ast$}{*}}]{A,  }\item[{int}]{n }\end{DoxyParamCaption})}
+
+\Hypertarget{kc_8h_ad484b35279fc5f841c995e4850254c35}\label{kc_8h_ad484b35279fc5f841c995e4850254c35} 
+\index{kc.h@{kc.h}!vector\_change@{vector\_change}}
+\index{vector\_change@{vector\_change}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{vector\_change()}{vector\_change()}}
+{\footnotesize\ttfamily void vector\+\_\+change (\begin{DoxyParamCaption}\item[{double \texorpdfstring{$\ast$}{*}}]{A,  }\item[{int}]{n,  }\item[{double}]{a }\end{DoxyParamCaption})}
+
+\Hypertarget{kc_8h_a16f2581527695cfe549555c5a4d79df4}\label{kc_8h_a16f2581527695cfe549555c5a4d79df4} 
+\index{kc.h@{kc.h}!vector\_copy@{vector\_copy}}
+\index{vector\_copy@{vector\_copy}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{vector\_copy()}{vector\_copy()}}
+{\footnotesize\ttfamily double \texorpdfstring{$\ast$}{*} vector\+\_\+copy (\begin{DoxyParamCaption}\item[{double \texorpdfstring{$\ast$}{*}}]{A,  }\item[{int}]{n }\end{DoxyParamCaption})}
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=251pt]{kc_8h_a16f2581527695cfe549555c5a4d79df4_cgraph}
+\end{center}
+\end{figure}
+\Hypertarget{kc_8h_aad80174168d3ccf98675200f2bbc66c2}\label{kc_8h_aad80174168d3ccf98675200f2bbc66c2} 
+\index{kc.h@{kc.h}!vector\_free@{vector\_free}}
+\index{vector\_free@{vector\_free}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{vector\_free()}{vector\_free()}}
+{\footnotesize\ttfamily void vector\+\_\+free (\begin{DoxyParamCaption}\item[{double \texorpdfstring{$\ast$}{*}}]{m }\end{DoxyParamCaption})}
+
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kc_8h_aad80174168d3ccf98675200f2bbc66c2_icgraph}
+\end{center}
+\end{figure}
+\Hypertarget{kc_8h_a2506166a706bc777aa71785af0051e15}\label{kc_8h_a2506166a706bc777aa71785af0051e15} 
+\index{kc.h@{kc.h}!vector\_innerProduct@{vector\_innerProduct}}
+\index{vector\_innerProduct@{vector\_innerProduct}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{vector\_innerProduct()}{vector\_innerProduct()}}
+{\footnotesize\ttfamily double vector\+\_\+inner\+Product (\begin{DoxyParamCaption}\item[{double \texorpdfstring{$\ast$}{*}}]{A,  }\item[{double \texorpdfstring{$\ast$}{*}}]{B,  }\item[{int}]{n }\end{DoxyParamCaption})}
+
+\Hypertarget{kc_8h_a155bb2cc033bfd9bafbde8d31432f7ad}\label{kc_8h_a155bb2cc033bfd9bafbde8d31432f7ad} 
+\index{kc.h@{kc.h}!vector\_new@{vector\_new}}
+\index{vector\_new@{vector\_new}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{vector\_new()}{vector\_new()}}
+{\footnotesize\ttfamily double \texorpdfstring{$\ast$}{*} vector\+\_\+new (\begin{DoxyParamCaption}\item[{int}]{n }\end{DoxyParamCaption})}
+
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kc_8h_a155bb2cc033bfd9bafbde8d31432f7ad_icgraph}
+\end{center}
+\end{figure}
+\Hypertarget{kc_8h_a4f429aee3cfa0bb4410c66555f0a6df0}\label{kc_8h_a4f429aee3cfa0bb4410c66555f0a6df0} 
+\index{kc.h@{kc.h}!vector\_normalize@{vector\_normalize}}
+\index{vector\_normalize@{vector\_normalize}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{vector\_normalize()}{vector\_normalize()}}
+{\footnotesize\ttfamily void vector\+\_\+normalize (\begin{DoxyParamCaption}\item[{double \texorpdfstring{$\ast$}{*}}]{A,  }\item[{int}]{n }\end{DoxyParamCaption})}
+
+\Hypertarget{kc_8h_a43a29f653177107c327548f14d5f2a33}\label{kc_8h_a43a29f653177107c327548f14d5f2a33} 
+\index{kc.h@{kc.h}!vector\_outerProduct@{vector\_outerProduct}}
+\index{vector\_outerProduct@{vector\_outerProduct}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{vector\_outerProduct()}{vector\_outerProduct()}}
+{\footnotesize\ttfamily double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*} vector\+\_\+outer\+Product (\begin{DoxyParamCaption}\item[{double \texorpdfstring{$\ast$}{*}}]{A,  }\item[{double \texorpdfstring{$\ast$}{*}}]{B,  }\item[{int}]{n }\end{DoxyParamCaption})}
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=287pt]{kc_8h_a43a29f653177107c327548f14d5f2a33_cgraph}
+\end{center}
+\end{figure}
+\Hypertarget{kc_8h_a1a5bdb44faf7a9f65d5aadd9f393a996}\label{kc_8h_a1a5bdb44faf7a9f65d5aadd9f393a996} 
+\index{kc.h@{kc.h}!vector\_toMatrix@{vector\_toMatrix}}
+\index{vector\_toMatrix@{vector\_toMatrix}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{vector\_toMatrix()}{vector\_toMatrix()}}
+{\footnotesize\ttfamily double \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*} vector\+\_\+to\+Matrix (\begin{DoxyParamCaption}\item[{double \texorpdfstring{$\ast$}{*}}]{A,  }\item[{int}]{n }\end{DoxyParamCaption})}
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=266pt]{kc_8h_a1a5bdb44faf7a9f65d5aadd9f393a996_cgraph}
+\end{center}
+\end{figure}
+\Hypertarget{kc_8h_ad88cc38b4dca64717a3149003bda35a1}\label{kc_8h_ad88cc38b4dca64717a3149003bda35a1} 
+\index{kc.h@{kc.h}!vector\_toVectori@{vector\_toVectori}}
+\index{vector\_toVectori@{vector\_toVectori}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{vector\_toVectori()}{vector\_toVectori()}}
+{\footnotesize\ttfamily int \texorpdfstring{$\ast$}{*} vector\+\_\+to\+Vectori (\begin{DoxyParamCaption}\item[{double \texorpdfstring{$\ast$}{*}}]{A,  }\item[{int}]{n }\end{DoxyParamCaption})}
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=270pt]{kc_8h_ad88cc38b4dca64717a3149003bda35a1_cgraph}
+\end{center}
+\end{figure}
+\Hypertarget{kc_8h_aaa2a453c704de36a8f120f155f762c62}\label{kc_8h_aaa2a453c704de36a8f120f155f762c62} 
+\index{kc.h@{kc.h}!vector\_zero@{vector\_zero}}
+\index{vector\_zero@{vector\_zero}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{vector\_zero()}{vector\_zero()}}
+{\footnotesize\ttfamily void vector\+\_\+zero (\begin{DoxyParamCaption}\item[{double \texorpdfstring{$\ast$}{*}}]{A,  }\item[{int}]{n }\end{DoxyParamCaption})}
+
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=280pt]{kc_8h_aaa2a453c704de36a8f120f155f762c62_icgraph}
+\end{center}
+\end{figure}
+\Hypertarget{kc_8h_ab21c63978eec887cdffcd0c6aa791578}\label{kc_8h_ab21c63978eec887cdffcd0c6aa791578} 
+\index{kc.h@{kc.h}!vectori\_at@{vectori\_at}}
+\index{vectori\_at@{vectori\_at}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{vectori\_at()}{vectori\_at()}}
+{\footnotesize\ttfamily int vectori\+\_\+at (\begin{DoxyParamCaption}\item[{int \texorpdfstring{$\ast$}{*}}]{A,  }\item[{int}]{n }\end{DoxyParamCaption})}
+
+\Hypertarget{kc_8h_a71c4e97a48b8dc0f1ee0c41752e99d4f}\label{kc_8h_a71c4e97a48b8dc0f1ee0c41752e99d4f} 
+\index{kc.h@{kc.h}!vectori\_change@{vectori\_change}}
+\index{vectori\_change@{vectori\_change}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{vectori\_change()}{vectori\_change()}}
+{\footnotesize\ttfamily void vectori\+\_\+change (\begin{DoxyParamCaption}\item[{int \texorpdfstring{$\ast$}{*}}]{A,  }\item[{int}]{n,  }\item[{int}]{a }\end{DoxyParamCaption})}
+
+\Hypertarget{kc_8h_a4dbb823fcb47138656221cd90a59bac2}\label{kc_8h_a4dbb823fcb47138656221cd90a59bac2} 
+\index{kc.h@{kc.h}!vectori\_copy@{vectori\_copy}}
+\index{vectori\_copy@{vectori\_copy}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{vectori\_copy()}{vectori\_copy()}}
+{\footnotesize\ttfamily int \texorpdfstring{$\ast$}{*} vectori\+\_\+copy (\begin{DoxyParamCaption}\item[{int \texorpdfstring{$\ast$}{*}}]{A,  }\item[{int}]{n }\end{DoxyParamCaption})}
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=255pt]{kc_8h_a4dbb823fcb47138656221cd90a59bac2_cgraph}
+\end{center}
+\end{figure}
+\Hypertarget{kc_8h_a24f2b2f3906921db3287a65c72cdc2b1}\label{kc_8h_a24f2b2f3906921db3287a65c72cdc2b1} 
+\index{kc.h@{kc.h}!vectori\_free@{vectori\_free}}
+\index{vectori\_free@{vectori\_free}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{vectori\_free()}{vectori\_free()}}
+{\footnotesize\ttfamily void vectori\+\_\+free (\begin{DoxyParamCaption}\item[{int \texorpdfstring{$\ast$}{*}}]{m }\end{DoxyParamCaption})}
+
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kc_8h_a24f2b2f3906921db3287a65c72cdc2b1_icgraph}
+\end{center}
+\end{figure}
+\Hypertarget{kc_8h_a0fad130527c83326c9dfe7da022700e0}\label{kc_8h_a0fad130527c83326c9dfe7da022700e0} 
+\index{kc.h@{kc.h}!vectori\_new@{vectori\_new}}
+\index{vectori\_new@{vectori\_new}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{vectori\_new()}{vectori\_new()}}
+{\footnotesize\ttfamily int \texorpdfstring{$\ast$}{*} vectori\+\_\+new (\begin{DoxyParamCaption}\item[{int}]{n }\end{DoxyParamCaption})}
+
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kc_8h_a0fad130527c83326c9dfe7da022700e0_icgraph}
+\end{center}
+\end{figure}
+\Hypertarget{kc_8h_aadde5fe08df3343588334adfdb8934fb}\label{kc_8h_aadde5fe08df3343588334adfdb8934fb} 
+\index{kc.h@{kc.h}!vectori\_toVector@{vectori\_toVector}}
+\index{vectori\_toVector@{vectori\_toVector}!kc.h@{kc.h}}
+\doxysubsubsection{\texorpdfstring{vectori\_toVector()}{vectori\_toVector()}}
+{\footnotesize\ttfamily double \texorpdfstring{$\ast$}{*} vectori\+\_\+to\+Vector (\begin{DoxyParamCaption}\item[{int \texorpdfstring{$\ast$}{*}}]{A,  }\item[{int}]{n }\end{DoxyParamCaption})}
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=268pt]{kc_8h_aadde5fe08df3343588334adfdb8934fb_cgraph}
+\end{center}
+\end{figure}

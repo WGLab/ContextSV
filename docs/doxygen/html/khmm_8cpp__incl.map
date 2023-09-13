@@ -1,0 +1,20 @@
+<map id="src/khmm.cpp" name="src/khmm.cpp">
+<area shape="rect" id="Node000001" title=" " alt="" coords="73,5,178,31"/>
+<area shape="rect" id="Node000002" title=" " alt="" coords="5,79,77,104"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="114,33,67,72,64,67,110,29"/>
+<area shape="rect" id="Node000003" href="$khmm_8h.html" title=" " alt="" coords="220,79,289,104"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="147,28,222,69,220,74,145,33"/>
+<area shape="rect" id="Node000009" href="$kc_8h.html" title=" " alt="" coords="102,79,149,104"/>
+<area shape="poly" id="edge8_Node000001_Node000009" title=" " alt="" coords="128,31,128,65,123,65,123,31"/>
+<area shape="rect" id="Node000004" title=" " alt="" coords="93,152,155,177"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="235,106,158,148,156,143,232,102"/>
+<area shape="rect" id="Node000005" title=" " alt="" coords="179,152,243,177"/>
+<area shape="poly" id="edge4_Node000003_Node000005" title=" " alt="" coords="250,106,227,142,223,139,245,103"/>
+<area shape="rect" id="Node000006" title=" " alt="" coords="267,152,330,177"/>
+<area shape="poly" id="edge5_Node000003_Node000006" title=" " alt="" coords="264,103,287,139,282,142,260,106"/>
+<area shape="rect" id="Node000007" title=" " alt="" coords="354,152,419,177"/>
+<area shape="poly" id="edge6_Node000003_Node000007" title=" " alt="" coords="277,102,354,143,352,148,275,106"/>
+<area shape="rect" id="Node000008" title=" " alt="" coords="443,152,501,177"/>
+<area shape="poly" id="edge7_Node000003_Node000008" title=" " alt="" coords="290,101,431,147,429,152,289,107"/>
+<area shape="poly" id="edge9_Node000009_Node000004" title=" " alt="" coords="128,104,127,139,122,138,122,104"/>
+</map>

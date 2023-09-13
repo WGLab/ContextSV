@@ -1,0 +1,453 @@
+\doxysection{Input\+Data Class Reference}
+\hypertarget{class_input_data}{}\label{class_input_data}\index{InputData@{InputData}}
+
+
+{\ttfamily \#include $<$input\+\_\+data.\+h$>$}
+
+
+
+Collaboration diagram for Input\+Data\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=172pt]{class_input_data__coll__graph}
+\end{center}
+\end{figure}
+\doxysubsubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{class_input_data_aff34c47ca0f425fb36c988f0e827a525}{Input\+Data}} ()
+\item 
+std\+::string \mbox{\hyperlink{class_input_data_a25f727c1d41c775b4c136c3c5a7ed11c}{get\+BAMFilepath}} ()
+\item 
+void \mbox{\hyperlink{class_input_data_a2b5b71737e438b3256510746675dd4a7}{set\+BAMFilepath}} (std\+::string filepath)
+\item 
+void \mbox{\hyperlink{class_input_data_a7d1b16a9a3c080d047f7a7d42e269bdb}{set\+Ref\+Genome}} (std\+::string fasta\+\_\+filepath)
+\item 
+\mbox{\hyperlink{class_f_a_s_t_a_query}{FASTAQuery}} \mbox{\hyperlink{class_input_data_acfa7764396b5cc4692b460afe66c0b4a}{get\+Ref\+Genome}} ()
+\item 
+std\+::string \mbox{\hyperlink{class_input_data_aaf9f8a1147a4a2c206d06f7c77b4f6ca}{get\+Sequence}} (std\+::string chr, int pos\+\_\+start, int pos\+\_\+end)
+\item 
+std\+::string \mbox{\hyperlink{class_input_data_a3751e2c1c68b0dd0edf0a774f4ec60e3}{get\+Output\+Dir}} ()
+\item 
+void \mbox{\hyperlink{class_input_data_a6a48012e547f3aaf2aaf18569e89fec9}{set\+Output\+Dir}} (std\+::string dirpath)
+\item 
+std\+::string \mbox{\hyperlink{class_input_data_a7017092982665dbd46128bbf69f9e096}{get\+Region}} ()
+\item 
+void \mbox{\hyperlink{class_input_data_acb3199d64c152f7bb1d1c513a4a5b08f}{set\+Region}} (std\+::string \mbox{\hyperlink{class_input_data_a88b70d68e432893afa44a670c1348def}{region}})
+\item 
+int \mbox{\hyperlink{class_input_data_a62fa5522dcccf80e66b3708d4e700acb}{get\+Window\+Size}} ()
+\item 
+void \mbox{\hyperlink{class_input_data_a45680125f9300676d71f0932400e2ee4}{set\+Window\+Size}} (int \mbox{\hyperlink{class_input_data_ab9cbc9a74d8b578e78b288f6ef0c3cf0}{window\+\_\+size}})
+\item 
+std\+::string \mbox{\hyperlink{class_input_data_a286bed06763459714fa8a46d8980019e}{get\+SNPFilepath}} ()
+\item 
+void \mbox{\hyperlink{class_input_data_af640b5ddd9469017aeca86b5cd2c975d}{set\+SNPFilepath}} (std\+::string filepath)
+\item 
+std\+::string \mbox{\hyperlink{class_input_data_a77960f595c62556bb7d0ac5f091d8f59}{get\+Region\+Chr}} ()
+\item 
+int \mbox{\hyperlink{class_input_data_ad8c9fdf8a3053610ee119ba7002b1f4e}{get\+Region\+Start}} ()
+\item 
+int \mbox{\hyperlink{class_input_data_a699d2da48f9573630ee0bc6baa3a4509}{get\+Region\+End}} ()
+\item 
+bool \mbox{\hyperlink{class_input_data_a9fd17a113b232b81eb32b8182cd25ee7}{get\+Region\+Set}} ()
+\item 
+void \mbox{\hyperlink{class_input_data_a21fb4d1a73eccf01f32512249f4e9ae2}{set\+Chr\+Cov}} (std\+::string \mbox{\hyperlink{class_input_data_aa56fd5f55f1e7403c53d74b02a55daba}{chr\+\_\+cov}})
+\item 
+int \mbox{\hyperlink{class_input_data_af7a013cc30faa2b30a06209e8370c11b}{get\+Chr\+Cov}} (std\+::string chr, double \&\mbox{\hyperlink{kc_8h_a26084b7a5f02a520fedea796faec8a89}{cov}})
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Private Attributes}
+\begin{DoxyCompactItemize}
+\item 
+std\+::string \mbox{\hyperlink{class_input_data_a2625b22ceac0baff7f119f02d35ba6fd}{bam\+\_\+filepath}} = "{}"{}
+\item 
+std\+::string \mbox{\hyperlink{class_input_data_ad08a2b52c1dee18ee6e4c892aab7b507}{ref\+\_\+filepath}} = "{}"{}
+\item 
+\mbox{\hyperlink{class_f_a_s_t_a_query}{FASTAQuery}} \mbox{\hyperlink{class_input_data_a09910b3a1cf772c84dd7a32238bb23d2}{fasta\+\_\+query}}
+\item 
+std\+::string \mbox{\hyperlink{class_input_data_a43bfa9dc240caebb8161290a859e74b5}{output\+\_\+dir}} = "{}"{}
+\item 
+std\+::string \mbox{\hyperlink{class_input_data_a88b70d68e432893afa44a670c1348def}{region}} = "{}"{}
+\item 
+int \mbox{\hyperlink{class_input_data_ab9cbc9a74d8b578e78b288f6ef0c3cf0}{window\+\_\+size}} = 10000
+\item 
+std\+::string \mbox{\hyperlink{class_input_data_ab07708435ee720164305783a83cb9907}{snp\+\_\+vcf\+\_\+filepath}} = "{}"{}
+\item 
+std\+::string \mbox{\hyperlink{class_input_data_a2061d124444cc1ae88a8766ad683a68d}{region\+\_\+chr}} = "{}"{}
+\item 
+int \mbox{\hyperlink{class_input_data_a00a569ecc8bcf1bce714da4e4a6846e5}{region\+\_\+start}} = 0
+\item 
+int \mbox{\hyperlink{class_input_data_ac9619687c7bffdf9db5cf3df9f5623b1}{region\+\_\+end}} = 0
+\item 
+bool \mbox{\hyperlink{class_input_data_a0f6beefe92beaad8c557da8253cccd11}{region\+\_\+set}} = false
+\item 
+std\+::map$<$ std\+::string, double $>$ \mbox{\hyperlink{class_input_data_aa56fd5f55f1e7403c53d74b02a55daba}{chr\+\_\+cov}}
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Constructor \& Destructor Documentation}
+\Hypertarget{class_input_data_aff34c47ca0f425fb36c988f0e827a525}\label{class_input_data_aff34c47ca0f425fb36c988f0e827a525} 
+\index{InputData@{InputData}!InputData@{InputData}}
+\index{InputData@{InputData}!InputData@{InputData}}
+\doxysubsubsection{\texorpdfstring{InputData()}{InputData()}}
+{\footnotesize\ttfamily Input\+Data\+::\+Input\+Data (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+
+\doxysubsection{Member Function Documentation}
+\Hypertarget{class_input_data_a25f727c1d41c775b4c136c3c5a7ed11c}\label{class_input_data_a25f727c1d41c775b4c136c3c5a7ed11c} 
+\index{InputData@{InputData}!getBAMFilepath@{getBAMFilepath}}
+\index{getBAMFilepath@{getBAMFilepath}!InputData@{InputData}}
+\doxysubsubsection{\texorpdfstring{getBAMFilepath()}{getBAMFilepath()}}
+{\footnotesize\ttfamily std\+::string Input\+Data\+::get\+BAMFilepath (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{class_input_data_a25f727c1d41c775b4c136c3c5a7ed11c_icgraph}
+\end{center}
+\end{figure}
+\Hypertarget{class_input_data_af7a013cc30faa2b30a06209e8370c11b}\label{class_input_data_af7a013cc30faa2b30a06209e8370c11b} 
+\index{InputData@{InputData}!getChrCov@{getChrCov}}
+\index{getChrCov@{getChrCov}!InputData@{InputData}}
+\doxysubsubsection{\texorpdfstring{getChrCov()}{getChrCov()}}
+{\footnotesize\ttfamily int Input\+Data\+::get\+Chr\+Cov (\begin{DoxyParamCaption}\item[{std\+::string}]{chr,  }\item[{double \&}]{cov }\end{DoxyParamCaption})}
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=260pt]{class_input_data_af7a013cc30faa2b30a06209e8370c11b_cgraph}
+\end{center}
+\end{figure}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{class_input_data_af7a013cc30faa2b30a06209e8370c11b_icgraph}
+\end{center}
+\end{figure}
+\Hypertarget{class_input_data_a3751e2c1c68b0dd0edf0a774f4ec60e3}\label{class_input_data_a3751e2c1c68b0dd0edf0a774f4ec60e3} 
+\index{InputData@{InputData}!getOutputDir@{getOutputDir}}
+\index{getOutputDir@{getOutputDir}!InputData@{InputData}}
+\doxysubsubsection{\texorpdfstring{getOutputDir()}{getOutputDir()}}
+{\footnotesize\ttfamily std\+::string Input\+Data\+::get\+Output\+Dir (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{class_input_data_a3751e2c1c68b0dd0edf0a774f4ec60e3_icgraph}
+\end{center}
+\end{figure}
+\Hypertarget{class_input_data_acfa7764396b5cc4692b460afe66c0b4a}\label{class_input_data_acfa7764396b5cc4692b460afe66c0b4a} 
+\index{InputData@{InputData}!getRefGenome@{getRefGenome}}
+\index{getRefGenome@{getRefGenome}!InputData@{InputData}}
+\doxysubsubsection{\texorpdfstring{getRefGenome()}{getRefGenome()}}
+{\footnotesize\ttfamily \mbox{\hyperlink{class_f_a_s_t_a_query}{FASTAQuery}} Input\+Data\+::get\+Ref\+Genome (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{class_input_data_acfa7764396b5cc4692b460afe66c0b4a_icgraph}
+\end{center}
+\end{figure}
+\Hypertarget{class_input_data_a7017092982665dbd46128bbf69f9e096}\label{class_input_data_a7017092982665dbd46128bbf69f9e096} 
+\index{InputData@{InputData}!getRegion@{getRegion}}
+\index{getRegion@{getRegion}!InputData@{InputData}}
+\doxysubsubsection{\texorpdfstring{getRegion()}{getRegion()}}
+{\footnotesize\ttfamily std\+::string Input\+Data\+::get\+Region (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{class_input_data_a7017092982665dbd46128bbf69f9e096_icgraph}
+\end{center}
+\end{figure}
+\Hypertarget{class_input_data_a77960f595c62556bb7d0ac5f091d8f59}\label{class_input_data_a77960f595c62556bb7d0ac5f091d8f59} 
+\index{InputData@{InputData}!getRegionChr@{getRegionChr}}
+\index{getRegionChr@{getRegionChr}!InputData@{InputData}}
+\doxysubsubsection{\texorpdfstring{getRegionChr()}{getRegionChr()}}
+{\footnotesize\ttfamily std\+::string Input\+Data\+::get\+Region\+Chr (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{class_input_data_a77960f595c62556bb7d0ac5f091d8f59_icgraph}
+\end{center}
+\end{figure}
+\Hypertarget{class_input_data_a699d2da48f9573630ee0bc6baa3a4509}\label{class_input_data_a699d2da48f9573630ee0bc6baa3a4509} 
+\index{InputData@{InputData}!getRegionEnd@{getRegionEnd}}
+\index{getRegionEnd@{getRegionEnd}!InputData@{InputData}}
+\doxysubsubsection{\texorpdfstring{getRegionEnd()}{getRegionEnd()}}
+{\footnotesize\ttfamily int Input\+Data\+::get\+Region\+End (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{class_input_data_a699d2da48f9573630ee0bc6baa3a4509_icgraph}
+\end{center}
+\end{figure}
+\Hypertarget{class_input_data_a9fd17a113b232b81eb32b8182cd25ee7}\label{class_input_data_a9fd17a113b232b81eb32b8182cd25ee7} 
+\index{InputData@{InputData}!getRegionSet@{getRegionSet}}
+\index{getRegionSet@{getRegionSet}!InputData@{InputData}}
+\doxysubsubsection{\texorpdfstring{getRegionSet()}{getRegionSet()}}
+{\footnotesize\ttfamily bool Input\+Data\+::get\+Region\+Set (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{class_input_data_a9fd17a113b232b81eb32b8182cd25ee7_icgraph}
+\end{center}
+\end{figure}
+\Hypertarget{class_input_data_ad8c9fdf8a3053610ee119ba7002b1f4e}\label{class_input_data_ad8c9fdf8a3053610ee119ba7002b1f4e} 
+\index{InputData@{InputData}!getRegionStart@{getRegionStart}}
+\index{getRegionStart@{getRegionStart}!InputData@{InputData}}
+\doxysubsubsection{\texorpdfstring{getRegionStart()}{getRegionStart()}}
+{\footnotesize\ttfamily int Input\+Data\+::get\+Region\+Start (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{class_input_data_ad8c9fdf8a3053610ee119ba7002b1f4e_icgraph}
+\end{center}
+\end{figure}
+\Hypertarget{class_input_data_aaf9f8a1147a4a2c206d06f7c77b4f6ca}\label{class_input_data_aaf9f8a1147a4a2c206d06f7c77b4f6ca} 
+\index{InputData@{InputData}!getSequence@{getSequence}}
+\index{getSequence@{getSequence}!InputData@{InputData}}
+\doxysubsubsection{\texorpdfstring{getSequence()}{getSequence()}}
+{\footnotesize\ttfamily std\+::string Input\+Data\+::get\+Sequence (\begin{DoxyParamCaption}\item[{std\+::string}]{chr,  }\item[{int}]{pos\+\_\+start,  }\item[{int}]{pos\+\_\+end }\end{DoxyParamCaption})}
+
+\Hypertarget{class_input_data_a286bed06763459714fa8a46d8980019e}\label{class_input_data_a286bed06763459714fa8a46d8980019e} 
+\index{InputData@{InputData}!getSNPFilepath@{getSNPFilepath}}
+\index{getSNPFilepath@{getSNPFilepath}!InputData@{InputData}}
+\doxysubsubsection{\texorpdfstring{getSNPFilepath()}{getSNPFilepath()}}
+{\footnotesize\ttfamily std\+::string Input\+Data\+::get\+SNPFilepath (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{class_input_data_a286bed06763459714fa8a46d8980019e_icgraph}
+\end{center}
+\end{figure}
+\Hypertarget{class_input_data_a62fa5522dcccf80e66b3708d4e700acb}\label{class_input_data_a62fa5522dcccf80e66b3708d4e700acb} 
+\index{InputData@{InputData}!getWindowSize@{getWindowSize}}
+\index{getWindowSize@{getWindowSize}!InputData@{InputData}}
+\doxysubsubsection{\texorpdfstring{getWindowSize()}{getWindowSize()}}
+{\footnotesize\ttfamily int Input\+Data\+::get\+Window\+Size (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{class_input_data_a62fa5522dcccf80e66b3708d4e700acb_icgraph}
+\end{center}
+\end{figure}
+\Hypertarget{class_input_data_a2b5b71737e438b3256510746675dd4a7}\label{class_input_data_a2b5b71737e438b3256510746675dd4a7} 
+\index{InputData@{InputData}!setBAMFilepath@{setBAMFilepath}}
+\index{setBAMFilepath@{setBAMFilepath}!InputData@{InputData}}
+\doxysubsubsection{\texorpdfstring{setBAMFilepath()}{setBAMFilepath()}}
+{\footnotesize\ttfamily void Input\+Data\+::set\+BAMFilepath (\begin{DoxyParamCaption}\item[{std\+::string}]{filepath }\end{DoxyParamCaption})}
+
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{class_input_data_a2b5b71737e438b3256510746675dd4a7_icgraph}
+\end{center}
+\end{figure}
+\Hypertarget{class_input_data_a21fb4d1a73eccf01f32512249f4e9ae2}\label{class_input_data_a21fb4d1a73eccf01f32512249f4e9ae2} 
+\index{InputData@{InputData}!setChrCov@{setChrCov}}
+\index{setChrCov@{setChrCov}!InputData@{InputData}}
+\doxysubsubsection{\texorpdfstring{setChrCov()}{setChrCov()}}
+{\footnotesize\ttfamily void Input\+Data\+::set\+Chr\+Cov (\begin{DoxyParamCaption}\item[{std\+::string}]{chr\+\_\+cov }\end{DoxyParamCaption})}
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=260pt]{class_input_data_a21fb4d1a73eccf01f32512249f4e9ae2_cgraph}
+\end{center}
+\end{figure}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{class_input_data_a21fb4d1a73eccf01f32512249f4e9ae2_icgraph}
+\end{center}
+\end{figure}
+\Hypertarget{class_input_data_a6a48012e547f3aaf2aaf18569e89fec9}\label{class_input_data_a6a48012e547f3aaf2aaf18569e89fec9} 
+\index{InputData@{InputData}!setOutputDir@{setOutputDir}}
+\index{setOutputDir@{setOutputDir}!InputData@{InputData}}
+\doxysubsubsection{\texorpdfstring{setOutputDir()}{setOutputDir()}}
+{\footnotesize\ttfamily void Input\+Data\+::set\+Output\+Dir (\begin{DoxyParamCaption}\item[{std\+::string}]{dirpath }\end{DoxyParamCaption})}
+
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{class_input_data_a6a48012e547f3aaf2aaf18569e89fec9_icgraph}
+\end{center}
+\end{figure}
+\Hypertarget{class_input_data_a7d1b16a9a3c080d047f7a7d42e269bdb}\label{class_input_data_a7d1b16a9a3c080d047f7a7d42e269bdb} 
+\index{InputData@{InputData}!setRefGenome@{setRefGenome}}
+\index{setRefGenome@{setRefGenome}!InputData@{InputData}}
+\doxysubsubsection{\texorpdfstring{setRefGenome()}{setRefGenome()}}
+{\footnotesize\ttfamily void Input\+Data\+::set\+Ref\+Genome (\begin{DoxyParamCaption}\item[{std\+::string}]{fasta\+\_\+filepath }\end{DoxyParamCaption})}
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{class_input_data_a7d1b16a9a3c080d047f7a7d42e269bdb_cgraph}
+\end{center}
+\end{figure}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{class_input_data_a7d1b16a9a3c080d047f7a7d42e269bdb_icgraph}
+\end{center}
+\end{figure}
+\Hypertarget{class_input_data_acb3199d64c152f7bb1d1c513a4a5b08f}\label{class_input_data_acb3199d64c152f7bb1d1c513a4a5b08f} 
+\index{InputData@{InputData}!setRegion@{setRegion}}
+\index{setRegion@{setRegion}!InputData@{InputData}}
+\doxysubsubsection{\texorpdfstring{setRegion()}{setRegion()}}
+{\footnotesize\ttfamily void Input\+Data\+::set\+Region (\begin{DoxyParamCaption}\item[{std\+::string}]{region }\end{DoxyParamCaption})}
+
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{class_input_data_acb3199d64c152f7bb1d1c513a4a5b08f_icgraph}
+\end{center}
+\end{figure}
+\Hypertarget{class_input_data_af640b5ddd9469017aeca86b5cd2c975d}\label{class_input_data_af640b5ddd9469017aeca86b5cd2c975d} 
+\index{InputData@{InputData}!setSNPFilepath@{setSNPFilepath}}
+\index{setSNPFilepath@{setSNPFilepath}!InputData@{InputData}}
+\doxysubsubsection{\texorpdfstring{setSNPFilepath()}{setSNPFilepath()}}
+{\footnotesize\ttfamily void Input\+Data\+::set\+SNPFilepath (\begin{DoxyParamCaption}\item[{std\+::string}]{filepath }\end{DoxyParamCaption})}
+
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{class_input_data_af640b5ddd9469017aeca86b5cd2c975d_icgraph}
+\end{center}
+\end{figure}
+\Hypertarget{class_input_data_a45680125f9300676d71f0932400e2ee4}\label{class_input_data_a45680125f9300676d71f0932400e2ee4} 
+\index{InputData@{InputData}!setWindowSize@{setWindowSize}}
+\index{setWindowSize@{setWindowSize}!InputData@{InputData}}
+\doxysubsubsection{\texorpdfstring{setWindowSize()}{setWindowSize()}}
+{\footnotesize\ttfamily void Input\+Data\+::set\+Window\+Size (\begin{DoxyParamCaption}\item[{int}]{window\+\_\+size }\end{DoxyParamCaption})}
+
+
+
+\doxysubsection{Member Data Documentation}
+\Hypertarget{class_input_data_a2625b22ceac0baff7f119f02d35ba6fd}\label{class_input_data_a2625b22ceac0baff7f119f02d35ba6fd} 
+\index{InputData@{InputData}!bam\_filepath@{bam\_filepath}}
+\index{bam\_filepath@{bam\_filepath}!InputData@{InputData}}
+\doxysubsubsection{\texorpdfstring{bam\_filepath}{bam\_filepath}}
+{\footnotesize\ttfamily std\+::string Input\+Data\+::bam\+\_\+filepath = "{}"{}\hspace{0.3cm}{\ttfamily [private]}}
+
+\Hypertarget{class_input_data_aa56fd5f55f1e7403c53d74b02a55daba}\label{class_input_data_aa56fd5f55f1e7403c53d74b02a55daba} 
+\index{InputData@{InputData}!chr\_cov@{chr\_cov}}
+\index{chr\_cov@{chr\_cov}!InputData@{InputData}}
+\doxysubsubsection{\texorpdfstring{chr\_cov}{chr\_cov}}
+{\footnotesize\ttfamily std\+::map$<$std\+::string, double$>$ Input\+Data\+::chr\+\_\+cov\hspace{0.3cm}{\ttfamily [private]}}
+
+\Hypertarget{class_input_data_a09910b3a1cf772c84dd7a32238bb23d2}\label{class_input_data_a09910b3a1cf772c84dd7a32238bb23d2} 
+\index{InputData@{InputData}!fasta\_query@{fasta\_query}}
+\index{fasta\_query@{fasta\_query}!InputData@{InputData}}
+\doxysubsubsection{\texorpdfstring{fasta\_query}{fasta\_query}}
+{\footnotesize\ttfamily \mbox{\hyperlink{class_f_a_s_t_a_query}{FASTAQuery}} Input\+Data\+::fasta\+\_\+query\hspace{0.3cm}{\ttfamily [private]}}
+
+\Hypertarget{class_input_data_a43bfa9dc240caebb8161290a859e74b5}\label{class_input_data_a43bfa9dc240caebb8161290a859e74b5} 
+\index{InputData@{InputData}!output\_dir@{output\_dir}}
+\index{output\_dir@{output\_dir}!InputData@{InputData}}
+\doxysubsubsection{\texorpdfstring{output\_dir}{output\_dir}}
+{\footnotesize\ttfamily std\+::string Input\+Data\+::output\+\_\+dir = "{}"{}\hspace{0.3cm}{\ttfamily [private]}}
+
+\Hypertarget{class_input_data_ad08a2b52c1dee18ee6e4c892aab7b507}\label{class_input_data_ad08a2b52c1dee18ee6e4c892aab7b507} 
+\index{InputData@{InputData}!ref\_filepath@{ref\_filepath}}
+\index{ref\_filepath@{ref\_filepath}!InputData@{InputData}}
+\doxysubsubsection{\texorpdfstring{ref\_filepath}{ref\_filepath}}
+{\footnotesize\ttfamily std\+::string Input\+Data\+::ref\+\_\+filepath = "{}"{}\hspace{0.3cm}{\ttfamily [private]}}
+
+\Hypertarget{class_input_data_a88b70d68e432893afa44a670c1348def}\label{class_input_data_a88b70d68e432893afa44a670c1348def} 
+\index{InputData@{InputData}!region@{region}}
+\index{region@{region}!InputData@{InputData}}
+\doxysubsubsection{\texorpdfstring{region}{region}}
+{\footnotesize\ttfamily std\+::string Input\+Data\+::region = "{}"{}\hspace{0.3cm}{\ttfamily [private]}}
+
+\Hypertarget{class_input_data_a2061d124444cc1ae88a8766ad683a68d}\label{class_input_data_a2061d124444cc1ae88a8766ad683a68d} 
+\index{InputData@{InputData}!region\_chr@{region\_chr}}
+\index{region\_chr@{region\_chr}!InputData@{InputData}}
+\doxysubsubsection{\texorpdfstring{region\_chr}{region\_chr}}
+{\footnotesize\ttfamily std\+::string Input\+Data\+::region\+\_\+chr = "{}"{}\hspace{0.3cm}{\ttfamily [private]}}
+
+\Hypertarget{class_input_data_ac9619687c7bffdf9db5cf3df9f5623b1}\label{class_input_data_ac9619687c7bffdf9db5cf3df9f5623b1} 
+\index{InputData@{InputData}!region\_end@{region\_end}}
+\index{region\_end@{region\_end}!InputData@{InputData}}
+\doxysubsubsection{\texorpdfstring{region\_end}{region\_end}}
+{\footnotesize\ttfamily int Input\+Data\+::region\+\_\+end = 0\hspace{0.3cm}{\ttfamily [private]}}
+
+\Hypertarget{class_input_data_a0f6beefe92beaad8c557da8253cccd11}\label{class_input_data_a0f6beefe92beaad8c557da8253cccd11} 
+\index{InputData@{InputData}!region\_set@{region\_set}}
+\index{region\_set@{region\_set}!InputData@{InputData}}
+\doxysubsubsection{\texorpdfstring{region\_set}{region\_set}}
+{\footnotesize\ttfamily bool Input\+Data\+::region\+\_\+set = false\hspace{0.3cm}{\ttfamily [private]}}
+
+\Hypertarget{class_input_data_a00a569ecc8bcf1bce714da4e4a6846e5}\label{class_input_data_a00a569ecc8bcf1bce714da4e4a6846e5} 
+\index{InputData@{InputData}!region\_start@{region\_start}}
+\index{region\_start@{region\_start}!InputData@{InputData}}
+\doxysubsubsection{\texorpdfstring{region\_start}{region\_start}}
+{\footnotesize\ttfamily int Input\+Data\+::region\+\_\+start = 0\hspace{0.3cm}{\ttfamily [private]}}
+
+\Hypertarget{class_input_data_ab07708435ee720164305783a83cb9907}\label{class_input_data_ab07708435ee720164305783a83cb9907} 
+\index{InputData@{InputData}!snp\_vcf\_filepath@{snp\_vcf\_filepath}}
+\index{snp\_vcf\_filepath@{snp\_vcf\_filepath}!InputData@{InputData}}
+\doxysubsubsection{\texorpdfstring{snp\_vcf\_filepath}{snp\_vcf\_filepath}}
+{\footnotesize\ttfamily std\+::string Input\+Data\+::snp\+\_\+vcf\+\_\+filepath = "{}"{}\hspace{0.3cm}{\ttfamily [private]}}
+
+\Hypertarget{class_input_data_ab9cbc9a74d8b578e78b288f6ef0c3cf0}\label{class_input_data_ab9cbc9a74d8b578e78b288f6ef0c3cf0} 
+\index{InputData@{InputData}!window\_size@{window\_size}}
+\index{window\_size@{window\_size}!InputData@{InputData}}
+\doxysubsubsection{\texorpdfstring{window\_size}{window\_size}}
+{\footnotesize\ttfamily int Input\+Data\+::window\+\_\+size = 10000\hspace{0.3cm}{\ttfamily [private]}}
+
+
+
+The documentation for this class was generated from the following files\+:\begin{DoxyCompactItemize}
+\item 
+include/\mbox{\hyperlink{input__data_8h}{input\+\_\+data.\+h}}\item 
+src/\mbox{\hyperlink{input__data_8cpp}{input\+\_\+data.\+cpp}}\end{DoxyCompactItemize}
