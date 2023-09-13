@@ -1,7 +1,0 @@
-<map id="CNVCaller::calculateWindowLogRRatio" name="CNVCaller::calculateWindowLogRRatio">
-<area shape="rect" id="Node000001" title=" " alt="" coords="5,23,192,64"/>
-<area shape="rect" id="Node000002" href="$class_input_data.html#a25f727c1d41c775b4c136c3c5a7ed11c" title=" " alt="" coords="240,5,416,31"/>
-<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="192,31,224,27,224,32,192,36"/>
-<area shape="rect" id="Node000003" href="$class_input_data.html#a77960f595c62556bb7d0ac5f091d8f59" title=" " alt="" coords="247,55,409,80"/>
-<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="192,51,232,55,231,60,192,56"/>
-</map>

@@ -1,8 +1,0 @@
-<map id="cnv_plots.get_info_field_value" name="cnv_plots.get_info_field_value">
-<area shape="rect" id="Node000001" title=" " alt="" coords="308,22,434,63"/>
-<area shape="rect" id="Node000002" href="$namespacecnv__plots.html#a9e72ad94760d8c61a350effc0379323e" title=" " alt="" coords="162,29,260,55"/>
-<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="292,45,260,45,260,40,292,40"/>
-<area shape="rect" id="Node000003" href="$namespace____main____.html#a364a6be1d3edec71205a6c672f2075a8" title=" " alt="" coords="5,29,114,55"/>
-<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="146,45,114,45,114,40,146,40"/>
-<area shape="poly" id="edge3_Node000003_Node000003" title=" " alt="" coords="85,16,76,10,59,8,44,10,36,15,34,20,38,28,33,30,29,21,32,11,42,5,60,3,78,5,88,12"/>
-</map>

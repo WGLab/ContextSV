@@ -1,7 +1,0 @@
-<map id="matrix_solve" name="matrix_solve">
-<area shape="rect" id="Node000001" title=" " alt="" coords="5,31,100,56"/>
-<area shape="rect" id="Node000002" href="$kc_8cpp.html#a595f09d7b5e2d197a0d8d4cef8a061ae" title=" " alt="" coords="149,5,238,31"/>
-<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="100,32,133,26,134,32,101,38"/>
-<area shape="rect" id="Node000003" href="$kc_8cpp.html#a0fad130527c83326c9dfe7da022700e0" title=" " alt="" coords="148,55,239,80"/>
-<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="101,49,133,55,132,60,100,54"/>
-</map>

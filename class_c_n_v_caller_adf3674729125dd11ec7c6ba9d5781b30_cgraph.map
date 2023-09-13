@@ -1,7 +1,0 @@
-<map id="CNVCaller::calculateMeanChromosomeCoverage" name="CNVCaller::calculateMeanChromosomeCoverage">
-<area shape="rect" id="Node000001" title="Calculate the mean chromosome coverage." alt="" coords="5,23,178,64"/>
-<area shape="rect" id="Node000002" href="$class_input_data.html#a25f727c1d41c775b4c136c3c5a7ed11c" title=" " alt="" coords="226,5,402,31"/>
-<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="177,31,210,27,210,33,178,36"/>
-<area shape="rect" id="Node000003" href="$class_input_data.html#a77960f595c62556bb7d0ac5f091d8f59" title=" " alt="" coords="233,55,395,80"/>
-<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="178,50,218,55,218,60,177,55"/>
-</map>

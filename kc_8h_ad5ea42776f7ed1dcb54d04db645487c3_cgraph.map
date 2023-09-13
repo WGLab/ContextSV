@@ -1,9 +1,0 @@
-<map id="matrix_colVar" name="matrix_colVar">
-<area shape="rect" id="Node000001" title=" " alt="" coords="5,55,106,80"/>
-<area shape="rect" id="Node000002" href="$kc_8cpp.html#ae263d464ebb9d7304f3c8043c41622b7" title=" " alt="" coords="168,5,228,31"/>
-<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="94,52,152,31,154,36,96,57"/>
-<area shape="rect" id="Node000003" href="$kc_8cpp.html#afc00baa57142e5db16101ade3200eea8" title=" " alt="" coords="155,55,241,80"/>
-<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="106,65,139,65,139,70,106,70"/>
-<area shape="rect" id="Node000004" href="$kc_8cpp.html#a155bb2cc033bfd9bafbde8d31432f7ad" title=" " alt="" coords="154,104,242,130"/>
-<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="96,78,145,96,143,101,94,83"/>
-</map>

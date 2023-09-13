@@ -1,9 +1,0 @@
-<map id="matrix_colMean" name="matrix_colMean">
-<area shape="rect" id="Node000001" title=" " alt="" coords="5,55,118,80"/>
-<area shape="rect" id="Node000002" href="$kc_8cpp.html#ab01d6eb051febfe28b8ac2987dcfe524" title=" " alt="" coords="183,5,237,31"/>
-<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="102,51,168,29,169,34,103,57"/>
-<area shape="rect" id="Node000003" href="$kc_8cpp.html#afc00baa57142e5db16101ade3200eea8" title=" " alt="" coords="167,55,253,80"/>
-<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="118,65,151,65,151,70,118,70"/>
-<area shape="rect" id="Node000004" href="$kc_8cpp.html#a155bb2cc033bfd9bafbde8d31432f7ad" title=" " alt="" coords="166,104,254,130"/>
-<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="103,78,156,96,154,101,102,84"/>
-</map>
