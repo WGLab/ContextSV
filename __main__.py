@@ -128,11 +128,12 @@ def main():
     vcf_path = os.path.join(args.output, "sv_calls.vcf")
     cnv_data_path = os.path.join(args.output, "cnv_data.tsv")
     output_dir = args.output
+    region = args.region
     print("VCF: {}".format(vcf_path))
     print("CNV Data: {}".format(cnv_data_path))
     print("Output: {}".format(output_dir))
     
-    cnv_plots.run(vcf_path, cnv_data_path, output_dir)
+    cnv_plots.run(vcf_path, cnv_data_path, output_dir, region)
 
     log.info("Done.")
 

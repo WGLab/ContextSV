@@ -98,14 +98,30 @@ void InputData::setRegion(std::string region)
         col++;
     }
 
-    // Print the region
+    // Check if a valid chromosome was parsed
+    if (this->region_chr == "")
+    {
+        std::cerr << "Error: Region chromosome not set" << std::endl;
+        exit(1);
+    }
+
+    // Check if only a chromosome was parsed
     if (this->region_start == 0 && this->region_end == 0)
     {
+        // Use the entire chromosome as the region
         this->region_set = false;
         std::cout << "Parsed region = " << this->region_chr << std::endl;
     } else {
-        this->region_set = true;
-        std::cout << "Parsed region = " << this->region_chr << ":" << this->region_start << "-" << this->region_end << std::endl;
+        // Check if a valid chromosome start and end position were parsed
+        if (this->region_start == 0 || this->region_end == 0 || this->region_start > this->region_end)
+        {
+            std::cerr << "Error: Region start and end positions not set" << std::endl;
+            exit(1);
+        } else {
+            // Set the region
+            this->region_set = true;
+            std::cout << "Parsed region = " << this->region_chr << ":" << this->region_start << "-" << this->region_end << std::endl;
+        }
     }
 }
 
