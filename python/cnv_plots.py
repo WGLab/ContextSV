@@ -73,14 +73,27 @@ def run(vcf_file, cnv_data_file, output_path, region):
 
     # Filter the VCF file to the region using pandas.
     vcf_data = pd.read_csv(vcf_file, sep="\t", comment="#", header=None)
-    vcf_data = vcf_data[(vcf_data[0] == chromosome) & (vcf_data[1] >= start_position) & (vcf_data[1] <= end_position)]
+    if start_position is not None and end_position is not None:
+        vcf_data = vcf_data[(vcf_data[0] == chromosome) & (vcf_data[1] >= start_position) & (vcf_data[1] <= end_position)]
+    else:
+        vcf_data = vcf_data[(vcf_data[0] == chromosome)]
 
     # Filter the CNV data to the region using pandas.
     cnv_data = pd.read_csv(cnv_data_file, sep="\t")
-    cnv_data = cnv_data[(cnv_data["chromosome"] == chromosome) & (cnv_data["position"] >= start_position) & (cnv_data["position"] <= end_position)]
+    if start_position is not None and end_position is not None:
+        cnv_data = cnv_data[(cnv_data["chromosome"] == chromosome) & (cnv_data["position"] >= start_position) & (cnv_data["position"] <= end_position)]
+    else:
+        cnv_data = cnv_data[(cnv_data["chromosome"] == chromosome)]
 
     # Create an output html file where we will append the CNV plots.
-    output_html_file = open(os.path.join(output_path, "cnv_plots.html"), "w")
+    if start_position is not None and end_position is not None:
+        html_filename = "cnv_plots_{}_{}_{}.html".format(chromosome, start_position, end_position)
+    else:
+        html_filename = "cnv_plots_{}.html".format(chromosome)
+    
+    output_html_file = open(os.path.join(output_path, html_filename), "w")
+
+    #output_html_file = open(os.path.join(output_path, "cnv_plots.html"), "w")
 
     # Loop through the VCF data and plot each CNV (DEL or DUP) along with log2
     # ratio and BAF values for the SNPs in the CNV.
@@ -259,5 +272,5 @@ def run(vcf_file, cnv_data_file, output_path, region):
 
     # Close the output html file.
     output_html_file.close()
-
-    log.info("Saved CNV plots to {}".format(os.path.join(output_path, "cnv_plots.html")))
+    
+    log.info("Saved CNV plots to {}".format(os.path.join(output_path, html_filename)))

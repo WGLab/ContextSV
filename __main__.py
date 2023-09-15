@@ -27,6 +27,12 @@ def main():
 
     # Add common arguments.
     parser.add_argument(
+        "-r", "--region",
+        help="The region to analyze.",
+        required=True
+    )
+
+    parser.add_argument(
         "-o", "--output",
         help="The path to the output directory.",
         required=True
@@ -66,11 +72,6 @@ def main():
         help="The path to the SNPs file.",
         required=True
     )
-    sv_parser.add_argument(
-        "-r", "--region",
-        help="The region to analyze.",
-        required=True
-    )
 
     # Pass in chromosome mean coverage data for speediness.
     sv_parser.add_argument(
@@ -85,7 +86,7 @@ def main():
         help="Run CNV plots."
     )
     cnv_parser.add_argument(
-        "-c", "--cnv_data",
+        "-c", "--cnv",
         help="The path to the CNV data in TSV format.",
         required=False
     )
