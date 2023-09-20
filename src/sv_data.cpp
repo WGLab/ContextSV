@@ -98,7 +98,7 @@ void SVData::saveToVCF(FASTAQuery& ref_genome, std::string output_dir)
         // std::string ref_allele = std::get<0>(value);
 
         // Get the reference allele from the reference genome
-        std::cout << "Getting reference allele..." << std::endl;
+        //std::cout << "Getting reference allele..." << std::endl;
         std::string ref_allele = ref_genome.query(chr, pos, end);
 
         // Get the SV length
@@ -107,7 +107,7 @@ void SVData::saveToVCF(FASTAQuery& ref_genome, std::string output_dir)
         // Get the SV type
         std::string sv_type_str = this->sv_type_map[sv_type];
 
-        std::cout << "SV type: " << sv_type_str << std::endl;
+        //std::cout << "SV type: " << sv_type_str << std::endl;
 
         // Use symbolic ALT alleles for deletions and duplications
         if (sv_type == 0 || sv_type == 1) {

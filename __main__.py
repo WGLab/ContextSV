@@ -99,6 +99,11 @@ def main():
     # Get the command line arguments.
     args = parser.parse_args()
 
+    # Remove commas or spaces from the region.
+    region = args.region
+    region = region.replace(",", "")
+    region = region.replace(" ", "")
+
     # Determine the selected program mode (SV detection or CNV plots).
     program_mode = args.mode
     mode_str = "SV detection" if program_mode == "sv" else "CNV plots"
@@ -124,12 +129,16 @@ def main():
             str(args.chr_cov)
         )
 
+        vcf_path = os.path.join(args.output, "sv_calls.vcf")
+        cnv_data_path = os.path.join(args.output, "cnv_data.tsv")
+        output_dir = args.output
+    else:
+        vcf_path = args.vcf
+        cnv_data_path = args.cnv
+        output_dir = args.output
+
     # Run the python-based analysis.
     print("Running python-based analysis.")
-    vcf_path = os.path.join(args.output, "sv_calls.vcf")
-    cnv_data_path = os.path.join(args.output, "cnv_data.tsv")
-    output_dir = args.output
-    region = args.region
     print("VCF: {}".format(vcf_path))
     print("CNV Data: {}".format(cnv_data_path))
     print("Output: {}".format(output_dir))

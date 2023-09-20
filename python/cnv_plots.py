@@ -91,6 +91,11 @@ def run(vcf_file, cnv_data_file, output_path, region):
     else:
         html_filename = "cnv_plots_{}.html".format(chromosome)
     
+    # Create the output directory if it doesn't exist.
+    if not os.path.exists(output_path):
+        os.makedirs(output_path)
+
+    # Create the output html file.
     output_html_file = open(os.path.join(output_path, html_filename), "w")
 
     #output_html_file = open(os.path.join(output_path, "cnv_plots.html"), "w")
@@ -157,9 +162,10 @@ def run(vcf_file, cnv_data_file, output_path, region):
                     size = 10,
                 ),
                 line = dict(
-                    color = "gray",
-                    width = 2
-                )
+                    color = "black",
+                    width = 0
+                ),
+                showlegend = False
             )
 
             # Create the B-allele frequency trace.
@@ -174,9 +180,10 @@ def run(vcf_file, cnv_data_file, output_path, region):
                     size = 10,
                 ),
                 line = dict(
-                    color = "gray",
-                    width = 2
+                    color = "black",
+                    width = 0
                 ),
+                showlegend = False
             )
 
             # Create a subplot for the CNV plot and the BAF plot.
@@ -245,11 +252,6 @@ def run(vcf_file, cnv_data_file, output_path, region):
                 line_width = 2,
                 line_color = "black",
                 layer = "below"
-            )
-
-            # Hide the legends.
-            fig.update_layout(
-                showlegend = False
             )
 
             # Add the figure to the output html file.

@@ -243,58 +243,65 @@ std::vector<int> ViterbiLogNP_CHMM(CHMM *phmm, int T, double *O1, double *O2, do
 	{
 		if (phmm->pi[i] == 0)
 			phmm->pi[i] = 1e-9; /*eliminate problems with zero probability*/
-		phmm->pi[i] = log(phmm->pi[i]);
+		phmm->pi[i] = log(phmm->pi[i]);  // Convert to log probability due to underflow
 	}
 
 	// Bi(Ot) is an NxT matrix of emission probabilities (observation likelihoods)
-	// expressing the probability of an observation Ot being generated from a state i
-	biot = dmatrix(1, phmm->N, 1, T);
+	// expressing the probability of an observation Ot being generated from a
+	// state i. Ot is the observation symbol at time t (in this case, the LRR
+	// and BAF values).
+
+	// Initialize the emission probability matrix
+	biot = dmatrix(1, phmm->N, 1, T);  // Allocate a NxT double matrix
+
+	std::cout << "[HMM] Running Viterbi algorithm with " << phmm->N << " states and " << T << " probes\n";
 
 	// Loop through each state N
+	// Start at 1 because states are 1-based (1-6)
 	for (i = 1; i <= phmm->N; i++)
 	{
 
-		// Loop through each probe T
-		for (t = 1; t <= T; t++)
+		// Loop through each probe T (0-based)
+		//for (t = 1; t <= T; t++)
+		for (t = 0; t < T; t++)
 		{
-			// If it's non-polymorphic (BAF > 1)
-			if (O2[t] > 1)
-			{ /*normally BAF>=0 and BAF<=1; we use BAF>1 to indicate a Non-Polymorphic marker*/
-				if (!phmm->NP_flag)
-					std::cerr << "FATAL ERROR: CN probe detected but HMM model does not contain parameters for them\n";
+			// A regular SNP marker; we use both LRR and BAF information to calculate logProb for the marker*/
 
-				// Update emissions based on LRR
-				biot[i][t] = b1iot(i, phmm->B3_mean, phmm->B3_sd, phmm->B3_uf, O1[t]);
-				cn_count++;
+			// Update emissions based on LRR (O1)
+			// [DEBUG] Remove for testing
+			double O1_val = O1[t];
+			double O1_logprob = b1iot(i, phmm->B1_mean, phmm->B1_sd, phmm->B1_uf, O1_val);
+			biot[i][t] = O1_logprob;
+			std::cout << "O1_logprob: " << O1_logprob << "\n";
 
-				// If it's a regular SNP
-			}
-			else
-			{ /*a regular SNP marker; we use both LRR and BAF information to calculate logProb for the marker*/
-				// Update emissions based on LRR (O1)
-				biot[i][t] = b1iot(i, phmm->B1_mean, phmm->B1_sd, phmm->B1_uf, O1[t]);
+			// Update emissions based on BAF (O2)
+			// *Set pfb to all 1's to ignore BAF population frequency in
+			// this implementation
+			// [DEBUG] Remove for testing
+			double O2_val = O2[t];
+			double O2_logprob = b2iot(i, phmm->B2_mean, phmm->B2_sd, phmm->B2_uf, pfb[t], O2_val);
+			biot[i][t] += O2_logprob;
+			std::cout << "O2_logprob: " << O2_logprob << "\n";
 
-				// Update emissions based on BAF (O2)
-				// *Set pfb to all 1's to ignore BAF population frequency in
-				// this implementation
-				biot[i][t] += b2iot(i, phmm->B2_mean, phmm->B2_sd, phmm->B2_uf, pfb[t], O2[t]);
-				snp_count++;
-			}
+			std::cout << "biot: " << biot[i][t] << "\n";
+
+			// Update the SNP count
+			snp_count++;
 		}
 	}
+
 	/*fprintf(stderr, "NOTICE: Encounterd %i snp probes and %i cn probes\n", snp_count, cn_count);*/
 
 	/* 1. Initialization  */
 
 	for (i = 1; i <= phmm->N; i++)
 	{
-		delta[1][i] = phmm->pi[i] + biot[i][1];
-		psi[1][i] = 0;
+		delta[1][i] = phmm->pi[i] + biot[i][1];  // Initialize the delta matrix (log probability)
+		psi[1][i] = 0;  // Initialize the psi matrix (state sequence) to 0 (no state)
 		pprob[1] = -VITHUGE;  // Initialize log probabilities for each state to -inf
 	}
 
 	/* 2. Recursion */
-
 	for (t = 2; t <= T; t++)
 	{
 
@@ -309,16 +316,16 @@ std::vector<int> ViterbiLogNP_CHMM(CHMM *phmm, int T, double *O1, double *O2, do
 			maxvalind = 1;
 			for (i = 1; i <= phmm->N; i++)
 			{
-				val = delta[t - 1][i] + log(A1[i][j]);
-				if (val > maxval)
+				val = delta[t - 1][i] + log(A1[i][j]);  // Update the delta matrix (log probability)
+				if (val > maxval)  // Update the max value
 				{
 					maxval = val;
 					maxvalind = i;
 				}
 			}
 
-			delta[t][j] = maxval + biot[j][t];
-			psi[t][j] = maxvalind;
+			delta[t][j] = maxval + biot[j][t];  // Update the delta matrix (log probability)
+			psi[t][j] = maxvalind;  // Update the psi matrix (state sequence)
 		}
 	}
 

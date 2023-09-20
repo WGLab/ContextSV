@@ -103,17 +103,17 @@ std::string FASTAQuery::query(std::string chr, int pos_start, int pos_end)
         return "";
     }
     
-    std::cout << "Querying " << chr << ":" << pos_start << "-" << pos_end << std::endl;
+    //std::cout << "Querying " << chr << ":" << pos_start << "-" << pos_end << std::endl;
 
     // Get the sequence
     std::string sequence = this->chr_to_seq[chr];
 
-    std::cout << "Sequence length: " << sequence.length() << std::endl;
+    //std::cout << "Sequence length: " << sequence.length() << std::endl;
 
     // Get the substring
     std::string subsequence = sequence.substr(pos_start, pos_end - pos_start);
 
-    std::cout << "Subsequence length: " << subsequence.length() << std::endl;
+    //std::cout << "Subsequence length: " << subsequence.length() << std::endl;
 
     // If the subsequence is empty, return VCF missing data character
     if (subsequence == "")

@@ -58,3 +58,6 @@ output/
 
 # Doxygen
 docs/html/
+
+# Singularity images
+*.sif

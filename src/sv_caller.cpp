@@ -236,7 +236,7 @@ SVData SVCaller::detectSVsFromSplitReads()
             // Process supplementary alignments
             } else if (bam1->core.flag & BAM_FSUPPLEMENTARY) {
 
-                std::cout << "Found supplementary alignment" << std::endl;
+                //std::cout << "Found supplementary alignment" << std::endl;
 
                 // Add the supplementary alignment to the map
                 std::string chr = bamHdr->target_name[bam1->core.tid];
