@@ -1,31 +1,11 @@
 <map id="src/cnv_caller.cpp" name="src/cnv_caller.cpp">
-<area shape="rect" id="Node000001" title=" " alt="" coords="655,5,783,31"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="180,5,308,31"/>
 <area shape="rect" id="Node000002" href="$cnv__caller_8h.html" title=" " alt="" coords="99,79,191,104"/>
-<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="655,28,458,48,205,81,204,76,457,43,654,23"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="230,33,174,73,171,68,227,29"/>
 <area shape="rect" id="Node000008" title=" " alt="" coords="215,79,273,104"/>
-<area shape="poly" id="edge7_Node000001_Node000008" title=" " alt="" coords="655,28,492,48,287,81,286,76,491,42,654,23"/>
+<area shape="poly" id="edge7_Node000001_Node000008" title=" " alt="" coords="247,31,247,65,241,65,241,31"/>
 <area shape="rect" id="Node000009" title=" " alt="" coords="297,79,391,104"/>
-<area shape="poly" id="edge8_Node000001_Node000009" title=" " alt="" coords="658,33,405,81,404,76,657,28"/>
-<area shape="rect" id="Node000010" title=" " alt="" coords="415,79,487,104"/>
-<area shape="poly" id="edge9_Node000001_Node000010" title=" " alt="" coords="676,33,501,80,500,74,675,28"/>
-<area shape="rect" id="Node000011" title=" " alt="" coords="511,79,577,104"/>
-<area shape="poly" id="edge10_Node000001_Node000011" title=" " alt="" coords="692,33,586,76,584,71,690,28"/>
-<area shape="rect" id="Node000012" title=" " alt="" coords="601,79,663,104"/>
-<area shape="poly" id="edge11_Node000001_Node000012" title=" " alt="" coords="706,33,658,72,655,68,703,29"/>
-<area shape="rect" id="Node000013" title=" " alt="" coords="687,79,751,104"/>
-<area shape="poly" id="edge12_Node000001_Node000013" title=" " alt="" coords="721,31,721,65,716,65,716,31"/>
-<area shape="rect" id="Node000014" title=" " alt="" coords="775,79,841,104"/>
-<area shape="poly" id="edge13_Node000001_Node000014" title=" " alt="" coords="735,29,784,68,781,72,731,33"/>
-<area shape="rect" id="Node000015" title=" " alt="" coords="865,79,927,104"/>
-<area shape="poly" id="edge14_Node000001_Node000015" title=" " alt="" coords="748,28,856,71,854,76,746,33"/>
-<area shape="rect" id="Node000016" title=" " alt="" coords="952,79,1027,104"/>
-<area shape="poly" id="edge15_Node000001_Node000016" title=" " alt="" coords="763,28,939,74,938,79,761,33"/>
-<area shape="rect" id="Node000017" title=" " alt="" coords="1051,79,1104,104"/>
-<area shape="poly" id="edge16_Node000001_Node000017" title=" " alt="" coords="783,27,898,47,1037,76,1036,81,897,52,782,32"/>
-<area shape="rect" id="Node000018" title=" " alt="" coords="1128,79,1179,104"/>
-<area shape="poly" id="edge17_Node000001_Node000018" title=" " alt="" coords="783,23,931,43,1115,76,1114,81,930,48,783,29"/>
-<area shape="rect" id="Node000019" title=" " alt="" coords="1203,79,1269,104"/>
-<area shape="poly" id="edge18_Node000001_Node000019" title=" " alt="" coords="783,22,962,42,1189,76,1189,81,962,47,783,28"/>
+<area shape="poly" id="edge8_Node000001_Node000009" title=" " alt="" coords="262,29,318,68,315,73,259,33"/>
 <area shape="rect" id="Node000003" href="$khmm_8h.html" title=" " alt="" coords="5,152,75,177"/>
 <area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="130,106,70,147,67,142,127,102"/>
 <area shape="rect" id="Node000004" href="$input__data_8h.html" title=" " alt="" coords="99,152,192,177"/>
