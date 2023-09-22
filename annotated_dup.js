@@ -1,9 +1,5 @@
 var annotated_dup =
 [
-    [ "swig", "namespaceswig.html", [
-      [ "SwigPtr_PyObject", "classswig_1_1_swig_ptr___py_object.html", "classswig_1_1_swig_ptr___py_object" ],
-      [ "SwigVar_PyObject", "structswig_1_1_swig_var___py_object.html", "structswig_1_1_swig_var___py_object" ]
-    ] ],
     [ "CHMM", "struct_c_h_m_m.html", "struct_c_h_m_m" ],
     [ "CNVCaller", "class_c_n_v_caller.html", "class_c_n_v_caller" ],
     [ "CNVData", "class_c_n_v_data.html", "class_c_n_v_data" ],

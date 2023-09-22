@@ -1,8 +1,5 @@
 var searchData=
 [
-  ['dcast_0',['dcast',['../structswig__type__info.html#a07df4bedf85be77b23756b531b60e0dd',1,'swig_type_info']]],
-  ['delargs_1',['delargs',['../struct_swig_py_client_data.html#a9cb4b9b02743d09dbe216f304e2b7df0',1,'SwigPyClientData']]],
-  ['destroy_2',['destroy',['../struct_swig_py_client_data.html#a1c4e62712f23db599e85e24e14818d59',1,'SwigPyClientData']]],
-  ['dist_3',['dist',['../struct_c_h_m_m.html#a5afe9aa2a8a7a3ee4654191d6bd6fc1e',1,'CHMM']]],
-  ['dvalue_4',['dvalue',['../structswig__const__info.html#a74e477f1dbf515bcb7e2ef07a1d34c35',1,'swig_const_info']]]
+  ['fasta_5ffilepath_0',['fasta_filepath',['../class_f_a_s_t_a_query.html#ab68b1eb97e0b190742b77ba885b12a1c',1,'FASTAQuery']]],
+  ['fasta_5fquery_1',['fasta_query',['../class_input_data.html#a09910b3a1cf772c84dd7a32238bb23d2',1,'InputData']]]
 ];

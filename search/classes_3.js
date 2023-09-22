@@ -8,9 +8,7 @@ var searchData=
   ['swig_5fmodule_5finfo_5',['swig_module_info',['../structswig__module__info.html',1,'']]],
   ['swig_5ftype_5finfo_6',['swig_type_info',['../structswig__type__info.html',1,'']]],
   ['swig_5fvarlinkobject_7',['swig_varlinkobject',['../structswig__varlinkobject.html',1,'']]],
-  ['swigptr_5fpyobject_8',['SwigPtr_PyObject',['../classswig_1_1_swig_ptr___py_object.html',1,'swig']]],
-  ['swigpyclientdata_9',['SwigPyClientData',['../struct_swig_py_client_data.html',1,'']]],
-  ['swigpyobject_10',['SwigPyObject',['../struct_swig_py_object.html',1,'']]],
-  ['swigpypacked_11',['SwigPyPacked',['../struct_swig_py_packed.html',1,'']]],
-  ['swigvar_5fpyobject_12',['SwigVar_PyObject',['../structswig_1_1_swig_var___py_object.html',1,'swig']]]
+  ['swigpyclientdata_8',['SwigPyClientData',['../struct_swig_py_client_data.html',1,'']]],
+  ['swigpyobject_9',['SwigPyObject',['../struct_swig_py_object.html',1,'']]],
+  ['swigpypacked_10',['SwigPyPacked',['../struct_swig_py_packed.html',1,'']]]
 ];

@@ -79,8 +79,7 @@ var searchData=
   ['mean2_76',['mean2',['../kc_8h.html#a02ac3a853164d76bd42d4a0979148546',1,'mean2(double *data, int n):&#160;kc.cpp'],['../kc_8cpp.html#a02ac3a853164d76bd42d4a0979148546',1,'mean2(double *data, int n):&#160;kc.cpp']]],
   ['min_5fmapq_77',['min_mapq',['../class_s_v_caller.html#a50ae938a6e255636aa0616e2066a2361',1,'SVCaller']]],
   ['min_5fsv_5fsize_78',['min_sv_size',['../class_s_v_caller.html#a83578e9692ea9d52a9c4de3e23624bab',1,'SVCaller']]],
-  ['model_79',['model',['../md_docs_2project-overview.html#autotoc_md2',1,'SV scoring model'],['../md_docs_2project-overview.html#autotoc_md3',1,'Training the model']]],
-  ['moment_80',['moment',['../kc_8h.html#a48dcbe28309bee24dfa8604b67c8c594',1,'moment(double *data, int n, double *ave, double *adev, double *sdev, double *var, double *skew, double *curt):&#160;kc.cpp'],['../kc_8cpp.html#a48dcbe28309bee24dfa8604b67c8c594',1,'moment(double *data, int n, double *ave, double *adev, double *sdev, double *var, double *skew, double *curt):&#160;kc.cpp']]],
-  ['mseed_81',['MSEED',['../kc_8cpp.html#aa0e8039431bb68581133ef4c1dbbe71d',1,'kc.cpp']]],
-  ['mz_82',['MZ',['../kc_8cpp.html#a8dbc2223b1260b0fb5ab3d57bec0f74d',1,'kc.cpp']]]
+  ['moment_79',['moment',['../kc_8h.html#a48dcbe28309bee24dfa8604b67c8c594',1,'moment(double *data, int n, double *ave, double *adev, double *sdev, double *var, double *skew, double *curt):&#160;kc.cpp'],['../kc_8cpp.html#a48dcbe28309bee24dfa8604b67c8c594',1,'moment(double *data, int n, double *ave, double *adev, double *sdev, double *var, double *skew, double *curt):&#160;kc.cpp']]],
+  ['mseed_80',['MSEED',['../kc_8cpp.html#aa0e8039431bb68581133ef4c1dbbe71d',1,'kc.cpp']]],
+  ['mz_81',['MZ',['../kc_8cpp.html#a8dbc2223b1260b0fb5ab3d57bec0f74d',1,'kc.cpp']]]
 ];

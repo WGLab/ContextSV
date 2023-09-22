@@ -1,14 +1,11 @@
 var searchData=
 [
-  ['b_0',['B',['../struct_c_h_m_m.html#ac83b2905122479dae56dc66ef763c2a9',1,'CHMM']]],
-  ['b1_5fmean_1',['B1_mean',['../struct_c_h_m_m.html#a0280e2b88c07a498279f213d458cae20',1,'CHMM']]],
-  ['b1_5fsd_2',['B1_sd',['../struct_c_h_m_m.html#ae554ad6767d156d5dabf34cde1d2dc85',1,'CHMM']]],
-  ['b1_5fuf_3',['B1_uf',['../struct_c_h_m_m.html#aa3e8ebefddbf77194a0901926d4545a7',1,'CHMM']]],
-  ['b2_5fmean_4',['B2_mean',['../struct_c_h_m_m.html#adf70211fceac3e5206488d9509d29736',1,'CHMM']]],
-  ['b2_5fsd_5',['B2_sd',['../struct_c_h_m_m.html#a04382c277b02a8eefcb864af5e6ba02c',1,'CHMM']]],
-  ['b2_5fuf_6',['B2_uf',['../struct_c_h_m_m.html#a930554c4f22322110f5a7f9044983dd7',1,'CHMM']]],
-  ['b3_5fmean_7',['B3_mean',['../struct_c_h_m_m.html#ae2aea79b79c41823181edb496cc756a0',1,'CHMM']]],
-  ['b3_5fsd_8',['B3_sd',['../struct_c_h_m_m.html#a5abd6bb1d2b526aead0122e8d031b6de',1,'CHMM']]],
-  ['b3_5fuf_9',['B3_uf',['../struct_c_h_m_m.html#aacae29df545d9d95d4c29368d93a2b12',1,'CHMM']]],
-  ['bam_5ffilepath_10',['bam_filepath',['../class_input_data.html#a2625b22ceac0baff7f119f02d35ba6fd',1,'InputData']]]
+  ['cast_0',['cast',['../structswig__type__info.html#a3ee3f7ef20e965b6c798d79723a96f9b',1,'swig_type_info']]],
+  ['cast_5finitial_1',['cast_initial',['../structswig__module__info.html#a15f6b50a41f144afb1148fc412dc01f7',1,'swig_module_info']]],
+  ['chr_5fcov_2',['chr_cov',['../class_input_data.html#aa56fd5f55f1e7403c53d74b02a55daba',1,'InputData']]],
+  ['chr_5fmean_5fcoverage_3',['chr_mean_coverage',['../class_c_n_v_caller.html#a5d62b983aad5fbd2101fefd821372a82',1,'CNVCaller']]],
+  ['chr_5fto_5fseq_4',['chr_to_seq',['../class_f_a_s_t_a_query.html#a8bead7cce539c36e007bae7af89ea12b',1,'FASTAQuery']]],
+  ['clientdata_5',['clientdata',['../structswig__type__info.html#a19bdd65dceb89cd54befd3ded06558b7',1,'swig_type_info::clientdata'],['../structswig__module__info.html#a9fb6e461fcaf14c209049adfae4e9754',1,'swig_module_info::clientdata']]],
+  ['cnv_5fcalls_6',['cnv_calls',['../class_c_n_v_data.html#a1a1696f9244e15d73c3ca8929b06a089',1,'CNVData']]],
+  ['converter_7',['converter',['../structswig__cast__info.html#aa630fddfbb1bf9c97a03f9479ba32f76',1,'swig_cast_info']]]
 ];

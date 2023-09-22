@@ -7,8 +7,6 @@ var swig__wrapper_8cpp =
     [ "SwigPyClientData", "struct_swig_py_client_data.html", "struct_swig_py_client_data" ],
     [ "SwigPyObject", "struct_swig_py_object.html", "struct_swig_py_object" ],
     [ "SwigPyPacked", "struct_swig_py_packed.html", "struct_swig_py_packed" ],
-    [ "swig::SwigPtr_PyObject", "classswig_1_1_swig_ptr___py_object.html", "classswig_1_1_swig_ptr___py_object" ],
-    [ "swig::SwigVar_PyObject", "structswig_1_1_swig_var___py_object.html", "structswig_1_1_swig_var___py_object" ],
     [ "swig_globalvar", "structswig__globalvar.html", "structswig__globalvar" ],
     [ "swig_varlinkobject", "structswig__varlinkobject.html", "structswig__varlinkobject" ],
     [ "Py_hash_t", "swig__wrapper_8cpp.html#a361689e69dc1560a9e9ee88193814ddd", null ],

@@ -25,20 +25,12 @@
 var NAVTREE =
 [
   [ "ContextSV", "index.html", [
-    [ "Project Overview", "md_docs_2project-overview.html", [
-      [ "External dependencies", "md_docs_2project-overview.html#autotoc_md1", null ],
-      [ "SV scoring model", "md_docs_2project-overview.html#autotoc_md2", [
-        [ "Training the model", "md_docs_2project-overview.html#autotoc_md3", null ]
-      ] ],
-      [ "Project structure", "md_docs_2project-overview.html#autotoc_md4", null ]
-    ] ],
     [ "Namespaces", "namespaces.html", [
       [ "Namespace List", "namespaces.html", "namespaces_dup" ]
     ] ],
     [ "Classes", "annotated.html", [
       [ "Class List", "annotated.html", "annotated_dup" ],
       [ "Class Index", "classes.html", null ],
-      [ "Class Hierarchy", "hierarchy.html", "hierarchy" ],
       [ "Class Members", "functions.html", [
         [ "All", "functions.html", null ],
         [ "Functions", "functions_func.html", null ],
@@ -60,9 +52,9 @@ var NAVTREE =
 var NAVTREEINDEX =
 [
 "annotated.html",
-"kc_8cpp.html#a6ebf6899d6c1c8b7b9d09be872c05aae",
-"kc_8h.html#ad484b35279fc5f841c995e4850254c35",
-"swig__wrapper_8cpp.html#a5246ae38052e6fa0e3cca2026cdda153"
+"kc_8cpp.html#a87641ce749a5333d4e9878c879532f54",
+"kc_8h.html#aeb063515d33aaf1d9131611c38b21fa4",
+"swig__wrapper_8cpp.html#a750813950d53ded4a170a221e333892a"
 ];
 
 var SYNCONMSG = 'click to disable panel synchronisation';

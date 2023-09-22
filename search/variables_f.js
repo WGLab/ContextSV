@@ -1,9 +1,7 @@
 var searchData=
 [
-  ['set_5fattr_0',['set_attr',['../structswig__globalvar.html#acff619325c0e354df88508d64c1608e6',1,'swig_globalvar']]],
-  ['size_1',['size',['../structswig__module__info.html#aaf8907cf8509ee0464af8c9dfd909042',1,'swig_module_info::size'],['../struct_swig_py_packed.html#aed2bfb8fb3c9f804c386215db63921cb',1,'SwigPyPacked::size']]],
-  ['snp_5fvcf_5ffilepath_2',['snp_vcf_filepath',['../class_input_data.html#ab07708435ee720164305783a83cb9907',1,'InputData']]],
-  ['str_3',['str',['../structswig__type__info.html#abbe7cc58a083feb4329b748643324064',1,'swig_type_info']]],
-  ['sv_5fcalls_4',['sv_calls',['../class_s_v_data.html#ae65f13de410510297d73bf748b1ccb15',1,'SVData']]],
-  ['sv_5ftype_5fmap_5',['sv_type_map',['../class_s_v_data.html#a21cff8271152509dea18b9d3926bf107',1,'SVData']]]
+  ['ty_0',['ty',['../struct_swig_py_object.html#a510b5a6f66a8a33c0a54c3eeb83e5ba5',1,'SwigPyObject::ty'],['../struct_swig_py_packed.html#aa6f6be0a8a1bff7710200fbe8d51acf0',1,'SwigPyPacked::ty']]],
+  ['type_1',['type',['../structswig__cast__info.html#a1c9023a301c8d6806209f4e10df6e9e0',1,'swig_cast_info::type'],['../structswig__const__info.html#ae8bbc99e1cda11f24e306365cbf33893',1,'swig_const_info::type']]],
+  ['type_5finitial_2',['type_initial',['../structswig__module__info.html#a76c7d5b0fc10371748616d0b6c815a17',1,'swig_module_info']]],
+  ['types_3',['types',['../structswig__module__info.html#ad658c7738e9a035ef8eea865322fbf13',1,'swig_module_info']]]
 ];
