@@ -1,24 +1,6 @@
 var searchData=
 [
-  ['vector_5fat_0',['vector_at',['../kc_8cpp.html#a3eb411d825906ab91a203650b1d055dd',1,'vector_at(double *A, int n):&#160;kc.cpp'],['../kc_8h.html#a3eb411d825906ab91a203650b1d055dd',1,'vector_at(double *A, int n):&#160;kc.cpp']]],
-  ['vector_5fchange_1',['vector_change',['../kc_8cpp.html#ad484b35279fc5f841c995e4850254c35',1,'vector_change(double *A, int n, double a):&#160;kc.cpp'],['../kc_8h.html#ad484b35279fc5f841c995e4850254c35',1,'vector_change(double *A, int n, double a):&#160;kc.cpp']]],
-  ['vector_5fcopy_2',['vector_copy',['../kc_8h.html#a16f2581527695cfe549555c5a4d79df4',1,'vector_copy(double *A, int n):&#160;kc.cpp'],['../kc_8cpp.html#a16f2581527695cfe549555c5a4d79df4',1,'vector_copy(double *A, int n):&#160;kc.cpp']]],
-  ['vector_5ffree_3',['vector_free',['../kc_8h.html#aad80174168d3ccf98675200f2bbc66c2',1,'vector_free(double *m):&#160;kc.cpp'],['../kc_8cpp.html#afc00baa57142e5db16101ade3200eea8',1,'vector_free(double *v):&#160;kc.cpp']]],
-  ['vector_5finnerproduct_4',['vector_innerproduct',['../kc_8h.html#a2506166a706bc777aa71785af0051e15',1,'vector_innerProduct(double *A, double *B, int n):&#160;kc.cpp'],['../kc_8cpp.html#a2506166a706bc777aa71785af0051e15',1,'vector_innerProduct(double *A, double *B, int n):&#160;kc.cpp']]],
-  ['vector_5fnew_5',['vector_new',['../kc_8h.html#a155bb2cc033bfd9bafbde8d31432f7ad',1,'vector_new(int n):&#160;kc.cpp'],['../kc_8cpp.html#a155bb2cc033bfd9bafbde8d31432f7ad',1,'vector_new(int n):&#160;kc.cpp']]],
-  ['vector_5fnormalize_6',['vector_normalize',['../kc_8h.html#a4f429aee3cfa0bb4410c66555f0a6df0',1,'vector_normalize(double *A, int n):&#160;kc.cpp'],['../kc_8cpp.html#a4f429aee3cfa0bb4410c66555f0a6df0',1,'vector_normalize(double *A, int n):&#160;kc.cpp']]],
-  ['vector_5fouterproduct_7',['vector_outerproduct',['../kc_8h.html#a43a29f653177107c327548f14d5f2a33',1,'vector_outerProduct(double *A, double *B, int n):&#160;kc.cpp'],['../kc_8cpp.html#a43a29f653177107c327548f14d5f2a33',1,'vector_outerProduct(double *A, double *B, int n):&#160;kc.cpp']]],
-  ['vector_5ftomatrix_8',['vector_tomatrix',['../kc_8h.html#a1a5bdb44faf7a9f65d5aadd9f393a996',1,'vector_toMatrix(double *A, int n):&#160;kc.cpp'],['../kc_8cpp.html#a1a5bdb44faf7a9f65d5aadd9f393a996',1,'vector_toMatrix(double *A, int n):&#160;kc.cpp']]],
-  ['vector_5ftovectori_9',['vector_tovectori',['../kc_8cpp.html#ad88cc38b4dca64717a3149003bda35a1',1,'vector_toVectori(double *A, int n):&#160;kc.cpp'],['../kc_8h.html#ad88cc38b4dca64717a3149003bda35a1',1,'vector_toVectori(double *A, int n):&#160;kc.cpp']]],
-  ['vector_5fzero_10',['vector_zero',['../kc_8h.html#aaa2a453c704de36a8f120f155f762c62',1,'vector_zero(double *A, int n):&#160;kc.cpp'],['../kc_8cpp.html#aaa2a453c704de36a8f120f155f762c62',1,'vector_zero(double *A, int n):&#160;kc.cpp']]],
-  ['vectori_5fat_11',['vectori_at',['../kc_8h.html#ab21c63978eec887cdffcd0c6aa791578',1,'vectori_at(int *A, int n):&#160;kc.cpp'],['../kc_8cpp.html#ab21c63978eec887cdffcd0c6aa791578',1,'vectori_at(int *A, int n):&#160;kc.cpp']]],
-  ['vectori_5fchange_12',['vectori_change',['../kc_8h.html#a71c4e97a48b8dc0f1ee0c41752e99d4f',1,'vectori_change(int *A, int n, int a):&#160;kc.cpp'],['../kc_8cpp.html#a71c4e97a48b8dc0f1ee0c41752e99d4f',1,'vectori_change(int *A, int n, int a):&#160;kc.cpp']]],
-  ['vectori_5fcopy_13',['vectori_copy',['../kc_8h.html#a4dbb823fcb47138656221cd90a59bac2',1,'vectori_copy(int *A, int n):&#160;kc.cpp'],['../kc_8cpp.html#a4dbb823fcb47138656221cd90a59bac2',1,'vectori_copy(int *A, int n):&#160;kc.cpp']]],
-  ['vectori_5ffree_14',['vectori_free',['../kc_8cpp.html#a595f09d7b5e2d197a0d8d4cef8a061ae',1,'vectori_free(int *v):&#160;kc.cpp'],['../kc_8h.html#a24f2b2f3906921db3287a65c72cdc2b1',1,'vectori_free(int *m):&#160;kc.cpp']]],
-  ['vectori_5fnew_15',['vectori_new',['../kc_8h.html#a0fad130527c83326c9dfe7da022700e0',1,'vectori_new(int n):&#160;kc.cpp'],['../kc_8cpp.html#a0fad130527c83326c9dfe7da022700e0',1,'vectori_new(int n):&#160;kc.cpp']]],
-  ['vectori_5ftovector_16',['vectori_tovector',['../kc_8h.html#aadde5fe08df3343588334adfdb8934fb',1,'vectori_toVector(int *A, int n):&#160;kc.cpp'],['../kc_8cpp.html#aadde5fe08df3343588334adfdb8934fb',1,'vectori_toVector(int *A, int n):&#160;kc.cpp']]],
-  ['viterbilognp_5fchmm_17',['viterbilognp_chmm',['../khmm_8h.html#a51dbadd369b498ec093b590f39e8ea96',1,'ViterbiLogNP_CHMM(CHMM *phmm, int T, double *O1, double *O2, double *pfb, int *snpdist, double **delta, int **psi, double *pprob):&#160;khmm.cpp'],['../khmm_8cpp.html#a51dbadd369b498ec093b590f39e8ea96',1,'ViterbiLogNP_CHMM(CHMM *phmm, int T, double *O1, double *O2, double *pfb, int *snpdist, double **delta, int **psi, double *pprob):&#160;khmm.cpp']]],
-  ['viterbilognp_5fseq_18',['ViterbiLogNP_SEQ',['../khmm_8h.html#a93e3a2e3dec365c8c29fd4a701ee56d1',1,'khmm.h']]],
-  ['viterbilognpstroma_5fchmm_19',['ViterbiLogNPStroma_CHMM',['../khmm_8h.html#a176e2369b08e7d399b8e33e65e5d1423',1,'khmm.h']]],
-  ['vithuge_20',['VITHUGE',['../khmm_8cpp.html#af58f308b630715030c772e4ecced3475',1,'khmm.cpp']]]
+  ['updatesvtype_0',['updateSVType',['../class_s_v_data.html#a05844917bb4a49200b8f167a0d6ac4eb',1,'SVData']]],
+  ['utils_2ecpp_1',['utils.cpp',['../utils_8cpp.html',1,'']]],
+  ['utils_2eh_2',['utils.h',['../utils_8h.html',1,'']]]
 ];

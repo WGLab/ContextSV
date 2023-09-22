@@ -1,5 +1,5 @@
 var searchData=
 [
-  ['n_0',['N',['../struct_c_h_m_m.html#a9d2517fed9a25a2362348855af502cdb',1,'CHMM']]],
-  ['np_5fflag_1',['NP_flag',['../struct_c_h_m_m.html#ac97f3000c27b0a2fb232f9b9d22784c4',1,'CHMM']]]
+  ['implicitconv_0',['implicitconv',['../struct_swig_py_client_data.html#a5f9ebdbc04a774559a64b926b6ec4070',1,'SwigPyClientData']]],
+  ['input_5fdata_1',['input_data',['../class_c_n_v_caller.html#ae081007e48ba79c16a733685274ea554',1,'CNVCaller::input_data'],['../class_context_s_v.html#a56625ce031defa4f3d4c88d3ec96eab5',1,'ContextSV::input_data'],['../class_s_v_caller.html#a21249ac2a0ce7c2faf97aabb29b61d00',1,'SVCaller::input_data']]]
 ];
