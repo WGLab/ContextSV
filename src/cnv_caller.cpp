@@ -171,20 +171,12 @@ double CNVCaller::calculateMeanChromosomeCoverage()
     "samtools depth -r %s %s | awk '{c++;s+=$3}END{print c, s}'",\
     chr.c_str(), input_filepath.c_str());  // Remove '-a' for debugging
 
+    std::cout << "Running command: " << cmd << std::endl;
+
     // Parse the output
     fp = popen(cmd, "r");
     if (fp == NULL) {
-        fprintf(stderr, "Failed to run command\n");
-        exit(1);
-    }
-    
-    fprintf(stdout, "%s\n", cmd);  // Print the command
-    fflush(stdout);
-    
-    fp = popen(cmd, "r");
-    if (fp == NULL)
-    {
-        fprintf(stderr, "Failed to run command\n");
+        std::cerr << "ERROR: Could not open pipe for command: " << cmd << std::endl;
         exit(EXIT_FAILURE);
     }
 
@@ -198,7 +190,7 @@ double CNVCaller::calculateMeanChromosomeCoverage()
             // Calculate the mean chromosome coverage
             mean_chr_cov = (double) cum_depth / (double) pos_count;
         } else {
-            fprintf(stderr, "Failed to parse output\n");
+            std::cerr << "ERROR: Could not parse output from command: " << cmd << std::endl;
             exit(EXIT_FAILURE);
         }
     }

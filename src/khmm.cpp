@@ -68,7 +68,9 @@ std::vector<int> testVit_CHMM(CHMM hmm, int T, double *O1, double *O2, double *p
 	return q;
 }
 
-// Emission probability: Calculate the state observationn likelihood b_j(O_t) of the observation symbol O_t given the current state j
+// Emission probability: Calculate the state observationn likelihood b_j(O_t) of
+// the observation symbol O_t given the current state j
+// O_t is the LRR value
 double b1iot(int state, double *mean, double *sd, double uf, double o)
 {
 	// UF = previous alpha
@@ -87,21 +89,32 @@ double b1iot(int state, double *mean, double *sd, double uf, double o)
 	return log(p);
 }
 
+// Emission probability: Calculate the state observationn likelihood b_j(O_t) of
+// the observation symbol O_t given the current state j
+// O_t is the BAF value
 double b2iot(int state, double *mean, double *sd, double uf, double pfb, double b)
 {
 	double p = 0;
-	double mean0 = mean[1];
-	double mean25 = mean[2];
-	double mean33 = mean[3];
-	double mean50 = mean[4];
-	double mean50_state1 = mean[5];
-	double sd0 = sd[1];
-	double sd25 = sd[2];
-	double sd33 = sd[3];
-	double sd50 = sd[4];
-	double sd50_state1 = sd[5];
+	double mean0 = mean[1];  // mean[1] = 0
+	double mean25 = mean[2];  // mean[2] = 0.25
+	double mean33 = mean[3];  // mean[3] = 0.33
+	double mean50 = mean[4];  // mean[4] = 0.5
+	double mean50_state1 = mean[5];  // mean[5] = 0.5
+	double sd0 = sd[1];  // sd[1] = 0
+	double sd25 = sd[2];  // sd[2] = 0.25
+	double sd33 = sd[3];  // sd[3] = 0.33
+	double sd50 = sd[4];  // sd[4] = 0.5
+	double sd50_state1 = sd[5];  // sd[5] = 0.5
 
-	p = uf;
+	p = uf;  // UF = previous alpha (transition probability)
+
+	// PDF normal is the transition probability distrubution a_ij (initialized
+	// as pi_n) from state i to j
+	// Here, we calculate the probability of the observation symbol O_t given
+	// the current state j. The observation symbol is the BAF value.
+	// P += (1-alpha_t-1) * pdf_normal(b, mean[state], sd[state]);
+	// b = BAF value
+
 	if (state == 1)
 	{
 		if (b == 0)
@@ -203,9 +216,10 @@ double b2iot(int state, double *mean, double *sd, double uf, double pfb, double 
 			p += (1 - uf) * pfb * pfb * pfb * pfb * pdf_normal(b, 1 - mean0, sd0);
 		}
 	}
-	if (p == 0)
+	if (p == 0)  // Prevent divide by zero error
 		p = FLOAT_MINIMUM;
-	return log(p);
+
+	return log(p);  // Return the log probability of the observation symbol O_t
 }
 
 // SV calling with the HMM via the Viterbi algorithm
@@ -215,7 +229,6 @@ std::vector<int> ViterbiLogNP_CHMM(CHMM *phmm, int T, double *O1, double *O2, do
 	int t;	  /* time index */
 
 	int snp_count = 0;
-	int cn_count = 0;
 
 	int maxvalind;
 	double maxval, val;
@@ -265,25 +278,23 @@ std::vector<int> ViterbiLogNP_CHMM(CHMM *phmm, int T, double *O1, double *O2, do
 		//for (t = 1; t <= T; t++)
 		for (t = 0; t < T; t++)
 		{
-			// A regular SNP marker; we use both LRR and BAF information to calculate logProb for the marker*/
+			// A regular SNP marker; we use both LRR and BAF information to
+			// calculate the joint probability of the marker being in state i
 
-			// Update emissions based on LRR (O1)
-			// [DEBUG] Remove for testing
+			// Get the state observation likelihood b_j(O_t) of the observation
+			// symbol O_t given the current state j
+			// B1_uf is the previous alpha (transition probability)
 			double O1_val = O1[t];
 			double O1_logprob = b1iot(i, phmm->B1_mean, phmm->B1_sd, phmm->B1_uf, O1_val);
-			biot[i][t] = O1_logprob;
-			std::cout << "O1_logprob: " << O1_logprob << "\n";
 
-			// Update emissions based on BAF (O2)
-			// *Set pfb to all 1's to ignore BAF population frequency in
-			// this implementation
-			// [DEBUG] Remove for testing
 			double O2_val = O2[t];
 			double O2_logprob = b2iot(i, phmm->B2_mean, phmm->B2_sd, phmm->B2_uf, pfb[t], O2_val);
-			biot[i][t] += O2_logprob;
-			std::cout << "O2_logprob: " << O2_logprob << "\n";
+			// double O2_logprob = b1iot(i, phmm->B2_mean, phmm->B2_sd, phmm->B2_uf, O2_val);
 
-			std::cout << "biot: " << biot[i][t] << "\n";
+			// Update the emission probability matrix with the joint probability
+			// of the marker being in state i at time t (log probability) based
+			// on both LRR and BAF values
+			biot[i][t] = O1_logprob + O2_logprob;
 
 			// Update the SNP count
 			snp_count++;

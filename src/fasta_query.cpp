@@ -44,12 +44,19 @@ int FASTAQuery::setFilepath(std::string fasta_filepath)
             if (current_chr != "")
             {
                 chr_to_seq[current_chr] = sequence;
-                //std::cout << "Read chromosome " << current_chr << std::endl;
+                std::cout << "Read chromosome " << current_chr << " with length " << sequence.length() << std::endl;
                 sequence = "";  // Reset the sequence
             }
 
             // Get the new chromosome
             current_chr = line_str.substr(1);
+
+            // Remove the description
+            size_t space_pos = current_chr.find(" ");
+            if (space_pos != std::string::npos)
+            {
+                current_chr.erase(space_pos);
+            }
 
             // Check if the chromosome is already in the map
             if (chr_to_seq.find(current_chr) != chr_to_seq.end())
@@ -89,6 +96,8 @@ std::string FASTAQuery::getFilepath()
 // Function to get the reference sequence at a given position range
 std::string FASTAQuery::query(std::string chr, int pos_start, int pos_end)
 {
+    std::cout << "Querying " << chr << ":" << pos_start << "-" << pos_end << std::endl;
+
     // Check if a FASTA file has been set
     if (this->fasta_filepath == "")
     {
