@@ -1,4 +1,5 @@
 var searchData=
 [
-  ['klass_0',['klass',['../struct_swig_py_client_data.html#a482d64908147c310a56d1541476079dc',1,'SwigPyClientData']]]
+  ['n_0',['N',['../struct_c_h_m_m.html#a9d2517fed9a25a2362348855af502cdb',1,'CHMM']]],
+  ['np_5fflag_1',['NP_flag',['../struct_c_h_m_m.html#ac97f3000c27b0a2fb232f9b9d22784c4',1,'CHMM']]]
 ];

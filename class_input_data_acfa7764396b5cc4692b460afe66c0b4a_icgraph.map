@@ -1,16 +1,14 @@
 <map id="InputData::getRefGenome" name="InputData::getRefGenome">
-<area shape="rect" id="Node000001" title=" " alt="" coords="788,63,961,88"/>
-<area shape="rect" id="Node000002" href="$class_s_v_caller.html#a3dc207ba0e851cfd643e70d3b08783cf" title=" " alt="" coords="528,5,740,31"/>
-<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="806,62,687,33,689,28,808,57"/>
-<area shape="rect" id="Node000003" href="$class_s_v_caller.html#a8d587b8fffa1948abd8a78a376b2df23" title=" " alt="" coords="537,55,731,95"/>
-<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="774,78,731,78,731,73,774,73"/>
-<area shape="rect" id="Node000005" href="$class_context_s_v.html#ac9d32b6e28e5bfdf10e314db0e90e4cd" title=" " alt="" coords="224,95,335,120"/>
-<area shape="poly" id="edge7_Node000001_Node000005" title=" " alt="" coords="818,94,740,110,628,119,515,121,335,114,335,109,515,115,627,113,740,105,817,89"/>
-<area shape="rect" id="Node000004" href="$class_s_v_caller.html#a61ab472662c7fa46bf2d6e6d71f0441f" title=" " alt="" coords="383,67,480,92"/>
-<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="523,80,480,81,480,76,523,75"/>
-<area shape="poly" id="edge4_Node000004_Node000005" title=" " alt="" coords="369,93,336,100,335,94,368,88"/>
-<area shape="rect" id="Node000006" href="$swig__interface_8cpp.html#aad43500a0528f571edecd2310dfb0ef6" title=" " alt="" coords="136,95,176,120"/>
-<area shape="poly" id="edge5_Node000005_Node000006" title=" " alt="" coords="210,110,176,110,176,105,210,105"/>
-<area shape="rect" id="Node000007" href="$swig__wrapper_8cpp.html#a1b076861020162aaddb732376042f729" title=" " alt="" coords="5,95,88,120"/>
-<area shape="poly" id="edge6_Node000006_Node000007" title=" " alt="" coords="122,110,88,110,88,105,122,105"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="657,63,831,88"/>
+<area shape="rect" id="Node000002" href="$class_s_v_caller.html#a3dc207ba0e851cfd643e70d3b08783cf" title=" " alt="" coords="397,5,609,31"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="676,62,557,33,558,28,677,57"/>
+<area shape="rect" id="Node000003" href="$class_s_v_caller.html#a8d587b8fffa1948abd8a78a376b2df23" title=" " alt="" coords="406,55,601,95"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="644,78,601,78,601,73,644,73"/>
+<area shape="rect" id="Node000005" href="$class_context_s_v.html#ac9d32b6e28e5bfdf10e314db0e90e4cd" title=" " alt="" coords="93,95,204,120"/>
+<area shape="poly" id="edge6_Node000001_Node000005" title=" " alt="" coords="688,94,610,110,497,119,385,121,204,114,204,109,385,115,497,113,609,105,687,89"/>
+<area shape="rect" id="Node000004" href="$class_s_v_caller.html#a61ab472662c7fa46bf2d6e6d71f0441f" title=" " alt="" coords="252,67,349,92"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="392,80,350,81,350,76,392,75"/>
+<area shape="poly" id="edge4_Node000004_Node000005" title=" " alt="" coords="239,93,205,100,204,94,238,88"/>
+<area shape="rect" id="Node000006" href="$swig__interface_8cpp.html#aad43500a0528f571edecd2310dfb0ef6" title=" " alt="" coords="5,95,45,120"/>
+<area shape="poly" id="edge5_Node000005_Node000006" title=" " alt="" coords="79,110,46,110,46,105,79,105"/>
 </map>

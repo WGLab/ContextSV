@@ -1,11 +1,9 @@
 <map id="CNVCaller::readSNPBAFs" name="CNVCaller::readSNPBAFs">
-<area shape="rect" id="Node000001" title=" " alt="" coords="540,5,717,31"/>
-<area shape="rect" id="Node000002" href="$class_c_n_v_caller.html#a49824c662095f9af9a38056dadc8933f" title=" " alt="" coords="383,5,492,31"/>
-<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="526,21,492,21,492,15,526,15"/>
-<area shape="rect" id="Node000003" href="$class_context_s_v.html#ac9d32b6e28e5bfdf10e314db0e90e4cd" title=" " alt="" coords="224,5,335,31"/>
-<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="369,21,335,21,335,15,369,15"/>
-<area shape="rect" id="Node000004" href="$swig__interface_8cpp.html#aad43500a0528f571edecd2310dfb0ef6" title=" " alt="" coords="136,5,176,31"/>
-<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="210,21,176,21,176,15,210,15"/>
-<area shape="rect" id="Node000005" href="$swig__wrapper_8cpp.html#a1b076861020162aaddb732376042f729" title=" " alt="" coords="5,5,88,31"/>
-<area shape="poly" id="edge4_Node000004_Node000005" title=" " alt="" coords="122,21,88,21,88,15,122,15"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="409,5,587,31"/>
+<area shape="rect" id="Node000002" href="$class_c_n_v_caller.html#a49824c662095f9af9a38056dadc8933f" title=" " alt="" coords="252,5,361,31"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="395,21,362,21,362,15,395,15"/>
+<area shape="rect" id="Node000003" href="$class_context_s_v.html#ac9d32b6e28e5bfdf10e314db0e90e4cd" title=" " alt="" coords="93,5,204,31"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="238,21,204,21,204,15,238,15"/>
+<area shape="rect" id="Node000004" href="$swig__interface_8cpp.html#aad43500a0528f571edecd2310dfb0ef6" title=" " alt="" coords="5,5,45,31"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="79,21,46,21,46,15,79,15"/>
 </map>

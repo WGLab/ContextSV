@@ -25,9 +25,6 @@
 var NAVTREE =
 [
   [ "ContextSV", "index.html", [
-    [ "Namespaces", "namespaces.html", [
-      [ "Namespace List", "namespaces.html", "namespaces_dup" ]
-    ] ],
     [ "Classes", "annotated.html", [
       [ "Class List", "annotated.html", "annotated_dup" ],
       [ "Class Index", "classes.html", null ],
@@ -52,9 +49,8 @@ var NAVTREE =
 var NAVTREEINDEX =
 [
 "annotated.html",
-"kc_8cpp.html#a87641ce749a5333d4e9878c879532f54",
-"kc_8h.html#aeb063515d33aaf1d9131611c38b21fa4",
-"swig__wrapper_8cpp.html#a7b007021fc924eb74eccb0bb05d99ad1"
+"kc_8cpp.html#a89a2987a60a852f56603492790999aba",
+"kc_8h.html#aeca8344f58357afa063ffc8cc119f8b7"
 ];
 
 var SYNCONMSG = 'click to disable panel synchronisation';

@@ -1,13 +1,10 @@
 var searchData=
 [
-  ['dcast_0',['dcast',['../structswig__type__info.html#a07df4bedf85be77b23756b531b60e0dd',1,'swig_type_info']]],
-  ['delargs_1',['delargs',['../struct_swig_py_client_data.html#a9cb4b9b02743d09dbe216f304e2b7df0',1,'SwigPyClientData']]],
-  ['delta_2',['DELTA',['../khmm_8cpp.html#a3fd2b1bcd7ddcf506237987ad780f495',1,'khmm.cpp']]],
-  ['destroy_3',['destroy',['../struct_swig_py_client_data.html#a1c4e62712f23db599e85e24e14818d59',1,'SwigPyClientData']]],
-  ['detectsvsfromcigar_4',['detectSVsFromCIGAR',['../class_s_v_caller.html#a3dc207ba0e851cfd643e70d3b08783cf',1,'SVCaller']]],
-  ['detectsvsfromsplitreads_5',['detectSVsFromSplitReads',['../class_s_v_caller.html#a8d587b8fffa1948abd8a78a376b2df23',1,'SVCaller']]],
-  ['dist_6',['dist',['../struct_c_h_m_m.html#a5afe9aa2a8a7a3ee4654191d6bd6fc1e',1,'CHMM']]],
-  ['dmatrix_7',['dmatrix',['../kc_8h.html#ab1a02a50dfbc26318f6bb296731b6f3a',1,'dmatrix(long nrl, long nrh, long ncl, long nch):&#160;kc.cpp'],['../kc_8cpp.html#ab1a02a50dfbc26318f6bb296731b6f3a',1,'dmatrix(long nrl, long nrh, long ncl, long nch):&#160;kc.cpp']]],
-  ['dvalue_8',['dvalue',['../structswig__const__info.html#a74e477f1dbf515bcb7e2ef07a1d34c35',1,'swig_const_info']]],
-  ['dvector_9',['dvector',['../kc_8h.html#ae21c4c252ad5d5710ebd03d6f07e40de',1,'dvector(long nl, long nh):&#160;kc.cpp'],['../kc_8cpp.html#ae21c4c252ad5d5710ebd03d6f07e40de',1,'dvector(long nl, long nh):&#160;kc.cpp']]]
+  ['end_0',['end',['../class_s_v_data.html#abdae1eb340178fea8dc002462ede16d9',1,'SVData']]],
+  ['eps_1',['EPS',['../kc_8cpp.html#a6ebf6899d6c1c8b7b9d09be872c05aae',1,'kc.cpp']]],
+  ['eps1_2',['EPS1',['../kc_8cpp.html#a87641ce749a5333d4e9878c879532f54',1,'kc.cpp']]],
+  ['eps2_3',['EPS2',['../kc_8cpp.html#a6e0fa11d70158b1ec7225144f0243f50',1,'kc.cpp']]],
+  ['epsilon_4',['EPSILON',['../kc_8cpp.html#a002b2f4894492820fe708b1b7e7c5e70',1,'kc.cpp']]],
+  ['erf_5',['erf',['../kc_8h.html#aa8b35382a71885eed509a5f87bf5e266',1,'erf(double x):&#160;kc.cpp'],['../kc_8cpp.html#aa8b35382a71885eed509a5f87bf5e266',1,'erf(double x):&#160;kc.cpp']]],
+  ['esthmmfromfile_5fchmm_6',['estHMMFromFile_CHMM',['../khmm_8h.html#a18fff762037a60827d40facd74ceeaad',1,'khmm.h']]]
 ];

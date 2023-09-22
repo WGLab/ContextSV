@@ -1,12 +1,20 @@
 var searchData=
 [
-  ['ran_0',['ran',['../kc_8h.html#af69cc9a91ed9648c8ac7a66026aa77d2',1,'ran():&#160;kc.cpp'],['../kc_8cpp.html#af69cc9a91ed9648c8ac7a66026aa77d2',1,'ran():&#160;kc.cpp']]],
-  ['ran3_1',['ran3',['../kc_8h.html#a6d9dfbda8c4ccf755c505ac31a5817d1',1,'ran3(int *idum):&#160;kc.cpp'],['../kc_8cpp.html#a6d9dfbda8c4ccf755c505ac31a5817d1',1,'ran3(int *idum):&#160;kc.cpp']]],
-  ['random_5fexp_2',['random_exp',['../kc_8h.html#a69a4bf2250052e68ef90fa0dbc0c85ff',1,'random_exp(double lamda, int *idum):&#160;kc.cpp'],['../kc_8cpp.html#a69a4bf2250052e68ef90fa0dbc0c85ff',1,'random_exp(double lamda, int *idum):&#160;kc.cpp']]],
-  ['random_5fnumber_3',['RANDOM_NUMBER',['../kc_8cpp.html#a0eb3cba5c9c1aee874a20ffb4dad6c5b',1,'kc.cpp']]],
-  ['random_5fstdnormal_4',['random_stdnormal',['../kc_8h.html#a66f8e089376af0493659445c359577fe',1,'random_stdnormal(int *idum):&#160;kc.cpp'],['../kc_8cpp.html#a66f8e089376af0493659445c359577fe',1,'random_stdnormal(int *idum):&#160;kc.cpp']]],
-  ['readchmm_5',['readchmm',['../khmm_8h.html#a5ee9a227e8068bbf43d6fb3a19221cc1',1,'ReadCHMM(const char *filename):&#160;khmm.cpp'],['../khmm_8cpp.html#a5ee9a227e8068bbf43d6fb3a19221cc1',1,'ReadCHMM(const char *filename):&#160;khmm.cpp']]],
-  ['readsnpbafs_6',['readSNPBAFs',['../class_c_n_v_caller.html#ab4e2177c5253c6e3ce276939644824ee',1,'CNVCaller']]],
-  ['reg_5flinear_7',['reg_linear',['../kc_8cpp.html#a66d8af160cff194f4aa44bf2bd5eb2f5',1,'reg_linear(double *x, double *y, int ndata, double *a, double *b, double *F, double *P):&#160;kc.cpp'],['../kc_8h.html#a66d8af160cff194f4aa44bf2bd5eb2f5',1,'reg_linear(double *x, double *y, int ndata, double *a, double *b, double *F, double *P):&#160;kc.cpp']]],
-  ['run_8',['run',['../swig__interface_8cpp.html#aad43500a0528f571edecd2310dfb0ef6',1,'run(std::string bam_fp, std::string ref_fp, std::string snps_fp, std::string outdir, std::string region, std::string chr_cov):&#160;swig_interface.cpp'],['../swig__interface_8h.html#aad43500a0528f571edecd2310dfb0ef6',1,'run(std::string bam_fp, std::string ref_fp, std::string snps_fp, std::string outdir, std::string region, std::string chr_cov):&#160;swig_interface.cpp'],['../class_s_v_caller.html#a61ab472662c7fa46bf2d6e6d71f0441f',1,'SVCaller::run()'],['../class_context_s_v.html#ac9d32b6e28e5bfdf10e314db0e90e4cd',1,'ContextSV::run()'],['../class_c_n_v_caller.html#a49824c662095f9af9a38056dadc8933f',1,'CNVCaller::run()']]]
+  ['savetotsv_0',['saveToTSV',['../class_c_n_v_caller.html#a9b137fddf79a60e29198c0b11651efac',1,'CNVCaller']]],
+  ['savetovcf_1',['saveToVCF',['../class_s_v_data.html#aaca88ad486232278f6b4252fc501eec7',1,'SVData']]],
+  ['setbamfilepath_2',['setBAMFilepath',['../class_input_data.html#a2b5b71737e438b3256510746675dd4a7',1,'InputData']]],
+  ['setchrcov_3',['setChrCov',['../class_input_data.html#a21fb4d1a73eccf01f32512249f4e9ae2',1,'InputData']]],
+  ['setfilepath_4',['setFilepath',['../class_f_a_s_t_a_query.html#a0c20376e86d3b50c6b22fb7f17b09f02',1,'FASTAQuery']]],
+  ['setoutputdir_5',['setOutputDir',['../class_input_data.html#a6a48012e547f3aaf2aaf18569e89fec9',1,'InputData']]],
+  ['setrefgenome_6',['setRefGenome',['../class_input_data.html#a7d1b16a9a3c080d047f7a7d42e269bdb',1,'InputData']]],
+  ['setregion_7',['setRegion',['../class_input_data.html#acb3199d64c152f7bb1d1c513a4a5b08f',1,'InputData']]],
+  ['setsnpfilepath_8',['setSNPFilepath',['../class_input_data.html#af640b5ddd9469017aeca86b5cd2c975d',1,'InputData']]],
+  ['setwindowsize_9',['setWindowSize',['../class_input_data.html#a45680125f9300676d71f0932400e2ee4',1,'InputData']]],
+  ['snphwe_10',['snphwe',['../kc_8h.html#a28e29e986181ac84e42f8996086c64d2',1,'SNPHWE(int obs_hets, int obs_hom1, int obs_hom2):&#160;kc.cpp'],['../kc_8cpp.html#a28e29e986181ac84e42f8996086c64d2',1,'SNPHWE(int obs_hets, int obs_hom1, int obs_hom2):&#160;kc.cpp']]],
+  ['statistical_5fdistribution_11',['STATISTICAL_DISTRIBUTION',['../kc_8cpp.html#a1b0915de9964a2b6e19507cf13c2a0ca',1,'kc.cpp']]],
+  ['statistical_5ftest_12',['STATISTICAL_TEST',['../kc_8cpp.html#ac7b612d079052018863796408cd020b6',1,'kc.cpp']]],
+  ['submatrix_13',['submatrix',['../kc_8h.html#a1c146fa87b8915bf1e4b29f10b5c2943',1,'submatrix(double **a, long oldrl, long oldrh, long oldcl, long oldch, long newrl, long newcl):&#160;kc.cpp'],['../kc_8cpp.html#a1c146fa87b8915bf1e4b29f10b5c2943',1,'submatrix(double **a, long oldrl, long oldrh, long oldcl, long oldch, long newrl, long newcl):&#160;kc.cpp']]],
+  ['summary_5fstatistics_14',['SUMMARY_STATISTICS',['../kc_8cpp.html#a650242e9abe63546c08e6d46d6a9fa88',1,'kc.cpp']]],
+  ['svcaller_15',['SVCaller',['../class_s_v_caller.html#a61af1b92108f3f38cbac86205e39b3f2',1,'SVCaller']]],
+  ['svdata_16',['SVData',['../class_s_v_data.html#a7ee9ff26919b4109c718539416ae62c6',1,'SVData']]]
 ];
