@@ -12,7 +12,7 @@ var searchData=
   ['print_5fvector_9',['print_vector',['../kc_8h.html#a05e1b2a77c22ae4e595c1c9078f186b2',1,'print_vector(double *array, int n):&#160;kc.cpp'],['../kc_8cpp.html#a05e1b2a77c22ae4e595c1c9078f186b2',1,'print_vector(double *array, int n):&#160;kc.cpp']]],
   ['print_5fvectori_10',['print_vectori',['../kc_8h.html#a8a8ffc38946e016056d176c4a5bc672c',1,'print_vectori(int *array, int n):&#160;kc.cpp'],['../kc_8cpp.html#a8a8ffc38946e016056d176c4a5bc672c',1,'print_vectori(int *array, int n):&#160;kc.cpp']]],
   ['printchmm_11',['PrintCHMM',['../khmm_8h.html#ab48b68300b34a8e1875bd0c89a81175b',1,'khmm.h']]],
-  ['printprogress_12',['printProgress',['../utils_8cpp.html#a94bd78faf212464ede8144a4be0e8cf8',1,'utils.cpp']]],
+  ['printprogress_12',['printprogress',['../utils_8h.html#a94bd78faf212464ede8144a4be0e8cf8',1,'printProgress(int progress, int total):&#160;utils.cpp'],['../utils_8cpp.html#a94bd78faf212464ede8144a4be0e8cf8',1,'printProgress(int progress, int total):&#160;utils.cpp']]],
   ['probks_13',['probks',['../kc_8h.html#a143f0d120ce98a745cf55be12076967a',1,'probks(double alam):&#160;kc.cpp'],['../kc_8cpp.html#a143f0d120ce98a745cf55be12076967a',1,'probks(double alam):&#160;kc.cpp']]],
   ['pythag_14',['pythag',['../kc_8h.html#a7f43e2c062f2de6dbd14da6799d78030',1,'pythag(double a, double b):&#160;kc.cpp'],['../kc_8cpp.html#a7f43e2c062f2de6dbd14da6799d78030',1,'pythag(double a, double b):&#160;kc.cpp']]]
 ];
