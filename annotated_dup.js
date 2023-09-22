@@ -15,6 +15,5 @@ var annotated_dup =
     [ "swig_type_info", "structswig__type__info.html", "structswig__type__info" ],
     [ "swig_varlinkobject", "structswig__varlinkobject.html", "structswig__varlinkobject" ],
     [ "SwigPyClientData", "struct_swig_py_client_data.html", "struct_swig_py_client_data" ],
-    [ "SwigPyObject", "struct_swig_py_object.html", "struct_swig_py_object" ],
     [ "SwigPyPacked", "struct_swig_py_packed.html", "struct_swig_py_packed" ]
 ];

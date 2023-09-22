@@ -9,6 +9,5 @@ var searchData=
   ['swig_5ftype_5finfo_6',['swig_type_info',['../structswig__type__info.html',1,'']]],
   ['swig_5fvarlinkobject_7',['swig_varlinkobject',['../structswig__varlinkobject.html',1,'']]],
   ['swigpyclientdata_8',['SwigPyClientData',['../struct_swig_py_client_data.html',1,'']]],
-  ['swigpyobject_9',['SwigPyObject',['../struct_swig_py_object.html',1,'']]],
-  ['swigpypacked_10',['SwigPyPacked',['../struct_swig_py_packed.html',1,'']]]
+  ['swigpypacked_9',['SwigPyPacked',['../struct_swig_py_packed.html',1,'']]]
 ];
