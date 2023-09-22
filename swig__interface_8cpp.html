@@ -97,48 +97,32 @@ $(document).ready(function(){initNavTree('swig__interface_8cpp.html',''); initRe
 <div class="contents">
 <div class="textblock"><code>#include &quot;<a class="el" href="swig__interface_8h_source.html">swig_interface.h</a>&quot;</code><br />
 <code>#include &quot;<a class="el" href="contextsv_8h_source.html">contextsv.h</a>&quot;</code><br />
+<code>#include &lt;iostream&gt;</code><br />
 </div><div class="textblock"><div class="dynheader">
 Include dependency graph for swig_interface.cpp:</div>
 <div class="dyncontent">
 <div class="center"><img src="swig__interface_8cpp__incl.png" border="0" usemap="#asrc_2swig__interface_8cpp" alt=""/></div>
 <map name="asrc_2swig__interface_8cpp" id="asrc_2swig__interface_8cpp">
-<area shape="rect" title=" " alt="" coords="386,5,541,31"/>
-<area shape="rect" href="swig__interface_8h.html" title=" " alt="" coords="468,79,587,104"/>
-<area shape="poly" title=" " alt="" coords="476,29,510,67,506,70,472,33"/>
-<area shape="rect" href="contextsv_8h.html" title=" " alt="" coords="355,79,444,104"/>
-<area shape="poly" title=" " alt="" coords="455,33,421,70,417,67,451,29"/>
-<area shape="rect" href="input__data_8h.html" title=" " alt="" coords="422,152,516,177"/>
-<area shape="poly" title=" " alt="" coords="520,106,489,143,485,140,516,103"/>
-<area shape="rect" title=" " alt="" coords="507,299,562,324"/>
-<area shape="poly" title=" " alt="" coords="584,102,624,120,642,133,656,151,670,177,674,201,670,226,656,252,640,271,620,286,576,304,574,299,617,281,637,267,652,249,665,224,669,201,665,179,652,153,638,137,621,124,582,107"/>
-<area shape="rect" href="fasta__query_8h.html" title=" " alt="" coords="294,225,396,251"/>
-<area shape="poly" title=" " alt="" coords="450,180,378,221,376,216,448,175"/>
-<area shape="poly" title=" " alt="" coords="498,175,530,194,544,208,555,224,560,240,560,257,550,287,545,286,554,256,555,241,550,226,540,211,526,199,496,180"/>
-<area shape="rect" title=" " alt="" coords="163,299,210,324"/>
-<area shape="poly" title=" " alt="" coords="466,179,445,216,429,236,409,253,362,278,312,295,264,305,223,310,223,305,263,300,311,290,360,273,406,248,425,232,440,213,461,176"/>
-<area shape="rect" title=" " alt="" coords="330,299,387,324"/>
-<area shape="poly" title=" " alt="" coords="472,178,469,213,463,233,454,252,429,277,401,295,398,291,426,273,449,249,458,231,464,212,467,177"/>
-<area shape="poly" title=" " alt="" coords="376,248,494,292,493,297,374,253"/>
-<area shape="poly" title=" " alt="" coords="320,253,223,297,221,292,318,248"/>
-<area shape="poly" title=" " alt="" coords="413,102,450,140,446,144,409,106"/>
-<area shape="poly" title=" " alt="" coords="440,102,485,121,529,150,554,173,571,195,579,220,575,251,567,272,555,289,551,286,562,269,570,250,574,220,567,197,550,176,526,154,483,125,438,107"/>
-<area shape="rect" href="cnv__data_8h.html" title=" " alt="" coords="143,152,230,177"/>
-<area shape="poly" title=" " alt="" coords="366,107,234,150,233,145,364,101"/>
-<area shape="rect" href="sv__data_8h.html" title=" " alt="" coords="306,152,384,177"/>
-<area shape="poly" title=" " alt="" coords="393,106,364,143,360,140,388,103"/>
-<area shape="poly" title=" " alt="" coords="198,176,233,212,257,232,283,248,338,271,395,287,494,304,493,309,393,292,336,276,281,253,254,236,230,216,194,180"/>
-<area shape="poly" title=" " alt="" coords="143,170,110,175,74,185,41,202,15,227,8,243,12,257,25,269,45,280,98,295,150,304,149,309,97,300,43,285,22,274,8,260,3,243,11,224,38,197,72,180,109,170,142,165"/>
-<area shape="rect" href="types_8h.html" title=" " alt="" coords="154,225,219,251"/>
-<area shape="poly" title=" " alt="" coords="189,178,189,212,184,212,184,178"/>
-<area shape="rect" title=" " alt="" coords="25,225,78,251"/>
-<area shape="poly" title=" " alt="" coords="166,180,87,221,84,216,163,175"/>
-<area shape="poly" title=" " alt="" coords="220,244,239,248,494,299,493,305,238,253,219,249"/>
-<area shape="poly" title=" " alt="" coords="189,251,189,285,184,285,184,251"/>
-<area shape="poly" title=" " alt="" coords="215,248,319,291,317,296,213,253"/>
-<area shape="poly" title=" " alt="" coords="348,178,348,212,342,212,342,178"/>
-<area shape="poly" title=" " alt="" coords="362,176,510,288,507,292,359,180"/>
-<area shape="poly" title=" " alt="" coords="306,174,211,195,169,209,143,227,138,241,141,257,164,287,160,291,137,259,133,241,139,224,166,205,210,189,305,169"/>
-<area shape="poly" title=" " alt="" coords="320,180,226,222,223,217,318,175"/>
+<area shape="rect" title=" " alt="" coords="115,5,270,31"/>
+<area shape="rect" href="swig__interface_8h.html" title=" " alt="" coords="5,79,124,104"/>
+<area shape="poly" title=" " alt="" coords="173,33,99,74,97,69,171,28"/>
+<area shape="rect" href="contextsv_8h.html" title=" " alt="" coords="148,79,237,104"/>
+<area shape="poly" title=" " alt="" coords="195,31,195,65,190,65,190,31"/>
+<area shape="rect" title=" " alt="" coords="262,79,334,104"/>
+<area shape="poly" title=" " alt="" coords="211,28,271,69,268,73,208,33"/>
+<area shape="rect" href="input__data_8h.html" title=" " alt="" coords="26,152,119,177"/>
+<area shape="poly" title=" " alt="" coords="69,104,73,138,67,139,63,105"/>
+<area shape="rect" href="fasta__query_8h.html" title=" " alt="" coords="77,225,178,251"/>
+<area shape="poly" title=" " alt="" coords="84,176,112,213,108,216,80,179"/>
+<area shape="poly" title=" " alt="" coords="175,106,106,147,103,142,172,102"/>
+<area shape="rect" href="cnv__data_8h.html" title=" " alt="" coords="247,152,333,177"/>
+<area shape="poly" title=" " alt="" coords="210,102,264,141,261,146,207,106"/>
+<area shape="rect" href="sv__data_8h.html" title=" " alt="" coords="144,152,223,177"/>
+<area shape="poly" title=" " alt="" coords="194,105,189,139,184,138,188,104"/>
+<area shape="rect" href="types_8h.html" title=" " alt="" coords="204,225,269,251"/>
+<area shape="poly" title=" " alt="" coords="283,179,256,216,251,213,279,176"/>
+<area shape="poly" title=" " alt="" coords="176,179,147,216,143,213,172,176"/>
+<area shape="poly" title=" " alt="" coords="194,176,222,213,218,216,190,179"/>
 </map>
 </div>
 </div><table class="memberdecls">

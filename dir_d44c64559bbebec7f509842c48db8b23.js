@@ -10,6 +10,5 @@ var dir_d44c64559bbebec7f509842c48db8b23 =
     [ "sv_caller.h", "sv__caller_8h.html", "sv__caller_8h" ],
     [ "sv_data.h", "sv__data_8h.html", "sv__data_8h" ],
     [ "swig_interface.h", "swig__interface_8h.html", "swig__interface_8h" ],
-    [ "types.h", "types_8h.html", "types_8h" ],
-    [ "utils.h", "utils_8h.html", "utils_8h" ]
+    [ "types.h", "types_8h.html", "types_8h" ]
 ];

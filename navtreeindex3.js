@@ -176,8 +176,5 @@ var NAVTREEINDEX3 =
 "types_8h.html#af4be4fc52fc3889ad47df3c232ff1842":[3,0,1,10,7],
 "types_8h_source.html":[3,0,1,10],
 "utils_8cpp.html":[3,0,2,11],
-"utils_8cpp.html#a94bd78faf212464ede8144a4be0e8cf8":[3,0,2,11,0],
-"utils_8h.html":[3,0,1,11],
-"utils_8h.html#a94bd78faf212464ede8144a4be0e8cf8":[3,0,1,11,0],
-"utils_8h_source.html":[3,0,1,11]
+"utils_8cpp.html#a94bd78faf212464ede8144a4be0e8cf8":[3,0,2,11,0]
 };
