@@ -29,13 +29,8 @@ std::vector<int> testVit_CHMM(CHMM hmm, int T, double *O1, double *O2, double *p
 	// Note: PLOGPROBA is replaced with DELTA (delta matrix) after running the
 	// HMM, which is used to calculate the probability of the most likely state
 
-	// int *q;			/* Array for the state sequence q[1..T] */
 	double **delta; // Matrix
 	int **psi;		// Matrix
-
-	// These 3 variables will be updated with the HMM results
-	// q = ivector(1, T);                // Allocate an int vector for each
-	// probe
 	delta = dmatrix(1, T, 1, hmm.N); // Allocate a TxN  double matrix (N=6 states)
 	psi = imatrix(1, T, 1, hmm.N);	 // Allocate a TxN  int matrix (N=6 states)
 
@@ -43,12 +38,14 @@ std::vector<int> testVit_CHMM(CHMM hmm, int T, double *O1, double *O2, double *p
 	pfb = dvector(1, T);
 	plogproba = dvector(1, hmm.N);
 
-	// Initialize pfb and plogproba
+	// Set SNP B-allele population frequencies
+	std::cout << "[HMM] Initializing pfb and plogproba" << std::endl;
 	for (int i = 1; i <= T; i++)
 	{
-		pfb[i] = 1;
+		pfb[i] = 0.01;  // 0.005 introduces small deletion errors, 0.05 small duplication errors
 	}
-
+	
+	// Set initial log probability for each state)
 	for (int i = 1; i <= hmm.N; i++)
 	{
 		plogproba[i] = -VITHUGE;
@@ -59,7 +56,6 @@ std::vector<int> testVit_CHMM(CHMM hmm, int T, double *O1, double *O2, double *p
 	q = ViterbiLogNP_CHMM(&hmm, T, O1, O2, pfb, snpdist, delta, psi, plogproba);
 
 	// Free the variables
-	// free_ivector(q, 1, T);
 	free_imatrix(psi, 1, T, 1, hmm.N);
 	free_dmatrix(delta, 1, T, 1, hmm.N);
 

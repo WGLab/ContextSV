@@ -46,7 +46,7 @@ int FASTAQuery::setFilepath(std::string fasta_filepath)
             if (current_chr != "")
             {
                 chr_to_seq[current_chr] = sequence;
-                std::cout << "Read chromosome " << current_chr << " with length " << sequence.length() << std::endl;
+                //std::cout << "Read chromosome " << current_chr << " with length " << sequence.length() << std::endl;
                 sequence = "";  // Reset the sequence
             }
 
