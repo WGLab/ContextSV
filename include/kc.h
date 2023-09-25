@@ -239,7 +239,7 @@ double beta(double z, double w);
 double betai(double a, double b, double x);
 double betacf(double a, double b, double x);
 double inverff (double x);
-double erf(double x);
+double errorf (double x);
 
 /****************
 random number
