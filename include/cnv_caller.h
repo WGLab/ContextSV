@@ -8,8 +8,10 @@
 #include "input_data.h"
 #include "cnv_data.h"
 
+/// @cond
 #include <string>
 #include <vector>
+/// @endcond
 
 
 class CNVCaller {

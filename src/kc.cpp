@@ -1,8 +1,10 @@
+#include "kc.h"
+
+/// @cond
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
-
-#include "kc.h"
+/// @endcond
 
 /************************   DESCRIPTION OF THE kc.c FILE   *******************
 

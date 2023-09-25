@@ -10,7 +10,6 @@
 #include "cnv_data.h"
 #include "sv_data.h"
 
-#include <string>
 
 class ContextSV {
 	private:

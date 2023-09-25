@@ -5,7 +5,9 @@
 #include "swig_interface.h"
 #include "contextsv.h"
 
+/// @cond
 #include <iostream>
+/// @endcond
 
 
 // Run the CLI with the given parameters

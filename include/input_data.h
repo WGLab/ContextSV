@@ -7,9 +7,11 @@
 
 #include "fasta_query.h"
 
+/// @cond
 #include <string>
 #include <vector>
 #include <map>
+/// @endcond
 
 class InputData {
     public:

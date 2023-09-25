@@ -1,7 +1,9 @@
-#include <iostream>
-
 #include "khmm.h"
 #include "kc.h"
+
+/// @cond
+#include <iostream>
+/// @endcond
 
 #define STATE_CHANGE 100000.0 /*this is the expected changes (D value) in the transition matrix*/
 #define VITHUGE 100000000000.0
@@ -78,7 +80,6 @@ double b1iot(int state, double *mean, double *sd, double uf, double o)
 	p = uf;
 
 	// PDF normal is the transition probability distrubution a_ij (initialized as pi_n) from state i to j
-	// P += (1-alpha_t-1) *
 	p += (1 - uf) * pdf_normal(o, mean[state], sd[state]);
 
 	// Prevent divide by zero error

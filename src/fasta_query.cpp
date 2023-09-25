@@ -1,11 +1,13 @@
 #include "fasta_query.h"
 
+/// @cond
 #include <string.h>
 #include <iostream>
 #include <map>
 #include <string>
 #include <fstream>
 #include <sstream>
+/// @endcond
 
 
 int FASTAQuery::setFilepath(std::string fasta_filepath)

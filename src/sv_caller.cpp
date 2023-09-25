@@ -7,10 +7,12 @@
 
 #include <htslib/sam.h>
 
+/// @cond
 #include <iostream>
 #include <string>
 #include <vector>
 #include <map>
+/// @endcond
 
 
 SVCaller::SVCaller(InputData& input_data)

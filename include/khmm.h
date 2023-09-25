@@ -1,11 +1,13 @@
 #ifndef _KHMM_H
 #define _KHMM_H
 
+/// @cond
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>
 #include <vector>
+/// @endcond
 
 typedef struct {
 	int N;			/* number of states;  Q={1,2,...,N} */

@@ -1,7 +1,10 @@
 #ifndef KC_H
 #define KC_H
 
+/// @cond
 #include <stdio.h>
+/// @endcond
+
 // #include "EXTERN.h"   /* std perl include */
 // #include "perl.h"     /* std perl include */
 // #include "XSUB.h"     /* XSUB include */

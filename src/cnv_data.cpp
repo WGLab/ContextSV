@@ -1,6 +1,8 @@
 #include "cnv_data.h"
 
+/// @cond
 #include <iostream>
+/// @endcond
 
 void CNVData::addCNVCall(std::string chr, int snp_pos, int cnv_type)
 {

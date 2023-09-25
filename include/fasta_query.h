@@ -3,8 +3,10 @@
 #ifndef FASTA_QUERY_H
 #define FASTA_QUERY_H
 
+/// @cond
 #include <string>
 #include <map>
+/// @endcond
 
 class FASTAQuery {
     private:

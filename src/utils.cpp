@@ -1,8 +1,10 @@
 #include "utils.h"
+
+/// @cond
 #include <stdio.h>
 #include <string.h>
 #include <iostream>
-
+/// @endcond
 
 // Print a progress bar
 void printProgress(int progress, int total)

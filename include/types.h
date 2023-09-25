@@ -3,9 +3,11 @@
 #ifndef TYPES_H
 #define TYPES_H
 
+/// @cond
 #include <string>
 #include <vector>
 #include <map>
+/// @endcond
 
 // CNV candidate location map
 // (chr, snp_pos) : cnv_type

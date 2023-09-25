@@ -1,7 +1,9 @@
 #include "sv_data.h"
 
+/// @cond
 #include <iostream>
 #include <fstream>
+/// @endcond
 
 void SVData::addSVCall(std::string chr, int start, int end, int sv_type, std::string alt_allele)
 {

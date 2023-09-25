@@ -4,6 +4,7 @@
 
 #include <htslib/sam.h>
 
+/// @cond
 #include <iostream>
 #include <fstream>
 #include <stdio.h>
@@ -16,6 +17,9 @@
 #include <iomanip>  // Progress bar
 
 #define BUFFER_SIZE 1024
+
+/// @endcond
+
 
 
 CNVCaller::CNVCaller(InputData& input_data)

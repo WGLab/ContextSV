@@ -4,8 +4,10 @@
 #include "fasta_query.h"  // For querying the reference genome
 #include "types.h"
 
+/// @cond
 #include <string>
 #include <map>
+/// @endcond
 
 
 class SVData {

@@ -3,9 +3,9 @@
 
 #include "types.h"
 
+/// @cond
 #include <string>
-#include <map>
-#include <utility>  // std::pair
+/// @endcond
 
 
 class CNVData {
