@@ -65,25 +65,33 @@ def run(vcf_file, cnv_data_file, output_path, region):
     # Parse the region.
     chromosome, start_position, end_position = parse_region(region)
 
+    if start_position is not None and end_position is not None:
+        log.info(f"Plotting CNVs in region %s:%d-%d.", chromosome, start_position, end_position)
+    else:
+        log.info(f"Plotting CNVs in region %s.", chromosome)
+
     # Set up the CNV type string list for the 6 CNV states.
     cnv_types = ["NAN", "DEL", "DEL", "NEUT", "NEUT", "DUP", "DUP"]
 
-    # Read the VCF file.
-    # vcf_file = open(vcf_path, "r")
-
-    # Filter the VCF file to the region using pandas.
-    vcf_data = pd.read_csv(vcf_file, sep="\t", comment="#", header=None)
+    # Filter the VCF file to the region using pandas, and make the chromosome
+    # column a string.
+    vcf_data = pd.read_csv(vcf_file, sep="\t", comment="#", header=None, dtype={0: str})
     if start_position is not None and end_position is not None:
         vcf_data = vcf_data[(vcf_data[0] == chromosome) & (vcf_data[1] >= start_position) & (vcf_data[1] <= end_position)]
     else:
         vcf_data = vcf_data[(vcf_data[0] == chromosome)]
 
-    # Filter the CNV data to the region using pandas.
-    cnv_data = pd.read_csv(cnv_data_file, sep="\t")
+    log.info("Loaded %d variants from %s.", len(vcf_data), vcf_file)
+
+    # Filter the CNV data to the region using pandas, and make the chromosome
+    # column a string.
+    cnv_data = pd.read_csv(cnv_data_file, sep="\t", header=0, dtype={"chromosome": str})
     if start_position is not None and end_position is not None:
         cnv_data = cnv_data[(cnv_data["chromosome"] == chromosome) & (cnv_data["position"] >= start_position) & (cnv_data["position"] <= end_position)]
     else:
         cnv_data = cnv_data[(cnv_data["chromosome"] == chromosome)]
+
+    log.info("Loaded %d CNVs from %s.", len(cnv_data), cnv_data_file)
 
     # Create an output html file where we will append the CNV plots.
     if start_position is not None and end_position is not None:
@@ -96,14 +104,19 @@ def run(vcf_file, cnv_data_file, output_path, region):
         os.makedirs(output_path)
 
     # Create the output html file.
-    output_html_file = open(os.path.join(output_path, html_filename), "w")
+    output_html_filepath = os.path.join(output_path, html_filename)
+    if os.path.exists(output_html_filepath):
+        os.remove(output_html_filepath)
+
+    output_html_file = open(output_html_filepath, "w", encoding="utf-8")
 
     #output_html_file = open(os.path.join(output_path, "cnv_plots.html"), "w")
 
     # Loop through the VCF data and plot each CNV (DEL or DUP) along with log2
     # ratio and BAF values for the SNPs in the CNV.
     cnv_count = 0
-    for index, row in vcf_data.iterrows():
+    for _, row in vcf_data.iterrows():
+
         # Get the INFO field.
         info_field = row[7]
 
@@ -111,7 +124,7 @@ def run(vcf_file, cnv_data_file, output_path, region):
         svtype = get_info_field_value(info_field, "SVTYPE")
 
         # Analyze the CNV if it is a DEL or DUP.
-        if svtype == "DEL" or svtype == "DUP":
+        if svtype in ("DEL", "DUP"):
 
             # Get the read depth (DP) value.
             read_depth = int(get_info_field_value(info_field, "DP"))
@@ -146,7 +159,7 @@ def run(vcf_file, cnv_data_file, output_path, region):
 
             # Get the hover text for the state sequence markers.
             hover_text = []
-            for index, row in sv_data.iterrows():
+            for _, row in sv_data.iterrows():
                 hover_text.append(f"TYPE: {cnv_types[row['cnv_state']]}<br>CHR: {row['chromosome']}<br>POS: {row['position']}<br>L2R: {row['log2_ratio']}<br>BAF: {row['b_allele_freq']}")
 
             # Create the log2 ratio trace.
@@ -254,16 +267,9 @@ def run(vcf_file, cnv_data_file, output_path, region):
                 layer = "below"
             )
 
-            # Add the figure to the output html file.
+            # Append the figure to the output html file.
             output_html_file.write(fig.to_html(full_html=False, include_plotlyjs="cdn"))
-
-            log.info("Plotted CNV {} {}:{}-{}.".format(svtype, chromosome, start_position, end_position))
-
-            # # Save the figure.
-            # filepath = os.path.join(output_path, f"cnv_{svtype}_{chromosome}_{start_position}_{end_position}.html")
-            # plotly.offline.plot(fig, filename=filepath, auto_open=False)
-
-            # log.info("Saved CNV plot to {}".format(filepath))
+            log.info("Plotted CNV %s %s:%d-%d.", svtype, chromosome, start_position, end_position)
 
             # Increment the CNV count.
             cnv_count += 1
@@ -275,4 +281,4 @@ def run(vcf_file, cnv_data_file, output_path, region):
     # Close the output html file.
     output_html_file.close()
     
-    log.info("Saved CNV plots to {}".format(os.path.join(output_path, html_filename)))
+    log.info("Saved CNV plots to %s.", output_html_filepath)

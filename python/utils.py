@@ -3,7 +3,7 @@
 def parse_region(region):
     # Parse a region string into its chromosome and start and end positions.
     region_parts = region.split(":")
-    chromosome = region_parts[0]
+    chromosome = str(region_parts[0])
 
     try:
         start_position = int(region_parts[1].split("-")[0])
