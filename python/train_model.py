@@ -5,16 +5,15 @@ train_model.py: Train the binary classification model.
 import os
 import sys
 import joblib
-import sklearn as sk
 from sklearn.linear_model import LogisticRegression
 import pandas as pd
-import os
 
-# Train the model.
-def train(tp_filepath, fp_filepath):
+
+def train(true_positives_filepath, false_positives_filepath):
+    """Train the binary classification model."""
     # Read in the true positive and false positive data.
-    tp_data = pd.read_csv(tp_filepath, sep="\t")
-    fp_data = pd.read_csv(fp_filepath, sep="\t")
+    tp_data = pd.read_csv(true_positives_filepath, sep="\t")
+    fp_data = pd.read_csv(false_positives_filepath, sep="\t")
 
     # Get the training data.
     tp_data["label"] = 1
@@ -33,12 +32,13 @@ def train(tp_filepath, fp_filepath):
     return model
 
 # Run the program.
-def run(tp_filepath, fp_filepath, output_dir):
+def run(true_positives_filepath, false_positives_filepath, output_directory):
+    """Run the program."""
     # Train the model.
-    model = train(tp_filepath, fp_filepath)
+    model = train(true_positives_filepath, false_positives_filepath)
 
     # Save the model
-    model_path = os.path.join(output_dir, "model.pkl")
+    model_path = os.path.join(output_directory, "model.pkl")
     joblib.dump(model, model_path)
 
     # Print the model.
@@ -47,8 +47,8 @@ def run(tp_filepath, fp_filepath, output_dir):
     # Return the model.
     return model
 
-# Score the structural variants.
 def score(model, cnv_data):
+    """Score the structural variants."""
     # Get the features.
     features = cnv_data[["lrr", "baf"]]
 
@@ -58,7 +58,7 @@ def score(model, cnv_data):
     # Return the scores.
     return scores
 
-# If this is the main program, run it.
+
 if __name__ == '__main__':
     # Get the command line arguments.
     tp_filepath = sys.argv[1]

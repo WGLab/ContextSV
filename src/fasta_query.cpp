@@ -7,6 +7,8 @@
 #include <string>
 #include <fstream>
 #include <sstream>
+#include <vector>
+#include <algorithm>
 /// @endcond
 
 
@@ -133,4 +135,34 @@ std::string FASTAQuery::query(std::string chr, int pos_start, int pos_end)
     }
 
     return subsequence;
+}
+
+// Function to get the chromosome contig lengths in VCF header format
+std::string FASTAQuery::getContigHeader()
+{
+    std::string contig_header = "";
+
+    // Sort the chromosomes
+    std::vector<std::string> chromosomes;
+    for (auto const& chr_seq : this->chr_to_seq)
+    {
+        chromosomes.push_back(chr_seq.first);
+    }
+    std::sort(chromosomes.begin(), chromosomes.end());
+
+    // Iterate over the chromosomes and add them to the contig header
+    for (auto const& chr : chromosomes)
+    {
+        // Add the contig header line
+        contig_header += "##contig=<ID=" + chr + ",length=" + std::to_string(this->chr_to_seq[chr].length()) + ">\n";
+    }
+    // {
+    //     std::string chr = chr_seq.first;
+    //     std::string seq = chr_seq.second;
+
+    //     // Add the contig header line
+    //     contig_header += "##contig=<ID=" + chr + ",length=" + std::to_string(seq.length()) + ">\n";
+    // }
+
+    return contig_header;
 }

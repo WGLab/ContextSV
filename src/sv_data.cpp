@@ -69,14 +69,54 @@ void SVData::saveToVCF(FASTAQuery& ref_genome, std::string output_dir)
         exit(1);
     }
 
+    // Set the sample name
+    std::string sample_name = "SAMPLE";
+
     // Write the header
     output_stream << "##fileformat=VCFv4.2" << std::endl;
+
+    // Get the date
+    time_t rawtime;
+    struct tm * timeinfo;
+    char buffer[80];
+    time(&rawtime);
+    timeinfo = localtime(&rawtime);
+
+    // Write the date
+    strftime(buffer, sizeof(buffer), "%Y%m%d", timeinfo);
+
+    // Write the date and source
+    output_stream << "##fileDate=" << buffer << std::endl;
+    output_stream << "##source=ContextSV" << std::endl;
+
+    // Write the reference genome
+    std::string ref_genome_filepath = ref_genome.getFilepath();
+    output_stream << "##reference=" << ref_genome_filepath << std::endl;
+
+    // Write the contig headers
+    output_stream << ref_genome.getContigHeader();
+
+    // Write the INFO lines
     output_stream << "##INFO=<ID=END,Number=1,Type=Integer,Description=\"End position of the variant described in this record\">" << std::endl;
     output_stream << "##INFO=<ID=SVTYPE,Number=1,Type=String,Description=\"Type of structural variant\">" << std::endl;
     output_stream << "##INFO=<ID=SVLEN,Number=1,Type=Integer,Description=\"Difference in length between REF and ALT alleles\">" << std::endl;
     output_stream << "##INFO=<ID=DP,Number=1,Type=Integer,Description=\"Total read depth at the locus\">" << std::endl;
     output_stream << "##INFO=<ID=SVMETHOD,Number=1,Type=String,Description=\"Method used to call the structural variant\">" << std::endl;
-    output_stream << "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO" << std::endl;
+    //output_stream << "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO" << std::endl;
+
+    // Write the FILTER lines
+    output_stream << "##FILTER=<ID=PASS,Description=\"All filters passed\">" << std::endl;
+    output_stream << "##FILTER=<ID=LowQual,Description=\"Low quality\">" << std::endl;
+
+    // Write the FORMAT lines
+    // Genotype
+    output_stream << "##FORMAT=<ID=GT,Number=1,Type=String,Description=\"Genotype\">" << std::endl;
+
+    // Read depth
+    output_stream << "##FORMAT=<ID=DP,Number=1,Type=Integer,Description=\"Read depth\">" << std::endl;
+
+    // Add the header line
+    output_stream << "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\t" << sample_name << std::endl;
 
     // Iterate over the SV calls
     std::cout << "Saving SV calls to " << output_vcf << "..." << std::endl;
@@ -88,6 +128,11 @@ void SVData::saveToVCF(FASTAQuery& ref_genome, std::string output_dir)
         SVInfo info = sv_call.second;
         int sv_type = info.first;
         int depth = info.second;
+
+        // If the SV type is unknown, skip it
+        if (sv_type == -1) {
+            continue;
+        }
 
         // Get the CHROM, POS, END, and ALT
         std::string chr = std::get<0>(candidate);
@@ -116,8 +161,21 @@ void SVData::saveToVCF(FASTAQuery& ref_genome, std::string output_dir)
             alt_allele = "<" + sv_type_str + ">";
         }
 
+        // Set the genotype as unspecified for now (Haven't distinguished b/w homozygous, heterozygous)
+        std::string genotype = "./.";
+
+        // Create the INFO string
+        std::string info_str = "END=" + std::to_string(end) + ";SVTYPE=" + sv_type_str + ";SVLEN=" + std::to_string(sv_len) + ";DP=" + std::to_string(depth) + ";SVMETHOD=" + sv_method;
+
+        // Create the FORMAT string
+        std::string format_str = "GT:DP";
+
+        // Create the sample string
+        std::string sample_str = genotype + ":" + std::to_string(depth);
+
         // Write the SV call to the file
-        output_stream << chr << "\t" << pos << "\t" << "." << "\t" << ref_allele.substr(0, 10) << "\t" << alt_allele << "\t" << "." << "\t" << "." << "\t" << "END=" << end << ";SVTYPE=" << sv_type_str << ";SVLEN=" << sv_len << ";DP=" << depth << ";SVMETHOD=" << sv_method << std::endl;
+        output_stream << chr << "\t" << pos << "\t" << "." << "\t" << ref_allele.substr(0, 10) << "\t" << alt_allele << "\t" << "." << "\t" << "." << "\t" << info_str << "\t" << format_str << "\t" << sample_str << std::endl;
+        //output_stream << chr << "\t" << pos << "\t" << "." << "\t" << ref_allele.substr(0, 10) << "\t" << alt_allele << "\t" << "." << "\t" << "." << "\t" << "END=" << end << ";SVTYPE=" << sv_type_str << ";SVLEN=" << sv_len << ";DP=" << depth << ";SVMETHOD=" << sv_method << std::endl;
         //output_stream << chr << "\t" << pos << "\t" << "." << "\t" << ref_allele.substr(0, 10) << "\t" << alt_allele << "\t" << "." << "\t" << "." << "\t" << "SVTYPE=" << sv_type_str << ";SVLEN=" << sv_len << ";DP=" << depth << ";SVMETHOD=" << sv_method << std::endl;
         //output_stream << chr << "\t" << pos << "\t" << "." << "\t" << ref_allele.substr(0, 10) << "\t" << alt_allele << "\t" << "." << "\t" << "." << "\t" << "SVTYPE=" << sv_type_str << ";SVLEN=" << sv_len << ";DP=" << depth << std::endl;
     }
