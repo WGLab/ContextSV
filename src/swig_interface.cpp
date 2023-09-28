@@ -11,7 +11,7 @@
 
 
 // Run the CLI with the given parameters
-int run(std::string bam_fp, std::string ref_fp, std::string snps_fp, std::string outdir, std::string region, std::string chr_cov)
+int run(std::string bam_fp, std::string ref_fp, std::string snps_fp, std::string outdir, std::string region, std::string chr_cov, std::string pfb_fp)
 {
 	// Create the input_data parameters
 	InputData input_data;
@@ -21,6 +21,7 @@ int run(std::string bam_fp, std::string ref_fp, std::string snps_fp, std::string
 	input_data.setOutputDir(outdir);
 	input_data.setRegion(region);
 	input_data.setChrCov(chr_cov);
+	input_data.setPFBFilepath(pfb_fp);
 
 	// Run ContextSV
 	ContextSV caller_obj(input_data);

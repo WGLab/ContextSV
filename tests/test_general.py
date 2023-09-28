@@ -18,6 +18,7 @@ TEST_DATA_DIR = os.path.join(os.path.dirname(__file__), 'data')
 TEST_BAM_FILE = os.path.join(TEST_DATA_DIR, 'test.bam')
 TEST_REF_FILE = ""  # Empty string for now.
 TEST_SNPS_FILE = os.path.join(TEST_DATA_DIR, 'snps.vcf.gz')
+TEST_PFB_FILE = ""
 
 # Set the output directory.
 TEST_OUTDIR = os.path.join(os.path.dirname(__file__), 'output')
@@ -32,7 +33,8 @@ def test_run():
         TEST_SNPS_FILE,
         TEST_OUTDIR,
         "chr3:60380533-60390533",
-        "chr3:39.561,chr6:39.4096"
+        "chr3:39.561,chr6:39.4096",
+        ""
     )
 
     # Check that the output file exists.

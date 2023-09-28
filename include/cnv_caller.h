@@ -38,8 +38,12 @@ class CNVCaller {
         // Read SNP positions and BAF values from the VCF file
         std::pair<std::vector<int>, std::vector<double>> readSNPBAFs();
 
+        // Read SNP population frequencies from the PFB file and return a vector
+        // of population frequencies for each SNP location
+        std::vector<double> getSNPPopulationFrequencies(std::vector<int> snp_locations);
+
         // Save a CSV with SNP positions, BAF values and Log R Ratios
-        void saveToTSV(std::string filepath, std::vector<int> snp_positions, std::vector<double> bafs, std::vector<double> logr_ratios, std::vector<int> state_sequence);
+        void saveToTSV(std::string filepath, std::vector<int> snp_locations, std::vector<double> bafs, std::vector<double> logr_ratios, std::vector<int> state_sequence);
 };
 
 #endif // CNV_CALLER_H

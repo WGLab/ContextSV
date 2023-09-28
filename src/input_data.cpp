@@ -229,3 +229,28 @@ int InputData::getChrCov(std::string chr, double &cov)
         return -1;
     }
 }
+
+std::string InputData::getPFBFilepath()
+{
+    return this->pfb_filepath;
+}
+
+void InputData::setPFBFilepath(std::string filepath)
+{
+    this->pfb_filepath = filepath;
+
+    // Check if empty
+    if (filepath == "")
+    {
+        return;
+        
+    } else {
+        // Check if the file exists
+        FILE *fp = fopen(filepath.c_str(), "r");
+        if (fp == NULL)
+        {
+            std::cerr << "Error: PFB file not found" << std::endl;
+            exit(1);
+        }
+    }
+}

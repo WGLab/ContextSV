@@ -73,6 +73,13 @@ def main():
         required=True
     )
 
+    # PFB file of population allele frequencies.
+    sv_parser.add_argument(
+        "-p", "--pfb",
+        help="The path to the PFB file of population allele frequencies.",
+        required=False
+    )
+
     # Pass in chromosome mean coverage data for speediness.
     sv_parser.add_argument(
         "-c", "--chr-cov",
@@ -112,13 +119,14 @@ def main():
     if (program_mode == "sv"):
         
         # Run SV detection.
-        print("Running contextsv with the following arguments:")
-        print("BAM: {}".format(args.bam))
-        print("Reference: {}".format(args.reference))
-        print("SNPs: {}".format(args.snps))
-        print("Output: {}".format(args.output))
-        print("Region: {}".format(args.region))
-        print("Chromosome mean coverage: {}".format(args.chr_cov))
+        log.info("Running SV detection.")
+        log.info("BAM filepath: %s", args.bam)
+        log.info("Reference filepath: %s", args.reference)
+        log.info("SNPs filepath: %s", args.snps)
+        log.info("Output directory: %s", args.output)
+        log.info("Region: %s", args.region)
+        log.info("Chromosome mean coverage: %s", args.chr_cov)
+        log.info("PFB filepath: %s", args.pfb)
     
         contextsv.run(
             args.bam,
@@ -126,7 +134,8 @@ def main():
             args.snps,
             args.output,
             args.region,
-            str(args.chr_cov)
+            str(args.chr_cov),
+            args.pfb
         )
 
         vcf_path = os.path.join(args.output, "sv_calls.vcf")
@@ -138,13 +147,8 @@ def main():
         output_dir = args.output
 
     # Run the python-based analysis.
-    print("Running python-based analysis.")
-    print("VCF: {}".format(vcf_path))
-    print("CNV Data: {}".format(cnv_data_path))
-    print("Output: {}".format(output_dir))
-    
+    log.info("Running python-based analysis...")
     cnv_plots.run(vcf_path, cnv_data_path, output_dir, region)
-
     log.info("Done.")
 
 

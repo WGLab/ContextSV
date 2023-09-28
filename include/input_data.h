@@ -35,15 +35,18 @@ class InputData {
         bool getRegionSet();
         void setChrCov(std::string chr_cov);
         int getChrCov(std::string chr, double& cov);
+        std::string getPFBFilepath();
+        void setPFBFilepath(std::string filepath);
 
     private:
         std::string bam_filepath = "";
         std::string ref_filepath = "";
+        std::string snp_vcf_filepath = "";
+        std::string pfb_filepath = "";
         FASTAQuery fasta_query;
         std::string output_dir   = "";
         std::string region = "";
         int window_size = 10000;
-        std::string snp_vcf_filepath = "";
         std::string region_chr = "";
         int region_start = 0;
         int region_end   = 0;

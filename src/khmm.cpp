@@ -3,8 +3,12 @@
 
 /// @cond
 #include <iostream>
+#include <sstream>
+#include <vector>
+#include <map>
 /// @endcond
 
+#define BUFFER_SIZE 1024
 #define STATE_CHANGE 100000.0 /*this is the expected changes (D value) in the transition matrix*/
 #define VITHUGE 100000000000.0
 #define FLOAT_MINIMUM 1.175494351e-38; /*this is indeed machine dependent*/
@@ -33,19 +37,9 @@ std::vector<int> testVit_CHMM(CHMM hmm, int T, double *O1, double *O2, double *p
 	int **psi;		// Matrix
 	delta = dmatrix(1, T, 1, hmm.N); // Allocate a TxN  double matrix (N=6 states)
 	psi = imatrix(1, T, 1, hmm.N);	 // Allocate a TxN  int matrix (N=6 states)
-
-	// Allocate pfb and plogproba
-	pfb = dvector(1, T);
-	plogproba = dvector(1, hmm.N);
-
-	// Set SNP B-allele population frequencies
-	std::cout << "[HMM] Initializing pfb and plogproba" << std::endl;
-	for (int i = 1; i <= T; i++)
-	{
-		pfb[i] = 0.01;  // 0.005 introduces small deletion errors, 0.05 small duplication errors
-	}
 	
-	// Set initial log probability for each state)
+	// Set initial log probability for each state
+	plogproba = dvector(1, hmm.N);
 	for (int i = 1; i <= hmm.N; i++)
 	{
 		plogproba[i] = -VITHUGE;
@@ -545,4 +539,3 @@ void FreeCHMM(CHMM *phmm)
 		free_dvector(phmm->B3_sd, 1, phmm->N);
 	}
 }
-
