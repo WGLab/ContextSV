@@ -125,6 +125,12 @@ def main():
         log.info("SNPs filepath: %s", args.snps)
         log.info("Output directory: %s", args.output)
         log.info("Region: %s", args.region)
+        
+        if args.pfb is None:
+            args.pfb = ""
+        if args.chr_cov is None:
+            args.chr_cov = ""
+            
         log.info("Chromosome mean coverage: %s", args.chr_cov)
         log.info("PFB filepath: %s", args.pfb)
     
@@ -134,7 +140,7 @@ def main():
             args.snps,
             args.output,
             args.region,
-            str(args.chr_cov),
+            args.chr_cov,
             args.pfb
         )
 

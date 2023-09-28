@@ -417,31 +417,19 @@ std::vector<double> CNVCaller::getSNPPopulationFrequencies(std::vector<int> snp_
             col++;
         }
 
-        // Store the PFB value in the map
-        pfb_map[chr][pos] = pfb;
-    }
-
-    // Print the first and last 10 PFBs in 21
-    std::cout << "First 10 PFBs in chr21:" << std::endl;
-    int i = 0;
-    for (auto it = pfb_map["21"].begin(); it != pfb_map["21"].end(); it++)
-    {
-        if (i < 10)
+        // Store the PFB value in the map if higher than the default
+        if (pfb > DEFAULT_PFB)
         {
-            std::cout << it->first << ": " << it->second << std::endl;
+            // Add an offset if the PFB is equal to 0 or 1
+            if (pfb == 0)
+            {
+                pfb = 0.0001;
+            } else if (pfb == 1) {
+                pfb = 0.9999;
+            }
+            pfb_map[chr][pos] = pfb;
+            //std::cout << "PFB for " << chr << ":" << pos << ": " << pfb << std::endl;
         }
-        i++;
-    }
-
-    std::cout << "Last 10 PFBs in chr21:" << std::endl;
-    i = 0;
-    for (auto it = pfb_map["21"].rbegin(); it != pfb_map["21"].rend(); it++)
-    {
-        if (i < 10)
-        {
-            std::cout << it->first << ": " << it->second << std::endl;
-        }
-        i++;
     }
 
     // Determine whether the chromosome is in chr notation (e.g. chr1) or not (e.g. 1)
@@ -491,27 +479,24 @@ std::vector<double> CNVCaller::getSNPPopulationFrequencies(std::vector<int> snp_
         // Get the SNP position
         int pos = snp_locations[i];
 
-        // Print if the first or last 10 SNPs
-        if (i < 10 || i > snp_count - 10)
-        {
-            std::cout << "[SNP] " << chr << ":" << pos << "\n";
-        }
-        //std::cout << "SNP " << i << " of " << snp_count << ": " << chr << ":" << pos << std::endl;
+        // Set to the default PFB value
+        snp_pfb.push_back(DEFAULT_PFB);
 
-        // Get the population frequency from the map
-        auto it = pfb_map[chr].find(pos);
-        if (it != pfb_map[chr].end())
-        {
-            // Store the population frequency
-            snp_pfb.push_back(it->second);
-            found_count++;
-            std::cout << "Found PFB for SNP " << i << " of " << snp_count << ": " << chr << ":" << pos << std::endl;
-        }
-        else
-        {
-            // Store the default population frequency
-            snp_pfb.push_back(DEFAULT_PFB);
-        }
+        // // Get the population frequency from the map
+        // auto it = pfb_map[chr].find(pos);
+        // if (it != pfb_map[chr].end())
+        // {
+        //     // Store the population frequency
+        //     snp_pfb.push_back(it->second);
+        //     found_count++;
+        //     //std::cout << "Found PFB for SNP " << i << " of " << snp_count << ": " << chr << ":" << pos << std::endl;
+        // }
+        // else
+        // {
+        //     // Store the default population frequency
+        //     //snp_pfb.push_back(DEFAULT_PFB);
+        //     snp_pfb.push_back(0.5);
+        // }
     }
 
     // Print the percentage of SNPs with population frequencies

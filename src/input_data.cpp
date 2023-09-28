@@ -239,7 +239,7 @@ void InputData::setPFBFilepath(std::string filepath)
 {
     this->pfb_filepath = filepath;
 
-    // Check if empty
+    // Check if empty string
     if (filepath == "")
     {
         return;
@@ -249,7 +249,7 @@ void InputData::setPFBFilepath(std::string filepath)
         FILE *fp = fopen(filepath.c_str(), "r");
         if (fp == NULL)
         {
-            std::cerr << "Error: PFB file not found" << std::endl;
+            std::cerr << "PFB file does not exist: " << filepath << std::endl;
             exit(1);
         }
     }

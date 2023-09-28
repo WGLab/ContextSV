@@ -211,7 +211,7 @@ def run(vcf_file, cnv_data_file, output_path, region):
 
                 # Set the figure title.
                 fig.update_layout(
-                    title_text = f"CNV {svtype} {chromosome}:{start_position}-{end_position} (Read Depth: {read_depth})"
+                    title_text = f"{svtype} (DP={read_depth}, LEN={cnv_length}bp) at {chromosome}:{start_position}-{end_position}",
                 )
 
                 # Create a shaded rectangle for the CNV, layering it below the CNV
