@@ -1,5 +1,6 @@
 var khmm_8cpp =
 [
+    [ "BUFFER_SIZE", "khmm_8cpp.html#a6b20d41d6252e9871430c242cb1a56e7", null ],
     [ "DELTA", "khmm_8cpp.html#a3fd2b1bcd7ddcf506237987ad780f495", null ],
     [ "FLOAT_MINIMUM", "khmm_8cpp.html#aa76dba1435083c21600074a1471be0d9", null ],
     [ "STATE_CHANGE", "khmm_8cpp.html#a921cc0b96e9153cc7f874bd6a44b6d51", null ],

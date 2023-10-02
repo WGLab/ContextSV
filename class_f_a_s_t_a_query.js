@@ -1,5 +1,6 @@
 var class_f_a_s_t_a_query =
 [
+    [ "getContigHeader", "class_f_a_s_t_a_query.html#af2d3ec8e4632c309e0873d342d883d5e", null ],
     [ "getFilepath", "class_f_a_s_t_a_query.html#ae494167badd31359e71ee4a44656511f", null ],
     [ "query", "class_f_a_s_t_a_query.html#aae2f4b89326ca788283bbee53bea34e9", null ],
     [ "setFilepath", "class_f_a_s_t_a_query.html#a0c20376e86d3b50c6b22fb7f17b09f02", null ],

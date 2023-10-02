@@ -30,7 +30,7 @@ var kc_8h =
     [ "cvector", "kc_8h.html#a16a18b0e44cbd9b64e5c546c0f0f6720", null ],
     [ "dmatrix", "kc_8h.html#ab1a02a50dfbc26318f6bb296731b6f3a", null ],
     [ "dvector", "kc_8h.html#ae21c4c252ad5d5710ebd03d6f07e40de", null ],
-    [ "erf", "kc_8h.html#aa8b35382a71885eed509a5f87bf5e266", null ],
+    [ "errorf", "kc_8h.html#afafd5c993f50f8676e0a2095ce62c012", null ],
     [ "factorial", "kc_8h.html#a20614b0260f5c699044c6514b6479e34", null ],
     [ "fh_stderr", "kc_8h.html#a5a78aba3780860d110c596288ac54635", null ],
     [ "fh_stdin", "kc_8h.html#a31d09d90dfdeb57129a49d908744db53", null ],

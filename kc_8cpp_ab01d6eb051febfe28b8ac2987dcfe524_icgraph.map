@@ -1,8 +1,8 @@
 <map id="mean" name="mean">
 <area shape="rect" id="Node000001" title=" " alt="" coords="953,105,1008,131"/>
-<area shape="rect" id="Node000002" href="$khmm_8cpp.html#a02dc04d07f642f9756939ef10af76319" title=" " alt="" coords="821,7,871,32"/>
+<area shape="rect" id="Node000002" href="$khmm_8cpp.html#a02dc04d07f642f9756939ef10af76319" title="O1 emission probability." alt="" coords="821,7,871,32"/>
 <area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="959,96,934,70,904,46,870,29,873,25,907,41,937,66,962,93"/>
-<area shape="rect" id="Node000008" href="$khmm_8cpp.html#a652a672a2d4cba451fe4f5a0af94d977" title=" " alt="" coords="821,56,871,81"/>
+<area shape="rect" id="Node000008" href="$khmm_8cpp.html#a652a672a2d4cba451fe4f5a0af94d977" title="O2 emission probability." alt="" coords="821,56,871,81"/>
 <area shape="poly" id="edge7_Node000001_Node000008" title=" " alt="" coords="939,106,871,80,873,75,941,101"/>
 <area shape="rect" id="Node000009" href="$kc_8cpp.html#a865598a7017730b2bdf24cf6269d0f23" title=" " alt="" coords="789,105,903,131"/>
 <area shape="poly" id="edge9_Node000001_Node000009" title=" " alt="" coords="940,121,903,121,903,115,940,115"/>
@@ -10,15 +10,15 @@
 <area shape="poly" id="edge14_Node000001_Node000013" title=" " alt="" coords="941,135,882,157,880,152,939,130"/>
 <area shape="rect" id="Node000014" href="$kc_8cpp.html#a1e079ca755a3861bccd94f64677e1d54" title=" " alt="" coords="791,205,901,231"/>
 <area shape="poly" id="edge15_Node000001_Node000014" title=" " alt="" coords="962,144,937,170,907,195,883,208,881,203,904,190,933,166,958,140"/>
-<area shape="rect" id="Node000003" href="$khmm_8cpp.html#a51dbadd369b498ec093b590f39e8ea96" title=" " alt="" coords="591,5,739,31"/>
+<area shape="rect" id="Node000003" href="$khmm_8cpp.html#a51dbadd369b498ec093b590f39e8ea96" title="Viterbi algorithm." alt="" coords="591,5,739,31"/>
 <area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="807,22,739,21,739,16,807,16"/>
-<area shape="rect" id="Node000004" href="$khmm_8cpp.html#ac44ba55ccbb73d2b015ca7537479381e" title=" " alt="" coords="422,5,530,31"/>
+<area shape="rect" id="Node000004" href="$khmm_8cpp.html#ac44ba55ccbb73d2b015ca7537479381e" title="Run the main HMM algorithm." alt="" coords="422,5,530,31"/>
 <area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="577,21,531,21,531,15,577,15"/>
 <area shape="rect" id="Node000005" href="$class_c_n_v_caller.html#a49824c662095f9af9a38056dadc8933f" title=" " alt="" coords="252,5,361,31"/>
 <area shape="poly" id="edge4_Node000004_Node000005" title=" " alt="" coords="409,21,362,21,362,15,409,15"/>
 <area shape="rect" id="Node000006" href="$class_context_s_v.html#ac9d32b6e28e5bfdf10e314db0e90e4cd" title=" " alt="" coords="93,5,204,31"/>
 <area shape="poly" id="edge5_Node000005_Node000006" title=" " alt="" coords="238,21,204,21,204,15,238,15"/>
-<area shape="rect" id="Node000007" href="$swig__interface_8cpp.html#aad43500a0528f571edecd2310dfb0ef6" title=" " alt="" coords="5,5,45,31"/>
+<area shape="rect" id="Node000007" href="$swig__interface_8cpp.html#ade07e2f2bb85b7aaac8af156f3e962f6" title=" " alt="" coords="5,5,45,31"/>
 <area shape="poly" id="edge6_Node000006_Node000007" title=" " alt="" coords="79,21,46,21,46,15,79,15"/>
 <area shape="poly" id="edge8_Node000008_Node000003" title=" " alt="" coords="807,61,710,33,712,28,808,56"/>
 <area shape="rect" id="Node000010" href="$kc_8cpp.html#aa51dbc9f02003e376630381db9eab42c" title=" " alt="" coords="603,55,726,80"/>
