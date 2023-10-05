@@ -37,6 +37,8 @@ class InputData {
         int getChrCov(std::string chr, double& cov);
         std::string getPFBFilepath();
         void setPFBFilepath(std::string filepath);
+        void setThreadCount(int thread_count);
+        int getThreadCount();
 
     private:
         std::string bam_filepath = "";
@@ -52,6 +54,7 @@ class InputData {
         int region_end   = 0;
         bool region_set = false;
         std::map<std::string, double> chr_cov;
+        int thread_count = 1;
 };
 
 #endif // INPUT_DATA_H

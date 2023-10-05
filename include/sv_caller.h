@@ -21,7 +21,7 @@ class SVCaller {
         InputData* input_data;
 
         // Detect SVs from long read alignments in the CIGAR string
-        SVData detectSVsFromCIGAR(std::string chr, int32_t pos, uint32_t* cigar, int cigar_len);
+        SVData detectSVsFromCIGAR(SVData& sv_calls, std::string chr, int32_t pos, uint32_t* cigar, int cigar_len);
 
         // Detect SVs from split-read alignments (primary and supplementary)
         SVData detectSVsFromSplitReads();

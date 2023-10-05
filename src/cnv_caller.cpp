@@ -17,8 +17,10 @@
 #include <iomanip>  // Progress bar
 
 #define BUFFER_SIZE 1024
-#define DEFAULT_PFB 0.01  // Default PFB value (1%)
-// #define DEFAULT_PFB 0.99  // Default PFB value (99%)
+// #define MIN_PFB 0.00001  // Minimum PFB value
+// #define MAX_PFB 0.99999  // Maximum PFB value
+#define MIN_PFB 0.01
+#define MAX_PFB 0.99
 /// @endcond
 
 
@@ -38,12 +40,14 @@ CNVData CNVCaller::run()
     std::vector<int> snp_locations = bafs_by_pos.first;
     std::vector<double> baf = bafs_by_pos.second;
 
+    std::cout << "Number of SNPs: " << snp_locations.size() << std::endl;
+
     // Get the population frequencies for each SNP
     std::vector<double> pfb;
     if (this->input_data->getPFBFilepath() == "")
     {
-        std::cout << "No PFB file provided. Using default PFB value of " << DEFAULT_PFB << std::endl;
-        pfb = std::vector<double>(snp_locations.size(), DEFAULT_PFB);
+        std::cout << "No PFB file provided. Using the minimum PFB value of " << MIN_PFB << " for all SNPs." << std::endl;
+        pfb = std::vector<double>(snp_locations.size(), MIN_PFB);
     } else {
         std::cout << "Using PFB file: " << this->input_data->getPFBFilepath() << std::endl;
         std::cout << "Getting population frequencies for each SNP..." << std::endl;
@@ -90,7 +94,7 @@ CNVData CNVCaller::run()
     // Save a CSV of the positions, LRRs, BAFs, and state sequence
     std::cout << "Saving TSV of positions, LRRs, and BAFs..." << std::endl;
     std::string output_filepath = this->input_data->getOutputDir() + "/cnv_data.tsv";
-    saveToTSV(output_filepath, snp_locations, baf, lrr, state_sequence);
+    saveToTSV(output_filepath, snp_locations, baf, lrr, state_sequence, pfb);
     std::cout << "TSV saved to: " << output_filepath << std::endl;
 
     // Return a map of the state sequence by position
@@ -102,12 +106,9 @@ CNVData CNVCaller::run()
 
     // Create a map of the state sequence by position
     CNVData state_sequence_by_pos;
-    //std::map<std::pair<char *, int>, int> state_sequence_by_pos;
     for (int i = 0; i < num_probes; i++)
     {
         state_sequence_by_pos.addCNVCall(chr_cstr, snp_locations[i], state_sequence[i]);
-        //std::pair<char *, int> pos = std::make_pair(chr, snp_locations[i]);
-        //state_sequence_by_pos[pos] = state_sequence[i];
     }
 
     // Free the memory
@@ -134,8 +135,10 @@ std::vector<double> CNVCaller::calculateLogRRatiosAtSNPS(std::vector<int> snp_lo
     }
 
     // Set the region start and end from the first and last SNPs
+    std::cout << "Getting region start and end..." << std::endl;
     int region_start = snp_locations.front();
     int region_end = snp_locations.back();
+    std::cout << "Fixing region start and end..." << std::endl;
     if (this->input_data->getRegionSet()) {
         region_start = std::max(region_start, this->input_data->getRegionStart());
         region_end = std::min(region_end, this->input_data->getRegionEnd());
@@ -164,8 +167,7 @@ std::vector<double> CNVCaller::calculateLogRRatiosAtSNPS(std::vector<int> snp_lo
         snp_lrr.push_back(lrr);
 
         // Update the progress bar
-        printProgress(i, snp_count-1);
-        //this->input_data->printProgress(i, snp_locations.size()-1);
+        //printProgress(i, snp_count-1);
     }
 
     return snp_lrr;
@@ -185,9 +187,9 @@ double CNVCaller::calculateMeanChromosomeCoverage()
     // counts (non-zero depths only) for a single chromosome
 
     // Run the entire chromosome
-    snprintf(cmd, BUFFER_SIZE,\
-    "samtools depth -r %s %s | awk '{c++;s+=$3}END{print c, s}'",\
-    chr.c_str(), input_filepath.c_str());  // Remove '-a' for debugging
+        snprintf(cmd, BUFFER_SIZE,\
+        "samtools depth -r %s %s | awk '{c++;s+=$3}END{print c, s}'",\
+        chr.c_str(), input_filepath.c_str());  // Remove '-a' for debugging
 
     std::cout << "Running command: " << cmd << std::endl;
 
@@ -230,13 +232,11 @@ double CNVCaller::calculateWindowLogRRatio(double mean_chr_cov, int start_pos, i
     // counts (non-zero depths only) for a single region
 
     // Run the entire chromosome
-    snprintf(cmd, BUFFER_SIZE,\
-    "samtools depth -r %s:%d-%d %s | awk '{c++;s+=$3}END{print c, s}'",\
+        snprintf(cmd, BUFFER_SIZE,\
+        "samtools depth -r %s:%d-%d %s | awk '{c++;s+=$3}END{print c, s}'",\
         chr.c_str(), start_pos, end_pos, input_filepath.c_str());
-    //fprintf(stdout, "%s\n", cmd);  // Print the command
-    //fflush(stdout);
-    
-    fp = popen(cmd, "r");
+
+        fp = popen(cmd, "r");
     if (fp == NULL)
     {
         fprintf(stderr, "Failed to run command\n");
@@ -288,7 +288,6 @@ std::pair<std::vector<int>, std::vector<double>> CNVCaller::readSNPBAFs()
     // filtered SNPs for calculating BAFs
     std::cout << "Extracting DP and AD from filtered SNPs" << std::endl;
     cmd = "bcftools query -f '%CHROM,%POS,[%DP],[%AD]\n' " + filtered_snp_vcf_filepath;
-    std::cout << "Command: " << cmd << std::endl;
     FILE *fp = popen(cmd.c_str(), "r");
     if (fp == NULL)
     {
@@ -357,9 +356,12 @@ std::pair<std::vector<int>, std::vector<double>> CNVCaller::readSNPBAFs()
     // Close the pipe
     pclose(fp);
 
-    // Remove the filtered SNPs file
-    std::cout << "Removing filtered SNPs file: " << filtered_snp_vcf_filepath << std::endl;
-    std::remove(filtered_snp_vcf_filepath.c_str());
+    // Exit if no SNPs were found
+    if (snp_locations.size() == 0)
+    {
+        std::cerr << "ERROR: No SNPs found in the VCF file: " << snp_filepath << std::endl;
+        exit(1);
+    }
 
     // Create the pair vector
     std::pair<std::vector<int>, std::vector<double>> snp_data = std::make_pair(snp_locations, snp_bafs);
@@ -380,14 +382,15 @@ std::vector<double> CNVCaller::getSNPPopulationFrequencies(std::vector<int> snp_
         exit(1);
     }
 
-    // Read the PFB file and create a map of population frequencies by SNP
-    // position
-    std::cout << "Reading PFB file: " << pfb_filepath << std::endl;
+    // Read the AF values (AF for population frequency) into a map
+    std::map<std::string, std::map<int, double>> pfb_map;  // Map of population frequencies by SNP position (chr -> pos -> pfb)
     char line[BUFFER_SIZE];
-    std::map<std::string, std::map<int, double>> pfb_map;
+    int pfb_count = 0;
+    int pfb_min_hit = 0;
+    int pfb_max_hit = 0;
     while (fgets(line, BUFFER_SIZE, fp) != NULL)
     {
-        // Parse the line
+        // Parse the tab-delimited line
         char *tok = strtok(line, "\t");  // Tokenize the line
         int col = 0;  // Column index
         std::string chr = "";
@@ -417,20 +420,32 @@ std::vector<double> CNVCaller::getSNPPopulationFrequencies(std::vector<int> snp_
             col++;
         }
 
-        // Store the PFB value in the map if higher than the default
-        if (pfb > DEFAULT_PFB)
+        // Store the PFB value in the map, and fix within the range
+        //std::cout << "PFB: " << std::fixed << std::setprecision(6) << pfb << std::endl;
+        //std::cout << "PFB at " << chr << ":" << pos << " -> " << std::fixed << std::setprecision(6) << pfb << std::endl;
+        if (pfb < MIN_PFB)
         {
-            // Add an offset if the PFB is equal to 0 or 1
-            if (pfb == 0)
-            {
-                pfb = 0.0001;
-            } else if (pfb == 1) {
-                pfb = 0.9999;
-            }
+            pfb_map[chr][pos] = MIN_PFB;
+            pfb_min_hit++;
+        } else if (pfb > MAX_PFB) {
+            pfb_map[chr][pos] = MAX_PFB;
+            pfb_max_hit++;
+        } else {
             pfb_map[chr][pos] = pfb;
-            //std::cout << "PFB for " << chr << ":" << pos << ": " << pfb << std::endl;
+
+            // Print values for debugging
+            //std::cout << "PFB at " << chr << ":" << pos << " -> " << std::fixed << std::setprecision(6) << pfb << std::endl;
         }
+        pfb_count++;
     }
+
+    // Close the file
+    fclose(fp);
+
+    // Log the percentage of PFB values that were fixed
+    std::cout << "PFB values fixed: " << (double) (pfb_min_hit + pfb_max_hit) / (double) pfb_count * 100 << "%" << std::endl;
+    std::cout << "PFB min hit: " << (double) pfb_min_hit / (double) pfb_count * 100 << "%" << std::endl;
+    std::cout << "PFB max hit: " << (double) pfb_max_hit / (double) pfb_count * 100 << "%" << std::endl;
 
     // Determine whether the chromosome is in chr notation (e.g. chr1) or not (e.g. 1)
     bool chr_notation = false;
@@ -440,34 +455,26 @@ std::vector<double> CNVCaller::getSNPPopulationFrequencies(std::vector<int> snp_
         chr_notation = true;
     }
 
-    // Close the file
-    fclose(fp);
-    std::cout << "Done." << std::endl;
-
-    std::cout << "Getting SNPs population frequencies..." << std::endl;
-
     // Create a vector of population frequencies for each SNP
+    std::cout << "Getting SNPs population frequencies..." << std::endl;
     std::vector<double> snp_pfb;
 
     // Get the chromosome
     std::string chr = this->input_data->getRegionChr();
 
     // Make sure the chromosome follows the same format as the PFB file
-    std::cout << "Chromosome: " << chr << std::endl;
     if (chr_notation)
     {
         // Add "chr" to the chromosome if it is not already there
         if (chr.find("chr") == std::string::npos)
         {
             chr = "chr" + chr;
-            std::cout << "Updated chromosome: " << chr << std::endl;
         }
     } else {
         // Remove "chr" from the chromosome if it is there
         if (chr.find("chr") != std::string::npos)
         {
             chr = chr.substr(3);
-            std::cout << "Updated chromosome: " << chr << std::endl;
         }
     }
 
@@ -479,24 +486,19 @@ std::vector<double> CNVCaller::getSNPPopulationFrequencies(std::vector<int> snp_
         // Get the SNP position
         int pos = snp_locations[i];
 
-        // Set to the default PFB value
-        snp_pfb.push_back(DEFAULT_PFB);
-
-        // // Get the population frequency from the map
-        // auto it = pfb_map[chr].find(pos);
-        // if (it != pfb_map[chr].end())
-        // {
-        //     // Store the population frequency
-        //     snp_pfb.push_back(it->second);
-        //     found_count++;
-        //     //std::cout << "Found PFB for SNP " << i << " of " << snp_count << ": " << chr << ":" << pos << std::endl;
-        // }
-        // else
-        // {
-        //     // Store the default population frequency
-        //     //snp_pfb.push_back(DEFAULT_PFB);
-        //     snp_pfb.push_back(0.5);
-        // }
+        // Get the population frequency from the map
+        auto it = pfb_map[chr].find(pos);
+        if (it != pfb_map[chr].end())
+        {
+            // Store the population frequency
+            snp_pfb.push_back(it->second);
+            found_count++;
+        }
+        else
+        {
+            // Use 0.5 as the population frequency if it is not found
+            snp_pfb.push_back(0.5);
+        }
     }
 
     // Print the percentage of SNPs with population frequencies
@@ -505,20 +507,27 @@ std::vector<double> CNVCaller::getSNPPopulationFrequencies(std::vector<int> snp_
     return snp_pfb;
 }
 
-void CNVCaller::saveToTSV(std::string filepath, std::vector<int> snp_locations, std::vector<double> bafs, std::vector<double> logr_ratios, std::vector<int> state_sequence)
+void CNVCaller::saveToTSV(std::string filepath, std::vector<int> snp_locations, std::vector<double> bafs, std::vector<double> logr_ratios, std::vector<int> state_sequence, std::vector<double> population_frequencies)
 {
     // Open the TSV file for writing
     std::ofstream tsv_file(filepath);
 
     // Write the header
-    tsv_file << "chromosome\tposition\tb_allele_freq\tlog2_ratio\tcnv_state" << std::endl;
+    tsv_file << "chromosome\tposition\tb_allele_freq\tlog2_ratio\tcnv_state\tpopulation_freq" << std::endl;
 
     // Write the data
     std::string chr = this->input_data->getRegionChr();
     int snp_count = (int) snp_locations.size();
     for (int i = 0; i < snp_count; i++)
     {
-        tsv_file << chr << "\t" << snp_locations[i] << "\t" << bafs[i] << "\t" << logr_ratios[i] << "\t" << state_sequence[i] << std::endl;
+        tsv_file                  << \
+        chr                       << "\t" << \
+        snp_locations[i]          << "\t" << \
+        bafs[i]                   << "\t" << \
+        logr_ratios[i]            << "\t" << \
+        state_sequence[i]         << "\t" << \
+        population_frequencies[i] << \
+        std::endl;
     }
 
     // Close the file

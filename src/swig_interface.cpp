@@ -11,10 +11,11 @@
 
 
 // Run the CLI with the given parameters
-int run(std::string bam_fp, std::string ref_fp, std::string snps_fp, std::string outdir, std::string region, std::string chr_cov, std::string pfb_fp)
+int run(std::string bam_fp, std::string ref_fp, std::string snps_fp, std::string outdir, std::string region, std::string chr_cov, std::string pfb_fp, int threads)
 {
 	// Create the input_data parameters
 	InputData input_data;
+	input_data.setThreadCount(threads);
 	input_data.setBAMFilepath(bam_fp);
 	input_data.setRefGenome(ref_fp);
 	input_data.setSNPFilepath(snps_fp);

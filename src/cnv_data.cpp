@@ -21,7 +21,7 @@ int CNVData::getMostCommonCNV(std::string chr, int start, int end)
     int total_count = 0;
     int sv_len = end - start + 1;
     
-    std::cout << "Checking for CNV calls in " << chr << ":" << start << "-" << end << " (SVLEN=" << sv_len << ")" << std::endl;
+    //std::cout << "Checking for CNV calls in " << chr << ":" << start << "-" << end << " (SVLEN=" << sv_len << ")" << std::endl;
 
     for (int pos = start; pos <= end; pos++) {
         SNPLocation key(chr, pos);
@@ -41,31 +41,18 @@ int CNVData::getMostCommonCNV(std::string chr, int start, int end)
         }
     }
 
-    // Summarize the CNV calls
-    // std::cout << "Total CNV calls: " << total_count << std::endl;
-    // std::cout << "DUP calls: " << dup_count << std::endl;
-    // std::cout << "DEL calls: " << del_count << std::endl;
-    // std::cout << "No call: " << no_call_count << std::endl;
-
     // Check if the SV region is mostly covered by CNV calls (at least 50%) and
     // if the majority CNV type is an insertion or deletion
     int cnv_type = -1;
     if (total_count > 0) {
         if (dup_count > del_count && (double) dup_count / total_count > 0.5) {
             cnv_type = 1;
-            std::cout << "CNV type is DUP, SVLEN=" << sv_len << std::endl;
+            //std::cout << "CNV type is DUP, SVLEN=" << sv_len << std::endl;
         } else if (del_count > dup_count && (double) del_count / total_count > 0.5) {
             cnv_type = 0;
-            std::cout << "CNV type is DEL, SVLEN=" << sv_len << std::endl;
+            //std::cout << "CNV type is DEL, SVLEN=" << sv_len << std::endl;
         } else {
-            std::cout << "CNV type is no call, SVLEN=" << sv_len << std::endl;
-
-            // Print proportion of CNV calls (debugging)
-            // std::cout << "Total CNV calls: " << total_count << std::endl;
-            // std::cout << "DUP calls: " << dup_count << std::endl;
-            // std::cout << "DEL calls: " << del_count << std::endl;
-            // std::cout << "No call: " << no_call_count << std::endl;
-            // std::cout << "DUP proportion: " << (double) dup_count / total_count << std::endl;
+            //std::cout << "CNV type is no call, SVLEN=" << sv_len << std::endl;
         }
     }
 

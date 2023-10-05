@@ -43,7 +43,7 @@ class CNVCaller {
         std::vector<double> getSNPPopulationFrequencies(std::vector<int> snp_locations);
 
         // Save a CSV with SNP positions, BAF values and Log R Ratios
-        void saveToTSV(std::string filepath, std::vector<int> snp_locations, std::vector<double> bafs, std::vector<double> logr_ratios, std::vector<int> state_sequence);
+        void saveToTSV(std::string filepath, std::vector<int> snp_locations, std::vector<double> bafs, std::vector<double> logr_ratios, std::vector<int> state_sequence, std::vector<double> population_frequencies);
 };
 
 #endif // CNV_CALLER_H

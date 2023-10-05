@@ -34,7 +34,8 @@ def test_run():
         TEST_OUTDIR,
         "chr3:60380533-60390533",
         "chr3:39.561,chr6:39.4096",
-        ""
+        "",
+        1
     )
 
     # Check that the output file exists.
@@ -50,20 +51,14 @@ def test_run():
 
     # Check that the output file has the correct header.
     with open(output_file, 'r') as f:
-        assert f.readline().strip() == "chromosome\tposition\tb_allele_freq\tlog2_ratio\tcnv_state"
+        assert f.readline().strip() == "chromosome\tposition\tb_allele_freq\tlog2_ratio\tcnv_state\tpopulation_freq"
 
     # Check that the output file has the correct SNP values (excluding predicted
     # state) in the last line
     with open(output_file, 'r') as f:
-        last_line = f.readlines()[-1]
-
-        print("Debugging:")
+        last_line = f.readlines()[-1].strip('\n')
         print(last_line)
-        print(last_line[:-2])
+        actual_line="chr3\t60389325\t0.590909\t-0.048852\t6\t0.01"
+        print(actual_line)
+        assert last_line == actual_line
 
-        # CNV2:
-        #chr3	60389325	0.590909	-0.048852
-        assert last_line[:-2] == "chr3\t60389325\t0.590909\t-0.048852\t"
-
-        # CNV3:
-        #assert last_line[:-2] == "60389325,0.590909,-0.0433203"

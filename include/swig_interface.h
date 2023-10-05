@@ -12,6 +12,6 @@
 #include <string>
 /// @endcond
 
-int run(std::string bam_fp, std::string ref_fp, std::string snps_fp, std::string outdir, std::string region, std::string chr_cov, std::string pfb_fp);
+int run(std::string bam_fp, std::string ref_fp, std::string snps_fp, std::string outdir, std::string region, std::string chr_cov, std::string pfb_fp, int thread_count);
 
 #endif // SWIG_INTERFACE_H

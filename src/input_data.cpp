@@ -254,3 +254,13 @@ void InputData::setPFBFilepath(std::string filepath)
         }
     }
 }
+
+void InputData::setThreadCount(int thread_count)
+{
+    this->thread_count = thread_count;
+}
+
+int InputData::getThreadCount()
+{
+    return this->thread_count;
+}

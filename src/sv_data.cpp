@@ -5,9 +5,8 @@
 #include <fstream>
 /// @endcond
 
-void SVData::addSVCall(std::string chr, int start, int end, int sv_type, std::string alt_allele)
+void SVData::add(std::string chr, int start, int end, int sv_type, std::string alt_allele)
 {
-    // TODO: Only need to compare alt. allele in the map's candidate
     // Add the SV call to the map of candidate locations
     SVCandidate candidate(chr, start, end, alt_allele);
     if (this->sv_calls.find(candidate) != this->sv_calls.end()) {

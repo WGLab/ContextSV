@@ -19,6 +19,7 @@ log.basicConfig(
 )
 
 def main():
+    """Entry point and user interface for the program."""
 
     # Grab the command line arguments using argparse.
     parser = argparse.ArgumentParser(
@@ -43,6 +44,15 @@ def main():
         help="Print the version number and exit.",
         action="version",
         version="%(prog)s 0.0.1"
+    )
+
+    # Thread count.
+    parser.add_argument(
+        "-t", "--threads",
+        help="The number of threads to use.",
+        required=False,
+        default=1,
+        type=int
     )
 
     # Two modes: SV detection and CNV plots. Create a subparser for each mode.
@@ -114,12 +124,11 @@ def main():
     # Determine the selected program mode (SV detection or CNV plots).
     program_mode = args.mode
     mode_str = "SV detection" if program_mode == "sv" else "CNV plots"
-    print("Program mode: {}".format(mode_str))
+    log.info("Running %s...", mode_str)
 
     if (program_mode == "sv"):
         
         # Run SV detection.
-        log.info("Running SV detection.")
         log.info("BAM filepath: %s", args.bam)
         log.info("Reference filepath: %s", args.reference)
         log.info("SNPs filepath: %s", args.snps)
@@ -141,7 +150,8 @@ def main():
             args.output,
             args.region,
             args.chr_cov,
-            args.pfb
+            args.pfb,
+            args.threads
         )
 
         vcf_path = os.path.join(args.output, "sv_calls.vcf")

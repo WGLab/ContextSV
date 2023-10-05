@@ -29,7 +29,8 @@ class SVData {
         
     public:
         SVData(FASTAQuery& ref_genome);
-        void addSVCall(std::string chr, int start, int end, int sv_type, std::string alt_allele);
+        void add(std::string chr, int start, int end, int sv_type, std::string alt_allele);
+        // void add(SVData& sv_calls);
         //void addSVCalls(SVData sv_calls);
 
         std::string getRefGenome();
@@ -46,6 +47,9 @@ class SVData {
         // Begin and end iterators for the SV candidate map
         SVDepthMap::iterator begin() { return this->sv_calls.begin(); }
         SVDepthMap::iterator end() { return this->sv_calls.end(); }
+
+        // Define the size of the SV candidate map
+        int size() { return this->sv_calls.size(); }
 };
 
 #endif // SV_DATA_H

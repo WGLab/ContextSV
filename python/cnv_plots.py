@@ -137,7 +137,7 @@ def run(vcf_file, cnv_data_file, output_path, region):
                 # Get the hover text for the state sequence markers.
                 hover_text = []
                 for _, row in sv_data.iterrows():
-                    hover_text.append(f"TYPE: {cnv_types[row['cnv_state']]}<br>CHR: {row['chromosome']}<br>POS: {row['position']}<br>L2R: {row['log2_ratio']}<br>BAF: {row['b_allele_freq']}")
+                    hover_text.append(f"TYPE: {cnv_types[row['cnv_state']]}<br>CHR: {row['chromosome']}<br>POS: {row['position']}<br>L2R: {row['log2_ratio']}<br>BAF: {row['b_allele_freq']}<br>PFB: {row['population_freq']}")
 
                 # Create the log2 ratio trace.
                 log2_ratio_trace = plotly.graph_objs.Scatter(
