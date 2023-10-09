@@ -12,8 +12,19 @@
 // Constructor
 InputData::InputData()
 {
-    // this->region_set = false;
-    // this->window_size = 1000;
+    this->bam_filepath = "";
+    this->ref_filepath = "";
+    this->snp_vcf_filepath = "";
+    this->pfb_filepath = "";
+    this->output_dir = "";
+    this->region = "";
+    this->window_size = 10000;
+    this->region_chr = "";
+    this->region_start = 0;
+    this->region_end = 0;
+    this->region_set = false;
+    this->thread_count = 1;
+    this->hmm_filepath = "data/hh550.hmm";
 }
 
 std::string InputData::getBAMFilepath()
@@ -263,4 +274,31 @@ void InputData::setThreadCount(int thread_count)
 int InputData::getThreadCount()
 {
     return this->thread_count;
+}
+
+std::string InputData::getHMMFilepath()
+{
+    return this->hmm_filepath;
+}
+
+void InputData::setHMMFilepath(std::string filepath)
+{
+    // Check if empty string
+    if (filepath == "")
+    {
+        std::cout << "Using default HMM file: " << this->hmm_filepath << std::endl;
+        return;
+        
+    } else {
+        // Check if the file exists
+        FILE *fp = fopen(filepath.c_str(), "r");
+        if (fp == NULL)
+        {
+            std::cerr << "HMM file does not exist: " << filepath << std::endl;
+            exit(1);
+        } else {
+            this->hmm_filepath = filepath;
+            std::cout << "Using HMM file: " << this->hmm_filepath << std::endl;
+        }
+    }
 }

@@ -83,6 +83,13 @@ def main():
         required=True
     )
 
+    # HMM file path.
+    sv_parser.add_argument(
+        "-m", "--hmm",
+        help="The path to the HMM file.",
+        required=False
+    )
+
     # PFB file of population allele frequencies.
     sv_parser.add_argument(
         "-p", "--pfb",
@@ -134,30 +141,40 @@ def main():
         log.info("SNPs filepath: %s", args.snps)
         log.info("Output directory: %s", args.output)
         log.info("Region: %s", args.region)
+        log.info("Threads: %s", args.threads)
+        log.info("HMM filepath: %s", args.hmm)
         
         if args.pfb is None:
             args.pfb = ""
         if args.chr_cov is None:
             args.chr_cov = ""
+        if args.hmm is None:
+            args.hmm = ""
             
         log.info("Chromosome mean coverage: %s", args.chr_cov)
         log.info("PFB filepath: %s", args.pfb)
-    
-        contextsv.run(
-            args.bam,
-            args.reference,
-            args.snps,
-            args.output,
-            args.region,
-            args.chr_cov,
-            args.pfb,
-            args.threads
-        )
 
+        # Set input parameters.
+        input_data = contextsv.InputData()
+        input_data.setBAMFilepath(args.bam)
+        input_data.setRefGenome(args.reference)
+        input_data.setSNPFilepath(args.snps)
+        input_data.setRegion(args.region)
+        input_data.setThreadCount(args.threads)
+        input_data.setChrCov(args.chr_cov)
+        input_data.setPFBFilepath(args.pfb)
+        input_data.setHMMFilepath(args.hmm)
+        input_data.setOutputDir(args.output)
+
+        # Run the analysis.
+        contextsv.run(input_data)
+
+        # Determine the data paths for downstream analysis.
         vcf_path = os.path.join(args.output, "sv_calls.vcf")
         cnv_data_path = os.path.join(args.output, "cnv_data.tsv")
         output_dir = args.output
     else:
+        # Get the data paths from user input for downstream analysis.
         vcf_path = args.vcf
         cnv_data_path = args.cnv
         output_dir = args.output

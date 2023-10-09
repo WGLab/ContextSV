@@ -15,7 +15,6 @@ ContextSV::ContextSV(InputData& input_data)
     this->input_data = &input_data;
 }
 
-
 // Entry point
 int ContextSV::run()
 {

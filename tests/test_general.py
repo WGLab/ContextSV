@@ -26,17 +26,20 @@ TEST_OUTDIR = os.path.join(os.path.dirname(__file__), 'output')
 # Test the main function.
 def test_run():
     
-    # Run the program.
-    contextsv.run(
-        TEST_BAM_FILE,
-        TEST_REF_FILE,
-        TEST_SNPS_FILE,
-        TEST_OUTDIR,
-        "chr3:60380533-60390533",
-        "chr3:39.561,chr6:39.4096",
-        "",
-        1
-    )
+    # Set input parameters.
+    input_data = contextsv.InputData()
+    input_data.setBAMFilepath(TEST_BAM_FILE)
+    input_data.setRefGenome(TEST_REF_FILE)
+    input_data.setSNPFilepath(TEST_SNPS_FILE)
+    input_data.setRegion("chr3:60380533-60390533")
+    input_data.setThreadCount(1)
+    input_data.setChrCov("chr3:39.561,chr6:39.4096")
+    input_data.setPFBFilepath("")
+    input_data.setHMMFilepath("")
+    input_data.setOutputDir(TEST_OUTDIR)
+
+    # Run the analysis.
+    contextsv.run(input_data)
 
     # Check that the output file exists.
     output_file = os.path.join(TEST_OUTDIR, 'cnv_data.tsv')

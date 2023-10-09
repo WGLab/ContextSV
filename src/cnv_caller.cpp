@@ -62,7 +62,7 @@ CNVData CNVCaller::run()
 
     // Read the HMM from file
     //std::string hmm_filepath = "data/wgs.hmm";
-    std::string hmm_filepath = "data/hh550.hmm";
+    std::string hmm_filepath = this->input_data->getHMMFilepath();
     std::cout << "Reading HMM from file: " << hmm_filepath << std::endl;
     CHMM hmm = ReadCHMM(hmm_filepath.c_str());
     std::cout << "HMM read from file." << std::endl;

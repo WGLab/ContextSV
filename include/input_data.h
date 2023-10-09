@@ -20,7 +20,6 @@ class InputData {
         void setBAMFilepath(std::string filepath);
 		void setRefGenome(std::string fasta_filepath);
         FASTAQuery getRefGenome();
-        std::string getSequence(std::string chr, int pos_start, int pos_end);
         std::string getOutputDir();
         void setOutputDir(std::string dirpath);
         std::string getRegion();
@@ -39,22 +38,25 @@ class InputData {
         void setPFBFilepath(std::string filepath);
         void setThreadCount(int thread_count);
         int getThreadCount();
+        std::string getHMMFilepath();
+        void setHMMFilepath(std::string filepath);
 
     private:
-        std::string bam_filepath = "";
-        std::string ref_filepath = "";
-        std::string snp_vcf_filepath = "";
-        std::string pfb_filepath = "";
+        std::string bam_filepath;
+        std::string ref_filepath;
+        std::string snp_vcf_filepath;
+        std::string pfb_filepath;
         FASTAQuery fasta_query;
-        std::string output_dir   = "";
-        std::string region = "";
-        int window_size = 10000;
-        std::string region_chr = "";
-        int region_start = 0;
-        int region_end   = 0;
-        bool region_set = false;
+        std::string output_dir;
+        std::string region;
+        int window_size;
+        std::string region_chr;
+        int region_start;
+        int region_end;
+        bool region_set;
         std::map<std::string, double> chr_cov;
-        int thread_count = 1;
+        int thread_count;
+        std::string hmm_filepath;
 };
 
 #endif // INPUT_DATA_H
