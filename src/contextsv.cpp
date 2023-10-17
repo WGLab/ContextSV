@@ -62,16 +62,14 @@ void ContextSV::labelCNVs(CNVData cnv_calls, SVData& sv_calls)
         int start_pos = std::get<1>(candidate);
         int end_pos = std::get<2>(candidate);
 
-        // Get the SV type
-        SVInfo sv_info = sv_call.second;
-        int sv_type = sv_info.first;
-
         // Get CNV calls within the SV coordinate range and identify the most
         // common call
         int cnv_call = cnv_calls.getMostCommonCNV(chr, start_pos, end_pos);
 
-        // Update the SV call's type
-        sv_calls.updateSVType(candidate, cnv_call);
+        // Update the SV call's type if the CNV call is not unknown
+        if (cnv_call != -1) {
+            sv_calls.updateSVType(candidate, cnv_call);
+        }
 
         // // Print the updated SV call if the type was changed, and if it is not unknown
         // if (cnv_call != -1 && cnv_call != sv_type) {

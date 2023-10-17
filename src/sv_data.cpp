@@ -15,6 +15,8 @@ void SVData::add(std::string chr, int start, int end, int sv_type, std::string a
         sv_info.first = sv_type;
         sv_info.second += 1;
 
+        //std::cout << "[SVData] Updated SV count: " << this->sv_calls.size() << std::endl;
+
     } else {
         // Add the SV candidate to the map
         this->sv_calls[candidate] = SVInfo(sv_type, 1);
@@ -52,7 +54,6 @@ void SVData::updateSVType(SVCandidate candidate, int sv_type)
 
 void SVData::saveToVCF(FASTAQuery& ref_genome, std::string output_dir)
 {
-
     // Create a VCF file for the SV calls
     std::string output_vcf = output_dir + "/sv_calls.vcf";
 

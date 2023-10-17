@@ -104,6 +104,16 @@ def main():
         required=False
     )
 
+    # Turn off CIGAR string SV detection. This is for debugging purposes (speeds
+    # up the program).
+    sv_parser.add_argument(
+        "-d", "--disable-cigar",
+        help="Turn off CIGAR string SV detection.",
+        required=False,
+        action="store_true",
+        default=False
+    )
+
     # Mode 2: CNV plots mode.
     cnv_parser = subparsers.add_parser(
         "plot_cnv",
@@ -144,12 +154,10 @@ def main():
         log.info("Threads: %s", args.threads)
         log.info("HMM filepath: %s", args.hmm)
         
-        if args.pfb is None:
-            args.pfb = ""
-        if args.chr_cov is None:
-            args.chr_cov = ""
-        if args.hmm is None:
-            args.hmm = ""
+        # Loop and set all None values to empty strings.
+        for key, value in vars(args).items():
+            if value is None:
+                setattr(args, key, "")
             
         log.info("Chromosome mean coverage: %s", args.chr_cov)
         log.info("PFB filepath: %s", args.pfb)
@@ -165,6 +173,7 @@ def main():
         input_data.setPFBFilepath(args.pfb)
         input_data.setHMMFilepath(args.hmm)
         input_data.setOutputDir(args.output)
+        input_data.setDisableCIGAR(args.disable_cigar)
 
         # Run the analysis.
         contextsv.run(input_data)

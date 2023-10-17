@@ -24,7 +24,7 @@ InputData::InputData()
     this->region_end = 0;
     this->region_set = false;
     this->thread_count = 1;
-    this->hmm_filepath = "data/hh550.hmm";
+    this->hmm_filepath = "data/wgs.hmm";
 }
 
 std::string InputData::getBAMFilepath()
@@ -301,4 +301,14 @@ void InputData::setHMMFilepath(std::string filepath)
             std::cout << "Using HMM file: " << this->hmm_filepath << std::endl;
         }
     }
+}
+
+void InputData::setDisableCIGAR(bool disable_cigar)
+{
+    this->disable_cigar = disable_cigar;
+}
+
+bool InputData::getDisableCIGAR()
+{
+    return this->disable_cigar;
 }

@@ -166,7 +166,10 @@ std::vector<double> CNVCaller::calculateLogRRatiosAtSNPS(std::vector<int> snp_lo
         // Set the LRR value
         snp_lrr.push_back(lrr);
 
-        // Update the progress bar
+        // Update the progress bar every 1000 SNPs
+        if (i % 1000 == 0) {
+            printProgress(i, snp_count-1);
+        }
         //printProgress(i, snp_count-1);
     }
 
