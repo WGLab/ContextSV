@@ -65,6 +65,10 @@ class InputData {
         // Disable CIGAR string SV calling. This is useful for testing.
         void setDisableCIGAR(bool disable_cigar);
         bool getDisableCIGAR();
+
+        // Set the filepath to the TSV file with the CNV predictions.
+        void setCNVFilepath(std::string filepath);
+        std::string getCNVFilepath();
         
     private:
         std::string bam_filepath;
@@ -83,6 +87,7 @@ class InputData {
         int thread_count;
         std::string hmm_filepath;
         bool disable_cigar;
+        std::string cnv_filepath;
 };
 
 #endif // INPUT_DATA_H

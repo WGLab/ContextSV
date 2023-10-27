@@ -55,78 +55,66 @@ def main():
         type=int
     )
 
-    # Two modes: SV detection and CNV plots. Create a subparser for each mode.
-    subparsers = parser.add_subparsers(
-        title="Program mode",
-        description="The program mode to run.",
-        dest="mode"
+    # CNV data path.
+    parser.add_argument(
+        "--cnv",
+        help="The path to the CNV data in TSV format.",
+        required=False
     )
 
     # Mode 1: SV detection mode.
-    sv_parser = subparsers.add_parser(
-        "sv",
-        help="Run SV detection."
-    )
-    sv_parser.add_argument(
+    parser.add_argument(
         "-b", "--bam",
         help="The path to the BAM file.",
         required=True
     )
-    sv_parser.add_argument(
+    parser.add_argument(
         "-g", "--reference",
         help="The path to the reference genome.",
         required=True
     )
-    sv_parser.add_argument(
+    parser.add_argument(
         "-s", "--snps",
         help="The path to the SNPs file.",
         required=True
     )
 
-    # HMM file path.
-    sv_parser.add_argument(
-        "-m", "--hmm",
-        help="The path to the HMM file.",
-        required=False
-    )
-
     # PFB file of population allele frequencies.
-    sv_parser.add_argument(
+    parser.add_argument(
         "-p", "--pfb",
         help="The path to the PFB file of population allele frequencies.",
         required=False
     )
 
+    # HMM file path.
+    parser.add_argument(
+        "--hmm",
+        help="The path to the HMM file.",
+        required=False
+    )
+
     # Pass in chromosome mean coverage data for speediness.
-    sv_parser.add_argument(
-        "-c", "--chr-cov",
+    parser.add_argument(
+        "--chr-cov",
         help="Chromosome mean coverage values passed in as a comma-separated list (e.g. chr1:100,chr2:200,chr3:300).",
         required=False
     )
 
     # Turn off CIGAR string SV detection. This is for debugging purposes (speeds
     # up the program).
-    sv_parser.add_argument(
-        "-d", "--disable-cigar",
+    parser.add_argument(
+        "--disable-cigar",
         help="Turn off CIGAR string SV detection.",
         required=False,
         action="store_true",
         default=False
     )
 
-    # Mode 2: CNV plots mode.
-    cnv_parser = subparsers.add_parser(
-        "plot_cnv",
-        help="Run CNV plots."
-    )
-    cnv_parser.add_argument(
-        "-c", "--cnv",
-        help="The path to the CNV data in TSV format.",
-        required=False
-    )
-    cnv_parser.add_argument(
-        "-v", "--vcf",
-        help="The path to the VCF file.",
+    # Mode 2: CNV plots mode. If only the VCF file is provided, then the program
+    # will run in this mode.
+    parser.add_argument(
+        "--vcf",
+        help="The path to the VCF file of SV calls.",
         required=False
     )
     
@@ -139,20 +127,41 @@ def main():
     region = region.replace(" ", "")
 
     # Determine the selected program mode (SV detection or CNV plots).
-    program_mode = args.mode
-    mode_str = "SV detection" if program_mode == "sv" else "CNV plots"
-    log.info("Running %s...", mode_str)
-
-    if (program_mode == "sv"):
+    if (args.vcf is not None):
+        # Run SV analysis mode.
         
-        # Run SV detection.
-        log.info("BAM filepath: %s", args.bam)
-        log.info("Reference filepath: %s", args.reference)
-        log.info("SNPs filepath: %s", args.snps)
-        log.info("Output directory: %s", args.output)
-        log.info("Region: %s", args.region)
-        log.info("Threads: %s", args.threads)
-        log.info("HMM filepath: %s", args.hmm)
+        # Ensure that the CNV data path is provided.
+        arg_error = False
+        if (args.cnv is None):
+            log.error("Please provide the CNV data path.")
+            arg_error = True
+
+        # Ensure that the output directory exists.
+        if (not os.path.exists(args.output)):
+            log.error("The output directory does not exist.")
+            arg_error = True
+
+        # Exit if there are any errors.
+        if (arg_error):
+            sys.exit(1)
+
+        # Set the data paths from user input for downstream analysis.
+        vcf_path = args.vcf
+        cnv_data_path = args.cnv
+        output_dir = args.output
+
+        log.info("Analyzing SV calls in VCF file %s...", args.vcf)
+
+    else:
+        # Run SV detection mode.
+
+        # Set all None values to empty strings.
+        for key, value in vars(args).items():
+            if value is None:
+                setattr(args, key, "")
+
+            else:
+                log.info("Setting %s to %s", key, value)
         
         # Loop and set all None values to empty strings.
         for key, value in vars(args).items():
@@ -174,6 +183,7 @@ def main():
         input_data.setHMMFilepath(args.hmm)
         input_data.setOutputDir(args.output)
         input_data.setDisableCIGAR(args.disable_cigar)
+        input_data.setCNVFilepath(args.cnv)
 
         # Run the analysis.
         contextsv.run(input_data)
@@ -181,11 +191,6 @@ def main():
         # Determine the data paths for downstream analysis.
         vcf_path = os.path.join(args.output, "sv_calls.vcf")
         cnv_data_path = os.path.join(args.output, "cnv_data.tsv")
-        output_dir = args.output
-    else:
-        # Get the data paths from user input for downstream analysis.
-        vcf_path = args.vcf
-        cnv_data_path = args.cnv
         output_dir = args.output
 
     # Run the python-based analysis.

@@ -172,6 +172,7 @@ std::vector<double> CNVCaller::calculateLogRRatiosAtSNPS(std::vector<int> snp_lo
         }
         //printProgress(i, snp_count-1);
     }
+    std::cout << std::endl;  // End the progress bar
 
     return snp_lrr;
 }

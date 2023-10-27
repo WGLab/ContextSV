@@ -39,14 +39,14 @@ void SVCaller::detectSVsFromCIGAR(SVData& sv_calls, std::string chr, int32_t pos
     // Store the read sequence
     std::string read_seq = "";
 
-    // Store the first position in reference coordinates
-    //int32_t first_pos = pos;
-
-    // Store the last position in reference coordinates
-    //int32_t last_pos = pos;
+    // Print the start position
+    if (debug_mode) {
+        std::cout << "CIGAR start position: " << chr << ":" << pos << std::endl;
+    }
 
     // Loop through the CIGAR string and detect insertions and deletions in
     // reference coordinates
+    //pos += 1;  // Update the position +=1 for 1-based coordinates
     for (int i = 0; i < cigar_len; i++) {
 
         // Get the CIGAR operation
@@ -61,7 +61,8 @@ void SVCaller::detectSVsFromCIGAR(SVData& sv_calls, std::string chr, int32_t pos
             // Add the SV if greater than the minimum SV size
             if (op_len >= this->min_sv_size) {
                 // Add the insertion to the SV calls
-                sv_calls.add(chr, pos, pos + op_len, 0, ".");
+                //sv_calls.add(chr, pos, pos + op_len, 0, ".", "CIGARINS");
+                sv_calls.add(chr, pos, pos + op_len, 3, ".", "CIGARINS");
 
                 if (debug_mode) {
                     std::cout << "Found CIGAR insertion, LEN=" << op_len << " at " << chr << ":" << pos << "-" << pos+op_len << std::endl;
@@ -73,8 +74,19 @@ void SVCaller::detectSVsFromCIGAR(SVData& sv_calls, std::string chr, int32_t pos
 
             // Add the SV if greater than the minimum SV size
             if (op_len >= this->min_sv_size) {
+                
                 // Add the deletion to the SV calls
-                sv_calls.add(chr, pos, pos + op_len, 0, ".");
+                sv_calls.add(chr, pos, pos + op_len, 0, ".", "CIGARDEL");
+
+                // // Print if 21:37857255-37857617
+                // if (chr == "21" && pos == 37857255 && pos + op_len == 37857617) {
+                //     std::cout << "[CIGAR FIND] Added 21:37857255-37857617 type: " << 0 << std::endl;
+                // }
+
+                // // Print if 21:42911938-42912387
+                // if (chr == "21" && pos == 42911938 && pos + op_len == 42912387) {
+                //     std::cout << "[CIGAR FIND] Added 21:42911938-42912387 type: " << 0 << std::endl;
+                // }
 
                 if (debug_mode) {
                     std::cout << "Found CIGAR deletion, LEN=" << op_len << " at " << chr << ":" << pos << "-" << pos+op_len << std::endl;
@@ -93,11 +105,6 @@ void SVCaller::detectSVsFromCIGAR(SVData& sv_calls, std::string chr, int32_t pos
             exit(1);
         }
     }
-
-    // Update the last position
-    //last_pos = pos;
-
-    //std::cout << "Found CIGAR SVs spanning " << chr << ":" << first_pos << "-" << last_pos << std::endl;
 }
 
 // Detect SVs from split read alignments (primary and supplementary) and
@@ -159,12 +166,13 @@ SVData SVCaller::detectSVsFromSplitReads()
         //    continue;
         //}
 
-        // Skip if the QNAME is not equal to
-        // A00739:176:H3NYTDSXY:3:1413:30273:31532
-        // if (qname != "A00739:176:H3NYTDSXY:3:1413:30273:31532") {
-        //     continue;
-        // } else {
+        //Skip if the QNAME is not equal to
+        //A00739:176:H3NYTDSXY:3:1413:30273:31532
+        // if (qname == "08033753-0fa2-4321-a300-939df26c5af1" || qname == "9746d47c-75ee-40e1-ba39-37ff5dc6e028") {
         //     std::cout << "Found Test QNAME" << std::endl;
+        // } else {
+        //     //std::cout << "Skipping QNAME " << qname << std::endl;
+        //     continue;
         // }
 
         // Skip secondary and unmapped alignments
@@ -174,8 +182,8 @@ SVData SVCaller::detectSVsFromSplitReads()
         // Skip alignments with low mapping quality
         } else if (bam1->core.qual < this->min_mapq) {
             // Do nothing
-            //std::cout << "Skipping alignment with low mapping quality" << std::endl;
-            //std::cout << bam1->core.qual << " < " << this->min_mapq << std::endl;
+            // std::cout << "Skipping alignment with low mapping quality" << std::endl;
+            // std::cout << bam1->core.qual << " < " << this->min_mapq << std::endl;
         } else {
 
             // Process primary alignments
@@ -189,10 +197,20 @@ SVData SVCaller::detectSVsFromSplitReads()
                 AlignmentData alignment(chr, start, end, depth);
                 primary_alignments[qname].push_back(alignment);
 
+                // Print the entire CIGAR string
+                if (debug_cigar) {
+                    std::cout << "FULL CIGAR: " << std::endl;
+                    for (uint32_t i = 0; i < bam1->core.n_cigar; i++) {
+                        std::cout << bam1->core.n_cigar << bam_cigar_opchr(bam1->core.n_cigar) << bam_cigar_oplen(bam1->core.n_cigar) << " ";
+                    }
+                    std::cout << std::endl;
+                }
             
                 // Finally, call SVs directly from the CIGAR string
                 //int prev_sv_count = sv_calls.size();
                 if (!this->input_data->getDisableCIGAR()) {
+
+                    //std::cout << "Calling SVs from CIGAR string" << std::endl;
                     this->detectSVsFromCIGAR(sv_calls, chr, bam1->core.pos, bam_get_cigar(bam1), bam1->core.n_cigar, debug_cigar);
                 }
                 //this->detectSVsFromCIGAR(sv_calls, chr, bam1->core.pos, bam_get_cigar(bam1), bam1->core.n_cigar);
@@ -274,12 +292,12 @@ SVData SVCaller::detectSVsFromSplitReads()
 
                 // Use the gap ends as the SV endpoints (Deletion)
                 if (primary_start - supp_end >= this->min_sv_size) {
-                    sv_calls.add(supp_chr, supp_end, primary_start, -1, ".");
+                    sv_calls.add(supp_chr, supp_end, primary_start, -1, ".", "GAPINNER_1");
                 }
 
                 // Use the alignment ends as the SV endpoints (Insertion)
                 if (primary_end - supp_start >= this->min_sv_size) {
-                    sv_calls.add(supp_chr, supp_start, primary_end, -1, ".");
+                    sv_calls.add(supp_chr, supp_start, primary_end, -1, ".", "GAPOUTER_1");
                 }
 
                 //std::cout << "FWD GAP at " << supp_chr << ":" << gap_start << "-" << gap_end << std::endl;
@@ -290,12 +308,12 @@ SVData SVCaller::detectSVsFromSplitReads()
 
                 // Use the gap ends as the SV endpoints (Deletion)
                 if (supp_start - primary_end >= this->min_sv_size) {
-                    sv_calls.add(supp_chr, primary_end, supp_start, -1, ".");
+                    sv_calls.add(supp_chr, primary_end, supp_start, -1, ".", "GAPINNER_2");
                 }
 
                 // Use the alignment ends as the SV endpoints (Insertion)
                 if (supp_end - primary_start >= this->min_sv_size) {
-                    sv_calls.add(supp_chr, primary_start, supp_end, -1, ".");
+                    sv_calls.add(supp_chr, primary_start, supp_end, -1, ".", "GAPOUTER_2");
                 }
 
                 //std::cout << "REV GAP at " << supp_chr << ":" << gap_start << "-" << gap_end << std::endl;
@@ -307,16 +325,16 @@ SVData SVCaller::detectSVsFromSplitReads()
 
                 // Use the overlap ends as the SV endpoints (Deletion)
                 if (supp_end - primary_start >= this->min_sv_size) {
-                    sv_calls.add(supp_chr, primary_start, supp_end, -1, ".");
+                    sv_calls.add(supp_chr, primary_start, supp_end, -1, ".", "OVERLAP_1");
                 } else if (primary_end - supp_start > this->min_sv_size) {
-                    sv_calls.add(supp_chr, supp_start, primary_end, -1, ".");
+                    sv_calls.add(supp_chr, supp_start, primary_end, -1, ".", "OVERLAP_2");
                 }
 
                 // Use the alignment ends as the SV endpoints (Insertion)
                 if (primary_end - supp_start >= this->min_sv_size) {
-                    sv_calls.add(supp_chr, supp_start, primary_end, -1, ".");
+                    sv_calls.add(supp_chr, supp_start, primary_end, -1, ".", "OVERLAP_3");
                 } else if (supp_end - primary_start > this->min_sv_size) {
-                    sv_calls.add(supp_chr, primary_start, supp_end, -1, ".");
+                    sv_calls.add(supp_chr, primary_start, supp_end, -1, ".", "OVERLAP_4");
                 }
 
                 //std::cout << "OVERLAP at " << supp_chr << ":" << gap_start << "-" << gap_end << std::endl;

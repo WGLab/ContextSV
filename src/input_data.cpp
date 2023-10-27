@@ -312,3 +312,13 @@ bool InputData::getDisableCIGAR()
 {
     return this->disable_cigar;
 }
+
+void InputData::setCNVFilepath(std::string filepath)
+{
+    this->cnv_filepath = filepath;
+}
+
+std::string InputData::getCNVFilepath()
+{
+    return this->cnv_filepath;
+}

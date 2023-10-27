@@ -29,9 +29,7 @@ class SVData {
         
     public:
         SVData(FASTAQuery& ref_genome);
-        void add(std::string chr, int start, int end, int sv_type, std::string alt_allele);
-        // void add(SVData& sv_calls);
-        //void addSVCalls(SVData sv_calls);
+        void add(std::string chr, int start, int end, int sv_type, std::string alt_allele, std::string data_type);
 
         std::string getRefGenome();
         

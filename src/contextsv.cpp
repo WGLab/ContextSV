@@ -18,15 +18,23 @@ ContextSV::ContextSV(InputData& input_data)
 // Entry point
 int ContextSV::run()
 {
-    // Call CNVs using the SNP positions
-    std::cout << "Calling CNVs..." << std::endl;
-    CNVCaller cnv_obj(*this->input_data);
-    CNVData cnv_calls = cnv_obj.run();
+    // Check if a file with CNV data was provided
+    CNVData cnv_calls;
+    if (this->input_data->getCNVFilepath() != "") {
+        // Load CNV data
+        std::cout << "Loading CNV data..." << std::endl;
+        cnv_calls.loadFromFile(this->input_data->getCNVFilepath());
+    } else {
+        // Call CNVs using the SNP positions
+        std::cout << "Calling CNVs..." << std::endl;
+        CNVCaller cnv_caller(*this->input_data);
+        cnv_calls = cnv_caller.run();
+    }
 
     // Call SVs from long read alignments and CNV calls
     std::cout << "Calling SVs..." << std::endl;
-    SVCaller sv_obj(*this->input_data);
-    SVData sv_calls = sv_obj.run();
+    SVCaller sv_caller(*this->input_data);
+    SVData sv_calls = sv_caller.run();
 
     // Check if the ref genome was set
     if (sv_calls.getRefGenome() == "") {

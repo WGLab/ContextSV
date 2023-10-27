@@ -100,7 +100,7 @@ std::string FASTAQuery::getFilepath()
 // Function to get the reference sequence at a given position range
 std::string FASTAQuery::query(std::string chr, int pos_start, int pos_end)
 {
-    std::cout << "Querying " << chr << ":" << pos_start << "-" << pos_end << std::endl;
+    //std::cout << "Querying " << chr << ":" << pos_start << "-" << pos_end << std::endl;
 
     // Check if a FASTA file has been set
     if (this->fasta_filepath == "")
