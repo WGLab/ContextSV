@@ -46,7 +46,9 @@ void SVCaller::detectSVsFromCIGAR(SVData& sv_calls, std::string chr, int32_t pos
 
     // Loop through the CIGAR string and detect insertions and deletions in
     // reference coordinates
-    //pos += 1;  // Update the position +=1 for 1-based coordinates
+        //pos += 1;  // Update the position +=1 for 1-based coordinates
+    // For BAM files, the reference starts at 0. For SAM, 1. POS is the leftmost position of where the alignment maps to the reference:
+    // https://genome.sph.umich.edu/wiki/SAM
     for (int i = 0; i < cigar_len; i++) {
 
         // Get the CIGAR operation
@@ -54,7 +56,7 @@ void SVCaller::detectSVsFromCIGAR(SVData& sv_calls, std::string chr, int32_t pos
 
         // Get the CIGAR operation length
         int op_len = bam_cigar_oplen(cigar[i]);
-
+        
         // Check if the CIGAR operation is an insertion
         if (op == BAM_CINS) {
 
@@ -94,13 +96,14 @@ void SVCaller::detectSVsFromCIGAR(SVData& sv_calls, std::string chr, int32_t pos
             }
         }
 
-        // Update the reference coordinate based on the CIGAR operation (M, D, N, =, X)
+        // Update the reference coordinate based on the CIGAR operation (M, D,
+        // N, =, X)
+        // https://samtools.github.io/hts-specs/SAMv1.pdf
         if (op == BAM_CMATCH || op == BAM_CDEL || op == BAM_CREF_SKIP || op == BAM_CEQUAL || op == BAM_CDIFF) {
             pos += op_len;
         } else if (op == BAM_CINS || op == BAM_CSOFT_CLIP || op == BAM_CHARD_CLIP || op == BAM_CPAD) {
             // Do nothing
-        }
-        else {
+        } else {
             std::cerr << "ERROR: Unknown CIGAR operation " << op << std::endl;
             exit(1);
         }
@@ -239,8 +242,8 @@ SVData SVCaller::detectSVsFromSplitReads()
         // Increment the number of alignment records processed
         num_alignments++;
 
-        // Print the number of alignments processed every 100 thousand
-        if (num_alignments % 100000 == 0) {
+        // Print the number of alignments processed every 10 thousand
+        if (num_alignments % 10000 == 0) {
             std::cout << num_alignments << " alignments processed" << std::endl;
         }
     }

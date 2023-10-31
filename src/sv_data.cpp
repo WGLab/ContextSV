@@ -174,7 +174,7 @@ void SVData::saveToVCF(FASTAQuery& ref_genome, std::string output_dir)
         // std::string ref_allele = std::get<0>(value);
 
         // Get the reference allele from the reference genome as well as the
-        // previous base preceding the SV
+        // previous base preceding the SV (Positions are already stored as 1-based).
         std::string ref_allele = ref_genome.query(chr, pos-1, end);
     
         // Use the previous base as the alternate allele
@@ -211,7 +211,7 @@ void SVData::saveToVCF(FASTAQuery& ref_genome, std::string output_dir)
         std::string sample_str = genotype + ":" + std::to_string(depth);
 
         // Write the SV call to the file
-        output_stream << chr << "\t" << pos << "\t" << "." << "\t" << ref_allele.substr(0, 10) << "\t" << alt_allele << "\t" << "." << "\t" << "." << "\t" << info_str << "\t" << format_str << "\t" << sample_str << std::endl;
+        output_stream << chr << "\t" << pos << "\t" << "." << "\t" << ref_allele << "\t" << alt_allele << "\t" << "." << "\t" << "." << "\t" << info_str << "\t" << format_str << "\t" << sample_str << std::endl;
     }
 
     // Close the output stream
