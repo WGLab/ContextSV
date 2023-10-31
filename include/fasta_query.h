@@ -16,7 +16,7 @@ class FASTAQuery {
     public:
         int setFilepath(std::string fasta_filepath);
         std::string getFilepath();
-        std::string query(std::string chr, int pos_start, int pos_end);
+        std::string query(std::string chr, int64_t pos_start, int64_t pos_end);
 
         // Get the chromosome contig lengths in VCF header format
         std::string getContigHeader();

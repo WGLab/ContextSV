@@ -194,9 +194,10 @@ SVData SVCaller::detectSVsFromSplitReads()
 
                 // Add the primary alignment to the map
                 std::string chr = bamHdr->target_name[bam1->core.tid];
-                int32_t start = bam1->core.pos;
-                int32_t end = bam_endpos(bam1);
-                int32_t depth = bam1->core.n_cigar;
+                int64_t start = bam1->core.pos;
+                int64_t end = bam_endpos(bam1);
+                int32_t cigar_len = bam1->core.n_cigar;
+                int depth = 0;  // Placeholder for now
                 AlignmentData alignment(chr, start, end, depth);
                 primary_alignments[qname].push_back(alignment);
 
@@ -214,7 +215,7 @@ SVData SVCaller::detectSVsFromSplitReads()
                 if (!this->input_data->getDisableCIGAR()) {
 
                     //std::cout << "Calling SVs from CIGAR string" << std::endl;
-                    this->detectSVsFromCIGAR(sv_calls, chr, bam1->core.pos, bam_get_cigar(bam1), bam1->core.n_cigar, debug_cigar);
+                    this->detectSVsFromCIGAR(sv_calls, chr, start, bam_get_cigar(bam1), cigar_len, debug_cigar);
                 }
                 //this->detectSVsFromCIGAR(sv_calls, chr, bam1->core.pos, bam_get_cigar(bam1), bam1->core.n_cigar);
                 //int curr_sv_count = sv_calls.size();

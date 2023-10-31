@@ -29,12 +29,12 @@ class SVData {
         
     public:
         SVData(FASTAQuery& ref_genome);
-        void add(std::string chr, int start, int end, int sv_type, std::string alt_allele, std::string data_type);
+        void add(std::string chr, int64_t start, int64_t end, int sv_type, std::string alt_allele, std::string data_type);
 
         std::string getRefGenome();
         
         // Query the reference genome for a given sequence
-        std::string getSequence(std::string chr, int pos_start, int pos_end);
+        std::string getSequence(std::string chr, int64_t pos_start, int64_t pos_end);
 
         // Update the SV type for a given SV candidate
         void updateSVType(SVCandidate key, int sv_type);

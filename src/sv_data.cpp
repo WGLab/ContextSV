@@ -5,7 +5,7 @@
 #include <fstream>
 /// @endcond
 
-void SVData::add(std::string chr, int start, int end, int sv_type, std::string alt_allele, std::string data_type)
+void SVData::add(std::string chr, int64_t start, int64_t end, int sv_type, std::string alt_allele, std::string data_type)
 {
     // Add the SV call to the map of candidate locations
     SVCandidate candidate(chr, start, end, alt_allele);
@@ -43,7 +43,7 @@ std::string SVData::getRefGenome()
     return this->ref_genome->getFilepath();
 }
 
-std::string SVData::getSequence(std::string chr, int pos_start, int pos_end)
+std::string SVData::getSequence(std::string chr, int64_t pos_start, int64_t pos_end)
 {
     // Query the reference genome
     return this->ref_genome->query(chr, pos_start, pos_end);

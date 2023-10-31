@@ -98,7 +98,7 @@ std::string FASTAQuery::getFilepath()
 }
 
 // Function to get the reference sequence at a given position range
-std::string FASTAQuery::query(std::string chr, int pos_start, int pos_end)
+std::string FASTAQuery::query(std::string chr, int64_t pos_start, int64_t pos_end)
 {
     //std::cout << "Querying " << chr << ":" << pos_start << "-" << pos_end << std::endl;
 
