@@ -129,6 +129,8 @@ void SVCaller::detectSVsFromCIGAR(bam_hdr_t* header, bam1_t* alignment, SVData& 
 // directly from the CIGAR string
 SVData SVCaller::detectSVsFromSplitReads()
 {
+    bool debug_cigar = false;
+
     // Open the BAM file
     samFile *fp_in = sam_open(this->input_data->getBAMFilepath().c_str(), "r");
     if (fp_in == NULL) {
@@ -171,27 +173,6 @@ SVData SVCaller::detectSVsFromSplitReads()
 
         // Get the QNAME (query template name) for associating split reads
         std::string qname = bam_get_qname(bam1);
-
-        // If the read name is equal to 87c5f638-7716-491f-bee2-d04110f6e743
-        // then print CIGAR debug information
-        bool debug_cigar = false;
-        //if (qname == "87c5f638-7716-491f-bee2-d04110f6e743") {
-        // if (qname == "5bd073fe-e4b0-4abc-9535-229f13249578") {
-        //    debug_cigar = true;
-        //    std::cout << "Found Test QNAME " << qname << std::endl;
-        //} else {
-        //    // Skip for debugging purposes
-        //    continue;
-        //}
-
-        //Skip if the QNAME is not equal to
-        //A00739:176:H3NYTDSXY:3:1413:30273:31532
-        // if (qname == "08033753-0fa2-4321-a300-939df26c5af1" || qname == "9746d47c-75ee-40e1-ba39-37ff5dc6e028") {
-        //     std::cout << "Found Test QNAME" << std::endl;
-        // } else {
-        //     //std::cout << "Skipping QNAME " << qname << std::endl;
-        //     continue;
-        // }
 
         // Skip secondary and unmapped alignments
         if (bam1->core.flag & BAM_FSECONDARY || bam1->core.flag & BAM_FUNMAP) {

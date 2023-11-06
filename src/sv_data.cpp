@@ -26,10 +26,6 @@ void SVData::add(std::string chr, int64_t start, int64_t end, int sv_type, std::
     } else {
         // Determine the SV length
         int sv_length = end - start;
-        if (sv_type == 0) {
-            // Deletion
-            sv_length *= -1;
-        }
 
         // Create a new SVInfo object
         SVInfo sv_info(sv_type, 1, data_type, sv_length);
@@ -183,6 +179,9 @@ void SVData::saveToVCF(FASTAQuery& ref_genome, std::string output_dir)
 
             // Use the previous base as the alternate allele
             alt_allele = ref_allele.substr(0, 1);
+
+            // Make the SV length negative
+            sv_length = -1 * sv_length;
 
             repeat_type = "CONTRAC";  // Deletion
         
