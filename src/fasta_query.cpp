@@ -124,7 +124,7 @@ std::string FASTAQuery::query(std::string chr, int64_t pos_start, int64_t pos_en
     //std::cout << "Sequence length: " << sequence.length() << std::endl;
 
     // Get the substring
-    std::string subsequence = sequence.substr(pos_start, pos_end - pos_start);
+    std::string subsequence = sequence.substr(pos_start, pos_end - pos_start);  // (start, length)
 
     //std::cout << "Subsequence length: " << subsequence.length() << std::endl;
 

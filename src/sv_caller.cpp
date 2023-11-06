@@ -31,23 +31,26 @@ SVData SVCaller::run()
 }
 
 // Detect SVs from the CIGAR string of a read alignment.
-void SVCaller::detectSVsFromCIGAR(SVData& sv_calls, std::string chr, int32_t pos, uint32_t *cigar, int cigar_len, bool debug_mode)
+void SVCaller::detectSVsFromCIGAR(bam_hdr_t* header, bam1_t* alignment, SVData& sv_calls)
 {
-    // Create a map of SV calls
-    FASTAQuery ref_genome = this->input_data->getRefGenome();
+    // Get the chromosome
+    std::string chr = header->target_name[alignment->core.tid];
 
-    // Store the read sequence
-    std::string read_seq = "";
+    // Get the position
+    int32_t pos = alignment->core.pos;
 
-    // Print the start position
-    if (debug_mode) {
-        std::cout << "CIGAR start position: " << chr << ":" << pos << std::endl;
-    }
+    // Get the CIGAR string
+    uint32_t* cigar = bam_get_cigar(alignment);
+
+    // Get the CIGAR length
+    int cigar_len = alignment->core.n_cigar;
+
+    // Track the query position
+    int query_pos = 0;
 
     // Loop through the CIGAR string and detect insertions and deletions in
     // reference coordinates
-        //pos += 1;  // Update the position +=1 for 1-based coordinates
-    // For BAM files, the reference starts at 0. For SAM, 1. POS is the leftmost position of where the alignment maps to the reference:
+    // POS is the leftmost position of where the alignment maps to the reference:
     // https://genome.sph.umich.edu/wiki/SAM
     for (int i = 0; i < cigar_len; i++) {
 
@@ -62,13 +65,29 @@ void SVCaller::detectSVsFromCIGAR(SVData& sv_calls, std::string chr, int32_t pos
 
             // Add the SV if greater than the minimum SV size
             if (op_len >= this->min_sv_size) {
-                // Add the insertion to the SV calls
-                //sv_calls.add(chr, pos, pos + op_len, 0, ".", "CIGARINS");
-                sv_calls.add(chr, pos, pos + op_len, 3, ".", "CIGARINS");
 
-                if (debug_mode) {
-                    std::cout << "Found CIGAR insertion, LEN=" << op_len << " at " << chr << ":" << pos << "-" << pos+op_len << std::endl;
+                // Get the sequence of the insertion from the query
+                std::string ins_seq_str = "";
+                uint8_t* seq_ptr = bam_get_seq(alignment);
+                for (int j = 0; j < op_len; j++) {
+                    ins_seq_str += seq_nt16_str[bam_seqi(seq_ptr, query_pos + j)];
                 }
+
+                // if (pos == 47026017 && op_len == 140) {
+                //     std::cout << "Insertion sequence: " << ins_seq_str << std::endl;
+
+                //     // Check if the TCGCCTG substring is present in the
+                //     // insertion
+                //     std::string substring = "TCGCCTG";
+                //     if (ins_seq_str.find(substring) != std::string::npos) {
+                //         std::cout << "Found substring " << substring << std::endl;
+                //     } else {
+                //         std::cout << "Did not find substring " << substring << std::endl;
+                //     }
+                // }
+
+                // Add the insertion to the SV calls
+                sv_calls.add(chr, pos, pos + op_len, 3, ins_seq_str, "CIGARINS");
             }
 
         // Check if the CIGAR operation is a deletion
@@ -79,20 +98,6 @@ void SVCaller::detectSVsFromCIGAR(SVData& sv_calls, std::string chr, int32_t pos
                 
                 // Add the deletion to the SV calls
                 sv_calls.add(chr, pos, pos + op_len, 0, ".", "CIGARDEL");
-
-                // // Print if 21:37857255-37857617
-                // if (chr == "21" && pos == 37857255 && pos + op_len == 37857617) {
-                //     std::cout << "[CIGAR FIND] Added 21:37857255-37857617 type: " << 0 << std::endl;
-                // }
-
-                // // Print if 21:42911938-42912387
-                // if (chr == "21" && pos == 42911938 && pos + op_len == 42912387) {
-                //     std::cout << "[CIGAR FIND] Added 21:42911938-42912387 type: " << 0 << std::endl;
-                // }
-
-                if (debug_mode) {
-                    std::cout << "Found CIGAR deletion, LEN=" << op_len << " at " << chr << ":" << pos << "-" << pos+op_len << std::endl;
-                }
             }
         }
 
@@ -102,6 +107,16 @@ void SVCaller::detectSVsFromCIGAR(SVData& sv_calls, std::string chr, int32_t pos
         if (op == BAM_CMATCH || op == BAM_CDEL || op == BAM_CREF_SKIP || op == BAM_CEQUAL || op == BAM_CDIFF) {
             pos += op_len;
         } else if (op == BAM_CINS || op == BAM_CSOFT_CLIP || op == BAM_CHARD_CLIP || op == BAM_CPAD) {
+            // Do nothing
+        } else {
+            std::cerr << "ERROR: Unknown CIGAR operation " << op << std::endl;
+            exit(1);
+        }
+
+        // Update the query position based on the CIGAR operation (M, I, S, H)
+        if (op == BAM_CMATCH || op == BAM_CINS || op == BAM_CSOFT_CLIP || op == BAM_CEQUAL || op == BAM_CDIFF) {
+            query_pos += op_len;
+        } else if (op == BAM_CDEL || op == BAM_CREF_SKIP || op == BAM_CHARD_CLIP || op == BAM_CPAD) {
             // Do nothing
         } else {
             std::cerr << "ERROR: Unknown CIGAR operation " << op << std::endl;
@@ -196,14 +211,13 @@ SVData SVCaller::detectSVsFromSplitReads()
                 std::string chr = bamHdr->target_name[bam1->core.tid];
                 int64_t start = bam1->core.pos;
                 int64_t end = bam_endpos(bam1);
-                int32_t cigar_len = bam1->core.n_cigar;
                 int depth = 0;  // Placeholder for now
                 AlignmentData alignment(chr, start, end, depth);
                 primary_alignments[qname].push_back(alignment);
 
                 // Print the entire CIGAR string
                 if (debug_cigar) {
-                    std::cout << "FULL CIGAR: " << std::endl;
+                    std::cout << "Full CIGAR string: " << std::endl;
                     for (uint32_t i = 0; i < bam1->core.n_cigar; i++) {
                         std::cout << bam1->core.n_cigar << bam_cigar_opchr(bam1->core.n_cigar) << bam_cigar_oplen(bam1->core.n_cigar) << " ";
                     }
@@ -211,17 +225,11 @@ SVData SVCaller::detectSVsFromSplitReads()
                 }
             
                 // Finally, call SVs directly from the CIGAR string
-                //int prev_sv_count = sv_calls.size();
                 if (!this->input_data->getDisableCIGAR()) {
 
                     //std::cout << "Calling SVs from CIGAR string" << std::endl;
-                    this->detectSVsFromCIGAR(sv_calls, chr, start, bam_get_cigar(bam1), cigar_len, debug_cigar);
+                    this->detectSVsFromCIGAR(bamHdr, bam1, sv_calls);
                 }
-                //this->detectSVsFromCIGAR(sv_calls, chr, bam1->core.pos, bam_get_cigar(bam1), bam1->core.n_cigar);
-                //int curr_sv_count = sv_calls.size();
-                // if (curr_sv_count > prev_sv_count) {
-                //     std::cout << "Found " << curr_sv_count - prev_sv_count << "CIGAR SVs" << std::endl;
-                // }
 
             // Process supplementary alignments
             } else if (bam1->core.flag & BAM_FSUPPLEMENTARY) {

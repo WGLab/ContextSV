@@ -8,6 +8,7 @@
 #include "sv_data.h"
 #include "types.h"
 
+#include <htslib/sam.h>
 
 class SVCaller {
     private:
@@ -21,7 +22,8 @@ class SVCaller {
         InputData* input_data;
 
         // Detect SVs from long read alignments in the CIGAR string
-        void detectSVsFromCIGAR(SVData& sv_calls, std::string chr, int32_t pos, uint32_t* cigar, int cigar_len, bool debug_mode);
+        void detectSVsFromCIGAR(bam_hdr_t* header, bam1_t* alignment, SVData& sv_calls);
+        //void detectSVsFromCIGAR(SVData& sv_calls, std::string chr, int32_t pos, uint32_t* cigar, int cigar_len, bool debug_mode);
 
         // Detect SVs from split-read alignments (primary and supplementary)
         SVData detectSVsFromSplitReads();

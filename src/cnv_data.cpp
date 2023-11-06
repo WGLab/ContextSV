@@ -93,7 +93,7 @@ void CNVData::loadFromFile(std::string filepath)
 
         std::string pos_str;
         std::getline(iss, pos_str, '\t');
-        int snp_pos = std::stoi(pos_str);
+        snp_pos = std::stoi(pos_str);
 
         std::string skip_str;
         std::getline(iss, skip_str, '\t');
@@ -101,7 +101,7 @@ void CNVData::loadFromFile(std::string filepath)
 
         std::string cnv_type_str;
         std::getline(iss, cnv_type_str, '\t');
-        int cnv_type = std::stoi(cnv_type_str);
+        cnv_type = std::stoi(cnv_type_str);
 
         // Add the CNV call to the map
         this->addCNVCall(chr, snp_pos, cnv_type);

@@ -19,27 +19,19 @@ using SNPToCNVMap = std::map<SNPLocation, int>;
 // alternate allele.
 // (chr, start, end, sv_type, alt_allele) : (ref_allele, num_reads)
 using SVCandidate = std::tuple<std::string, int64_t, int64_t, std::string>;  // chr, start, end, alt_allele
-// using SVInfo = std::tuple<int, int, std::string>;  // SV type, read depth, alignment type (CIGAR or split read)
 
-// // Create a class for storing SV information
-// class SVInfo {
-//     public:
-//         int sv_type;
-//         int read_depth;
-//         std::set<std::string> data_type;
-
-//         SVInfo(int sv_type, int read_depth, std::string data_type) : sv_type(sv_type), read_depth(read_depth), data_type({data_type}) {}
-
-//         SVInfo() : sv_type(-1), read_depth(0) {}
-// };
 // Create a struct for storing SV information
 struct SVInfo {
     int sv_type;
     int read_depth;
     std::set<std::string> data_type;
+    int sv_length;
 
-    SVInfo() : sv_type(-1), read_depth(0) {}
-    SVInfo(int sv_type, int read_depth, std::string data_type) : sv_type(sv_type), read_depth(read_depth), data_type({data_type}) {}
+    SVInfo() :
+        sv_type(-1), read_depth(0), data_type({}), sv_length(0) {}
+        
+    SVInfo(int sv_type, int read_depth, std::string data_type, int sv_length) :
+        sv_type(sv_type), read_depth(read_depth), data_type({data_type}), sv_length(sv_length) {}
 };
 
 using SVDepthMap = std::map<SVCandidate, SVInfo>;  // Map for getting type and read depth of SV candidates

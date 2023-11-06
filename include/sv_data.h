@@ -18,10 +18,11 @@ class SVData {
         // Store a reference to the reference genome
         FASTAQuery *ref_genome;
 
-        // SV type to string map
+        // SV type to string map (DEL, DUP, INV, INS, BND)
+        // DUPs [1] are INS with INFO/REPTYPE=DUP
         std::map<int, std::string> sv_type_map = {
             {0, "DEL"},
-            {1, "DUP"},
+            {1, "INS"},
             {2, "INV"},
             {3, "INS"},
             {4, "BND"}
