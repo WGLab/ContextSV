@@ -1,4 +1,5 @@
 #include "sv_data.h"
+#include "vcf_writer.h"
 
 /// @cond
 #include <iostream>
@@ -66,75 +67,26 @@ void SVData::updateSVType(SVCandidate candidate, int sv_type)
 
 void SVData::saveToVCF(FASTAQuery& ref_genome, std::string output_dir)
 {
-    // Create a VCF file for the SV calls
+    // Create a VCF writer
     std::string output_vcf = output_dir + "/sv_calls.vcf";
-
-    // Remove the file if it already exists
-    std::cout << "Removing previous VCF..." << std::endl;
-    std::remove(output_vcf.c_str());
-
-    // Open the output stream
-    std::cout << "Opening VCF..." << std::endl;
-    std::ofstream output_stream(output_vcf);
-    if (!output_stream.is_open()) {
-        std::cerr << "Error: Unable to open " << output_vcf << std::endl;
-        exit(1);
-    }
+    VcfWriter vcf_writer(output_vcf);
 
     // Set the sample name
     std::string sample_name = "SAMPLE";
 
+    // Set the header lines
+    std::vector<std::string> header_lines = {
+        std::string("##reference=") + ref_genome.getFilepath(),
+        ref_genome.getContigHeader(),
+        "##INFO=<ID=END,Number=1,Type=Integer,Description=\"End position of the variant described in this record\">",
+        "##INFO=<ID=SVTYPE,Number=1,Type=String,Description=\"Type of structural variant\">",
+        "##INFO=<ID=SVLEN,Number=1,Type=Integer,Description=\"Difference in length between REF and ALT alleles\">",
+        "##INFO=<ID=DP,Number=1,Type=Integer,Description=\"Total read depth at the locus\">",
+        "##INFO=<ID=SVMETHOD,Number=1,Type=String,Description=\"Method used to call the structural variant\">"
+    };
+
     // Write the header
-    output_stream << "##fileformat=VCFv4.2" << std::endl;
-
-    // Get the date
-    time_t rawtime;
-    struct tm * timeinfo;
-    char buffer[80];
-    time(&rawtime);
-    timeinfo = localtime(&rawtime);
-
-    // Write the date
-    strftime(buffer, sizeof(buffer), "%Y%m%d", timeinfo);
-
-    // Write the date and source
-    output_stream << "##fileDate=" << buffer << std::endl;
-    output_stream << "##source=ContextSV" << std::endl;
-
-    // Write the reference genome
-    std::string ref_genome_filepath = ref_genome.getFilepath();
-    output_stream << "##reference=" << ref_genome_filepath << std::endl;
-
-    // Write the contig headers
-    output_stream << ref_genome.getContigHeader();
-
-    // Write the INFO lines
-    output_stream << "##INFO=<ID=END,Number=1,Type=Integer,Description=\"End position of the variant described in this record\">" << std::endl;
-    output_stream << "##INFO=<ID=SVTYPE,Number=1,Type=String,Description=\"Type of structural variant\">" << std::endl;
-    output_stream << "##INFO=<ID=SVLEN,Number=1,Type=Integer,Description=\"Difference in length between REF and ALT alleles\">" << std::endl;
-    output_stream << "##INFO=<ID=DP,Number=1,Type=Integer,Description=\"Total read depth at the locus\">" << std::endl;
-    output_stream << "##INFO=<ID=SVMETHOD,Number=1,Type=String,Description=\"Method used to call the structural variant\">" << std::endl;
-
-    // Write the alignment type INFO line
-    output_stream << "##INFO=<ID=ALN,Number=1,Type=String,Description=\"Alignment type used to call the structural variant\">" << std::endl;
-
-    // Write the repeat type INFO line
-    output_stream << "##INFO=<ID=REPTYPE,Number=1,Type=String,Description=\"Repeat type of the structural variant\">" << std::endl;
-    //output_stream << "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO" << std::endl;
-
-    // Write the FILTER lines
-    output_stream << "##FILTER=<ID=PASS,Description=\"All filters passed\">" << std::endl;
-    output_stream << "##FILTER=<ID=LowQual,Description=\"Low quality\">" << std::endl;
-
-    // Write the FORMAT lines
-    // Genotype
-    output_stream << "##FORMAT=<ID=GT,Number=1,Type=String,Description=\"Genotype\">" << std::endl;
-
-    // Read depth
-    output_stream << "##FORMAT=<ID=DP,Number=1,Type=Integer,Description=\"Read depth\">" << std::endl;
-
-    // Add the header line
-    output_stream << "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\t" << sample_name << std::endl;
+    vcf_writer.writeHeader(header_lines);
 
     // Iterate over the SV calls
     std::cout << "Saving SV calls to " << output_vcf << "..." << std::endl;
@@ -222,12 +174,15 @@ void SVData::saveToVCF(FASTAQuery& ref_genome, std::string output_dir)
 
         // Create the sample string
         std::string sample_str = genotype + ":" + std::to_string(depth);
+        std::vector<std::string> samples = {sample_str};
 
         // Write the SV call to the file
-        output_stream << chr << "\t" << pos << "\t" << "." << "\t" << ref_allele << "\t" << alt_allele << "\t" << "." << "\t" << "." << "\t" << info_str << "\t" << format_str << "\t" << sample_str << std::endl;
+        vcf_writer.writeRecord(chr, pos, ".", ref_allele, alt_allele, ".", ".", info_str, format_str, samples);
+        //output_stream << chr << "\t" << pos << "\t" << "." << "\t" << ref_allele << "\t" << alt_allele << "\t" << "." << "\t" << "." << "\t" << info_str << "\t" << format_str << "\t" << sample_str << std::endl;
     }
 
     // Close the output stream
-    output_stream.close();
+    vcf_writer.close();
+    // output_stream.close();
     std::cout << "Saved SV calls to " << output_vcf << std::endl;
 }
