@@ -66,17 +66,17 @@ def main():
     parser.add_argument(
         "-b", "--bam",
         help="The path to the BAM file.",
-        required=True
+        required=False
     )
     parser.add_argument(
         "-g", "--reference",
         help="The path to the reference genome.",
-        required=True
+        required=False
     )
     parser.add_argument(
         "-s", "--snps",
         help="The path to the SNPs file.",
-        required=True
+        required=False
     )
 
     # PFB file of population allele frequencies.
@@ -136,14 +136,13 @@ def main():
             log.error("Please provide the CNV data path.")
             arg_error = True
 
-        # Ensure that the output directory exists.
-        if (not os.path.exists(args.output)):
-            log.error("The output directory does not exist.")
-            arg_error = True
-
         # Exit if there are any errors.
         if (arg_error):
             sys.exit(1)
+
+        # Create the output directory if it doesn't exist.
+        if (not os.path.exists(args.output)):
+            os.makedirs(args.output)
 
         # Set the data paths from user input for downstream analysis.
         vcf_path = args.vcf
@@ -154,6 +153,25 @@ def main():
 
     else:
         # Run SV detection mode.
+
+        # Ensure BAM, reference, and SNPs files are provided.
+        arg_error = False
+        if (args.bam is None):
+            log.error("Please provide the BAM file.")
+            arg_error = True
+
+        if (args.reference is None):
+            log.error("Please provide the reference genome.")
+            arg_error = True
+
+        if (args.snps is None):
+            log.error("Please provide the SNPs file.")
+            arg_error = True
+
+        # Exit if there are any errors.
+        if (arg_error):
+            # Exit with error code 1.
+            sys.exit(1)
 
         # Set all None values to empty strings.
         for key, value in vars(args).items():

@@ -10,6 +10,9 @@
 #include <set>
 /// @endcond
 
+// SNP data type for position, alternate allele and B-allele frequency as vectors
+using SNPData = std::tuple<std::vector<int64_t>, std::vector<std::string>, std::vector<double>>;
+
 // CNV candidate location map
 // (chr, snp_pos) : cnv_type
 using SNPLocation = std::pair<std::string, int64_t>;

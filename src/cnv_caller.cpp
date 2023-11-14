@@ -33,12 +33,19 @@ CNVData CNVCaller::run()
 {
     // Read SNP positions and BAF values from the VCF file
     std::cout << "Reading SNP positions and BAF values from the VCF file..." << std::endl;
-    std::pair<std::vector<int>, std::vector<double>> bafs_by_pos = readSNPBAFs();
+
+    // Get the VCF filepath with SNPs
+    std::string snp_filepath = this->input_data->getSNPFilepath();
+
+    //std::pair<std::vector<int>, std::vector<double>> bafs_by_pos =
+    //readSNPBAFs();
+    SNPData snp_data = readSNPBAFs(snp_filepath);
     std::cout << "Complete." << std::endl;
 
     // Extract the SNP positions and BAF values
-    std::vector<int> snp_locations = bafs_by_pos.first;
-    std::vector<double> baf = bafs_by_pos.second;
+    std::vector<int64_t> snp_locations = std::get<0>(snp_data);
+    std::vector<std::string> alt_alleles = std::get<1>(snp_data);
+    std::vector<double> baf = std::get<2>(snp_data);
 
     std::cout << "Number of SNPs: " << snp_locations.size() << std::endl;
 
@@ -117,7 +124,7 @@ CNVData CNVCaller::run()
     return state_sequence_by_pos;
 }
 
-std::vector<double> CNVCaller::calculateLogRRatiosAtSNPS(std::vector<int> snp_locations)
+std::vector<double> CNVCaller::calculateLogRRatiosAtSNPS(std::vector<int64_t> snp_locations)
 {
     std::string input_filepath = this->input_data->getBAMFilepath();
     std::string chr = this->input_data->getRegionChr();
@@ -264,11 +271,8 @@ double CNVCaller::calculateWindowLogRRatio(double mean_chr_cov, int start_pos, i
     return region_lrr;
 }
 
-std::pair<std::vector<int>, std::vector<double>> CNVCaller::readSNPBAFs()
+SNPData CNVCaller::readSNPBAFs(std::string snp_filepath)
 {
-    // Get the VCF filepath with SNPs
-    std::string snp_filepath = this->input_data->getSNPFilepath();
-
     // Create a VCF filepath of filtered SNPs
     std::string filtered_snp_vcf_filepath = this->input_data->getOutputDir() + "/filtered_snps.vcf";
 
@@ -288,10 +292,9 @@ std::pair<std::vector<int>, std::vector<double>> CNVCaller::readSNPBAFs()
 
     std::cout << "Filtered SNPs written to " << filtered_snp_vcf_filepath << std::endl;
 
-    // Extract total depth (DP) and alternate allele depth (AD) from the
-    // filtered SNPs for calculating BAFs
-    std::cout << "Extracting DP and AD from filtered SNPs" << std::endl;
-    cmd = "bcftools query -f '%CHROM,%POS,[%DP],[%AD]\n' " + filtered_snp_vcf_filepath;
+    // Extract alternate alleles, and B-allele frequency data from the VCF file
+    std::cout << "Extracting data from filtered SNPs..." << std::endl;
+    cmd = "bcftools query -f '%CHROM,%POS,%ALT,[%AD]\n' " + filtered_snp_vcf_filepath;
     FILE *fp = popen(cmd.c_str(), "r");
     if (fp == NULL)
     {
@@ -301,10 +304,9 @@ std::pair<std::vector<int>, std::vector<double>> CNVCaller::readSNPBAFs()
 
     // Read the DP and AD values (AD for alternate allele depth)
     char line[BUFFER_SIZE];
-    std::vector<int> snp_locations;
-    std::vector<double> snp_bafs;
-    std::vector<int> dps;
-    std::vector<int> ads;
+    std::vector<int64_t> locations;
+    std::vector<double> bafs;
+    std::vector<std::string> alt_alleles;
     while (fgets(line, BUFFER_SIZE, fp) != NULL)
     {
         // Parse the line
@@ -314,6 +316,7 @@ std::pair<std::vector<int>, std::vector<double>> CNVCaller::readSNPBAFs()
         uint64_t pos = 0;
         int ref_ad = 0;
         int alt_ad = 0;
+        std::string alt_allele = "";
         while (tok != NULL)
         {
             // Get the chromosome from column 1
@@ -328,9 +331,10 @@ std::pair<std::vector<int>, std::vector<double>> CNVCaller::readSNPBAFs()
                 pos = atoi(tok);
             }
 
-            // Get the DP from column 3
+            // Get the alternate allele from column 3
             else if (col == 2)
             {
+                alt_allele = tok;
             }
 
             // Get the AD for the reference allele from column 4
@@ -345,6 +349,7 @@ std::pair<std::vector<int>, std::vector<double>> CNVCaller::readSNPBAFs()
                 alt_ad = atoi(tok);
             }
 
+            // Move to the next token
             tok = strtok(NULL, ",");
             col++;
         }
@@ -352,28 +357,30 @@ std::pair<std::vector<int>, std::vector<double>> CNVCaller::readSNPBAFs()
         // Calculate the BAF
         double baf = (double) alt_ad / (double) (ref_ad + alt_ad);
 
-        // Store the position and BAF
-        snp_locations.push_back(pos);
-        snp_bafs.push_back(baf);
+        // Store the position, alternate allele, and BAF
+        locations.push_back(pos);
+        bafs.push_back(baf);
+        alt_alleles.push_back(alt_allele);
     }
 
     // Close the pipe
     pclose(fp);
 
     // Exit if no SNPs were found
-    if (snp_locations.size() == 0)
+    if (locations.size() == 0)
     {
         std::cerr << "ERROR: No SNPs found in the VCF file: " << snp_filepath << std::endl;
         exit(1);
     }
 
-    // Create the pair vector
-    std::pair<std::vector<int>, std::vector<double>> snp_data = std::make_pair(snp_locations, snp_bafs);
+    // Create the SNP data tuple
+    SNPData snp_data = std::make_tuple(locations, alt_alleles, bafs);
+    // std::pair<std::vector<int>, std::vector<double>> snp_data = std::make_pair(snp_locations, snp_bafs);
 
     return snp_data;
 }
 
-std::vector<double> CNVCaller::getSNPPopulationFrequencies(std::vector<int> snp_locations)
+std::vector<double> CNVCaller::getSNPPopulationFrequencies(std::vector<int64_t> snp_locations)
 {
     // Get the PFB filepath
     std::string pfb_filepath = this->input_data->getPFBFilepath();
@@ -511,7 +518,7 @@ std::vector<double> CNVCaller::getSNPPopulationFrequencies(std::vector<int> snp_
     return snp_pfb;
 }
 
-void CNVCaller::saveToTSV(std::string filepath, std::vector<int> snp_locations, std::vector<double> bafs, std::vector<double> logr_ratios, std::vector<int> state_sequence, std::vector<double> population_frequencies)
+void CNVCaller::saveToTSV(std::string filepath, std::vector<int64_t> snp_locations, std::vector<double> bafs, std::vector<double> logr_ratios, std::vector<int> state_sequence, std::vector<double> population_frequencies)
 {
     // Open the TSV file for writing
     std::ofstream tsv_file(filepath);

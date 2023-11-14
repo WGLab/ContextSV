@@ -7,6 +7,7 @@
 #include "khmm.h"
 #include "input_data.h"
 #include "cnv_data.h"
+#include "types.h"
 
 /// @cond
 #include <string>
@@ -27,7 +28,7 @@ class CNVCaller {
 		CNVData run();
 
         // Calculate Log R Ratios
-		std::vector<double> calculateLogRRatiosAtSNPS(std::vector<int> snp_positions);
+		std::vector<double> calculateLogRRatiosAtSNPS(std::vector<int64_t> snp_positions);
 
         // Calculate the mean chromosome coverage
         double calculateMeanChromosomeCoverage();
@@ -36,14 +37,14 @@ class CNVCaller {
         double calculateWindowLogRRatio(double mean_chr_cov, int start_pos, int end_pos);
 
         // Read SNP positions and BAF values from the VCF file
-        std::pair<std::vector<int>, std::vector<double>> readSNPBAFs();
+        SNPData readSNPBAFs(std::string filepath);
 
         // Read SNP population frequencies from the PFB file and return a vector
         // of population frequencies for each SNP location
-        std::vector<double> getSNPPopulationFrequencies(std::vector<int> snp_locations);
+        std::vector<double> getSNPPopulationFrequencies(std::vector<int64_t> snp_locations);
 
         // Save a CSV with SNP positions, BAF values and Log R Ratios
-        void saveToTSV(std::string filepath, std::vector<int> snp_locations, std::vector<double> bafs, std::vector<double> logr_ratios, std::vector<int> state_sequence, std::vector<double> population_frequencies);
+        void saveToTSV(std::string filepath, std::vector<int64_t> snp_locations, std::vector<double> bafs, std::vector<double> logr_ratios, std::vector<int> state_sequence, std::vector<double> population_frequencies);
 };
 
 #endif // CNV_CALLER_H
