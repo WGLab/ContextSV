@@ -82,7 +82,13 @@ void SVData::saveToVCF(FASTAQuery& ref_genome, std::string output_dir)
         "##INFO=<ID=SVTYPE,Number=1,Type=String,Description=\"Type of structural variant\">",
         "##INFO=<ID=SVLEN,Number=1,Type=Integer,Description=\"Difference in length between REF and ALT alleles\">",
         "##INFO=<ID=DP,Number=1,Type=Integer,Description=\"Total read depth at the locus\">",
-        "##INFO=<ID=SVMETHOD,Number=1,Type=String,Description=\"Method used to call the structural variant\">"
+        "##INFO=<ID=SVMETHOD,Number=1,Type=String,Description=\"Method used to call the structural variant\">",
+        "##INFO=<ID=ALN,Number=1,Type=String,Description=\"Alignment type used to call the structural variant\">",
+        "##INFO=<ID=REPTYPE,Number=1,Type=String,Description=\"Repeat type of the structural variant\">",
+        "##FILTER=<ID=PASS,Description=\"All filters passed\">",
+        "##FILTER=<ID=LowQual,Description=\"Low quality\">",
+        "##FORMAT=<ID=GT,Number=1,Type=String,Description=\"Genotype\">",
+        "##FORMAT=<ID=DP,Number=1,Type=Integer,Description=\"Read depth\">"
     };
 
     // Write the header lines

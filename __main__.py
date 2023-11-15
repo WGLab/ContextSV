@@ -208,8 +208,12 @@ def main():
 
         # Determine the data paths for downstream analysis.
         vcf_path = os.path.join(args.output, "sv_calls.vcf")
-        cnv_data_path = os.path.join(args.output, "cnv_data.tsv")
         output_dir = args.output
+
+        if (args.cnv == ""):
+            cnv_data_path = os.path.join(args.output, "cnv_data.tsv")
+        else:
+            cnv_data_path = args.cnv
 
     # Run the python-based analysis.
     log.info("Running python-based analysis...")

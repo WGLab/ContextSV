@@ -580,11 +580,8 @@ void CNVCaller::saveToBED(SNPData& snp_data, std::string filepath)
     int snp_count = (int) snp_data.locations.size();
     for (int i = 0; i < snp_count; i++)
     {
-        // Get the SNP data
+        // Get the SNP position and state
         int64_t pos        = snp_data.locations[i];
-        double  pfb        = snp_data.pfbs[i];
-        double  baf        = snp_data.bafs[i];
-        double  log2_ratio = snp_data.log2_ratios[i];
         int     state   = snp_data.state_sequence[i];
 
         // Get the state description

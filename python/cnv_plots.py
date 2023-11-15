@@ -56,17 +56,18 @@ def run(vcf_file, cnv_data_file, output_path, region):
     else:
         vcf_data = vcf_data[(vcf_data[0] == chromosome)]
 
-    log.info("Loaded %d variants from %s.", len(vcf_data), vcf_file)
+    log.info("Loaded %d variants from %s", len(vcf_data), vcf_file)
 
     # Filter the CNV data to the region using pandas, and make the chromosome
     # column a string.
+    log.info("Loading CNV data from %s", cnv_data_file)
     cnv_data = pd.read_csv(cnv_data_file, sep="\t", header=0, dtype={"chromosome": str})
     if start_position is not None and end_position is not None:
         cnv_data = cnv_data[(cnv_data["chromosome"] == chromosome) & (cnv_data["position"] >= start_position) & (cnv_data["position"] <= end_position)]
     else:
         cnv_data = cnv_data[(cnv_data["chromosome"] == chromosome)]
 
-    log.info("Loaded %d CNVs from %s.", len(cnv_data), cnv_data_file)
+    log.info("Loaded %d CNVs.", len(cnv_data))
 
     # Create an output html file where we will append the CNV plots.
     if start_position is not None and end_position is not None:
@@ -99,22 +100,26 @@ def run(vcf_file, cnv_data_file, output_path, region):
 
             # Get the SVTYPE field value.
             svtype = get_info_field_value(info_field, "SVTYPE")
+            if svtype == "INS" and get_info_field_value(info_field, "REPTYPE") == "DUP":
+                svtype = "DUP"
 
-            # Analyze the CNV if it is a DEL or DUP.
+            # Analyze the CNV if it is a DEL or DUP (=INS with INFO/REPTYE=DUP)
             if svtype in ("DEL", "DUP"):
 
                 # Get the read depth (DP) value.
                 read_depth = int(get_info_field_value(info_field, "DP"))
 
-                # Get the start and end positions.
+                # Get the start position.
                 start_position = int(sv_data[1])
-                end_position = int(get_info_field_value(info_field, "END"))
+
+                # Get the SV length.
+                cnv_length = int(get_info_field_value(info_field, "SVLEN"))
+
+                # Get the end position using the start position and SV length.
+                end_position = start_position + cnv_length - 1
 
                 # Get the chromosome.
                 chromosome = sv_data[0]
-
-                # Get the length of the CNV.
-                cnv_length = end_position - start_position + 1
 
                 # Get the plot range.
                 plot_start_position = start_position - (plot_range * cnv_length)
