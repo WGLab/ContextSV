@@ -10,13 +10,26 @@
 #include <set>
 /// @endcond
 
-// SNP data type for position, alternate allele and B-allele frequency as vectors
-using SNPData = std::tuple<std::vector<int64_t>, std::vector<std::string>, std::vector<double>>;
+// SNP data is a struct containing vectors used in predicting copy number states
+struct SNPData {
+    std::vector<int64_t> locations;
+    std::vector<double> pfbs;
+    std::vector<double> bafs;
+    std::vector<double> log2_ratios;
+    std::vector<int> state_sequence;
+
+    SNPData():
+        locations({}),\
+        pfbs({}), \
+        bafs({}), \
+        log2_ratios({}), \
+        state_sequence({}) {}
+};
 
 // CNV candidate location map
 // (chr, snp_pos) : cnv_type
 using SNPLocation = std::pair<std::string, int64_t>;
-using SNPToCNVMap = std::map<SNPLocation, int>;
+using SNPToCNVMap = std::map<SNPLocation,  int>;
 
 // SV candidate read depth map. An SV is defined by its location, type, and
 // alternate allele.
@@ -41,7 +54,7 @@ using SVDepthMap = std::map<SVCandidate, SVInfo>;  // Map for getting type and r
 
 // SV calling:
 // Alignment location (chr, start, end, depth)
-using AlignmentData = std::tuple<std::string, int64_t, int64_t, int>;
+using AlignmentData   = std::tuple<std::string, int64_t, int64_t, int>;
 using AlignmentVector = std::vector<AlignmentData>;
 
 // Query map (query name, alignment vector)

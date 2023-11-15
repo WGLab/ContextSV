@@ -85,7 +85,7 @@ void SVData::saveToVCF(FASTAQuery& ref_genome, std::string output_dir)
         "##INFO=<ID=SVMETHOD,Number=1,Type=String,Description=\"Method used to call the structural variant\">"
     };
 
-    // Write the header
+    // Write the header lines
     vcf_writer.writeHeader(header_lines);
 
     // Iterate over the SV calls

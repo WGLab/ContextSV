@@ -33,39 +33,27 @@ CNVData CNVCaller::run()
 {
     // Read SNP positions and BAF values from the VCF file
     std::cout << "Reading SNP positions and BAF values from the VCF file..." << std::endl;
-
-    // Get the VCF filepath with SNPs
     std::string snp_filepath = this->input_data->getSNPFilepath();
-
-    //std::pair<std::vector<int>, std::vector<double>> bafs_by_pos =
-    //readSNPBAFs();
     SNPData snp_data = readSNPBAFs(snp_filepath);
-    std::cout << "Complete." << std::endl;
-
-    // Extract the SNP positions and BAF values
-    std::vector<int64_t> snp_locations = std::get<0>(snp_data);
-    std::vector<std::string> alt_alleles = std::get<1>(snp_data);
-    std::vector<double> baf = std::get<2>(snp_data);
-
-    std::cout << "Number of SNPs: " << snp_locations.size() << std::endl;
+    int snp_count = (int) snp_data.locations.size();
+    std::cout << "Complete. Number of SNPs: " << snp_count << std::endl;
 
     // Get the population frequencies for each SNP
-    std::vector<double> pfb;
     if (this->input_data->getPFBFilepath() == "")
     {
         std::cout << "No PFB file provided. Using the minimum PFB value of " << MIN_PFB << " for all SNPs." << std::endl;
-        pfb = std::vector<double>(snp_locations.size(), MIN_PFB);
+        snp_data.pfbs = std::vector<double>(snp_count, MIN_PFB);
     } else {
         std::cout << "Using PFB file: " << this->input_data->getPFBFilepath() << std::endl;
         std::cout << "Getting population frequencies for each SNP..." << std::endl;
-        pfb = getSNPPopulationFrequencies(snp_locations);
+        snp_data.pfbs = getSNPPopulationFrequencies(snp_data.locations);
         std::cout << "Population frequencies retrieved." << std::endl;
     }
 
     // Calculate LRRs
-    std::cout << "Calculating LRRs at SNP positions..." << std::endl;
-    std::vector<double> lrr = calculateLogRRatiosAtSNPS(snp_locations);
-    std::cout << "LRRs calculated." << std::endl;
+    std::cout << "Calculating log2 ratio of coverage at SNP positions..." << std::endl;
+    snp_data.log2_ratios = calculateLog2RatioAtSNPS(snp_data.locations);
+    std::cout << "Log2 ratios calculated." << std::endl;
 
     // Read the HMM from file
     //std::string hmm_filepath = "data/wgs.hmm";
@@ -74,19 +62,15 @@ CNVData CNVCaller::run()
     CHMM hmm = ReadCHMM(hmm_filepath.c_str());
     std::cout << "HMM read from file." << std::endl;
 
-    // Set up the input variables
-    int num_probes = lrr.size();
-    double *lrr_ptr = lrr.data();
-    double *baf_ptr = baf.data();
-    double *pfb_ptr = pfb.data();
-
-    // Create a double array for pop. frequency and snp distance (not used), and log probabilities
+    // Set up the data for the Viterbi algorithm
+    double *lrr_ptr = snp_data.log2_ratios.data();
+    double *baf_ptr = snp_data.bafs.data();
+    double *pfb_ptr = snp_data.pfbs.data();
     int *snpdist = NULL;
-    // double *pfb = NULL;
     double *logprob = NULL;
 
     // Run the Viterbi algorithm
-    // Each of the 6 states corresponds to a CNV call:
+    // Each of the 6 state predictions corresponds to a copy number state:
     // 1: 0/0 (Two copy loss)
     // 2: 1/0 (One copy loss)
     // 3: 1/1 (Normal)
@@ -95,36 +79,41 @@ CNVData CNVCaller::run()
     // 6: 2/2 (Two copy gain)
     std::cout << "Running the Viterbi algorithm..." << std::endl;
     std::vector<int> state_sequence;  // Create the output state sequence
-    state_sequence = testVit_CHMM(hmm, num_probes, lrr_ptr, baf_ptr, pfb_ptr, snpdist, logprob);
-    std::cout << "Viterbi algorithm complete." << std::endl;
+    state_sequence = testVit_CHMM(hmm, snp_count, lrr_ptr, baf_ptr, pfb_ptr, snpdist, logprob);
+    snp_data.state_sequence = state_sequence;
+    std::cout << "Complete." << std::endl;
 
-    // Save a CSV of the positions, LRRs, BAFs, and state sequence
-    std::cout << "Saving TSV of positions, LRRs, and BAFs..." << std::endl;
-    std::string output_filepath = this->input_data->getOutputDir() + "/cnv_data.tsv";
-    saveToTSV(output_filepath, snp_locations, baf, lrr, state_sequence, pfb);
-    std::cout << "TSV saved to: " << output_filepath << std::endl;
+    // Save a TSV of the positions, LRRs, BAFs, and state sequence
+    std::cout << "Saving TSV of copy number prediction data..." << std::endl;
+    std::string output_tsv = this->input_data->getOutputDir() + "/cnv_data.tsv";
+    saveToTSV(snp_data, output_tsv);
+    std::cout << "Saved to: " << output_tsv << std::endl;
 
-    // Return a map of the state sequence by position
+    // Save a BED file of the CNV state sequence
+    std::cout << "Saving BED of CNV states..." << std::endl;
+    std::string output_bed = this->input_data->getOutputDir() + "/cnv_states.bed";
+    saveToBED(snp_data, output_bed);
+    std::cout << "Saved to: " << output_bed << std::endl;
+
+    // Get the chromosome as a C string
     std::string chr = this->input_data->getRegionChr();
-
-    // Convert constant char * to char *
     char *chr_cstr = new char[chr.length() + 1];
     strcpy(chr_cstr, chr.c_str());
 
     // Create a map of the state sequence by position
-    CNVData state_sequence_by_pos;
-    for (int i = 0; i < num_probes; i++)
+    CNVData cnv_data;
+    for (int i = 0; i < snp_count; i++)
     {
-        state_sequence_by_pos.addCNVCall(chr_cstr, snp_locations[i], state_sequence[i]);
+        cnv_data.addCNVCall(chr_cstr, snp_data.locations[i], snp_data.state_sequence[i]);
     }
 
-    // Free the memory
+    // Free the C string
     delete[] chr_cstr;
 
-    return state_sequence_by_pos;
+    return cnv_data;
 }
 
-std::vector<double> CNVCaller::calculateLogRRatiosAtSNPS(std::vector<int64_t> snp_locations)
+std::vector<double> CNVCaller::calculateLog2RatioAtSNPS(std::vector<int64_t> snp_locations)
 {
     std::string input_filepath = this->input_data->getBAMFilepath();
     std::string chr = this->input_data->getRegionChr();
@@ -292,9 +281,9 @@ SNPData CNVCaller::readSNPBAFs(std::string snp_filepath)
 
     std::cout << "Filtered SNPs written to " << filtered_snp_vcf_filepath << std::endl;
 
-    // Extract alternate alleles, and B-allele frequency data from the VCF file
-    std::cout << "Extracting data from filtered SNPs..." << std::endl;
-    cmd = "bcftools query -f '%CHROM,%POS,%ALT,[%AD]\n' " + filtered_snp_vcf_filepath;
+    // Extract B-allele frequency data from the VCF file
+    std::cout << "Extracting allelic depth data from filtered SNPs..." << std::endl;
+    cmd = "bcftools query -f '%CHROM,%POS,[%AD]\n' " + filtered_snp_vcf_filepath;
     FILE *fp = popen(cmd.c_str(), "r");
     if (fp == NULL)
     {
@@ -306,7 +295,6 @@ SNPData CNVCaller::readSNPBAFs(std::string snp_filepath)
     char line[BUFFER_SIZE];
     std::vector<int64_t> locations;
     std::vector<double> bafs;
-    std::vector<std::string> alt_alleles;
     while (fgets(line, BUFFER_SIZE, fp) != NULL)
     {
         // Parse the line
@@ -331,20 +319,14 @@ SNPData CNVCaller::readSNPBAFs(std::string snp_filepath)
                 pos = atoi(tok);
             }
 
-            // Get the alternate allele from column 3
+            // Get the AD for the reference allele from column 3
             else if (col == 2)
-            {
-                alt_allele = tok;
-            }
-
-            // Get the AD for the reference allele from column 4
-            else if (col == 3)
             {
                 ref_ad = atoi(tok);
             }
 
-            // Get the AD for the non-reference allele from column 5
-            else if (col == 4)
+            // Get the AD for the non-reference allele from column 4
+            else if (col == 3)
             {
                 alt_ad = atoi(tok);
             }
@@ -360,7 +342,6 @@ SNPData CNVCaller::readSNPBAFs(std::string snp_filepath)
         // Store the position, alternate allele, and BAF
         locations.push_back(pos);
         bafs.push_back(baf);
-        alt_alleles.push_back(alt_allele);
     }
 
     // Close the pipe
@@ -373,8 +354,12 @@ SNPData CNVCaller::readSNPBAFs(std::string snp_filepath)
         exit(1);
     }
 
-    // Create the SNP data tuple
-    SNPData snp_data = std::make_tuple(locations, alt_alleles, bafs);
+    // Create the SNP data struct
+    SNPData snp_data;
+    snp_data.locations = locations;
+    snp_data.bafs      = bafs;
+    
+    //SNPData snp_data = std::make_tuple(locations, alt_alleles, bafs);
     // std::pair<std::vector<int>, std::vector<double>> snp_data = std::make_pair(snp_locations, snp_bafs);
 
     return snp_data;
@@ -396,7 +381,7 @@ std::vector<double> CNVCaller::getSNPPopulationFrequencies(std::vector<int64_t> 
     // Read the AF values (AF for population frequency) into a map
     std::map<std::string, std::map<int, double>> pfb_map;  // Map of population frequencies by SNP position (chr -> pos -> pfb)
     char line[BUFFER_SIZE];
-    int pfb_count = 0;
+    int pfb_count   = 0;
     int pfb_min_hit = 0;
     int pfb_max_hit = 0;
     while (fgets(line, BUFFER_SIZE, fp) != NULL)
@@ -518,7 +503,7 @@ std::vector<double> CNVCaller::getSNPPopulationFrequencies(std::vector<int64_t> 
     return snp_pfb;
 }
 
-void CNVCaller::saveToTSV(std::string filepath, std::vector<int64_t> snp_locations, std::vector<double> bafs, std::vector<double> logr_ratios, std::vector<int> state_sequence, std::vector<double> population_frequencies)
+void CNVCaller::saveToTSV(SNPData& snp_data, std::string filepath)
 {
     // Open the TSV file for writing
     std::ofstream tsv_file(filepath);
@@ -528,19 +513,100 @@ void CNVCaller::saveToTSV(std::string filepath, std::vector<int64_t> snp_locatio
 
     // Write the data
     std::string chr = this->input_data->getRegionChr();
-    int snp_count = (int) snp_locations.size();
+    int snp_count = (int) snp_data.locations.size();
     for (int i = 0; i < snp_count; i++)
     {
-        tsv_file                  << \
-        chr                       << "\t" << \
-        snp_locations[i]          << "\t" << \
-        bafs[i]                   << "\t" << \
-        logr_ratios[i]            << "\t" << \
-        state_sequence[i]         << "\t" << \
-        population_frequencies[i] << \
+        // Get the SNP data
+        int64_t pos        = snp_data.locations[i];
+        double  pfb        = snp_data.pfbs[i];
+        double  baf        = snp_data.bafs[i];
+        double  log2_ratio = snp_data.log2_ratios[i];
+        int     cn_state   = snp_data.state_sequence[i];
+
+        // Write the TSV line (chrom, pos, baf, lrr, state)
+        tsv_file << \
+            chr          << "\t" << \
+            pos          << "\t" << \
+            baf          << "\t" << \
+            log2_ratio   << "\t" << \
+            cn_state     << "\t" << \
+            pfb          << \
         std::endl;
     }
 
     // Close the file
     tsv_file.close();
+}
+
+void CNVCaller::saveToBED(SNPData& snp_data, std::string filepath)
+{
+    // Each of the 6 copy number states corresponds to the following:
+    // 1: 0/0 (Two copy loss)
+    // 2: 1/0 (One copy loss)
+    // 3: 1/1 (Normal)
+    // 4: 1/1 (Copy neutral LOH)
+    // 5: 2/1 (One copy gain)
+    // 6: 2/2 (Two copy gain)
+
+    // Create a map of descriptions and RGB colors for each CNV state
+    // Descriptions:
+    std::map<int, std::string> description_map = {
+        {1, "DEL"},  // DEL
+        {2, "DEL"},  // DEL
+        {3, "NEUT"},  // NEUTRAL
+        {4, "NEUT"},  // NEUTRAL
+        {5, "DUP"},  // DUP
+        {6, "DUP"}  // DUP
+    };
+
+    // RGB colors:
+    std::map<int, std::string> color_map = {
+        {1, "255,0,0"},  // DEL
+        {2, "255,0,0"},  // DEL
+        {3, "0,0,0"},  // NEUTRAL
+        {4, "0,0,0"},  // NEUTRAL
+        {5, "0,0,255"},  // DUP
+        {6, "0,0,255"}  // DUP
+    };
+
+    // Open the BED file for writing
+    std::ofstream bed_file(filepath);
+
+    // Write the track line (track type, name, description)
+    bed_file << "track name=\"CNV States\" description=\"CNV state predictions from ContextSV\" itemRgb=\"On\" visibility=\"2\" useScore=\"0\"" << std::endl;
+
+    // Write the data
+    std::string chr = this->input_data->getRegionChr();
+    int snp_count = (int) snp_data.locations.size();
+    for (int i = 0; i < snp_count; i++)
+    {
+        // Get the SNP data
+        int64_t pos        = snp_data.locations[i];
+        double  pfb        = snp_data.pfbs[i];
+        double  baf        = snp_data.bafs[i];
+        double  log2_ratio = snp_data.log2_ratios[i];
+        int     state   = snp_data.state_sequence[i];
+
+        // Get the state description
+        std::string state_str = description_map[state];
+
+        // Get the RGB color
+        std::string rgb_color = color_map[state];
+
+        // Write the BED line (chrom, start, end, name (state), score, strand, thickStart, thickEnd, itemRgb)
+        bed_file         << \
+            chr          << "\t" << \
+            pos          << "\t" << \
+            pos          << "\t" << \
+            state_str    << "\t" << \
+            "0"          << "\t" << \
+            "."          << "\t" << \
+            pos          << "\t" << \
+            pos          << "\t" << \
+            rgb_color    << \
+        std::endl;
+    }
+
+    // Close the file
+    bed_file.close();
 }

@@ -27,8 +27,8 @@ class CNVCaller {
         // (key = [chromosome, SNP position], value = state)
 		CNVData run();
 
-        // Calculate Log R Ratios
-		std::vector<double> calculateLogRRatiosAtSNPS(std::vector<int64_t> snp_positions);
+        // Calculate coverage log2 ratios at SNP positions
+		std::vector<double> calculateLog2RatioAtSNPS(std::vector<int64_t> snp_positions);
 
         // Calculate the mean chromosome coverage
         double calculateMeanChromosomeCoverage();
@@ -43,8 +43,11 @@ class CNVCaller {
         // of population frequencies for each SNP location
         std::vector<double> getSNPPopulationFrequencies(std::vector<int64_t> snp_locations);
 
-        // Save a CSV with SNP positions, BAF values and Log R Ratios
-        void saveToTSV(std::string filepath, std::vector<int64_t> snp_locations, std::vector<double> bafs, std::vector<double> logr_ratios, std::vector<int> state_sequence, std::vector<double> population_frequencies);
+        // Save a BED file with predicted copy number states
+        void saveToBED(SNPData& snp_data, std::string filepath);
+
+        // Save a TSV with B-allele frequencies, log 2 ratios, and copy number predictions
+        void saveToTSV(SNPData& snp_data, std::string filepath);
 };
 
 #endif // CNV_CALLER_H
