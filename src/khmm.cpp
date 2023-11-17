@@ -1,8 +1,14 @@
-#include <iostream>
-
 #include "khmm.h"
 #include "kc.h"
 
+/// @cond
+#include <iostream>
+#include <sstream>
+#include <vector>
+#include <map>
+/// @endcond
+
+#define BUFFER_SIZE 1024
 #define STATE_CHANGE 100000.0 /*this is the expected changes (D value) in the transition matrix*/
 #define VITHUGE 100000000000.0
 #define FLOAT_MINIMUM 1.175494351e-38; /*this is indeed machine dependent*/
@@ -27,26 +33,23 @@ std::vector<int> testVit_CHMM(CHMM hmm, int T, double *O1, double *O2, double *p
 	// Note: PLOGPROBA is replaced with DELTA (delta matrix) after running the
 	// HMM, which is used to calculate the probability of the most likely state
 
-	// int *q;			/* Array for the state sequence q[1..T] */
 	double **delta; // Matrix
 	int **psi;		// Matrix
-
-	// These 3 variables will be updated with the HMM results
-	// q = ivector(1, T);                // Allocate an int vector for each
-	// probe
 	delta = dmatrix(1, T, 1, hmm.N); // Allocate a TxN  double matrix (N=6 states)
 	psi = imatrix(1, T, 1, hmm.N);	 // Allocate a TxN  int matrix (N=6 states)
-
-	// Allocate pfb and plogproba
-	pfb = dvector(1, T);
+	
+	// Set initial log probability for each state
 	plogproba = dvector(1, hmm.N);
+	for (int i = 1; i <= hmm.N; i++)
+	{
+		plogproba[i] = -VITHUGE;
+	}
 
 	// Run the HMM
 	std::vector<int> q;  // State sequence
 	q = ViterbiLogNP_CHMM(&hmm, T, O1, O2, pfb, snpdist, delta, psi, plogproba);
 
 	// Free the variables
-	// free_ivector(q, 1, T);
 	free_imatrix(psi, 1, T, 1, hmm.N);
 	free_dmatrix(delta, 1, T, 1, hmm.N);
 
@@ -57,7 +60,9 @@ std::vector<int> testVit_CHMM(CHMM hmm, int T, double *O1, double *O2, double *p
 	return q;
 }
 
-// Emission probability: Calculate the state observationn likelihood b_j(O_t) of the observation symbol O_t given the current state j
+// Emission probability: Calculate the state observationn likelihood b_j(O_t) of
+// the observation symbol O_t given the current state j
+// O_t is the LRR value
 double b1iot(int state, double *mean, double *sd, double uf, double o)
 {
 	// UF = previous alpha
@@ -65,7 +70,6 @@ double b1iot(int state, double *mean, double *sd, double uf, double o)
 	p = uf;
 
 	// PDF normal is the transition probability distrubution a_ij (initialized as pi_n) from state i to j
-	// P += (1-alpha_t-1) *
 	p += (1 - uf) * pdf_normal(o, mean[state], sd[state]);
 
 	// Prevent divide by zero error
@@ -76,21 +80,32 @@ double b1iot(int state, double *mean, double *sd, double uf, double o)
 	return log(p);
 }
 
+// Emission probability: Calculate the state observationn likelihood b_j(O_t) of
+// the observation symbol O_t given the current state j
+// O_t is the BAF value
 double b2iot(int state, double *mean, double *sd, double uf, double pfb, double b)
 {
 	double p = 0;
-	double mean0 = mean[1];
-	double mean25 = mean[2];
-	double mean33 = mean[3];
-	double mean50 = mean[4];
-	double mean50_state1 = mean[5];
-	double sd0 = sd[1];
-	double sd25 = sd[2];
-	double sd33 = sd[3];
-	double sd50 = sd[4];
-	double sd50_state1 = sd[5];
+	double mean0 = mean[1];  // mean[1] = 0
+	double mean25 = mean[2];  // mean[2] = 0.25
+	double mean33 = mean[3];  // mean[3] = 0.33
+	double mean50 = mean[4];  // mean[4] = 0.5
+	double mean50_state1 = mean[5];  // mean[5] = 0.5
+	double sd0 = sd[1];  // sd[1] = 0
+	double sd25 = sd[2];  // sd[2] = 0.25
+	double sd33 = sd[3];  // sd[3] = 0.33
+	double sd50 = sd[4];  // sd[4] = 0.5
+	double sd50_state1 = sd[5];  // sd[5] = 0.5
 
-	p = uf;
+	p = uf;  // UF = previous alpha (transition probability)
+
+	// PDF normal is the transition probability distrubution a_ij (initialized
+	// as pi_n) from state i to j
+	// Here, we calculate the probability of the observation symbol O_t given
+	// the current state j. The observation symbol is the BAF value.
+	// P += (1-alpha_t-1) * pdf_normal(b, mean[state], sd[state]);
+	// b = BAF value
+
 	if (state == 1)
 	{
 		if (b == 0)
@@ -192,9 +207,10 @@ double b2iot(int state, double *mean, double *sd, double uf, double pfb, double 
 			p += (1 - uf) * pfb * pfb * pfb * pfb * pdf_normal(b, 1 - mean0, sd0);
 		}
 	}
-	if (p == 0)
+	if (p == 0)  // Prevent divide by zero error
 		p = FLOAT_MINIMUM;
-	return log(p);
+
+	return log(p);  // Return the log probability of the observation symbol O_t
 }
 
 // SV calling with the HMM via the Viterbi algorithm
@@ -204,7 +220,6 @@ std::vector<int> ViterbiLogNP_CHMM(CHMM *phmm, int T, double *O1, double *O2, do
 	int t;	  /* time index */
 
 	int snp_count = 0;
-	int cn_count = 0;
 
 	int maxvalind;
 	double maxval, val;
@@ -232,58 +247,63 @@ std::vector<int> ViterbiLogNP_CHMM(CHMM *phmm, int T, double *O1, double *O2, do
 	{
 		if (phmm->pi[i] == 0)
 			phmm->pi[i] = 1e-9; /*eliminate problems with zero probability*/
-		phmm->pi[i] = log(phmm->pi[i]);
+		phmm->pi[i] = log(phmm->pi[i]);  // Convert to log probability due to underflow
 	}
 
 	// Bi(Ot) is an NxT matrix of emission probabilities (observation likelihoods)
-	// expressing the probability of an observation Ot being generated from a state i
-	biot = dmatrix(1, phmm->N, 1, T);
+	// expressing the probability of an observation Ot being generated from a
+	// state i. Ot is the observation symbol at time t (in this case, the LRR
+	// and BAF values).
+
+	// Initialize the emission probability matrix
+	biot = dmatrix(1, phmm->N, 1, T);  // Allocate a NxT double matrix
+
+	std::cout << "[HMM] Running Viterbi algorithm with " << phmm->N << " states and " << T << " probes\n";
 
 	// Loop through each state N
+	// Start at 1 because states are 1-based (1-6)
 	for (i = 1; i <= phmm->N; i++)
 	{
 
-		// Loop through each probe T
-		for (t = 1; t <= T; t++)
+		// Loop through each probe T (0-based)
+		//for (t = 1; t <= T; t++)
+		for (t = 0; t < T; t++)
 		{
-			// If it's non-polymorphic (BAF > 1)
-			if (O2[t] > 1)
-			{ /*normally BAF>=0 and BAF<=1; we use BAF>1 to indicate a Non-Polymorphic marker*/
-				if (!phmm->NP_flag)
-					std::cerr << "FATAL ERROR: CN probe detected but HMM model does not contain parameters for them\n";
+			// A regular SNP marker; we use both LRR and BAF information to
+			// calculate the joint probability of the marker being in state i
 
-				// Update emissions based on LRR
-				biot[i][t] = b1iot(i, phmm->B3_mean, phmm->B3_sd, phmm->B3_uf, O1[t]);
-				cn_count++;
+			// Get the state observation likelihood b_j(O_t) of the observation
+			// symbol O_t given the current state j
+			// B1_uf is the previous alpha (transition probability)
+			double O1_val = O1[t];
+			double O1_logprob = b1iot(i, phmm->B1_mean, phmm->B1_sd, phmm->B1_uf, O1_val);
 
-				// If it's a regular SNP
-			}
-			else
-			{ /*a regular SNP marker; we use both LRR and BAF information to calculate logProb for the marker*/
-				// Update emissions based on LRR (O1)
-				biot[i][t] = b1iot(i, phmm->B1_mean, phmm->B1_sd, phmm->B1_uf, O1[t]);
+			double O2_val = O2[t];
+			double O2_logprob = b2iot(i, phmm->B2_mean, phmm->B2_sd, phmm->B2_uf, pfb[t], O2_val);
+			// double O2_logprob = b1iot(i, phmm->B2_mean, phmm->B2_sd, phmm->B2_uf, O2_val);
 
-				// Update emissions based on BAF (O2)
-				// *Set pfb to all 1's to ignore BAF population frequency in
-				// this implementation
-				biot[i][t] += b2iot(i, phmm->B2_mean, phmm->B2_sd, phmm->B2_uf, pfb[t], O2[t]);
-				snp_count++;
-			}
+			// Update the emission probability matrix with the joint probability
+			// of the marker being in state i at time t (log probability) based
+			// on both LRR and BAF values
+			biot[i][t] = O1_logprob + O2_logprob;
+
+			// Update the SNP count
+			snp_count++;
 		}
 	}
+
 	/*fprintf(stderr, "NOTICE: Encounterd %i snp probes and %i cn probes\n", snp_count, cn_count);*/
 
 	/* 1. Initialization  */
 
 	for (i = 1; i <= phmm->N; i++)
 	{
-		delta[1][i] = phmm->pi[i] + biot[i][1];
-		psi[1][i] = 0;
+		delta[1][i] = phmm->pi[i] + biot[i][1];  // Initialize the delta matrix (log probability)
+		psi[1][i] = 0;  // Initialize the psi matrix (state sequence) to 0 (no state)
 		pprob[1] = -VITHUGE;  // Initialize log probabilities for each state to -inf
 	}
 
 	/* 2. Recursion */
-
 	for (t = 2; t <= T; t++)
 	{
 
@@ -298,16 +318,16 @@ std::vector<int> ViterbiLogNP_CHMM(CHMM *phmm, int T, double *O1, double *O2, do
 			maxvalind = 1;
 			for (i = 1; i <= phmm->N; i++)
 			{
-				val = delta[t - 1][i] + log(A1[i][j]);
-				if (val > maxval)
+				val = delta[t - 1][i] + log(A1[i][j]);  // Update the delta matrix (log probability)
+				if (val > maxval)  // Update the max value
 				{
 					maxval = val;
 					maxvalind = i;
 				}
 			}
 
-			delta[t][j] = maxval + biot[j][t];
-			psi[t][j] = maxvalind;
+			delta[t][j] = maxval + biot[j][t];  // Update the delta matrix (log probability)
+			psi[t][j] = maxvalind;  // Update the psi matrix (state sequence)
 		}
 	}
 
@@ -519,4 +539,3 @@ void FreeCHMM(CHMM *phmm)
 		free_dvector(phmm->B3_sd, 1, phmm->N);
 	}
 }
-

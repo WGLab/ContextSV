@@ -1,5 +1,10 @@
+#ifndef KC_H
+#define KC_H
 
+/// @cond
 #include <stdio.h>
+/// @endcond
+
 // #include "EXTERN.h"   /* std perl include */
 // #include "perl.h"     /* std perl include */
 // #include "XSUB.h"     /* XSUB include */
@@ -234,7 +239,7 @@ double beta(double z, double w);
 double betai(double a, double b, double x);
 double betacf(double a, double b, double x);
 double inverff (double x);
-double erf(double x);
+double errorf (double x);
 
 /****************
 random number
@@ -249,3 +254,5 @@ double random_stdnormal (int *idum);
 3rd party code
 ******************/
 double SNPHWE(int obs_hets, int obs_hom1, int obs_hom2);
+
+#endif  /* KC_H */

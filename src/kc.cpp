@@ -1,8 +1,10 @@
+#include "kc.h"
+
+/// @cond
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
-
-#include "kc.h"
+/// @endcond
 
 /************************   DESCRIPTION OF THE kc.c FILE   *******************
 
@@ -2570,13 +2572,13 @@ cumulative normal distribution
                  -inf
 */
 {
-	return (1+erf((x-mu)/(sigma*sqrt(2))))/2;
+	return (1+errorf((x-mu)/(sigma*sqrt(2))))/2;
 }
 
 double cdf_stdnormal (double x)
 /*Returns the cumulative density function for a standard normal distribution (see http://en.wikipedia.org/wiki/Normal_distribution)*/
 {
-	return (1+erf(x/sqrt(2)))/2;
+	return (1+errorf(x/sqrt(2)))/2;
 }
 
 
@@ -3698,18 +3700,18 @@ the formula is adapted from http://www.theorie.physik.uni-muenchen.de/~serge/erf
 	return y;
 }
 
-double erf(double x)
+double errorf(double x)
 /* calculate the error function (http://en.wikipedia.org/wiki/Error_function)
 The error function is defined by
                         x     2
                   2    /    -t
-     erf(x) = -------- |  e    dt
+     errorf(x) = -------- |  e    dt
               sqrt(pi) /
                         0
 */
 {
-        double gammp(double a, double x);
-        return (x < 0.0) ? (-gammp(0.5,x*x)) : gammp(0.5,x*x);
+	double gammp(double a, double x);
+	return (x < 0.0) ? (-gammp(0.5,x*x)) : gammp(0.5,x*x);
 }
 
 

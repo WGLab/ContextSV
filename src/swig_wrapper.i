@@ -6,7 +6,8 @@ SWIG wrapper for C++ code.
 
 // Include header
 %{
-#include "cli.h"
+#include "swig_interface.h"
+#include "input_data.h"
 %}
 
 // Set up types
@@ -21,5 +22,9 @@ SWIG wrapper for C++ code.
     }
 }
 
+// Expose the InputData class
+%include "input_data.h"
+
 // Include functions
-int run(const std::string& bam, const std::string& snps, const std::string& outdir, const std::string& region);
+int run(InputData input_data);
+

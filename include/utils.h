@@ -1,10 +1,10 @@
-//
-// utils.h:
 // Utility functions
-//
 
-#ifndef CONTEXTSV_UTILS_H
-#define CONTEXTSV_UTILS_H
+#ifndef UTILS_H
+#define UTILS_H
 
 
-#endif //CONTEXTSV_UTILS_H
+// Print the progress of a task
+void printProgress(int progress, int total);
+
+#endif // UTILS_H

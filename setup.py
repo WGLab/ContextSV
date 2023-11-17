@@ -3,44 +3,40 @@ setup.py:
     This file is used to install the package.
 """
 
-print("Running setup.py...")
-
 import os
 import glob
 from setuptools import setup, find_packages, Extension
 
+print("Running setup.py...")
+
 
 # Set the project metadata
-name = "contextsv"
-version = "0.0.1"
-author = "WGLab"
-description = "ContextSV: A tool for integrative structural variant detection."
+NAME = "contextsv"
+VERSION = "0.0.1"
+AUTHOR = "WGLab"
+DESCRIPTION = "ContextSV: A tool for integrative structural variant detection."
 
 # Get the conda environment's include path
 conda_prefix = os.environ.get("CONDA_PREFIX")
 if conda_prefix is None:
-    raise Exception("CONDA_PREFIX is not set.")
-conda_include_dir = os.path.join(conda_prefix, "include")
+    raise AssertionError("CONDA_PREFIX is not set.")
 
-print("CONDA_PREFIX: {}".format(conda_prefix))  # DEBUG
-print("include_dir: {}".format(conda_include_dir))  # DEBUG
+conda_include_dir = os.path.join(conda_prefix, "include")
 
 # Get the conda environment's lib path
 conda_lib_dir = os.path.join(conda_prefix, "lib")
 
-print("lib_dir: {}".format(conda_lib_dir))  # DEBUG
-
 # Set the project dependencies
-src_dir = "src"
-src_files = glob.glob(os.path.join(src_dir, "*.cpp"))
-include_dir = "include"
-include_files = glob.glob(os.path.join(include_dir, "*.h"))
+SRC_DIR = "src"
+SRC_FILES = glob.glob(os.path.join(SRC_DIR, "*.cpp"))
+INCLUDE_DIR = "include"
+INCLUDE_FILES = glob.glob(os.path.join(INCLUDE_DIR, "*.h"))
 
 # Set up the extension
 ext = Extension(
-    name="_" + name,
-    sources=src_files,
-    include_dirs=[include_dir, conda_include_dir],
+    name="_" + NAME,
+    sources=SRC_FILES,
+    include_dirs=[INCLUDE_DIR, conda_include_dir],
     extra_compile_args=["-std=c++11"],
     language="c++",
     libraries=["hts"],
@@ -49,12 +45,12 @@ ext = Extension(
 
 # Set up the module
 setup(
-    name=name,
-    version=version,
-    author=author,
-    description=description,
+    name=NAME,
+    version=VERSION,
+    author=AUTHOR,
+    description=DESCRIPTION,
     ext_modules=[ext],
-    py_modules=[name],
+    py_modules=[NAME],
     packages=find_packages(),
     test_suite="tests",
     entry_points={
