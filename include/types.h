@@ -52,9 +52,8 @@ struct SVInfo {
 
 using SVDepthMap = std::map<SVCandidate, SVInfo>;  // Map for getting type and read depth of SV candidates
 
-// SV calling:
-// Alignment location (chr, start, end, depth)
-using AlignmentData   = std::tuple<std::string, int64_t, int64_t, int>;
+// Alignment data used for split-read SV calling (chr, start, end, sequence)
+using AlignmentData   = std::tuple<std::string, int64_t, int64_t, std::string>;
 using AlignmentVector = std::vector<AlignmentData>;
 
 // Query map (query name, alignment vector)

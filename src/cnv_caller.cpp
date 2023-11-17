@@ -17,8 +17,6 @@
 #include <iomanip>  // Progress bar
 
 #define BUFFER_SIZE 1024
-// #define MIN_PFB 0.00001  // Minimum PFB value
-// #define MAX_PFB 0.99999  // Maximum PFB value
 #define MIN_PFB 0.01
 #define MAX_PFB 0.99
 /// @endcond
@@ -358,9 +356,6 @@ SNPData CNVCaller::readSNPBAFs(std::string snp_filepath)
     SNPData snp_data;
     snp_data.locations = locations;
     snp_data.bafs      = bafs;
-    
-    //SNPData snp_data = std::make_tuple(locations, alt_alleles, bafs);
-    // std::pair<std::vector<int>, std::vector<double>> snp_data = std::make_pair(snp_locations, snp_bafs);
 
     return snp_data;
 }
@@ -417,8 +412,6 @@ std::vector<double> CNVCaller::getSNPPopulationFrequencies(std::vector<int64_t> 
         }
 
         // Store the PFB value in the map, and fix within the range
-        //std::cout << "PFB: " << std::fixed << std::setprecision(6) << pfb << std::endl;
-        //std::cout << "PFB at " << chr << ":" << pos << " -> " << std::fixed << std::setprecision(6) << pfb << std::endl;
         if (pfb < MIN_PFB)
         {
             pfb_map[chr][pos] = MIN_PFB;

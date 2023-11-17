@@ -22,7 +22,6 @@ int CNVData::getMostCommonCNV(std::string chr, int start, int end)
     int del_count = 0;
     int no_call_count = 0;
     int total_count = 0;
-    //int sv_len = end - start + 1;
     
     //std::cout << "Checking for CNV calls in " << chr << ":" << start << "-" << end << " (SVLEN=" << sv_len << ")" << std::endl;
 

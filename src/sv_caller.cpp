@@ -73,19 +73,6 @@ void SVCaller::detectSVsFromCIGAR(bam_hdr_t* header, bam1_t* alignment, SVData& 
                     ins_seq_str += seq_nt16_str[bam_seqi(seq_ptr, query_pos + j)];
                 }
 
-                // if (pos == 47026017 && op_len == 140) {
-                //     std::cout << "Insertion sequence: " << ins_seq_str << std::endl;
-
-                //     // Check if the TCGCCTG substring is present in the
-                //     // insertion
-                //     std::string substring = "TCGCCTG";
-                //     if (ins_seq_str.find(substring) != std::string::npos) {
-                //         std::cout << "Found substring " << substring << std::endl;
-                //     } else {
-                //         std::cout << "Did not find substring " << substring << std::endl;
-                //     }
-                // }
-
                 // Add the insertion to the SV calls
                 sv_calls.add(chr, pos, pos + op_len, 3, ins_seq_str, "CIGARINS");
             }
@@ -101,8 +88,7 @@ void SVCaller::detectSVsFromCIGAR(bam_hdr_t* header, bam1_t* alignment, SVData& 
             }
         }
 
-        // Update the reference coordinate based on the CIGAR operation (M, D,
-        // N, =, X)
+        // Update the reference coordinate based on the CIGAR operation
         // https://samtools.github.io/hts-specs/SAMv1.pdf
         if (op == BAM_CMATCH || op == BAM_CDEL || op == BAM_CREF_SKIP || op == BAM_CEQUAL || op == BAM_CDIFF) {
             pos += op_len;
@@ -159,7 +145,7 @@ SVData SVCaller::detectSVsFromSplitReads()
     hts_itr_t *itr = sam_itr_querys(idx, bamHdr, region.c_str());
 
     // Set up the read
-    bam1_t *bam1 = bam_init1();
+    bam1_t *bam1 = bam_init1();    
 
     // Create a map of primary and supplementary alignments by QNAME (query template name)
     int num_alignments = 0;
@@ -170,9 +156,6 @@ SVData SVCaller::detectSVsFromSplitReads()
     QueryMap supplementary_alignments;
     std::cout << "Reading alignments..." << std::endl;
     while (sam_itr_next(fp_in, itr, bam1) >= 0) {
-
-        // Get the QNAME (query template name) for associating split reads
-        std::string qname = bam_get_qname(bam1);
 
         // Skip secondary and unmapped alignments
         if (bam1->core.flag & BAM_FSECONDARY || bam1->core.flag & BAM_FUNMAP) {
@@ -185,27 +168,29 @@ SVData SVCaller::detectSVsFromSplitReads()
             // std::cout << bam1->core.qual << " < " << this->min_mapq << std::endl;
         } else {
 
+            // Get the QNAME (query template name) for associating split reads
+            std::string qname = bam_get_qname(bam1);
+
             // Process primary alignments
             if (!(bam1->core.flag & BAM_FSUPPLEMENTARY)) {
 
-                // Add the primary alignment to the map
+                // Get the primary alignment chromosome, start, end, and depth
                 std::string chr = bamHdr->target_name[bam1->core.tid];
                 int64_t start = bam1->core.pos;
                 int64_t end = bam_endpos(bam1);
-                int depth = 0;  // Placeholder for now
-                AlignmentData alignment(chr, start, end, depth);
-                primary_alignments[qname].push_back(alignment);
 
-                // Print the entire CIGAR string
-                if (debug_cigar) {
-                    std::cout << "Full CIGAR string: " << std::endl;
-                    for (uint32_t i = 0; i < bam1->core.n_cigar; i++) {
-                        std::cout << bam1->core.n_cigar << bam_cigar_opchr(bam1->core.n_cigar) << bam_cigar_oplen(bam1->core.n_cigar) << " ";
-                    }
-                    std::cout << std::endl;
-                }
+                // Get the primary alignment query sequence
+                // TODO: Use for getting insertion sequence
+                // std::string seq = "";
+                // uint8_t* seq_ptr = bam_get_seq(bam1);
+                // for (int i = 0; i < bam1->core.l_qseq; i++) {
+                //     seq += seq_nt16_str[bam_seqi(seq_ptr, i)];
+                // }
+
+                AlignmentData alignment(chr, start, end, ".");
+                primary_alignments[qname].push_back(alignment);
             
-                // Finally, call SVs directly from the CIGAR string
+                // Call SVs directly from the CIGAR string
                 if (!this->input_data->getDisableCIGAR()) {
 
                     //std::cout << "Calling SVs from CIGAR string" << std::endl;
@@ -221,8 +206,16 @@ SVData SVCaller::detectSVsFromSplitReads()
                 std::string chr = bamHdr->target_name[bam1->core.tid];
                 int32_t start = bam1->core.pos;
                 int32_t end = bam_endpos(bam1);
-                int32_t depth = bam1->core.n_cigar;
-                AlignmentData alignment(chr, start, end, depth);
+
+                // Get the supplementary alignment query sequence
+                // TODO: Use for getting insertion sequence
+                // std::string seq = "";
+                // uint8_t* seq_ptr = bam_get_seq(bam1);
+                // for (int i = 0; i < bam1->core.l_qseq; i++) {
+                //     seq += seq_nt16_str[bam_seqi(seq_ptr, i)];
+                // }
+
+                AlignmentData alignment(chr, start, end, ".");
 
                 // Add the supplementary alignment to the map
                 supplementary_alignments[qname].push_back(alignment);
@@ -259,6 +252,9 @@ SVData SVCaller::detectSVsFromSplitReads()
         int32_t primary_start = std::get<1>(primary_alignment);
         int32_t primary_end = std::get<2>(primary_alignment);
 
+        // Get the primary alignment query sequence (TODO: Use for getting insertion sequence)
+        //std::string primary_seq = std::get<3>(primary_alignment);
+
         // Loop through the supplementary alignments and find gaps and overlaps
         AlignmentVector supp_alignments = supplementary_alignments[qname];
         for (const auto& supp_alignment : supp_alignments) {
@@ -277,6 +273,8 @@ SVData SVCaller::detectSVsFromSplitReads()
             int32_t supp_start = std::get<1>(supp_alignment);
             int32_t supp_end = std::get<2>(supp_alignment);
 
+            // Get the supplementary alignment query sequence (TODO: Use for getting insertion sequence)
+            //std::string supp_seq = std::get<3>(supp_alignment);
 
             // Determine the type of gap between alignments
             if (supp_start < primary_start && supp_end < primary_start) {
