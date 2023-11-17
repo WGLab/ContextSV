@@ -115,8 +115,6 @@ void SVCaller::detectSVsFromCIGAR(bam_hdr_t* header, bam1_t* alignment, SVData& 
 // directly from the CIGAR string
 SVData SVCaller::detectSVsFromSplitReads()
 {
-    bool debug_cigar = false;
-
     // Open the BAM file
     samFile *fp_in = sam_open(this->input_data->getBAMFilepath().c_str(), "r");
     if (fp_in == NULL) {
@@ -149,7 +147,6 @@ SVData SVCaller::detectSVsFromSplitReads()
 
     // Create a map of primary and supplementary alignments by QNAME (query template name)
     int num_alignments = 0;
-    //int num_sv_calls = 0;
     FASTAQuery ref_genome = this->input_data->getRefGenome();
     SVData sv_calls(ref_genome);
     QueryMap primary_alignments;  // TODO: Add depth to primary alignments

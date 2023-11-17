@@ -156,13 +156,9 @@ std::string FASTAQuery::getContigHeader()
         // Add the contig header line
         contig_header += "##contig=<ID=" + chr + ",length=" + std::to_string(this->chr_to_seq[chr].length()) + ">\n";
     }
-    // {
-    //     std::string chr = chr_seq.first;
-    //     std::string seq = chr_seq.second;
 
-    //     // Add the contig header line
-    //     contig_header += "##contig=<ID=" + chr + ",length=" + std::to_string(seq.length()) + ">\n";
-    // }
+    // Remove the last newline character
+    contig_header.pop_back();
 
     return contig_header;
 }
