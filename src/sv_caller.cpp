@@ -126,16 +126,17 @@ void SVCaller::detectSVsFromCIGAR(bam_hdr_t* header, bam1_t* alignment, SVData& 
 SVData SVCaller::detectSVsFromSplitReads()
 {
     // Open the BAM file
-    samFile *fp_in = sam_open(this->input_data->getBAMFilepath().c_str(), "r");
+    std::string bam_filepath = this->input_data->getLongReadBam();
+    samFile *fp_in = sam_open(bam_filepath.c_str(), "r");
     if (fp_in == NULL) {
-        std::cerr << "ERROR: failed to open " << this->input_data->getBAMFilepath() << std::endl;
+        std::cerr << "ERROR: failed to open " << bam_filepath << std::endl;
         exit(1);
     }
 
     // Get the header
     bam_hdr_t *bamHdr = sam_hdr_read(fp_in);
     if (bamHdr == NULL) {
-        std::cerr << "ERROR: failed to read header for " << this->input_data->getBAMFilepath() << std::endl;
+        std::cerr << "ERROR: failed to read header for " << bam_filepath << std::endl;
         exit(1);
     }
 
@@ -143,9 +144,9 @@ SVData SVCaller::detectSVsFromSplitReads()
     std::string region = this->input_data->getRegion();
 
     // Get the index
-    hts_idx_t *idx = sam_index_load(fp_in, this->input_data->getBAMFilepath().c_str());
+    hts_idx_t *idx = sam_index_load(fp_in, bam_filepath.c_str());
     if (idx == NULL) {
-        std::cerr << "ERROR: failed to load index for " << this->input_data->getBAMFilepath() << std::endl;
+        std::cerr << "ERROR: failed to load index for " << bam_filepath << std::endl;
         exit(1);
     }
 

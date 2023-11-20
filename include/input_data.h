@@ -17,9 +17,13 @@ class InputData {
     public:
         InputData();
 
-        // Set the filepath to the BAM file with long read alignments for SV detection.
-        void setBAMFilepath(std::string filepath);
-        std::string getBAMFilepath();
+        std::string getShortReadBam();
+
+        void setShortReadBam(std::string filepath);
+
+        std::string getLongReadBam();
+
+        void setLongReadBam(std::string filepath);
 
         // Set the filepath to the HMM parameters.
         void setHMMFilepath(std::string filepath);
@@ -71,7 +75,8 @@ class InputData {
         std::string getCNVFilepath();
         
     private:
-        std::string bam_filepath;
+        std::string short_read_bam;
+        std::string long_read_bam;
         std::string ref_filepath;
         std::string snp_vcf_filepath;
         std::string pfb_filepath;

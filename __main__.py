@@ -63,11 +63,18 @@ def main():
     )
 
     # Mode 1: SV detection mode.
+    # Short read alignment file (BAM), reference genome, and short read SNPs file.
     parser.add_argument(
-        "-b", "--bam",
-        help="The path to the BAM file.",
+        "-sr", "--short-read",
+        help="The path to the short read alignment file (BAM).",
         required=False
     )
+    parser.add_argument(
+        "-lr", "--long-read",
+        help="The path to the long read alignment file (BAM).",
+        required=False
+    )
+
     parser.add_argument(
         "-g", "--reference",
         help="The path to the reference genome.",
@@ -156,8 +163,12 @@ def main():
 
         # Ensure BAM, reference, and SNPs files are provided.
         arg_error = False
-        if (args.bam is None):
-            log.error("Please provide the BAM file.")
+        if (args.short_read is None):
+            log.error("Please provide the short read alignment file (BAM).")
+            arg_error = True
+
+        if (args.long_read is None):
+            log.error("Please provide the long read alignment file (BAM).")
             arg_error = True
 
         if (args.reference is None):
@@ -191,7 +202,8 @@ def main():
 
         # Set input parameters.
         input_data = contextsv.InputData()
-        input_data.setBAMFilepath(args.bam)
+        input_data.setShortReadBam(args.short_read)
+        input_data.setLongReadBam(args.long_read)
         input_data.setRefGenome(args.reference)
         input_data.setSNPFilepath(args.snps)
         input_data.setRegion(args.region)

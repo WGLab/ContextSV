@@ -12,7 +12,8 @@
 // Constructor
 InputData::InputData()
 {
-    this->bam_filepath = "";
+    this->short_read_bam = "";
+    this->long_read_bam = "";
     this->ref_filepath = "";
     this->snp_vcf_filepath = "";
     this->pfb_filepath = "";
@@ -27,14 +28,54 @@ InputData::InputData()
     this->hmm_filepath = "data/wgs.hmm";
 }
 
-std::string InputData::getBAMFilepath()
+std::string InputData::getShortReadBam()
 {
-    return this->bam_filepath;
+    return this->short_read_bam;
 }
 
-void InputData::setBAMFilepath(std::string filepath)
+void InputData::setShortReadBam(std::string filepath)
 {
-    this->bam_filepath = filepath;
+    this->short_read_bam = filepath;
+
+    // Check if empty string
+    if (filepath == "")
+    {
+        return;
+        
+    } else {
+        // Check if the file exists
+        FILE *fp = fopen(filepath.c_str(), "r");
+        if (fp == NULL)
+        {
+            std::cerr << "Short read BAM file does not exist: " << filepath << std::endl;
+            exit(1);
+        }
+    }
+}
+
+std::string InputData::getLongReadBam()
+{
+    return this->long_read_bam;
+}
+
+void InputData::setLongReadBam(std::string filepath)
+{
+    this->long_read_bam = filepath;
+
+    // Check if empty string
+    if (filepath == "")
+    {
+        return;
+        
+    } else {
+        // Check if the file exists
+        FILE *fp = fopen(filepath.c_str(), "r");
+        if (fp == NULL)
+        {
+            std::cerr << "Long read BAM file does not exist: " << filepath << std::endl;
+            exit(1);
+        }
+    }
 }
 
 void InputData::setRefGenome(std::string fasta_filepath)

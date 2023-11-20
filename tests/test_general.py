@@ -28,7 +28,8 @@ def test_run():
     
     # Set input parameters.
     input_data = contextsv.InputData()
-    input_data.setBAMFilepath(TEST_BAM_FILE)
+    input_data.setShortReadBam(TEST_BAM_FILE)
+    input_data.setLongReadBam(TEST_BAM_FILE)
     input_data.setRefGenome(TEST_REF_FILE)
     input_data.setSNPFilepath(TEST_SNPS_FILE)
     input_data.setRegion("chr3:60380533-60390533")

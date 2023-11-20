@@ -113,7 +113,7 @@ CNVData CNVCaller::run()
 
 std::vector<double> CNVCaller::calculateLog2RatioAtSNPS(std::vector<int64_t> snp_locations)
 {
-    std::string input_filepath = this->input_data->getBAMFilepath();
+    std::string input_filepath = this->input_data->getShortReadBam();
     std::string chr = this->input_data->getRegionChr();
 
     // Check if the chromosome coverage was passed in
@@ -175,7 +175,7 @@ std::vector<double> CNVCaller::calculateLog2RatioAtSNPS(std::vector<int64_t> snp
 double CNVCaller::calculateMeanChromosomeCoverage()
 {
     std::string chr = this->input_data->getRegionChr();
-    std::string input_filepath = this->input_data->getBAMFilepath();
+    std::string input_filepath = this->input_data->getShortReadBam();
 
     char cmd[BUFFER_SIZE];
     FILE *fp;
@@ -220,7 +220,7 @@ double CNVCaller::calculateMeanChromosomeCoverage()
 double CNVCaller::calculateWindowLogRRatio(double mean_chr_cov, int start_pos, int end_pos)
 {
     std::string chr = this->input_data->getRegionChr();
-    std::string input_filepath = this->input_data->getBAMFilepath();
+    std::string input_filepath = this->input_data->getShortReadBam();
 
     char cmd[BUFFER_SIZE];
     FILE *fp;
