@@ -1,12 +1,16 @@
 #ifndef CNV_DATA_H
 #define CNV_DATA_H
 
-#include "types.h"
-
 /// @cond
 #include <string>
+#include <map>
+#include <set>
 /// @endcond
 
+// CNV candidate location map
+// (chr, snp_pos) : cnv_type
+using SNPLocation = std::pair<std::string, int64_t>;
+using SNPToCNVMap = std::map<SNPLocation,  int>;
 
 class CNVData {
     private:

@@ -7,13 +7,27 @@
 #include "khmm.h"
 #include "input_data.h"
 #include "cnv_data.h"
-#include "types.h"
 
 /// @cond
 #include <string>
 #include <vector>
 /// @endcond
 
+// SNP data is a struct containing vectors used in predicting copy number states
+struct SNPData {
+    std::vector<int64_t> locations;
+    std::vector<double> pfbs;
+    std::vector<double> bafs;
+    std::vector<double> log2_ratios;
+    std::vector<int> state_sequence;
+
+    SNPData():
+        locations({}),\
+        pfbs({}), \
+        bafs({}), \
+        log2_ratios({}), \
+        state_sequence({}) {}
+};
 
 class CNVCaller {
     private:

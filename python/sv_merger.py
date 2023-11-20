@@ -19,6 +19,91 @@ def merge_svs_by_breakpoint(vcf_file_path, eps=1000, min_samples=2):
     # vcf_df = pd.read_csv(vcf_file_path, sep='\t', comment='#', header=None, \
     #                      names=[vcf_headers], dtype={'CHROM': str, 'POS': np.int32})
 
+    # Create a set with each chromosome in the VCF file
+    chromosomes = set(vcf_df['CHROM'].values)
+
+    # Create a dictionary with each chromosome as a key and a list of SV
+    # breakpoints as the value
+    chromosome_breakpoints = {}
+
+    # Iterate over each chromosome
+    for chromosome in chromosomes:
+        # Get the chromosome DataFrame
+        chromosome_df = vcf_df[vcf_df['CHROM'] == chromosome]
+
+        # Get the SV POS and INFO/END columns
+        sv_pos = chromosome_df['POS'].values
+        sv_end = chromosome_df['INFO'].str.extract(r'END=(\d+)', expand=False).astype(np.int32)
+
+        # Get the SV breakpoints
+        sv_breakpoints = np.column_stack((sv_pos, sv_end))
+
+        # Add the SV breakpoints to the chromosome breakpoints dictionary
+        chromosome_breakpoints[chromosome] = sv_breakpoints
+
+    # Open a new VCF file for writing
+    merged_vcf = os.path.splitext(vcf_file_path)[0] + '.merged.vcf'
+    with open(merged_vcf, 'w', encoding='utf-8') as merged_vcf_file:
+
+        # Merge SVs with the same breakpoint
+        merged_chromosome_breakpoints = {}
+        for chromosome in chromosomes:
+            # Cluster SV breakpoints using DBSCAN
+            dbscan = DBSCAN(eps=eps, min_samples=min_samples)
+            sv_labels = dbscan.fit_predict(chromosome_breakpoints[chromosome])
+
+            # Loop through the VCF records for the chromosome and save the
+            # merged SVs
+            for i, label in enumerate(sv_labels):
+                # Unclustered SVs are already the median breakpoint
+                if label == -1:
+                    merged_chromosome_breakpoints[label] = chromosome_breakpoints[chromosome][i, :]
+
+                # Add the SV breakpoint to the merged breakpoints dictionary
+                elif label not in merged_chromosome_breakpoints:
+                    merged_chromosome_breakpoints[label] = chromosome_breakpoints[chromosome][i, :]
+
+                # Append the SV breakpoint to the merged breakpoints dictionary
+                else:
+                    merged_chromosome_breakpoints[label] = np.vstack((merged_chromosome_breakpoints[label], chromosome_breakpoints[chromosome][i, :]))
+
+            # Calculate the median breakpoint for each cluster
+            for label, _ in merged_chromosome_breakpoints.items():
+                # Unclustered SVs are already the median breakpoint
+                if np.ndim(merged_chromosome_breakpoints[label]) == 1:
+                    merged_chromosome_breakpoints[label] = merged_chromosome_breakpoints[label].astype(np.int32)
+                else:
+                    merged_chromosome_breakpoints[label] = np.median(merged_chromosome_breakpoints[label], axis=0).astype(np.int32)
+
+            # Get the array of SV breakpoints for each cluster
+            merged_breakpoints = {}
+            for i, label in enumerate(sv_labels):
+                # Add unclustered SVs to the merged breakpoints dictionary
+                if label == -1:
+                    merged_breakpoints[label] = chromosome_breakpoints[chromosome][i, :]
+                
+                # Add the SV breakpoint to the merged breakpoints dictionary
+                elif label not in merged_breakpoints:
+                    merged_breakpoints[label] = chromosome_breakpoints[chromosome][i, :]
+
+                # Append the SV breakpoint to the merged breakpoints dictionary
+                else:
+                    merged_breakpoints[label] = np.vstack((merged_breakpoints[label], chromosome_breakpoints[chromosome][i, :]))
+
+            # Calculate the median breakpoint for each cluster
+            for label, _ in merged_breakpoints.items():
+                # Unclustered SVs are already the median breakpoint
+                if np.ndim(merged_breakpoints[label]) == 1:
+                    merged_breakpoints[label] = merged_breakpoints[label].astype(np.int32)
+                else:
+                    merged_breakpoints[label] = np.median(merged_breakpoints[label], axis=0).astype(np.int32)
+
+                # Get the 
+
+
+
+            
+
     # Extract SV breakpoints from VCF DataFrame (CHROM, POS, INFO/END)
     sv_breakpoints = vcf_df[['CHROM', 'POS']].values
     sv_end = vcf_df['INFO'].str.extract(r'END=(\d+)', expand=False).astype(np.int32)

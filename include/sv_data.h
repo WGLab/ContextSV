@@ -2,21 +2,40 @@
 #define SV_DATA_H
 
 #include "fasta_query.h"  // For querying the reference genome
-#include "types.h"
 
 /// @cond
 #include <string>
 #include <map>
+#include <set>
 /// @endcond
 
+// Create a struct for storing SV information
+struct SVInfo {
+    int sv_type;
+    int read_depth;
+    std::set<std::string> data_type;  // Alignment type used to call the SV
+    int sv_length;
 
+    SVInfo() :
+        sv_type(-1), read_depth(0), data_type({}), sv_length(0) {}
+        
+    SVInfo(int sv_type, int read_depth, std::string data_type, int sv_length) :
+        sv_type(sv_type), read_depth(read_depth), data_type({data_type}), sv_length(sv_length) {}
+};
+
+using SVCandidate = std::tuple<std::string, int64_t, int64_t, std::string>;  // SV (chr, start, end, alt_allele)
+using SVDepthMap = std::map<SVCandidate, SVInfo>;  // SV candidate to read depth map
+
+// SV data class
 class SVData {
     private:
-        // SV candidate to read depth map
         SVDepthMap sv_calls;
                 
-        // Store a reference to the reference genome
+        // Reference genome for querying sequences
         FASTAQuery *ref_genome;
+
+        // Map of clipped base support by position (chr, pos) : depth
+        std::map<std::pair<std::string, int64_t>, int> clipped_base_support;
 
         // SV type to string map (DEL, DUP, INV, INS, BND)
         // DUPs [1] are INS with INFO/REPTYPE=DUP
@@ -39,6 +58,12 @@ class SVData {
 
         // Update the SV type for a given SV candidate
         void updateSVType(SVCandidate key, int sv_type);
+
+        // Update clipped base support for a given breakpoint location
+        void updateClippedBaseSupport(std::string chr, int64_t pos);
+
+        // Get the SV clipped base support
+        int getClippedBaseSupport(std::string chr, int64_t pos, int64_t end);
         
         // Save SV calls to VCF
         void saveToVCF(FASTAQuery& ref_genome, std::string output_dir);

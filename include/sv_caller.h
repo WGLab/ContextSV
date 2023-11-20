@@ -6,9 +6,15 @@
 #include "input_data.h"
 #include "cnv_data.h"
 #include "sv_data.h"
-#include "types.h"
 
 #include <htslib/sam.h>
+
+// SV candidate alignment data (chr, start, end, sequence)
+using AlignmentData   = std::tuple<std::string, int64_t, int64_t, std::string>;
+using AlignmentVector = std::vector<AlignmentData>;
+
+// Query map (query name, alignment vector)
+using QueryMap = std::map<std::string, AlignmentVector>;
 
 class SVCaller {
     private:

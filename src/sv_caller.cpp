@@ -86,6 +86,16 @@ void SVCaller::detectSVsFromCIGAR(bam_hdr_t* header, bam1_t* alignment, SVData& 
                 // Add the deletion to the SV calls
                 sv_calls.add(chr, pos, pos + op_len, 0, ".", "CIGARDEL");
             }
+
+        // Check if the CIGAR operation is a soft clip
+        } else if (op == BAM_CSOFT_CLIP) {
+
+            // Get the clip position (Breakpoint is the base before the clip, so
+            // subtract 1 from the position)
+            int64_t clip_pos = std::max(0, pos - 1);
+
+            // Update the clipped base support
+            sv_calls.updateClippedBaseSupport(chr, clip_pos);
         }
 
         // Update the reference coordinate based on the CIGAR operation

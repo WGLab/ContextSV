@@ -65,6 +65,50 @@ void SVData::updateSVType(SVCandidate candidate, int sv_type)
     }
 }
 
+void SVData::updateClippedBaseSupport(std::string chr, int64_t pos)
+{
+    // Update clipped base support
+    std::pair<std::string, int64_t> key(chr, pos);
+    if (this->clipped_base_support.find(key) != this->clipped_base_support.end()) {
+        // Update the depth
+        this->clipped_base_support[key] += 1;
+    } else {
+        // Add the depth
+        this->clipped_base_support[key] = 1;
+    }
+}
+
+int SVData::getClippedBaseSupport(std::string chr, int64_t pos, int64_t end)
+{
+    // Clipped base support is the maximum clipped base support at the start
+    // and end positions
+    int clipped_base_support = 0;
+    std::pair<std::string, int64_t> pos_key(chr, pos);
+
+    if (pos == end) {
+        // If the start and end positions are the same, then the clipped base
+        // support is the same at both positions
+        clipped_base_support = this->clipped_base_support[pos_key];
+
+    } else{
+
+        // Otherwise, get the clipped base support at the start and end
+        // positions
+        int pos_support = 0;
+        int end_support = 0;
+        std::pair<std::string, int64_t> end_key(chr, end);
+        if (this->clipped_base_support.find(pos_key) != this->clipped_base_support.end()) {
+            pos_support = this->clipped_base_support[pos_key];
+        }
+        if (this->clipped_base_support.find(end_key) != this->clipped_base_support.end()) {
+            end_support = this->clipped_base_support[end_key];
+        }
+        clipped_base_support = std::max(pos_support, end_support);
+    }
+    
+    return clipped_base_support;
+}
+
 void SVData::saveToVCF(FASTAQuery& ref_genome, std::string output_dir)
 {
     // Create a VCF writer
@@ -85,6 +129,7 @@ void SVData::saveToVCF(FASTAQuery& ref_genome, std::string output_dir)
         "##INFO=<ID=SVMETHOD,Number=1,Type=String,Description=\"Method used to call the structural variant\">",
         "##INFO=<ID=ALN,Number=1,Type=String,Description=\"Alignment type used to call the structural variant\">",
         "##INFO=<ID=REPTYPE,Number=1,Type=String,Description=\"Repeat type of the structural variant\">",
+        "##INFO=<ID=CBP,Number=1,Type=Integer,Description=\"Clipped base support at the start and end positions\">",
         "##FILTER=<ID=PASS,Description=\"All filters passed\">",
         "##FILTER=<ID=LowQual,Description=\"Low quality\">",
         "##FORMAT=<ID=GT,Number=1,Type=String,Description=\"Genotype\">",
@@ -122,6 +167,9 @@ void SVData::saveToVCF(FASTAQuery& ref_genome, std::string output_dir)
         if (sv_type == -1) {
             continue;
         }
+
+        // Get the clipped base support
+        int clipped_base_support = this->getClippedBaseSupport(chr, pos, end);
     
         // Process by SV type
         std::string ref_allele = ".";
@@ -167,13 +215,12 @@ void SVData::saveToVCF(FASTAQuery& ref_genome, std::string output_dir)
         // Get the SV type string
         std::string sv_type_str = this->sv_type_map[sv_type];
 
-        // For now, set the QUAL and FILTER as unknown
-
         // Set the genotype as unspecified for now (Haven't distinguished b/w homozygous, heterozygous)
         std::string genotype = "./.";
 
         // Create the INFO string
-        std::string info_str = "END=" + std::to_string(end) + ";SVTYPE=" + sv_type_str + ";SVLEN=" + std::to_string(sv_length) + ";DP=" + std::to_string(depth) + ";SVMETHOD=" + sv_method + ";ALN=" + data_type_str + ";REPTYPE=" + repeat_type;
+        std::string info_str = "END=" + std::to_string(end) + ";SVTYPE=" + sv_type_str + ";SVLEN=" + std::to_string(sv_length) + ";DP=" + std::to_string(depth) + ";SVMETHOD=" + sv_method + ";ALN=" + data_type_str + ";REPTYPE=" + repeat_type + ";CBP=" + std::to_string(clipped_base_support);
+        //std::string info_str = "END=" + std::to_string(end) + ";SVTYPE=" + sv_type_str + ";SVLEN=" + std::to_string(sv_length) + ";DP=" + std::to_string(depth) + ";SVMETHOD=" + sv_method + ";ALN=" + data_type_str + ";REPTYPE=" + repeat_type;
 
         // Create the FORMAT string
         std::string format_str = "GT:DP";
