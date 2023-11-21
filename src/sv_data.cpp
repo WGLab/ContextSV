@@ -129,7 +129,7 @@ void SVData::saveToVCF(FASTAQuery& ref_genome, std::string output_dir)
         "##INFO=<ID=SVMETHOD,Number=1,Type=String,Description=\"Method used to call the structural variant\">",
         "##INFO=<ID=ALN,Number=1,Type=String,Description=\"Alignment type used to call the structural variant\">",
         "##INFO=<ID=REPTYPE,Number=1,Type=String,Description=\"Repeat type of the structural variant\">",
-        "##INFO=<ID=CBP,Number=1,Type=Integer,Description=\"Clipped base support at the start and end positions\">",
+        "##INFO=<ID=CLIPDP,Number=1,Type=Integer,Description=\"Clipped base support at the start and end positions\">",
         "##FILTER=<ID=PASS,Description=\"All filters passed\">",
         "##FILTER=<ID=LowQual,Description=\"Low quality\">",
         "##FORMAT=<ID=GT,Number=1,Type=String,Description=\"Genotype\">",
@@ -219,7 +219,7 @@ void SVData::saveToVCF(FASTAQuery& ref_genome, std::string output_dir)
         std::string genotype = "./.";
 
         // Create the INFO string
-        std::string info_str = "END=" + std::to_string(end) + ";SVTYPE=" + sv_type_str + ";SVLEN=" + std::to_string(sv_length) + ";DP=" + std::to_string(depth) + ";SVMETHOD=" + sv_method + ";ALN=" + data_type_str + ";REPTYPE=" + repeat_type + ";CBP=" + std::to_string(clipped_base_support);
+        std::string info_str = "END=" + std::to_string(end) + ";SVTYPE=" + sv_type_str + ";SVLEN=" + std::to_string(sv_length) + ";DP=" + std::to_string(depth) + ";SVMETHOD=" + sv_method + ";ALN=" + data_type_str + ";REPTYPE=" + repeat_type + ";CLIPDP=" + std::to_string(clipped_base_support);
         //std::string info_str = "END=" + std::to_string(end) + ";SVTYPE=" + sv_type_str + ";SVLEN=" + std::to_string(sv_length) + ";DP=" + std::to_string(depth) + ";SVMETHOD=" + sv_method + ";ALN=" + data_type_str + ";REPTYPE=" + repeat_type;
 
         // Create the FORMAT string

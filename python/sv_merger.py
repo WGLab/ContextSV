@@ -10,7 +10,6 @@ def merge_svs_by_breakpoint(vcf_file_path, eps=1000, min_samples=2):
     https://scikit-learn.org/stable/modules/generated/sklearn.cluster.DBSCAN.html
     """
     # Read VCF file into a pandas DataFrame
-    vcf_headers = ['CHROM', 'POS', 'ID', 'REF', 'ALT', 'QUAL', 'FILTER', 'INFO', 'FORMAT', 'SAMPLE']
     vcf_df = pd.read_csv(vcf_file_path, sep='\t', comment='#', header=None, \
                          names=['CHROM', 'POS', 'ID', 'REF', 'ALT', 'QUAL', 'FILTER', 'INFO', 'FORMAT', 'SAMPLE'], \
                             dtype={'CHROM': str, 'POS': np.int64, 'ID': str, 'REF': str, 'ALT': str, 'QUAL': str, \
@@ -19,140 +18,132 @@ def merge_svs_by_breakpoint(vcf_file_path, eps=1000, min_samples=2):
     # vcf_df = pd.read_csv(vcf_file_path, sep='\t', comment='#', header=None, \
     #                      names=[vcf_headers], dtype={'CHROM': str, 'POS': np.int32})
 
+    # Set up arrays for storing the indices for true SV breakpoints from the
+    # VCF file
+    del_idx = vcf_df['INFO'].str.contains('SVTYPE=DEL')
+
     # Create a set with each chromosome in the VCF file
     chromosomes = set(vcf_df['CHROM'].values)
 
     # Create a dictionary with each chromosome as a key and a list of SV
-    # breakpoints as the value
-    chromosome_breakpoints = {}
+    # breakpoints as the value. This will be used to cluster SVs by chromosome.
+    # chr_del_breakpoints = {}
+    # chr_ins_breakpoints = {}
 
-    # Iterate over each chromosome
-    for chromosome in chromosomes:
-        # Get the chromosome DataFrame
-        chromosome_df = vcf_df[vcf_df['CHROM'] == chromosome]
+    # Create arrays containing the read depth + clipped base evidence for each
+    # SV (INFO/DP + INFO/CLIPDP)
+    sv_read_depth = vcf_df['INFO'].str.extract(r'DP=(\d+)', expand=False).astype(np.int32)
+    sv_clipped_bases = vcf_df['INFO'].str.extract(r'CLIPDP=(\d+)', expand=False).astype(np.int32)
+    sv_depth_scores = sv_read_depth + sv_clipped_bases
 
-        # Get the SV POS and INFO/END columns
-        sv_pos = chromosome_df['POS'].values
-        sv_end = chromosome_df['INFO'].str.extract(r'END=(\d+)', expand=False).astype(np.int32)
-
-        # Get the SV breakpoints
-        sv_breakpoints = np.column_stack((sv_pos, sv_end))
-
-        # Add the SV breakpoints to the chromosome breakpoints dictionary
-        chromosome_breakpoints[chromosome] = sv_breakpoints
+    # # Create dictionaries with each chromosome as a key and a list of SV depth scores
+    # chr_del_depth_scores = {}
+    # chr_ins_depth_scores = {}
 
     # Open a new VCF file for writing
     merged_vcf = os.path.splitext(vcf_file_path)[0] + '.merged.vcf'
     with open(merged_vcf, 'w', encoding='utf-8') as merged_vcf_file:
 
-        # Merge SVs with the same breakpoint
-        merged_chromosome_breakpoints = {}
+        # Write the VCF header to the merged VCF file
+        with open(vcf_file_path, 'r', encoding='utf-8') as vcf_file:
+            for line in vcf_file:
+                if line.startswith('#'):
+                    merged_vcf_file.write(line)
+                else:
+                    break
+
+        # Iterate over each chromosome
         for chromosome in chromosomes:
+            # Get the chromosome deletion and insertion records
+            chr_del_df = vcf_df[(vcf_df['CHROM'] == chromosome) & (vcf_df['INFO'].str.contains('SVTYPE=DEL'))]
+            chr_ins_df = vcf_df[(vcf_df['CHROM'] == chromosome) & (vcf_df['INFO'].str.contains('SVTYPE=INS'))]
+
+            # Get the deletion start and end positions
+            chr_del_start = chr_del_df['POS'].values
+            chr_del_end = chr_del_df['INFO'].str.extract(r'END=(\d+)', expand=False).astype(np.int32)
+
+            # Get the insertion start and end positions (end = start + length)
+            chr_ins_start = chr_ins_df['POS'].values
+            chr_ins_len = chr_ins_df['INFO'].str.extract(r'SVLEN=(-?\d+)', expand=False).astype(np.int32)
+            chr_ins_end = chr_ins_start + chr_ins_len
+
+            # Format the deletion breakpoints
+            chr_del_breakpoints = np.column_stack((chr_del_start, chr_del_end))
+
+            # Format the insertion breakpoints
+            chr_ins_breakpoints = np.column_stack((chr_ins_start, chr_ins_end))
+
+            # Get the SV depth and clipped base evidence scores for deletions
+            chr_del_depth_scores = chr_del_df['INFO'].str.extract(r'DP=(\d+)', expand=False).astype(np.int32)
+            chr_del_clipped_bases = chr_del_df['INFO'].str.extract(r'CLIPDP=(\d+)', expand=False).astype(np.int32)
+            chr_del_depth_scores = chr_del_depth_scores + chr_del_clipped_bases
+
+            # Get the SV depth and clipped base evidence scores for insertions
+            chr_ins_depth_scores = chr_ins_df['INFO'].str.extract(r'DP=(\d+)', expand=False).astype(np.int32)
+            chr_ins_clipped_bases = chr_ins_df['INFO'].str.extract(r'CLIPDP=(\d+)', expand=False).astype(np.int32)
+            chr_ins_depth_scores = chr_ins_depth_scores + chr_ins_clipped_bases
+
             # Cluster SV breakpoints using DBSCAN
             dbscan = DBSCAN(eps=eps, min_samples=min_samples)
-            sv_labels = dbscan.fit_predict(chromosome_breakpoints[chromosome])
-
-            # Loop through the VCF records for the chromosome and save the
-            # merged SVs
-            for i, label in enumerate(sv_labels):
-                # Unclustered SVs are already the median breakpoint
-                if label == -1:
-                    merged_chromosome_breakpoints[label] = chromosome_breakpoints[chromosome][i, :]
-
-                # Add the SV breakpoint to the merged breakpoints dictionary
-                elif label not in merged_chromosome_breakpoints:
-                    merged_chromosome_breakpoints[label] = chromosome_breakpoints[chromosome][i, :]
-
-                # Append the SV breakpoint to the merged breakpoints dictionary
-                else:
-                    merged_chromosome_breakpoints[label] = np.vstack((merged_chromosome_breakpoints[label], chromosome_breakpoints[chromosome][i, :]))
-
-            # Calculate the median breakpoint for each cluster
-            for label, _ in merged_chromosome_breakpoints.items():
-                # Unclustered SVs are already the median breakpoint
-                if np.ndim(merged_chromosome_breakpoints[label]) == 1:
-                    merged_chromosome_breakpoints[label] = merged_chromosome_breakpoints[label].astype(np.int32)
-                else:
-                    merged_chromosome_breakpoints[label] = np.median(merged_chromosome_breakpoints[label], axis=0).astype(np.int32)
-
-            # Get the array of SV breakpoints for each cluster
-            merged_breakpoints = {}
-            for i, label in enumerate(sv_labels):
-                # Add unclustered SVs to the merged breakpoints dictionary
-                if label == -1:
-                    merged_breakpoints[label] = chromosome_breakpoints[chromosome][i, :]
-                
-                # Add the SV breakpoint to the merged breakpoints dictionary
-                elif label not in merged_breakpoints:
-                    merged_breakpoints[label] = chromosome_breakpoints[chromosome][i, :]
-
-                # Append the SV breakpoint to the merged breakpoints dictionary
-                else:
-                    merged_breakpoints[label] = np.vstack((merged_breakpoints[label], chromosome_breakpoints[chromosome][i, :]))
-
-            # Calculate the median breakpoint for each cluster
-            for label, _ in merged_breakpoints.items():
-                # Unclustered SVs are already the median breakpoint
-                if np.ndim(merged_breakpoints[label]) == 1:
-                    merged_breakpoints[label] = merged_breakpoints[label].astype(np.int32)
-                else:
-                    merged_breakpoints[label] = np.median(merged_breakpoints[label], axis=0).astype(np.int32)
-
-                # Get the 
-
-
-
             
+            # Cluster deletion breakpoints
+            del_labels = dbscan.fit_predict(chr_del_breakpoints)
 
-    # Extract SV breakpoints from VCF DataFrame (CHROM, POS, INFO/END)
-    sv_breakpoints = vcf_df[['CHROM', 'POS']].values
-    sv_end = vcf_df['INFO'].str.extract(r'END=(\d+)', expand=False).astype(np.int32)
-    sv_breakpoints = np.column_stack((sv_breakpoints, sv_end))
+            # Cluster insertion breakpoints
+            ins_labels = dbscan.fit_predict(chr_ins_breakpoints)
 
-    # Cluster SV breakpoints using DBSCAN
-    dbscan = DBSCAN(eps=eps, min_samples=min_samples)
-    sv_labels = dbscan.fit_predict(sv_breakpoints)
+            # Get the unique deletion labels for the chromosome
+            unique_del_labels = np.unique(del_labels)
 
-    # Merge SVs with the same label
-    merged_svs = {}
-    for i, label in enumerate(sv_labels):
-        if label not in merged_svs:
-            merged_svs[label] = {'CHROM': sv_breakpoints[i, 0], 'POS': sv_breakpoints[i, 1]}
-        else:
-            merged_svs[label]['POS'] = (merged_svs[label]['POS'] + sv_breakpoints[i, 1]) // 2
+            # Get the unique insertion labels for the chromosome
+            unique_ins_labels = np.unique(ins_labels)
 
-    # Convert merged SVs dictionary to a pandas DataFrame
-    merged_svs_df = pd.DataFrame.from_dict(merged_svs, orient='index')
+            # Merge deletions with the same label
+            for label in unique_del_labels:
 
-    # Sort merged SVs DataFrame by chromosome and position
-    merged_svs_df.sort_values(by=['CHROM', 'POS'], inplace=True)
+                # Skip label -1 (outliers)
+                if label == -1:
+                    continue
 
-    # Create a new VCF file with the same header as the original VCF file
-    vcf_header = ''
-    with open(vcf_file_path, 'r', encoding='utf-8') as vcf_file:
-        for line in vcf_file:
-            if line.startswith('#'):
-                vcf_header += line
-            else:
-                break
+                # Get the indices of SVs with the same label
+                idx = del_labels == label
 
-    # Format the merged VCf file path
-    merged_vcf = os.path.splitext(vcf_file_path)[0] + '.merged.vcf'
+                # Get the SV depth scores with the same label
+                depth_scores = chr_del_depth_scores[idx]
 
-    # Open the new VCF file for writing
-    with open(merged_vcf, 'w', encoding='utf-8') as merged_vcf_file:
-        # Write the header to the new VCF file
-        merged_vcf_file.write(vcf_header)
+                # Get the index of the SV with the highest depth score
+                max_depth_score_idx = np.argmax(depth_scores)
 
-        # Write the merged SVs to the new VCF file
-        for _, row in merged_svs_df.iterrows():
-            # Get each column value from the merged SVs DataFrame
-            chrom = row['CHROM']
-            pos = row['POS']
+                # Get the VCF record with the highest depth score
+                vcf_record = chr_del_df.iloc[idx, :].iloc[max_depth_score_idx, :]
 
-            merged_vcf_file.write(f"{row['CHROM']}\t{row['POS']}\t.\tN\t<SV>\t.\tPASS\t.\tGT\t1/1\n")
+                # Write the full VCF record to the merged VCF file
+                merged_vcf_file.write(f"{vcf_record['CHROM']}\t{vcf_record['POS']}\t{vcf_record['ID']}\t{vcf_record['REF']}\t{vcf_record['ALT']}\t{vcf_record['QUAL']}\t{vcf_record['FILTER']}\t{vcf_record['INFO']}\t{vcf_record['FORMAT']}\t{vcf_record['SAMPLE']}\n")
 
-    return merged_svs_df
+            # Merge insertions with the same label
+            for label in unique_ins_labels:
+
+                # Skip label -1 (outliers)
+                if label == -1:
+                    continue
+
+                # Get the indices of SVs with the same label
+                idx = ins_labels == label
+
+                # Get the SV depth scores with the same label
+                depth_scores = chr_ins_depth_scores[idx]
+
+                # Get the index of the SV with the highest depth score
+                max_depth_score_idx = np.argmax(depth_scores)
+
+                # Get the VCF record with the highest depth score
+                vcf_record = chr_ins_df.iloc[idx, :].iloc[max_depth_score_idx, :]
+
+                # Write the full VCF record to the merged VCF file
+                merged_vcf_file.write(f"{vcf_record['CHROM']}\t{vcf_record['POS']}\t{vcf_record['ID']}\t{vcf_record['REF']}\t{vcf_record['ALT']}\t{vcf_record['QUAL']}\t{vcf_record['FILTER']}\t{vcf_record['INFO']}\t{vcf_record['FORMAT']}\t{vcf_record['SAMPLE']}\n")
+
+
+    return merged_vcf
 
 
 if __name__ == '__main__':
