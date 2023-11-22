@@ -26,7 +26,7 @@ void SVData::add(std::string chr, int64_t start, int64_t end, int sv_type, std::
 
     } else {
         // Determine the SV length
-        int sv_length = end - start;
+        int sv_length = end - start + 1;
 
         // Create a new SVInfo object
         SVInfo sv_info(sv_type, 1, data_type, sv_length);
@@ -167,9 +167,6 @@ void SVData::saveToVCF(FASTAQuery& ref_genome, std::string output_dir)
         if (sv_type == -1) {
             continue;
         }
-
-        // Get the clipped base support
-        int clipped_base_support = this->getClippedBaseSupport(chr, pos, end);
     
         // Process by SV type
         std::string ref_allele = ".";
@@ -211,6 +208,9 @@ void SVData::saveToVCF(FASTAQuery& ref_genome, std::string output_dir)
                 repeat_type = "DUP";  // Duplication
             }
         }
+
+        // Get the clipped base support
+        int clipped_base_support = this->getClippedBaseSupport(chr, pos, end);
         
         // Get the SV type string
         std::string sv_type_str = this->sv_type_map[sv_type];

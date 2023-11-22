@@ -58,6 +58,9 @@ def merge_svs_by_breakpoint(vcf_file_path, eps=1000, min_samples=2):
             chr_del_df = vcf_df[(vcf_df['CHROM'] == chromosome) & (vcf_df['INFO'].str.contains('SVTYPE=DEL'))]
             chr_ins_df = vcf_df[(vcf_df['CHROM'] == chromosome) & (vcf_df['INFO'].str.contains('SVTYPE=INS'))]
 
+            # # Further filter insertions to duplications only (INFO/REPTYPE=DUP)
+            # chr_ins_df = chr_ins_df[chr_ins_df['INFO'].str.contains('REPTYPE=DUP')]
+
             # Get the deletion start and end positions
             chr_del_start = chr_del_df['POS'].values
             chr_del_end = chr_del_df['INFO'].str.extract(r'END=(\d+)', expand=False).astype(np.int32)
@@ -65,7 +68,7 @@ def merge_svs_by_breakpoint(vcf_file_path, eps=1000, min_samples=2):
             # Get the insertion start and end positions (end = start + length)
             chr_ins_start = chr_ins_df['POS'].values
             chr_ins_len = chr_ins_df['INFO'].str.extract(r'SVLEN=(-?\d+)', expand=False).astype(np.int32)
-            chr_ins_end = chr_ins_start + chr_ins_len
+            chr_ins_end = chr_ins_start + chr_ins_len - 1
 
             # Format the deletion breakpoints
             chr_del_breakpoints = np.column_stack((chr_del_start, chr_del_end))
