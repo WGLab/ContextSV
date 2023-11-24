@@ -48,10 +48,12 @@ void SVCaller::detectSVsFromCIGAR(bam_hdr_t* header, bam1_t* alignment, SVData& 
     // Track the query position
     int query_pos = 0;
 
-    // Loop through the CIGAR string and detect insertions and deletions in
-    // reference coordinates
+    // Loop through the CIGAR string (0-based) and detect insertions and deletions in
+    // reference coordinates (1-based)
     // POS is the leftmost position of where the alignment maps to the reference:
     // https://genome.sph.umich.edu/wiki/SAM
+    int32_t ref_pos;
+    int32_t ref_end;
     for (int i = 0; i < cigar_len; i++) {
 
         // Get the CIGAR operation
@@ -73,10 +75,12 @@ void SVCaller::detectSVsFromCIGAR(bam_hdr_t* header, bam1_t* alignment, SVData& 
                     ins_seq_str += seq_nt16_str[bam_seqi(seq_ptr, query_pos + j)];
                 }
 
-                // Add the insertion to the SV calls
+                // Add the insertion to the SV calls (1-based)
                 //sv_calls.add(chr, pos, pos + op_len, 3, ins_seq_str,
                 //"CIGARINS");
-                sv_calls.add(chr, pos, pos + op_len - 1, 3, ins_seq_str, "CIGARINS");
+                ref_pos = pos+1;
+                ref_end = ref_pos + op_len -1;
+                sv_calls.add(chr, ref_pos, ref_end, 3, ins_seq_str, "CIGARINS");
             }
 
         // Check if the CIGAR operation is a deletion
@@ -85,8 +89,10 @@ void SVCaller::detectSVsFromCIGAR(bam_hdr_t* header, bam1_t* alignment, SVData& 
             // Add the SV if greater than the minimum SV size
             if (op_len >= this->min_sv_size) {
                 
-                // Add the deletion to the SV calls
-                sv_calls.add(chr, pos, pos + op_len - 1, 0, ".", "CIGARDEL");
+                // Add the deletion to the SV calls (1-based)
+                ref_pos = pos+1;
+                ref_end = ref_pos + op_len -1;
+                sv_calls.add(chr, ref_pos, ref_end, 0, ".", "CIGARDEL");
             }
 
         // Check if the CIGAR operation is a soft clip
@@ -289,12 +295,12 @@ SVData SVCaller::detectSVsFromSplitReads()
 
                 // Use the gap ends as the SV endpoints (Deletion)
                 if (primary_start - supp_end >= this->min_sv_size) {
-                    sv_calls.add(supp_chr, supp_end, primary_start, -1, ".", "GAPINNER_1");
+                    sv_calls.add(supp_chr, supp_end+1, primary_start+1, -1, ".", "GAPINNER_1");
                 }
 
                 // Use the alignment ends as the SV endpoints (Insertion)
                 if (primary_end - supp_start >= this->min_sv_size) {
-                    sv_calls.add(supp_chr, supp_start, primary_end, -1, ".", "GAPOUTER_1");
+                    sv_calls.add(supp_chr, supp_start+1, primary_end+1, -1, ".", "GAPOUTER_1");
                 }
 
                 //std::cout << "FWD GAP at " << supp_chr << ":" << gap_start << "-" << gap_end << std::endl;
@@ -305,12 +311,12 @@ SVData SVCaller::detectSVsFromSplitReads()
 
                 // Use the gap ends as the SV endpoints (Deletion)
                 if (supp_start - primary_end >= this->min_sv_size) {
-                    sv_calls.add(supp_chr, primary_end, supp_start, -1, ".", "GAPINNER_2");
+                    sv_calls.add(supp_chr, primary_end+1, supp_start+1, -1, ".", "GAPINNER_2");
                 }
 
                 // Use the alignment ends as the SV endpoints (Insertion)
                 if (supp_end - primary_start >= this->min_sv_size) {
-                    sv_calls.add(supp_chr, primary_start, supp_end, -1, ".", "GAPOUTER_2");
+                    sv_calls.add(supp_chr, primary_start+1, supp_end+1, -1, ".", "GAPOUTER_2");
                 }
 
                 //std::cout << "REV GAP at " << supp_chr << ":" << gap_start << "-" << gap_end << std::endl;
@@ -322,16 +328,16 @@ SVData SVCaller::detectSVsFromSplitReads()
 
                 // Use the overlap ends as the SV endpoints (Deletion)
                 if (supp_end - primary_start >= this->min_sv_size) {
-                    sv_calls.add(supp_chr, primary_start, supp_end, -1, ".", "OVERLAP_1");
+                    sv_calls.add(supp_chr, primary_start+1, supp_end+1, -1, ".", "OVERLAP_1");
                 } else if (primary_end - supp_start > this->min_sv_size) {
-                    sv_calls.add(supp_chr, supp_start, primary_end, -1, ".", "OVERLAP_2");
+                    sv_calls.add(supp_chr, supp_start+1, primary_end+1, -1, ".", "OVERLAP_2");
                 }
 
                 // Use the alignment ends as the SV endpoints (Insertion)
                 if (primary_end - supp_start >= this->min_sv_size) {
-                    sv_calls.add(supp_chr, supp_start, primary_end, -1, ".", "OVERLAP_3");
+                    sv_calls.add(supp_chr, supp_start+1, primary_end+1, -1, ".", "OVERLAP_3");
                 } else if (supp_end - primary_start > this->min_sv_size) {
-                    sv_calls.add(supp_chr, primary_start, supp_end, -1, ".", "OVERLAP_4");
+                    sv_calls.add(supp_chr, primary_start+1, supp_end+1, -1, ".", "OVERLAP_4");
                 }
 
                 //std::cout << "OVERLAP at " << supp_chr << ":" << gap_start << "-" << gap_end << std::endl;

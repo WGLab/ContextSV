@@ -101,6 +101,11 @@ std::string FASTAQuery::getFilepath()
 std::string FASTAQuery::query(std::string chr, int64_t pos_start, int64_t pos_end)
 {
     //std::cout << "Querying " << chr << ":" << pos_start << "-" << pos_end << std::endl;
+    
+    // Convert positions from 1-indexed (reference) to 0-indexed (string indexing)
+    pos_start--;
+    pos_end--;
+    int64_t length = pos_end - pos_start + 1;
 
     // Check if a FASTA file has been set
     if (this->fasta_filepath == "")
@@ -124,7 +129,7 @@ std::string FASTAQuery::query(std::string chr, int64_t pos_start, int64_t pos_en
     //std::cout << "Sequence length: " << sequence.length() << std::endl;
 
     // Get the substring
-    std::string subsequence = sequence.substr(pos_start, pos_end - pos_start);  // (start, length)
+    std::string subsequence = sequence.substr(pos_start, length);
 
     //std::cout << "Subsequence length: " << subsequence.length() << std::endl;
 

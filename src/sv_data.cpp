@@ -160,8 +160,8 @@ void SVData::saveToVCF(FASTAQuery& ref_genome, std::string output_dir)
 
         // Get the CHROM, POS, END, and ALT
         std::string chr = std::get<0>(candidate);
-        int pos = std::get<1>(candidate);
-        int end = std::get<2>(candidate);
+        int64_t pos = std::get<1>(candidate);
+        int64_t end = std::get<2>(candidate);
 
         // If the SV type is unknown, skip it
         if (sv_type == -1) {
@@ -177,7 +177,7 @@ void SVData::saveToVCF(FASTAQuery& ref_genome, std::string output_dir)
         if (sv_type == 0) {
             // Get the reference allele from the reference genome as well as the
             // previous base preceding the SV
-            int preceding_pos = std::max(1, pos-1);  // Make sure the position is not negative
+            int64_t preceding_pos = (int64_t) std::max(1, (int) pos-1);  // Make sure the position is not negative
             ref_allele = ref_genome.query(chr, preceding_pos, end);
 
             // Use the previous base as the alternate allele
@@ -185,20 +185,26 @@ void SVData::saveToVCF(FASTAQuery& ref_genome, std::string output_dir)
 
             // Make the SV length negative
             sv_length = -1 * sv_length;
+            
+            // Update the position
+            pos = preceding_pos;
 
             repeat_type = "CONTRAC";  // Deletion
         
         // Duplications and insertions
         } else if (sv_type == 1 || sv_type == 3) {
             // Use the preceding base as the reference allele
-            int preceding_pos = std::max(1, pos-1);  // Make sure the position is not negative
-            ref_allele = ref_genome.query(chr, preceding_pos, preceding_pos+1);
+            int64_t preceding_pos = (int64_t) std::max(1, (int) pos-1);  // Make sure the position is not negative
+            ref_allele = ref_genome.query(chr, preceding_pos, preceding_pos);
 
             // Use the insertion sequence as the alternate allele
             alt_allele = std::get<3>(candidate);
 
             // Insert the reference base into the alternate allele
             alt_allele.insert(0, ref_allele);
+            
+            // Update the position
+            pos = preceding_pos;
 
             // Update the end position to the start position to change from
             // query to reference coordinates
