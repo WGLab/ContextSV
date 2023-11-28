@@ -105,6 +105,15 @@ def plot_precision_recall(epsilon, precision, recall, title="Precision and Recal
     # Plot recall vs. epsilon on ax2
     ax2.plot(epsilon, recall, label='Recall', color='blue')
 
+    # # Show ticks for all epsilon values
+    # ax1.set_xticks(epsilon)
+
+    # # Make X-ticks vertical
+    # plt.xticks(rotation=90)
+
+    # # Double the figure width
+    # plt.gcf().set_size_inches(18.5, 10.5)
+
     # Add axis labels
     ax1.set_xlabel('Epsilon')
     ax1.set_ylabel('Precision', color='black')
@@ -128,6 +137,15 @@ def plot_f1(epsilon, f1_scores, title="F1 vs. Epsilon"):
 
     # Plot F1 vs. epsilon
     plt.plot(epsilon, f1_scores, label='F1')
+
+    # # Show ticks for all epsilon values
+    # plt.xticks(epsilon)
+
+    # # Make X-ticks vertical
+    # plt.xticks(rotation=90)
+
+    # # Double the figure width
+    # plt.gcf().set_size_inches(18.5, 10.5)
 
     # Add axis labels
     plt.xlabel('Epsilon')

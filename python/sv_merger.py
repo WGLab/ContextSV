@@ -158,8 +158,12 @@ if __name__ == '__main__':
     # Testing approach: Find optimal eps value for DBSCAN, then test different
     # min_samples values
 
-    # Test different eps values from 1000 to 100 by 10
-    for eps in range(1000, 90, -10):
+    # # Test different eps values from 1000 to 100 by 10
+    # for eps in range(1000, 90, -10):
+    #     merge_svs_by_breakpoint(sys.argv[1], eps=eps, min_samples=2, suffix=f'.merged_eps{eps}_min2')
+
+    # Test different eps values from 1 to 99 by 1
+    for eps in range(1, 100):
         merge_svs_by_breakpoint(sys.argv[1], eps=eps, min_samples=2, suffix=f'.merged_eps{eps}_min2')
 
     # # Test different min_samples values from 2 to 10
