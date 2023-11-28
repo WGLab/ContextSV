@@ -4,7 +4,7 @@ import pandas as pd
 from sklearn.cluster import DBSCAN
 
 
-def merge_svs_by_breakpoint(vcf_file_path, eps=1000, min_samples=2):
+def merge_svs_by_breakpoint(vcf_file_path, eps=1000, min_samples=2, suffix='.merged'):
     """
     Use DBSCAN to merge SVs with the same breakpoint.
     https://scikit-learn.org/stable/modules/generated/sklearn.cluster.DBSCAN.html
@@ -41,7 +41,7 @@ def merge_svs_by_breakpoint(vcf_file_path, eps=1000, min_samples=2):
     # chr_ins_depth_scores = {}
 
     # Open a new VCF file for writing
-    merged_vcf = os.path.splitext(vcf_file_path)[0] + '.merged.vcf'
+    merged_vcf = os.path.splitext(vcf_file_path)[0] + suffix + '.vcf'
     with open(merged_vcf, 'w', encoding='utf-8') as merged_vcf_file:
 
         # Write the VCF header to the merged VCF file
@@ -155,4 +155,13 @@ if __name__ == '__main__':
         print(f"Usage: {sys.argv[0]} <VCF file path>")
         sys.exit(1)
 
-    merge_svs_by_breakpoint(sys.argv[1])
+    # Testing approach: Find optimal eps value for DBSCAN, then test different
+    # min_samples values
+
+    # Test different eps values from 1000 to 100 by 10
+    for eps in range(1000, 90, -10):
+        merge_svs_by_breakpoint(sys.argv[1], eps=eps, min_samples=2, suffix=f'.merged_eps{eps}_min2')
+
+    # # Test different min_samples values from 2 to 10
+    # for min_samples in range(2, 11):
+    #     merge_svs_by_breakpoint(sys.argv[1], eps=100, min_samples=min_samples, suffix=f'.merged_eps100_min{min_samples}')

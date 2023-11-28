@@ -61,3 +61,6 @@ docs/html/
 
 # Singularity images
 *.sif
+
+# Test directories
+python/dbscan_tests
