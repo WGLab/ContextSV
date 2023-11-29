@@ -1,14 +1,22 @@
 import os
 import numpy as np
 import pandas as pd
+
+# DBSCAN clustering algorithm
 from sklearn.cluster import DBSCAN
 
+# Agglomerative clustering algorithm
+from sklearn.cluster import AgglomerativeClustering
 
-def merge_svs_by_breakpoint(vcf_file_path, eps=1000, min_samples=2, suffix='.merged'):
+def sv_merger(vcf_file_path, mode='dbscan', eps=100, min_samples=2, suffix='.merged'):
     """
     Use DBSCAN to merge SVs with the same breakpoint.
+    Mode can be 'dbscan', 'gmm', or 'agglomerative'.
     https://scikit-learn.org/stable/modules/generated/sklearn.cluster.DBSCAN.html
     """
+
+    print(f"Merging SVs in {vcf_file_path} using {mode} with eps={eps} and min_samples={min_samples}...")
+
     # Read VCF file into a pandas DataFrame
     vcf_df = pd.read_csv(vcf_file_path, sep='\t', comment='#', header=None, \
                          names=['CHROM', 'POS', 'ID', 'REF', 'ALT', 'QUAL', 'FILTER', 'INFO', 'FORMAT', 'SAMPLE'], \
@@ -72,9 +80,11 @@ def merge_svs_by_breakpoint(vcf_file_path, eps=1000, min_samples=2, suffix='.mer
 
             # Format the deletion breakpoints
             chr_del_breakpoints = np.column_stack((chr_del_start, chr_del_end))
+            print("Number of deletion breakpoints: " + str(len(chr_del_breakpoints)))
 
             # Format the insertion breakpoints
             chr_ins_breakpoints = np.column_stack((chr_ins_start, chr_ins_end))
+            print("Number of insertion breakpoints: " + str(len(chr_ins_breakpoints)))
 
             # Get the SV depth and clipped base evidence scores for deletions
             chr_del_depth_scores = chr_del_df['INFO'].str.extract(r'DP=(\d+)', expand=False).astype(np.int32)
@@ -86,14 +96,30 @@ def merge_svs_by_breakpoint(vcf_file_path, eps=1000, min_samples=2, suffix='.mer
             chr_ins_clipped_bases = chr_ins_df['INFO'].str.extract(r'CLIPDP=(\d+)', expand=False).astype(np.int32)
             chr_ins_depth_scores = chr_ins_depth_scores + chr_ins_clipped_bases
 
-            # Cluster SV breakpoints using DBSCAN
-            dbscan = DBSCAN(eps=eps, min_samples=min_samples)
-            
-            # Cluster deletion breakpoints
-            del_labels = dbscan.fit_predict(chr_del_breakpoints)
+            # Cluster SV breakpoints using the specified mode
+            if mode == 'dbscan':
+                # Cluster SV breakpoints using DBSCAN
+                dbscan = DBSCAN(eps=eps, min_samples=min_samples)
 
-            # Cluster insertion breakpoints
-            ins_labels = dbscan.fit_predict(chr_ins_breakpoints)
+                # Cluster deletion breakpoints
+                del_labels = dbscan.fit_predict(chr_del_breakpoints)
+
+                # Cluster insertion breakpoints
+                ins_labels = dbscan.fit_predict(chr_ins_breakpoints)
+
+            elif mode == 'agglomerative':
+                # Cluster SV breakpoints using agglomerative clustering
+                print(f"Clustering deletion breakpoints using agglomerative clustering with eps={eps}...")
+                agglomerative = AgglomerativeClustering(n_clusters=None, distance_threshold=eps, compute_full_tree=True)
+
+                # Cluster deletion breakpoints
+                del_labels = agglomerative.fit_predict(chr_del_breakpoints)
+                print(f"Deletion label counts: {len(np.unique(del_labels))}")
+
+                # Cluster insertion breakpoints
+                print(f"Clustering insertion breakpoints using agglomerative clustering with eps={eps}...")
+                ins_labels = agglomerative.fit_predict(chr_ins_breakpoints)
+                print(f"Insertion label counts: {len(np.unique(ins_labels))}")
 
             # Get the unique deletion labels for the chromosome
             unique_del_labels = np.unique(del_labels)
@@ -102,6 +128,7 @@ def merge_svs_by_breakpoint(vcf_file_path, eps=1000, min_samples=2, suffix='.mer
             unique_ins_labels = np.unique(ins_labels)
 
             # Merge deletions with the same label
+            del_count = 0
             for label in unique_del_labels:
 
                 # Skip label -1 (outliers)
@@ -123,7 +150,10 @@ def merge_svs_by_breakpoint(vcf_file_path, eps=1000, min_samples=2, suffix='.mer
                 # Write the full VCF record to the merged VCF file
                 merged_vcf_file.write(f"{vcf_record['CHROM']}\t{vcf_record['POS']}\t{vcf_record['ID']}\t{vcf_record['REF']}\t{vcf_record['ALT']}\t{vcf_record['QUAL']}\t{vcf_record['FILTER']}\t{vcf_record['INFO']}\t{vcf_record['FORMAT']}\t{vcf_record['SAMPLE']}\n")
 
+                del_count += 1
+
             # Merge insertions with the same label
+            ins_count = 0
             for label in unique_ins_labels:
 
                 # Skip label -1 (outliers)
@@ -145,9 +175,13 @@ def merge_svs_by_breakpoint(vcf_file_path, eps=1000, min_samples=2, suffix='.mer
                 # Write the full VCF record to the merged VCF file
                 merged_vcf_file.write(f"{vcf_record['CHROM']}\t{vcf_record['POS']}\t{vcf_record['ID']}\t{vcf_record['REF']}\t{vcf_record['ALT']}\t{vcf_record['QUAL']}\t{vcf_record['FILTER']}\t{vcf_record['INFO']}\t{vcf_record['FORMAT']}\t{vcf_record['SAMPLE']}\n")
 
+                ins_count += 1
+
+            print(f"Chromosome {chromosome} - {del_count} deletions and {ins_count} insertions merged")
+
+    print("Saved merged VCF file to " + merged_vcf)
 
     return merged_vcf
-
 
 if __name__ == '__main__':
     import sys
@@ -155,17 +189,23 @@ if __name__ == '__main__':
         print(f"Usage: {sys.argv[0]} <VCF file path>")
         sys.exit(1)
 
-    # Testing approach: Find optimal eps value for DBSCAN, then test different
-    # min_samples values
-
-    # # Test different eps values from 1000 to 100 by 10
-    # for eps in range(1000, 90, -10):
-    #     merge_svs_by_breakpoint(sys.argv[1], eps=eps, min_samples=2, suffix=f'.merged_eps{eps}_min2')
-
-    # Test different eps values from 1 to 99 by 1
-    for eps in range(1, 100):
-        merge_svs_by_breakpoint(sys.argv[1], eps=eps, min_samples=2, suffix=f'.merged_eps{eps}_min2')
+    # # Test different eps values from 1 to 99 by 1
+    # for eps in range(1, 100):
+    #     sv_merger(sys.argv[1], eps=eps, min_samples=2, suffix=f'.merged_eps{eps}_min2')
 
     # # Test different min_samples values from 2 to 10
     # for min_samples in range(2, 11):
     #     merge_svs_by_breakpoint(sys.argv[1], eps=100, min_samples=min_samples, suffix=f'.merged_eps100_min{min_samples}')
+
+    # Test with different clustering algorithms: DBSCAN, GMM, and agglomerative
+    # GMM
+
+    # Agglomerative, test distance_threshold values from 100 to 1000 by 100
+    for dth in range(100, 1100, 100):
+        sv_merger(sys.argv[1], mode='agglomerative', eps=dth, suffix=f'.merged_agglo_dth{dth}')
+
+    #sv_merger(sys.argv[1], mode='agglomerative', suffix='.merged_agglo')
+
+    # # DBSCAN
+    # sv_merger(sys.argv[1], mode='dbscan', suffix='.merged_dbscan')
+    

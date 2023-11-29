@@ -90,7 +90,7 @@ def get_f1_scores(file_path, sv_type='DEL'):
     return epsilon_values, f1_values
 
 
-def plot_precision_recall(epsilon, precision, recall, title="Precision and Recall vs. Epsilon"):
+def plot_precision_recall(epsilon, precision, recall, title="Precision and Recall vs. Epsilon", parameter_name='Epsilon'):
     """Plot precision and recall values."""
     # Create figure
     plt.figure()
@@ -115,7 +115,7 @@ def plot_precision_recall(epsilon, precision, recall, title="Precision and Recal
     # plt.gcf().set_size_inches(18.5, 10.5)
 
     # Add axis labels
-    ax1.set_xlabel('Epsilon')
+    ax1.set_xlabel(parameter_name, color='black')
     ax1.set_ylabel('Precision', color='black')
     ax2.set_xlabel('Epsilon', color='black')
     ax2.set_ylabel('Recall', color='blue')
@@ -130,7 +130,7 @@ def plot_precision_recall(epsilon, precision, recall, title="Precision and Recal
     return plt
 
 
-def plot_f1(epsilon, f1_scores, title="F1 vs. Epsilon"):
+def plot_f1(epsilon, f1_scores, title="F1 vs. Epsilon", parameter_name='Epsilon'):
     """Plot F1 values."""
     # Create figure
     plt.figure()
@@ -148,7 +148,7 @@ def plot_f1(epsilon, f1_scores, title="F1 vs. Epsilon"):
     # plt.gcf().set_size_inches(18.5, 10.5)
 
     # Add axis labels
-    plt.xlabel('Epsilon')
+    plt.xlabel(parameter_name)
     plt.ylabel('F1')
 
     # Add title
@@ -162,24 +162,44 @@ if __name__ == '__main__':
     # Take in benchmark file path as command line argument
     file_path = sys.argv[1]
 
+    print(f'Input file path: {file_path}')
+
+    # Take in cluster type as command line argument
+    cluster_type = sys.argv[2]
+    if cluster_type not in ['dbscan', 'agglo']:
+        print(f"Invalid cluster type: {cluster_type}")
+        sys.exit(1)
+
+    # Get the cluster type string
+    cluster_string = 'DBSCAN' if cluster_type == 'dbscan' else 'Agglomerative'
+
+    # Determine the parameter to test
+    parameter_name = 'Epsilon' if cluster_type == 'dbscan' else 'Distance Threshold'
+
+    # Create the plot title
+    plot_title = cluster_string + ' Cluster + Merge'
+
     # Create directory to store plots
-    if not os.path.exists('dbscan_tests'):
-        os.makedirs('dbscan_tests')
+    output_dir = cluster_type + '_tests'
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+
+    print(f"Plotting precision and recall vs. {parameter_name}...")
 
     # Plot precision and recall values
     eps, prec, rec = get_precision_recall(file_path, sv_type='DEL')
-    fig = plot_precision_recall(eps, prec, rec, title='Precision and Recall vs. Epsilon (Deletions)')
-    fig.savefig('dbscan_tests/Precision_Recall_DEL.png')
+    fig = plot_precision_recall(eps, prec, rec, title=plot_title + ' (DEL)', parameter_name=parameter_name)
+    fig.savefig(output_dir + '/Precision_Recall_DEL.png')
 
     eps, prec, rec = get_precision_recall(file_path, sv_type='DUP')
-    fig = plot_precision_recall(eps, prec, rec, title='Precision and Recall vs. Epsilon (Duplications)')
-    fig.savefig('dbscan_tests/Precision_Recall_DUP.png')
+    fig = plot_precision_recall(eps, prec, rec, title=plot_title + ' (DUP)', parameter_name=parameter_name)
+    fig.savefig(output_dir + '/Precision_Recall_DUP.png')
 
     # Plot F1 scores
     eps, f1 = get_f1_scores(file_path, sv_type='DEL')
-    fig = plot_f1(eps, f1, title='F1 vs. Epsilon (Deletions)')
-    fig.savefig('dbscan_tests/F1_DEL.png')
+    fig = plot_f1(eps, f1, title=plot_title + ' (DEL)', parameter_name=parameter_name)
+    fig.savefig(output_dir + '/F1_DEL.png')
 
     eps, f1 = get_f1_scores(file_path, sv_type='DUP')
-    fig = plot_f1(eps, f1, title='F1 vs. Epsilon (Duplications)')
-    fig.savefig('dbscan_tests/F1_DUP.png')
+    fig = plot_f1(eps, f1, title=plot_title + ' (DUP)', parameter_name=parameter_name)
+    fig.savefig(output_dir + '/F1_DUP.png')

@@ -64,3 +64,4 @@ docs/html/
 
 # Test directories
 python/dbscan_tests
+python/agglo_tests
