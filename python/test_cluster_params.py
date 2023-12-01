@@ -8,6 +8,8 @@ def get_precision_recall(file_path, sv_type='DEL'):
     epsilon_values = []
     precision_values = []
     recall_values = []
+    fp_counts = []
+    fn_counts = []
 
     with open(file_path, 'r', encoding='utf-8') as file:
         lines = file.readlines()
@@ -24,6 +26,28 @@ def get_precision_recall(file_path, sv_type='DEL'):
             elif "Running truvari" in line:
                 if sv_type in line:
                     sv_section_found = True
+
+            # Get the number of FPs
+            elif "FP" in line and sv_section_found:
+                # Get the value after the ':'
+                fp = line.split(':')[1]
+
+                # Clean up the string
+                fp = fp.replace('\n', '')
+                fp = fp.replace(',', '')
+                fp = int(fp)
+                fp_counts.append(fp)
+
+            # Get the number of FNs
+            elif "FN" in line and sv_section_found:
+                # Get the value after the ':'
+                fn = line.split(':')[1]
+
+                # Clean up the string
+                fn = fn.replace('\n', '')
+                fn = fn.replace(',', '')
+                fn = int(fn)
+                fn_counts.append(fn)
 
             elif "precision" in line and sv_section_found:
                 # Get the value after the ':'
@@ -48,6 +72,30 @@ def get_precision_recall(file_path, sv_type='DEL'):
                 # Reset epsilon and sv_section_found
                 epsilon = None
                 sv_section_found = False
+
+    # Get the maximum recall value, and then the maximum precision value at that
+    # recall value
+    max_recall = max(recall_values)
+    max_precision = None
+    max_index = None  # Index of the maximum recall and corresponding precision
+    for i, recall in enumerate(recall_values):
+        if recall == max_recall:
+            if max_precision is None:
+                max_precision = precision_values[i]
+                max_index = i
+            elif precision_values[i] > max_precision:
+                max_precision = precision_values[i]
+                max_index = i
+
+    # Print the maximum precision and recall values
+    print(f'SV Type: {sv_type}')
+    print(f'Maximum Recall: {max_recall}')
+    print(f'Maximum Precision at Maximum Recall: {max_precision}')
+
+    # Print the FP and FN counts at the maximum recall and corresponding
+    # precision
+    print(f'FP Count at Maximum Recall: {fp_counts[max_index]}')
+    print(f'FN Count at Maximum Recall: {fn_counts[max_index]}')
 
     return epsilon_values, precision_values, recall_values
 
