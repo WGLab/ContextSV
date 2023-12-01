@@ -10,6 +10,8 @@ def get_precision_recall(file_path, sv_type='DEL'):
     recall_values = []
     fp_counts = []
     fn_counts = []
+    comp_counts = []
+    base_counts = []
 
     with open(file_path, 'r', encoding='utf-8') as file:
         lines = file.readlines()
@@ -26,6 +28,27 @@ def get_precision_recall(file_path, sv_type='DEL'):
             elif "Running truvari" in line:
                 if sv_type in line:
                     sv_section_found = True
+
+            # Get the number of SVs in the callset vs. the benchmark
+            elif "Zipped" in line and "Counter" in line and sv_section_found:
+                # [INFO] Zipped 269 variants Counter({'comp': 204, 'base': 65})
+
+                # Split the line by 'Counter'
+                line = line.split('Counter')[1]
+
+                # Get the value after 'comp': and before the comma
+                comp_count = line.split("'comp':")[1]
+                comp_count = comp_count.split(',')[0]
+                comp_count = int(comp_count)
+
+                # Get the value after 'base':
+                base_count = line.split("'base':")[1]
+                base_count = base_count.split('})')[0]
+                base_count = int(base_count)
+
+                # Add the counts to the lists
+                comp_counts.append(comp_count)
+                base_counts.append(base_count)
 
             # Get the number of FPs
             elif "FP" in line and sv_section_found:
@@ -96,6 +119,11 @@ def get_precision_recall(file_path, sv_type='DEL'):
     # precision
     print(f'FP Count at Maximum Recall: {fp_counts[max_index]}')
     print(f'FN Count at Maximum Recall: {fn_counts[max_index]}')
+
+    # Print the number of SVs in the callset and benchmark at the maximum recall
+    # and corresponding precision
+    print(f'Number of {sv_type}s in Callset: {comp_counts[max_index]}')
+    print(f'Number of {sv_type}s in Benchmark: {base_counts[max_index]}')
 
     return epsilon_values, precision_values, recall_values
 
@@ -218,6 +246,13 @@ if __name__ == '__main__':
         print(f"Invalid cluster type: {cluster_type}")
         sys.exit(1)
 
+    # Take in output directory name as command line argument
+    output_dir = sys.argv[3]
+
+    # Create the directory if it doesn't exist
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+
     # Get the cluster type string
     cluster_string = 'DBSCAN' if cluster_type == 'dbscan' else 'Agglomerative'
 
@@ -226,13 +261,6 @@ if __name__ == '__main__':
 
     # Create the plot title
     plot_title = cluster_string + ' Cluster + Merge'
-
-    # Create directory to store plots
-    output_dir = cluster_type + '_tests'
-    if not os.path.exists(output_dir):
-        os.makedirs(output_dir)
-
-    print(f"Plotting precision and recall vs. {parameter_name}...")
 
     # Plot precision and recall values
     eps, prec, rec = get_precision_recall(file_path, sv_type='DEL')
