@@ -115,6 +115,9 @@ def get_precision_recall(file_path, sv_type='DEL'):
     print(f'Maximum Recall: {max_recall}')
     print(f'Maximum Precision at Maximum Recall: {max_precision}')
 
+    # Print the parameter value at the maximum recall and corresponding precision
+    print(f'{parameter_name} at Maximum Recall: {epsilon_values[max_index]}')
+
     # Print the FP and FN counts at the maximum recall and corresponding
     # precision
     print(f'FP Count at Maximum Recall: {fp_counts[max_index]}')
