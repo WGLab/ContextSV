@@ -20,14 +20,11 @@ SVCaller::SVCaller(InputData& input_data)
 }
 
 // Main function for SV detection
-SVData SVCaller::run()
+void SVCaller::run(SVData& sv_calls)
 {
     // Get SV calls from split read alignments (primary and supplementary) and
     // directly from the CIGAR string
-    SVData sv_calls = this->detectSVsFromSplitReads();
-    
-    // Return the SV calls
-    return sv_calls;
+    this->detectSVsFromSplitReads(sv_calls);
 }
 
 // Detect SVs from the CIGAR string of a read alignment.
@@ -127,7 +124,7 @@ void SVCaller::detectSVsFromCIGAR(bam_hdr_t* header, bam1_t* alignment, SVData& 
 
 // Detect SVs from split read alignments (primary and supplementary) and
 // directly from the CIGAR string
-SVData SVCaller::detectSVsFromSplitReads()
+SVData SVCaller::detectSVsFromSplitReads(SVData& sv_calls)
 {
     // Open the BAM file
     std::string bam_filepath = this->input_data->getLongReadBam();
@@ -162,8 +159,6 @@ SVData SVCaller::detectSVsFromSplitReads()
 
     // Create a map of primary and supplementary alignments by QNAME (query template name)
     int num_alignments = 0;
-    FASTAQuery ref_genome = this->input_data->getRefGenome();
-    SVData sv_calls(ref_genome);
     QueryMap primary_alignments;  // TODO: Add depth to primary alignments
     QueryMap supplementary_alignments;
     std::cout << "Reading alignments..." << std::endl;

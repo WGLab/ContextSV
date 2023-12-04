@@ -32,13 +32,13 @@ class SVCaller {
         //void detectSVsFromCIGAR(SVData& sv_calls, std::string chr, int32_t pos, uint32_t* cigar, int cigar_len, bool debug_mode);
 
         // Detect SVs from split-read alignments (primary and supplementary)
-        SVData detectSVsFromSplitReads();
+        SVData detectSVsFromSplitReads(SVData& sv_calls);
 
     public:
         SVCaller(InputData& input_data);
 
         // Detect SVs and predict SV type from long read alignments and CNV calls
-        SVData run();
+        void run(SVData& sv_calls);
 };
 
 #endif // SV_CALLER_H

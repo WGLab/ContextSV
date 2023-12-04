@@ -26,6 +26,7 @@ InputData::InputData()
     this->region_set = false;
     this->thread_count = 1;
     this->hmm_filepath = "data/wgs.hmm";
+    this->whole_genome = true;
 }
 
 std::string InputData::getShortReadBam()
@@ -111,6 +112,14 @@ std::string InputData::getRegion()
 void InputData::setRegion(std::string region)
 {
     this->region = region;
+    
+    // Check if empty string. This means all chromosomes will be used
+    if (region == "")
+    {
+        std::cout << "No region specified. Using all chromosomes" << std::endl;
+        this->whole_genome = true;
+        return;
+    }
 
     // Parse the region
     char *tok = strtok((char *)region.c_str(), ":");
@@ -155,7 +164,7 @@ void InputData::setRegion(std::string region)
     // Check if a valid chromosome was parsed
     if (this->region_chr == "")
     {
-        std::cerr << "Error: Region chromosome not set" << std::endl;
+        std::cerr << "Error: Could not parse region" << std::endl;
         exit(1);
     }
 
@@ -164,6 +173,9 @@ void InputData::setRegion(std::string region)
     {
         // Use the entire chromosome as the region
         this->region_set = false;
+
+        // Set the whole genome flag to false
+        this->whole_genome = false;
         std::cout << "Parsed region = " << this->region_chr << std::endl;
     } else {
         // Check if a valid chromosome start and end position were parsed
@@ -174,6 +186,9 @@ void InputData::setRegion(std::string region)
         } else {
             // Set the region
             this->region_set = true;
+
+            // Set the whole genome flag to false
+            this->whole_genome = false;
             std::cout << "Parsed region = " << this->region_chr << ":" << this->region_start << "-" << this->region_end << std::endl;
         }
     }
@@ -362,4 +377,14 @@ void InputData::setCNVFilepath(std::string filepath)
 std::string InputData::getCNVFilepath()
 {
     return this->cnv_filepath;
+}
+
+void InputData::setWholeGenome(bool whole_genome)
+{
+    this->whole_genome = whole_genome;
+}
+
+bool InputData::getWholeGenome()
+{
+    return this->whole_genome;
 }

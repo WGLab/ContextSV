@@ -7,6 +7,7 @@
 #include "khmm.h"
 #include "input_data.h"
 #include "cnv_data.h"
+#include "region.h"
 
 /// @cond
 #include <string>
@@ -29,6 +30,10 @@ struct SNPData {
         state_sequence({}) {}
 };
 
+// Map of chromosome to SNP data
+using SNPDataMap = std::map<std::string, SNPData>;
+
+// CNVCaller: Detect CNVs and return the state sequence by SNP position
 class CNVCaller {
     private:
         InputData* input_data;
@@ -39,29 +44,29 @@ class CNVCaller {
 
         // Detect CNVs and return the state sequence by SNP position
         // (key = [chromosome, SNP position], value = state)
-		CNVData run();
+		void run(CNVData& cnv_calls);
 
         // Calculate coverage log2 ratios at SNP positions
-		std::vector<double> calculateLog2RatioAtSNPS(std::vector<int64_t> snp_positions);
+		void calculateLog2RatioAtSNPS(SNPDataMap& snp_data_map);
 
         // Calculate the mean chromosome coverage
-        double calculateMeanChromosomeCoverage();
+        double calculateMeanChromosomeCoverage(std::string chr);
 
         // Calculate region mean coverage
         double calculateWindowLogRRatio(double mean_chr_cov, int start_pos, int end_pos);
 
         // Read SNP positions and BAF values from the VCF file
-        SNPData readSNPBAFs(std::string filepath);
+        void readSNPAlleleFrequencies(std::string filepath, SNPDataMap& snp_data_map, bool whole_genome);
 
         // Read SNP population frequencies from the PFB file and return a vector
         // of population frequencies for each SNP location
-        std::vector<double> getSNPPopulationFrequencies(std::vector<int64_t> snp_locations);
+        void getSNPPopulationFrequencies(std::string filepath, SNPDataMap& snp_data_map);
 
         // Save a BED file with predicted copy number states
-        void saveToBED(SNPData& snp_data, std::string filepath);
+        void saveToBED(SNPDataMap& snp_data_map, std::string filepath);
 
         // Save a TSV with B-allele frequencies, log 2 ratios, and copy number predictions
-        void saveToTSV(SNPData& snp_data, std::string filepath);
+        void saveToTSV(SNPDataMap& snp_data_map, std::string filepath);
 };
 
 #endif // CNV_CALLER_H

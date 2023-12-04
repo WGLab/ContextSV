@@ -73,6 +73,11 @@ class InputData {
         // Set the filepath to the TSV file with the CNV predictions.
         void setCNVFilepath(std::string filepath);
         std::string getCNVFilepath();
+
+        // Set the whole genome flag to true if the entire genome is being
+        // analyzed.
+        void setWholeGenome(bool whole_genome);
+        bool getWholeGenome();
         
     private:
         std::string short_read_bam;
@@ -85,14 +90,15 @@ class InputData {
         std::string region;
         int window_size;
         std::string region_chr;
-        int region_start;
-        int region_end;
+        int64_t region_start;
+        int64_t region_end;
         bool region_set;
         std::map<std::string, double> chr_cov;
         int thread_count;
         std::string hmm_filepath;
         bool disable_cigar;
         std::string cnv_filepath;
+        bool whole_genome;  // True if the entire genome is being analyzed
 };
 
 #endif // INPUT_DATA_H

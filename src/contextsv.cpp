@@ -1,6 +1,7 @@
 #include "contextsv.h"
 #include "cnv_caller.h"
 #include "sv_caller.h"
+#include "region.h"
 
 #include <htslib/sam.h>
 
@@ -25,21 +26,20 @@ int ContextSV::run()
         std::cout << "Loading CNV data..." << std::endl;
         cnv_calls.loadFromFile(this->input_data->getCNVFilepath());
     } else {
-        // Call CNVs using the SNP positions
+        // Call CNVs at SNP positions
         std::cout << "Calling CNVs..." << std::endl;
         CNVCaller cnv_caller(*this->input_data);
-        cnv_calls = cnv_caller.run();
+        cnv_caller.run(cnv_calls);
     }
+
+    // Get the reference genome
+    FASTAQuery ref_genome = this->input_data->getRefGenome();
 
     // Call SVs from long read alignments and CNV calls
     std::cout << "Calling SVs..." << std::endl;
+    SVData sv_calls(ref_genome);
     SVCaller sv_caller(*this->input_data);
-    SVData sv_calls = sv_caller.run();
-
-    // Check if the ref genome was set
-    if (sv_calls.getRefGenome() == "") {
-        std::cout << "Warning: Reference genome not set in SVData" << std::endl;
-    }
+    sv_caller.run(sv_calls);
 
     // Classify SVs based on CNV calls
     std::cout << "Labeling CNVs..." << std::endl;
@@ -47,8 +47,6 @@ int ContextSV::run()
 
     // Write SV calls to file
     std::cout << "Writing SV calls to file..." << std::endl;
-    // Get the reference genome
-    FASTAQuery ref_genome = this->input_data->getRefGenome();
     std::string output_dir = this->input_data->getOutputDir();
     sv_calls.saveToVCF(ref_genome, output_dir);
 
@@ -78,10 +76,5 @@ void ContextSV::labelCNVs(CNVData cnv_calls, SVData& sv_calls)
         if (cnv_call != -1) {
             sv_calls.updateSVType(candidate, cnv_call);
         }
-
-        // // Print the updated SV call if the type was changed, and if it is not unknown
-        // if (cnv_call != -1 && cnv_call != sv_type) {
-        //     std::cout << "Updated SV call from " << sv_type << " to " << cnv_call << std::endl;
-        // }
     }
 }
