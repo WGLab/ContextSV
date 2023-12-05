@@ -96,37 +96,69 @@ def get_precision_recall(file_path, sv_type='DEL'):
                 epsilon = None
                 sv_section_found = False
 
-    # Get the maximum recall value, and then the maximum precision value at that
-    # recall value
-    max_recall = max(recall_values)
-    max_precision = None
-    max_index = None  # Index of the maximum recall and corresponding precision
-    for i, recall in enumerate(recall_values):
-        if recall == max_recall:
-            if max_precision is None:
-                max_precision = precision_values[i]
-                max_index = i
-            elif precision_values[i] > max_precision:
-                max_precision = precision_values[i]
-                max_index = i
+    print(f'SV Type: {sv_type}')
+
+    ##### Maximizing F1 #####
+    # Get the maximum F1 score and the corresponding epsilon, precision, recall
+    f1_scores = []
+    for i, precision in enumerate(precision_values):
+        recall = recall_values[i]
+        f1 = 2 * (precision * recall) / (precision + recall)
+        f1_scores.append(f1)
+
+    max_f1 = max(f1_scores)
+    max_f1_index = f1_scores.index(max_f1)
+
+    # Print the maximum F1 score
+    print(f'Maximum F1: {max_f1}')
 
     # Print the maximum precision and recall values
-    print(f'SV Type: {sv_type}')
-    print(f'Maximum Recall: {max_recall}')
-    print(f'Maximum Precision at Maximum Recall: {max_precision}')
+    print(f'Precision at F1: {precision_values[max_f1_index]}')
+    print(f'Recall at F1: {recall_values[max_f1_index]}')
 
-    # Print the parameter value at the maximum recall and corresponding precision
-    print(f'{parameter_name} at Maximum Recall: {epsilon_values[max_index]}')
+    # Print the parameter value at the maximum F1 score
+    print(f'Parameter value : {epsilon_values[max_f1_index]}')
 
-    # Print the FP and FN counts at the maximum recall and corresponding
-    # precision
-    print(f'FP Count at Maximum Recall: {fp_counts[max_index]}')
-    print(f'FN Count at Maximum Recall: {fn_counts[max_index]}')
+    # Print the FP and FN counts at the maximum F1 score
+    print(f'FP Count: {fp_counts[max_f1_index]}')
+    print(f'FN Count: {fn_counts[max_f1_index]}')
 
-    # Print the number of SVs in the callset and benchmark at the maximum recall
-    # and corresponding precision
-    print(f'Number of {sv_type}s in Callset: {comp_counts[max_index]}')
-    print(f'Number of {sv_type}s in Benchmark: {base_counts[max_index]}')
+    # Print the number of SVs in the callset and benchmark at the maximum F1
+    # score
+    print(f'Number of {sv_type}s in Callset: {comp_counts[max_f1_index]}')
+    print(f'Number of {sv_type}s in Benchmark: {base_counts[max_f1_index]}')
+    
+    ##### Maximizing recall #####
+    # # Get the maximum recall value, and then the maximum precision value at that
+    # # recall value
+    # max_recall = max(recall_values)
+    # max_precision = None
+    # max_index = None  # Index of the maximum recall and corresponding precision
+    # for i, recall in enumerate(recall_values):
+    #     if recall == max_recall:
+    #         if max_precision is None:
+    #             max_precision = precision_values[i]
+    #             max_index = i
+    #         elif precision_values[i] > max_precision:
+    #             max_precision = precision_values[i]
+    #             max_index = i
+    
+    # # Print the maximum precision and recall values
+    # print(f'Maximum Recall: {max_recall}')
+    # print(f'Maximum Precision at Maximum Recall: {max_precision}')
+
+    # # Print the parameter value at the maximum recall and corresponding precision
+    # print(f'{parameter_name} at Maximum Recall: {epsilon_values[max_index]}')
+
+    # # Print the FP and FN counts at the maximum recall and corresponding
+    # # precision
+    # print(f'FP Count at Maximum Recall: {fp_counts[max_index]}')
+    # print(f'FN Count at Maximum Recall: {fn_counts[max_index]}')
+
+    # # Print the number of SVs in the callset and benchmark at the maximum recall
+    # # and corresponding precision
+    # print(f'Number of {sv_type}s in Callset: {comp_counts[max_index]}')
+    # print(f'Number of {sv_type}s in Benchmark: {base_counts[max_index]}')
 
     return epsilon_values, precision_values, recall_values
 

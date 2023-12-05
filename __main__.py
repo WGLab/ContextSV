@@ -89,7 +89,7 @@ def main():
     # PFB file of population allele frequencies.
     parser.add_argument(
         "-p", "--pfb",
-        help="The path to the PFB file of population allele frequencies.",
+        help="The directory to the PFB files of population allele frequencies.",
         required=False
     )
 

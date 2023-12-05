@@ -449,86 +449,109 @@ void CNVCaller::readSNPAlleleFrequencies(std::string snp_filepath, SNPDataMap& s
 
 void CNVCaller::getSNPPopulationFrequencies(std::string filepath, SNPDataMap& snp_data_map)
 {
-    // Open the PFB file
-    FILE *fp = fopen(filepath.c_str(), "r");
-    if (fp == NULL)
-    {
-        std::cerr << "ERROR: Could not open PFB file: " << filepath << std::endl;
-        exit(1);
-    }
+    // // Open the PFB file
+    // FILE *fp = fopen(filepath.c_str(), "r");
+    // if (fp == NULL)
+    // {
+    //     std::cerr << "ERROR: Could not open PFB file: " << filepath << std::endl;
+    //     exit(1);
+    // }
 
     // Read the AF values (AF for population frequency) into a map
     std::map<std::string, std::map<int, double>> pfb_map;  // Map of population frequencies by SNP position (chr -> pos -> pfb)
-    char line[BUFFER_SIZE];
-    int pfb_count   = 0;
-    int pfb_min_hit = 0;
-    int pfb_max_hit = 0;
-    while (fgets(line, BUFFER_SIZE, fp) != NULL)
+
+    // Loop through each chromosome in the SNP data map and initialize the PFB
+    // map
+    for (auto& pair : snp_data_map)
     {
-        // Parse the tab-delimited line
-        char *tok = strtok(line, "\t");  // Tokenize the line
-        int col = 0;  // Column index
-        std::string chr = "";
-        uint64_t pos = 0;
-        double pfb = 0;
-        while (tok != NULL)
-        {
-            // Get the chromosome from column 1
-            if (col == 0)
-            {
-                chr = tok;
+        std::string chr = pair.first;
+        //SNPData& snp_data = pair.second;
+        
+        // Load the PFB file for the chromosome
+        // Format: gnomad.genomes.r2.1.1.sites.21.AF.tsv
+        std::string pfb_filepath = filepath + "gnomad.genomes.r2.1.1.sites." + chr + ".AF.tsv";
 
-                // Find the SNP data for the chromosome and skip if not found
-                auto it = snp_data_map.find(chr);
-                if (it == snp_data_map.end())
+        std::cout << "Loading PFB file: " << pfb_filepath << std::endl;
+
+        // Open the PFB file
+        FILE *fp = fopen(pfb_filepath.c_str(), "r");
+        if (fp == NULL)
+        {
+            std::cerr << "ERROR: Could not open PFB file: " << pfb_filepath << std::endl;
+            exit(1);
+        }
+        
+        char line[BUFFER_SIZE];
+        int pfb_count   = 0;
+        int pfb_min_hit = 0;
+        int pfb_max_hit = 0;
+        while (fgets(line, BUFFER_SIZE, fp) != NULL)
+        {
+            // Parse the tab-delimited line
+            char *tok = strtok(line, "\t");  // Tokenize the line
+            int col = 0;  // Column index
+            std::string chr = "";
+            uint64_t pos = 0;
+            double pfb = 0;
+            while (tok != NULL)
+            {
+                // Get the chromosome from column 1
+                if (col == 0)
                 {
-                    // Skip the line if the chromosome is not found
-                    tok = strtok(NULL, "\t");
-                    col++;
-                    continue;
+                    chr = tok;
+
+                    // Find the SNP data for the chromosome and skip if not found
+                    auto it = snp_data_map.find(chr);
+                    if (it == snp_data_map.end())
+                    {
+                        // Skip the line if the chromosome is not found
+                        tok = strtok(NULL, "\t");
+                        col++;
+                        continue;
+                    }
                 }
+
+                // Get the position from column 2
+                else if (col == 1)
+                {
+                    pos = atoi(tok);
+                }
+
+                // Get the PFB from column 3
+                else if (col == 2)
+                {
+                    pfb = atof(tok);
+                }
+
+                tok = strtok(NULL, "\t");
+                col++;
             }
 
-            // Get the position from column 2
-            else if (col == 1)
+            // Store the PFB value in the map, and fix within the range
+            if (pfb < MIN_PFB)
             {
-                pos = atoi(tok);
-            }
+                pfb_map[chr][pos] = MIN_PFB;
+                pfb_min_hit++;
+            } else if (pfb > MAX_PFB) {
+                pfb_map[chr][pos] = MAX_PFB;
+                pfb_max_hit++;
+            } else {
+                pfb_map[chr][pos] = pfb;
 
-            // Get the PFB from column 3
-            else if (col == 2)
-            {
-                pfb = atof(tok);
+                // Print values for debugging
+                //std::cout << "PFB at " << chr << ":" << pos << " -> " << std::fixed << std::setprecision(6) << pfb << std::endl;
             }
-
-            tok = strtok(NULL, "\t");
-            col++;
+            pfb_count++;
         }
 
-        // Store the PFB value in the map, and fix within the range
-        if (pfb < MIN_PFB)
-        {
-            pfb_map[chr][pos] = MIN_PFB;
-            pfb_min_hit++;
-        } else if (pfb > MAX_PFB) {
-            pfb_map[chr][pos] = MAX_PFB;
-            pfb_max_hit++;
-        } else {
-            pfb_map[chr][pos] = pfb;
+        // Close the file
+        fclose(fp);
 
-            // Print values for debugging
-            //std::cout << "PFB at " << chr << ":" << pos << " -> " << std::fixed << std::setprecision(6) << pfb << std::endl;
-        }
-        pfb_count++;
+        // Log the percentage of PFB values that were fixed
+        std::cout << "PFB values fixed: " << (double) (pfb_min_hit + pfb_max_hit) / (double) pfb_count * 100 << "%" << std::endl;
+        std::cout << "PFB min hit: " << (double) pfb_min_hit / (double) pfb_count * 100 << "%" << std::endl;
+        std::cout << "PFB max hit: " << (double) pfb_max_hit / (double) pfb_count * 100 << "%" << std::endl;
     }
-
-    // Close the file
-    fclose(fp);
-
-    // Log the percentage of PFB values that were fixed
-    std::cout << "PFB values fixed: " << (double) (pfb_min_hit + pfb_max_hit) / (double) pfb_count * 100 << "%" << std::endl;
-    std::cout << "PFB min hit: " << (double) pfb_min_hit / (double) pfb_count * 100 << "%" << std::endl;
-    std::cout << "PFB max hit: " << (double) pfb_max_hit / (double) pfb_count * 100 << "%" << std::endl;
 
     // Determine whether the chromosome is in chr notation (e.g. chr1) or not (e.g. 1)
     bool chr_notation = false;
