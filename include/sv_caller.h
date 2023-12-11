@@ -9,6 +9,10 @@
 
 #include <htslib/sam.h>
 
+/// @cond
+#include <mutex>
+/// @endcond
+
 // SV candidate alignment data (chr, start, end, sequence)
 using AlignmentData   = std::tuple<std::string, int64_t, int64_t, std::string>;
 using AlignmentVector = std::vector<AlignmentData>;
@@ -27,12 +31,25 @@ class SVCaller {
         int min_mapq = 20;          // Minimum mapping quality to be considered
         InputData* input_data;
 
+        // Mutex for thread safety when writing to the SV calls
+        std::mutex mtx_sv_calls;
+
+        // Mutex for thread safety when reading from the BAM file
+        std::mutex mtx_bam;
+
         // Detect SVs from long read alignments in the CIGAR string
-        void detectSVsFromCIGAR(bam_hdr_t* header, bam1_t* alignment, SVData& sv_calls);
+        void detectSVsFromCIGAR(bam_hdr_t* header, bam1_t* alignment, SVData& sv_calls, std::mutex& mtx);
         //void detectSVsFromCIGAR(SVData& sv_calls, std::string chr, int32_t pos, uint32_t* cigar, int cigar_len, bool debug_mode);
 
         // Detect SVs from split-read alignments (primary and supplementary)
         SVData detectSVsFromSplitReads(SVData& sv_calls);
+
+        // Detect SVs at a region from long read alignments. This is used for
+        // whole genome analysis running in parallel.
+        void detectSVsFromRegion(std::string region, SVData &sv_calls, samFile *fp_in, bam_hdr_t *bamHdr, hts_idx_t *idx, std::mutex &mtx_sv_calls, std::mutex &mtx_bam);
+
+        // Read the next alignment from the BAM file in a thread-safe manner
+        int readNextAlignment(samFile *fp_in, hts_itr_t *itr, bam1_t *bam1, std::mutex &mtx_bam);
 
     public:
         SVCaller(InputData& input_data);

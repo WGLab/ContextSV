@@ -7,6 +7,7 @@
 #include <string>
 #include <map>
 #include <set>
+#include <mutex>
 /// @endcond
 
 // Create a struct for storing SV information
@@ -49,7 +50,7 @@ class SVData {
         
     public:
         SVData(FASTAQuery& ref_genome);
-        void add(std::string chr, int64_t start, int64_t end, int sv_type, std::string alt_allele, std::string data_type);
+        void add(std::string chr, int64_t start, int64_t end, int sv_type, std::string alt_allele, std::string data_type, std::mutex& mtx);
 
         std::string getRefGenome();
         

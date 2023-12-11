@@ -6,8 +6,11 @@
 #include <fstream>
 /// @endcond
 
-void SVData::add(std::string chr, int64_t start, int64_t end, int sv_type, std::string alt_allele, std::string data_type)
+void SVData::add(std::string chr, int64_t start, int64_t end, int sv_type, std::string alt_allele, std::string data_type, std::mutex& mtx)
 {
+    // Lock the mutex for thread safety
+    std::lock_guard<std::mutex> lock(mtx);
+
     // Add the SV call to the map of candidate locations
     SVCandidate candidate(chr, start, end, alt_allele);
     if (this->sv_calls.find(candidate) != this->sv_calls.end()) {

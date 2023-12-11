@@ -341,6 +341,10 @@ void InputData::setAlleleFreqFilepaths(std::string filepath)
                 std::string chr = chr_vcf[0];
                 std::string vcf = chr_vcf[1];
 
+                // Remove the newline and null characters
+                vcf[strcspn(vcf.c_str(), "\r")] = 0;
+                vcf[strcspn(vcf.c_str(), "\n")] = 0;
+
                 // Read the VCF file and create the allele frequency map
                 // (position -> allele frequency)
 
