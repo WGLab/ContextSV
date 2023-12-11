@@ -177,3 +177,21 @@ std::vector<std::string> FASTAQuery::getChromosomes()
 {
     return this->chromosomes;
 }
+
+// Function to check if a chromosome is in the FASTA file, and return the
+// chromosome with the same notation as in the FASTA file (with or without
+// "chr" prefix)
+std::string FASTAQuery::hasChromosome(std::string chr)
+{
+    // Check if the chromosome is in the map with both notations (with and
+    // without "chr" prefix)
+    std::string chr_found = "";
+    if (this->chr_to_seq.find(chr) != this->chr_to_seq.end())
+    {
+        chr_found = chr;
+    } else if (this->chr_to_seq.find("chr" + chr) != this->chr_to_seq.end())
+    {
+        chr_found = "chr" + chr;
+    }
+    return chr_found;
+}

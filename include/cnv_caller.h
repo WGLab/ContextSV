@@ -60,7 +60,7 @@ class CNVCaller {
 
         // Read SNP population frequencies from the PFB file and return a vector
         // of population frequencies for each SNP location
-        void getSNPPopulationFrequencies(std::string filepath, SNPDataMap& snp_data_map);
+        void getSNPPopulationFrequencies(PFBMap& pfb_map, SNPDataMap& snp_data_map);
 
         // Save a BED file with predicted copy number states
         void saveToBED(SNPDataMap& snp_data_map, std::string filepath);

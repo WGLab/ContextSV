@@ -5,9 +5,12 @@
 #include <string.h>
 #include <iostream>
 #include <sstream>
+#include <thread>
 /// @endcond
 
 #define BUFFER_SIZE 1024
+#define MIN_PFB 0.01  // Minimum SNP population allele frequency
+#define MAX_PFB 0.99  // Maximum SNP population allele frequency
 
 // Constructor
 InputData::InputData()
@@ -297,12 +300,7 @@ int InputData::getChrCov(std::string chr, double &cov)
     }
 }
 
-std::string InputData::getPFBFilepath()
-{
-    return this->pfb_filepath;
-}
-
-void InputData::setPFBFilepath(std::string filepath)
+void InputData::setAlleleFreqFilepaths(std::string filepath)
 {
     this->pfb_filepath = filepath;
 
@@ -319,7 +317,60 @@ void InputData::setPFBFilepath(std::string filepath)
             std::cerr << "PFB file does not exist: " << filepath << std::endl;
             exit(1);
         }
+
+        // Load the PFB file and create the PFB map (chr -> VCF file)
+        std::cout << "Loading population allele frequency file: " << filepath << std::endl;
+        char buffer[BUFFER_SIZE];
+        std::vector<std::thread> threads;  // Vector of threads for parallelization
+        while (fgets(buffer, BUFFER_SIZE, fp) != NULL)
+        {
+            // Split by equals sign (chromosome, VCF file)
+            std::istringstream ss(buffer);
+            std::string token;
+            std::vector<std::string> chr_vcf;
+
+            while (std::getline(ss, token, '='))
+            {
+                chr_vcf.push_back(token);
+            }
+
+            // Check if the line is valid
+            if (chr_vcf.size() == 2)
+            {
+                // Get the chromosome and VCF file
+                std::string chr = chr_vcf[0];
+                std::string vcf = chr_vcf[1];
+
+                // Read the VCF file and create the allele frequency map
+                // (position -> allele frequency)
+
+                // Read the VCF file and create the allele frequency map
+
+                // Create a thread for processing the VCF file for each chromosome
+                threads.push_back(std::thread(&InputData::readChromosomeAFs, this, chr, vcf));
+            }
+        }
+
+        // Join the threads
+        for (auto &thread : threads)
+        {
+            thread.join();
+        }
+
+        // Close the file
+        fclose(fp);
+        std::cout << "Loaded " << this->pfb_map.size() << " chromosomes" << std::endl;
     }
+}
+
+std::string InputData::getAlleleFreqFilepaths()
+{
+    return this->pfb_filepath;
+}
+
+PFBMap InputData::getPFBMap()
+{
+    return this->pfb_map;
 }
 
 void InputData::setThreadCount(int thread_count)
@@ -387,4 +438,79 @@ void InputData::setWholeGenome(bool whole_genome)
 bool InputData::getWholeGenome()
 {
     return this->whole_genome;
+}
+
+void InputData::readChromosomeAFs(std::string chr, std::string filepath)
+{
+    // Check if the file exists
+    FILE *fp = fopen(filepath.c_str(), "r");
+    if (fp == NULL)
+    {
+        std::cerr << "Error: Allele frequency file does not exist: " << filepath << std::endl;
+        exit(1);
+    }
+
+    // Check if the chromosome is in the reference genome and return it with the
+    // reference notation    
+    std::string chr_check = this->fasta_query.hasChromosome(chr);
+    if (chr_check == "")
+    {
+        std::cerr << "Error: Chromosome " << chr << " not in reference genome" << std::endl;
+        exit(1);
+    }
+    chr = chr_check;  // Update the chromosome with the reference notation
+
+    // Load the allele frequency file and create the allele frequency map (position -> allele frequency)
+    std::cout << "Loading allele frequency file: " << filepath << std::endl;
+    char buffer[BUFFER_SIZE];
+    int af_count = 0;
+    int af_min_hit = 0;  // Number of positions with allele frequency below the minimum
+    int af_max_hit = 0;  // Number of positions with allele frequency above the maximum
+    while (fgets(buffer, BUFFER_SIZE, fp) != NULL)
+    {
+        // Remove the newline character
+        buffer[strcspn(buffer, "\n")] = 0;
+
+        // Split the line by tab (position, allele frequency)
+        std::istringstream ss(buffer);
+        std::string token;
+        std::vector<std::string> pos_af;
+
+        while (std::getline(ss, token, '\t'))
+        {
+            pos_af.push_back(token);
+        }
+
+        // Check if the line is valid
+        if (pos_af.size() == 2)
+        {
+            // Get the position and allele frequency
+            int pos = atoi(pos_af[0].c_str());
+            double af = atof(pos_af[1].c_str());
+
+            // Check if the allele frequency is within the valid range
+            if (af >= MIN_PFB && af <= MAX_PFB)
+            {
+                // Add the position and allele frequency to the map
+                this->pfb_map[chr][pos] = af;
+                af_count++;
+            }
+            else if (af < MIN_PFB)
+            {
+                af_min_hit++;
+            }
+            else if (af > MAX_PFB)
+            {
+                af_max_hit++;
+            }
+        }
+    }
+
+    // Close the file
+    fclose(fp);
+
+    // Log the percentage of PFB values that were fixed
+    std::cout << "SNP AF values fixed: " << (double) (af_min_hit + af_max_hit) / (double) af_count * 100 << "%" << std::endl;
+    std::cout << "Min. fixed: " << (double) af_min_hit / (double) af_count * 100 << "%" << std::endl;
+    std::cout << "Max. fixed: " << (double) af_max_hit / (double) af_count * 100 << "%" << std::endl;
 }

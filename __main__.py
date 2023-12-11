@@ -86,10 +86,11 @@ def main():
         required=False
     )
 
-    # PFB file of population allele frequencies.
+    # Text file with VCF filepaths of SNP population allele frequencies for each
+    # chromosome from a database such as gnomAD (e.g. 1=chr1.vcf.gz\n2=chr2.vcf.gz\n...).
     parser.add_argument(
-        "-p", "--pfb",
-        help="The directory to the PFB files of population allele frequencies.",
+        "--pfb",
+        help="Path to the text file listing VCF population allele frequency filepaths for each chromosome.",
         required=False
     )
 
@@ -209,7 +210,7 @@ def main():
         input_data.setRegion(args.region)
         input_data.setThreadCount(args.threads)
         input_data.setChrCov(args.chr_cov)
-        input_data.setPFBFilepath(args.pfb)
+        input_data.setAlleleFreqFilepaths(args.pfb)
         input_data.setHMMFilepath(args.hmm)
         input_data.setOutputDir(args.output)
         input_data.setDisableCIGAR(args.disable_cigar)

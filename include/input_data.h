@@ -13,6 +13,9 @@
 #include <map>
 /// @endcond
 
+// Type definition for B-allele population frequency map (chr -> pos -> pfb)
+using PFBMap = std::map<std::string, std::map<int, double>>;
+
 class InputData {
     public:
         InputData();
@@ -34,9 +37,12 @@ class InputData {
         FASTAQuery getRefGenome();
 
         // Set the filepath to the tab-delimited file with SNP population frequencies.
-        void setPFBFilepath(std::string filepath);
-        std::string getPFBFilepath();
-        
+        void setAlleleFreqFilepaths(std::string filepath);
+        std::string getAlleleFreqFilepaths();
+
+        // Get the population frequency map.
+        PFBMap getPFBMap();
+
         // Set the filepath to the VCF file with SNP calls used for CNV
         // detection with the HMM.
         void setSNPFilepath(std::string filepath);
@@ -78,6 +84,9 @@ class InputData {
         // analyzed.
         void setWholeGenome(bool whole_genome);
         bool getWholeGenome();
+
+        // Read a VCF file and store the population frequencies in a map.
+        void readChromosomeAFs(std::string chr, std::string filepath);
         
     private:
         std::string short_read_bam;
@@ -85,6 +94,7 @@ class InputData {
         std::string ref_filepath;
         std::string snp_vcf_filepath;
         std::string pfb_filepath;
+        PFBMap pfb_map;  // Map of population frequencies by SNP position (chr -> pos -> pfb)
         FASTAQuery fasta_query;
         std::string output_dir;
         std::string region;
@@ -93,7 +103,7 @@ class InputData {
         int64_t region_start;
         int64_t region_end;
         bool region_set;
-        std::map<std::string, double> chr_cov;
+        std::map<std::string, double> chr_cov;  // Map of pre-calculated mean coverage values for each chromosome
         int thread_count;
         std::string hmm_filepath;
         bool disable_cigar;

@@ -35,7 +35,7 @@ def test_run():
     input_data.setRegion("chr3:60380533-60390533")
     input_data.setThreadCount(1)
     input_data.setChrCov("chr3:39.561,chr6:39.4096")
-    input_data.setPFBFilepath("")
+    input_data.setAlleleFreqFilepaths("")
     input_data.setHMMFilepath("")
     input_data.setOutputDir(TEST_OUTDIR)
 
