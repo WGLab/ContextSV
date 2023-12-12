@@ -53,7 +53,7 @@ class CNVCaller {
         double calculateMeanChromosomeCoverage(std::string chr);
 
         // Calculate region mean coverage
-        double calculateWindowLogRRatio(double mean_chr_cov, int start_pos, int end_pos);
+        double calculateWindowLogRRatio(double mean_chr_cov, std::string chr, int start_pos, int end_pos);
 
         // Read SNP positions and BAF values from the VCF file
         void readSNPAlleleFrequencies(std::string filepath, SNPDataMap& snp_data_map, bool whole_genome);

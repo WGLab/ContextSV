@@ -217,7 +217,7 @@ void CNVCaller::calculateLog2RatioAtSNPS(SNPDataMap& snp_data_map)
             // Calculate window mean coverage
             int window_start = pos - (window_size / 2);
             int window_end = pos + (window_size / 2);
-            double lrr = calculateWindowLogRRatio(mean_chr_cov, window_start, window_end);
+            double lrr = calculateWindowLogRRatio(mean_chr_cov, chr, window_start, window_end);
 
             // Set the LRR value
             snp_data.log2_ratios.push_back(lrr);
@@ -279,9 +279,8 @@ double CNVCaller::calculateMeanChromosomeCoverage(std::string chr)
     return mean_chr_cov;
 }
 
-double CNVCaller::calculateWindowLogRRatio(double mean_chr_cov, int start_pos, int end_pos)
+double CNVCaller::calculateWindowLogRRatio(double mean_chr_cov, std::string chr, int window_start, int window_end)
 {
-    std::string chr = this->input_data->getRegionChr();
     std::string input_filepath = this->input_data->getShortReadBam();
 
     char cmd[BUFFER_SIZE];
@@ -294,7 +293,7 @@ double CNVCaller::calculateWindowLogRRatio(double mean_chr_cov, int start_pos, i
     // Run the entire chromosome
         snprintf(cmd, BUFFER_SIZE,\
         "samtools depth -r %s:%d-%d %s | awk '{c++;s+=$3}END{print c, s}'",\
-        chr.c_str(), start_pos, end_pos, input_filepath.c_str());
+        chr.c_str(), window_start, window_end, input_filepath.c_str());
 
         fp = popen(cmd, "r");
     if (fp == NULL)
@@ -460,7 +459,7 @@ void CNVCaller::getSNPPopulationFrequencies(PFBMap& pfb_map, SNPDataMap& snp_dat
         // Check if there are any SNPs for the chromosome
         if (snp_data.locations.size() == 0)
         {
-            std::cerr << "WARNING: No SNPs found for chromosome " << chr << std::endl;
+            //std::cerr << "WARNING: No SNPs found for chromosome " << chr << std::endl;
             continue;
         }
 
@@ -490,6 +489,8 @@ void CNVCaller::getSNPPopulationFrequencies(PFBMap& pfb_map, SNPDataMap& snp_dat
             }
             else
             {
+                std::cerr << "WARNING: No population frequency found for SNP at position " << chr << ":" << pos << std::endl;
+
                 // Use 0.5 as the population frequency if it is not found
                 snp_data.pfbs.push_back(0.5);
             }

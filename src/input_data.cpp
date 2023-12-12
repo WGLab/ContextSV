@@ -339,19 +339,23 @@ void InputData::setAlleleFreqFilepaths(std::string filepath)
             {
                 // Get the chromosome and VCF file
                 std::string chr = chr_vcf[0];
-                std::string vcf = chr_vcf[1];
+                std::string vcf = chr_vcf[1].substr(0, chr_vcf[1].find_first_of("\r\n"));  // Remove the newline character
 
-                // Remove the newline and null characters
-                vcf[strcspn(vcf.c_str(), "\r")] = 0;
-                vcf[strcspn(vcf.c_str(), "\n")] = 0;
+                // Fix the VCF file string, keeping only the first line
+
+                // vcf[strcspn(vcf.c_str(), "\r")] = 0;
+                // vcf[strcspn(vcf.c_str(), "\n")] = 0;
 
                 // Read the VCF file and create the allele frequency map
                 // (position -> allele frequency)
 
                 // Read the VCF file and create the allele frequency map
 
-                // Create a thread for processing the VCF file for each chromosome
-                threads.push_back(std::thread(&InputData::readChromosomeAFs, this, chr, vcf));
+                // Create a thread for processing the VCF file for each
+                // chromosome
+                std::mutex pfb_mtx;  // Mutex for the PFB map
+                std::mutex print_mtx;  // Mutex for printing messages
+                threads.push_back(std::thread(&InputData::readChromosomeAFs, this, chr, vcf, std::ref(pfb_mtx), std::ref(print_mtx)));
             }
         }
 
@@ -444,33 +448,55 @@ bool InputData::getWholeGenome()
     return this->whole_genome;
 }
 
-void InputData::readChromosomeAFs(std::string chr, std::string filepath)
+void InputData::readChromosomeAFs(std::string chr, std::string filepath, std::mutex &pfb_mtx, std::mutex &print_mtx)
 {
     // Check if the file exists
     FILE *fp = fopen(filepath.c_str(), "r");
     if (fp == NULL)
     {
-        std::cerr << "Error: Allele frequency file does not exist: " << filepath << std::endl;
+        //std::cerr << "Error: Allele frequency file does not exist: " <<
+        //filepath << std::endl;
+        this->printError("Error: Allele frequency file does not exist: " + filepath, print_mtx);
         exit(1);
     }
+
+    // Close the file
+    fclose(fp);
 
     // Check if the chromosome is in the reference genome and return it with the
     // reference notation    
     std::string chr_check = this->fasta_query.hasChromosome(chr);
     if (chr_check == "")
     {
-        std::cerr << "Error: Chromosome " << chr << " not in reference genome" << std::endl;
+        //std::cerr << "Error: Chromosome " << chr << " not in reference genome"
+        //<< std::endl;
+        this->printError("Error: Chromosome " + chr + " not in reference genome", print_mtx);
         exit(1);
     }
     chr = chr_check;  // Update the chromosome with the reference notation
 
     // Load the allele frequency file and create the allele frequency map (position -> allele frequency)
-    std::cout << "Loading allele frequency file: " << filepath << std::endl;
+    //std::cout << "Loading allele frequency file: " << filepath << std::endl;
+    this->printMessage("Loading file: " + filepath, print_mtx);
     char buffer[BUFFER_SIZE];
     int af_count = 0;
     int af_min_hit = 0;  // Number of positions with allele frequency below the minimum
     int af_max_hit = 0;  // Number of positions with allele frequency above the maximum
-    while (fgets(buffer, BUFFER_SIZE, fp) != NULL)
+
+    // Use bcftools to read the VCF file and create the allele frequency map
+    std::string cmd = "bcftools query -f '%POS\t%AF\n' -i 'INFO/variant_type=\"snv\"' " + filepath;
+
+    // Open a pipe to read the output of the command
+    FILE *pipe = popen(cmd.c_str(), "r");
+    if (pipe == NULL)
+    {
+        //std::cerr << "Error: Could not open pipe to read VCF file" << std::endl;
+        this->printError("Error: Could not open pipe to read VCF file", print_mtx);
+        exit(1);
+    }
+
+    // Read the output of the command
+    while (fgets(buffer, BUFFER_SIZE, pipe) != NULL)
     {
         // Remove the newline character
         buffer[strcspn(buffer, "\n")] = 0;
@@ -496,25 +522,58 @@ void InputData::readChromosomeAFs(std::string chr, std::string filepath)
             if (af >= MIN_PFB && af <= MAX_PFB)
             {
                 // Add the position and allele frequency to the map
-                this->pfb_map[chr][pos] = af;
-                af_count++;
+                //this->pfb_map[chr][pos] = af;
+                this->addPopulationFrequency(chr, pos, af, pfb_mtx);
+
+                // Print the position and allele frequency from the map
+                //this->printMessage("Added " + chr + ":" + std::to_string(pos) + " = " + std::to_string(this->pfb_map[chr][pos]), print_mtx);
             }
             else if (af < MIN_PFB)
             {
                 af_min_hit++;
+                //this->pfb_map[chr][pos] = MIN_PFB;
+                this->addPopulationFrequency(chr, pos, MIN_PFB, pfb_mtx);
             }
             else if (af > MAX_PFB)
             {
                 af_max_hit++;
+                //this->pfb_map[chr][pos] = MAX_PFB;
+                this->addPopulationFrequency(chr, pos, MAX_PFB, pfb_mtx);
             }
+            af_count++;
         }
     }
 
-    // Close the file
-    fclose(fp);
+    // Close the pipe
+    pclose(pipe);
 
-    // Log the percentage of PFB values that were fixed
-    std::cout << "SNP AF values fixed: " << (double) (af_min_hit + af_max_hit) / (double) af_count * 100 << "%" << std::endl;
-    std::cout << "Min. fixed: " << (double) af_min_hit / (double) af_count * 100 << "%" << std::endl;
-    std::cout << "Max. fixed: " << (double) af_max_hit / (double) af_count * 100 << "%" << std::endl;
+    // Print the number of positions found for the chromosome
+    this->printMessage("Loaded " + std::to_string(this->pfb_map[chr].size()) + " positions for chromosome " + chr, print_mtx);
+    //std::cout << "Loaded " << this->pfb_map[chr].size() << " positions for chromosome " << chr << std::endl;
+
+    // // Log the percentage of PFB values that were fixed
+    // std::cout << "AF value count: " << af_count << std::endl;  // DEBUG
+    // std::cout << "AF min. hit: " << af_min_hit << std::endl;  // DEBUG
+    // std::cout << "AF max. hit: " << af_max_hit << std::endl;  // DEBUG
+    // std::cout << "SNP AF values fixed: " << ((double) (af_min_hit + af_max_hit) / (double) af_count) * 100 << "%" << std::endl;
+    // std::cout << "Min. fixed: " << ((double) af_min_hit / (double) af_count) * 100 << "%" << std::endl;
+    // std::cout << "Max. fixed: " << ((double) af_max_hit / (double) af_count) * 100 << "%" << std::endl;
+}
+
+void InputData::addPopulationFrequency(std::string chr, int pos, double pfb, std::mutex &mutex)
+{
+    std::lock_guard<std::mutex> lock(mutex);
+    this->pfb_map[chr][pos] = pfb;
+}
+
+void InputData::printMessage(std::string message, std::mutex &mutex)
+{
+    std::lock_guard<std::mutex> lock(mutex);
+    std::cout << message << std::endl;
+}
+
+void InputData::printError(std::string message, std::mutex &mutex)
+{
+    std::lock_guard<std::mutex> lock(mutex);
+    std::cerr << message << std::endl;
 }

@@ -11,6 +11,7 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <mutex>
 /// @endcond
 
 // Type definition for B-allele population frequency map (chr -> pos -> pfb)
@@ -86,7 +87,16 @@ class InputData {
         bool getWholeGenome();
 
         // Read a VCF file and store the population frequencies in a map.
-        void readChromosomeAFs(std::string chr, std::string filepath);
+        void readChromosomeAFs(std::string chr, std::string filepath, std::mutex &pfb_mtx, std::mutex &print_mtx);
+
+        // Add a population frequency to the map in a thread-safe manner.
+        void addPopulationFrequency(std::string chr, int pos, double pfb, std::mutex& mutex);
+
+        // Print to cout in a thread-safe manner.
+        void printMessage(std::string message, std::mutex& mutex);
+
+        // Print to cerr in a thread-safe manner.
+        void printError(std::string message, std::mutex& mutex);
         
     private:
         std::string short_read_bam;
