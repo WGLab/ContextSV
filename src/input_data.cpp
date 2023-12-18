@@ -175,7 +175,7 @@ void InputData::setRegion(std::string region)
     if (this->region_start == 0 && this->region_end == 0)
     {
         // Use the entire chromosome as the region
-        this->region_set = false;
+        this->region_set = true;
 
         // Set the whole genome flag to false
         this->whole_genome = false;
@@ -318,10 +318,28 @@ void InputData::setAlleleFreqFilepaths(std::string filepath)
             exit(1);
         }
 
+        // If a region is set, load only the chromosome in the region (non-chr notation)
+        std::string target_chr;
+        if (this->region_set)
+        {
+            target_chr = this->region_chr;
+
+            // Check if the region is in chr notation
+            if (target_chr.find("chr") != std::string::npos)
+            {
+                // Remove the chr notation
+                target_chr = target_chr.substr(3, target_chr.size() - 3);
+            }
+
+            std::cout << "Loading population allele frequency file for chromosome " << target_chr << std::endl;
+        }
+
         // Load the PFB file and create the PFB map (chr -> VCF file)
         std::cout << "Loading population allele frequency file: " << filepath << std::endl;
         char buffer[BUFFER_SIZE];
         std::vector<std::thread> threads;  // Vector of threads for parallelization
+        std::mutex pfb_mtx;  // Mutex for the PFB map
+        std::mutex print_mtx;  // Mutex for printing messages
         while (fgets(buffer, BUFFER_SIZE, fp) != NULL)
         {
             // Split by equals sign (chromosome, VCF file)
@@ -337,29 +355,36 @@ void InputData::setAlleleFreqFilepaths(std::string filepath)
             // Check if the line is valid
             if (chr_vcf.size() == 2)
             {
-                // Get the chromosome and VCF file
+                // Get the chromosome
                 std::string chr = chr_vcf[0];
+
+                // If the region is set, skip chromosomes not in the region
+                if (this->region_set && chr != target_chr)
+                {
+                    //std::cout << "Skipping chromosome " << chr << std::endl;
+                    continue;
+                } else {
+                    std::cout << "Loading chromosome " << chr << std::endl;
+                }
+
+                // Get the VCF file
                 std::string vcf = chr_vcf[1].substr(0, chr_vcf[1].find_first_of("\r\n"));  // Remove the newline character
-
-                // Fix the VCF file string, keeping only the first line
-
-                // vcf[strcspn(vcf.c_str(), "\r")] = 0;
-                // vcf[strcspn(vcf.c_str(), "\n")] = 0;
-
-                // Read the VCF file and create the allele frequency map
-                // (position -> allele frequency)
-
-                // Read the VCF file and create the allele frequency map
 
                 // Create a thread for processing the VCF file for each
                 // chromosome
-                std::mutex pfb_mtx;  // Mutex for the PFB map
-                std::mutex print_mtx;  // Mutex for printing messages
                 threads.push_back(std::thread(&InputData::readChromosomeAFs, this, chr, vcf, std::ref(pfb_mtx), std::ref(print_mtx)));
             }
         }
 
         // Join the threads
+        if (threads.size() == 0)
+        {
+            std::cerr << "Error: No chromosomes found in PFB file" << std::endl;
+            exit(1);
+        } else {
+            std::cout << "Loading " << threads.size() << " chromosomes" << std::endl;
+        }
+
         for (auto &thread : threads)
         {
             thread.join();
@@ -451,6 +476,7 @@ bool InputData::getWholeGenome()
 void InputData::readChromosomeAFs(std::string chr, std::string filepath, std::mutex &pfb_mtx, std::mutex &print_mtx)
 {
     // Check if the file exists
+    this->printMessage("Checking that allele frequency file exists: " + filepath, print_mtx);
     FILE *fp = fopen(filepath.c_str(), "r");
     if (fp == NULL)
     {
@@ -459,13 +485,17 @@ void InputData::readChromosomeAFs(std::string chr, std::string filepath, std::mu
         this->printError("Error: Allele frequency file does not exist: " + filepath, print_mtx);
         exit(1);
     }
-
     // Close the file
     fclose(fp);
+    this->printMessage("Complete.", print_mtx);
 
     // Check if the chromosome is in the reference genome and return it with the
-    // reference notation    
+    // reference notation
+    this->printMessage("Checking that chromosome " + chr + " is in reference genome...", print_mtx);
+    //std::cout << "Checking that chromosome " << chr << " is in reference genome..." << std::endl;
     std::string chr_check = this->fasta_query.hasChromosome(chr);
+    this->printMessage("Complete.", print_mtx);
+    //std::cout << "Complete." << std::endl;
     if (chr_check == "")
     {
         //std::cerr << "Error: Chromosome " << chr << " not in reference genome"

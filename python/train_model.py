@@ -1,5 +1,47 @@
 """
 train_model.py: Train the binary classification model.
+
+This script trains the binary classification model using the true positive and
+false positive data. The true positive data is obtained from a benchmarking
+dataset. The false positive data is obtained from running the caller on data
+that is known to be negative for SVs. This data can be obtained by running the
+caller on a normal sample with known SVs accounted for in the reference genome.
+
+For example for HG002, the true positive data is obtained from the Genome in a
+Bottle benchmarking dataset, and the false positive data is obtained from
+running the caller on the HG002 normal sample and extracting the SV calls that
+are not in the benchmarking dataset. This can be repeated for other samples such
+as HG001 and HG005 as long as the known SVs are accounted for.
+
+In the HG002 SV v0.6 dataset, there are low-confidence regions which
+are excluded from the true positive data. Thus, we must include true SVs from
+other publicly available normal samples with information from complex regions,
+such as those aligned to CHM13. 
+
+The model is trained using logistic regression. The features are the LRR and
+BAF values. The labels are 1 for true positives and 0 for false positives.
+
+The model is saved to the output directory as a pickle file.
+
+Usage:
+    python train_model.py <true_positives_filepath> <false_positives_filepath>
+    <output_directory>
+    
+    true_positives_filepath: Path to the VCF of true positive SV calls obtained
+        from a benchmarking dataset.
+    false_positives_filepath: Path to the VCF of false positive SV calls
+        obtained from running the caller on data that is known to be negative
+        for SVs. This data can be obtained by running the caller on a normal
+        sample with known SVs accounted for in the reference genome.
+
+    output_directory: Path to the output directory.
+
+Output:
+    model.pkl: The binary classification model.
+
+Example:
+    python train_model.py data/NA12878_SV_calls.vcf data/NA12878_SV_calls.vcf
+    output/
 """
 
 import os
@@ -61,7 +103,14 @@ def score(model, cnv_data):
 
 if __name__ == '__main__':
     # Get the command line arguments.
+
+    # Input VCF of true positive SV calls obtained from a benchmarking dataset.
     tp_filepath = sys.argv[1]
+
+    # Input VCF of false positive SV calls obtained from running the caller on
+    # data that is known to be negative for SVs. This data can be obtained by
+    # running the caller on a normal sample with known SVs accounted for in the
+    # reference genome.
     fp_filepath = sys.argv[2]
     output_dir = sys.argv[3]
 

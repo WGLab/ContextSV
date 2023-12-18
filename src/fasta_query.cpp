@@ -50,6 +50,7 @@ int FASTAQuery::setFilepath(std::string fasta_filepath)
                 chromosomes.push_back(current_chr);  // Add the chromosome to the list
                 chr_to_seq[current_chr] = sequence;  // Add the sequence to the map
                 sequence = "";  // Reset the sequence
+                //std::cout << "Read chromosome " << current_chr << std::endl;
             }
 
             // Get the new chromosome
@@ -65,7 +66,7 @@ int FASTAQuery::setFilepath(std::string fasta_filepath)
             // Check if the chromosome is already in the map
             if (chr_to_seq.find(current_chr) != chr_to_seq.end())
             {
-                std::cout << "Duplicate chromosome " << current_chr << std::endl;
+                std::cerr << "Duplicate chromosome " << current_chr << std::endl;
                 exit(1);
             }
         } else {
