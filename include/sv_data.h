@@ -38,7 +38,7 @@ class SVData {
         // Map of clipped base support by position (chr, pos) : depth
         std::map<std::pair<std::string, int64_t>, int> clipped_base_support;
 
-        // SV type to string map (DEL, DUP, INV, INS, BND)
+        // SV type to string map (DEL, INS, INV, DUP, BND)
         // DUPs [1] are INS with INFO/REPTYPE=DUP
         std::map<int, std::string> sv_type_map = {
             {0, "DEL"},
@@ -49,7 +49,18 @@ class SVData {
         };
         
     public:
+        // Define constants for SV types
+        static const int DEL = 0;
+        static const int DUP = 1;
+        static const int INV = 2;
+        static const int INS = 3;
+        static const int BND = 4;
+        static const int UNKNOWN = -1;
+
+        // Constructor
         SVData(FASTAQuery& ref_genome);
+
+        // Add a new SV candidate to the map
         void add(std::string chr, int64_t start, int64_t end, int sv_type, std::string alt_allele, std::string data_type, std::mutex& mtx);
 
         std::string getRefGenome();
@@ -58,7 +69,7 @@ class SVData {
         std::string getSequence(std::string chr, int64_t pos_start, int64_t pos_end);
 
         // Update the SV type for a given SV candidate
-        void updateSVType(SVCandidate key, int sv_type);
+        void updateSVType(SVCandidate key, int sv_type, std::string data_type);
 
         // Update clipped base support for a given breakpoint location
         void updateClippedBaseSupport(std::string chr, int64_t pos);

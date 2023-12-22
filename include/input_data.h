@@ -89,8 +89,8 @@ class InputData {
         // Read a VCF file and store the population frequencies in a map.
         void readChromosomeAFs(std::string chr, std::string filepath, std::mutex &pfb_mtx, std::mutex &print_mtx);
 
-        // Add a population frequency to the map in a thread-safe manner.
-        void addPopulationFrequency(std::string chr, int pos, double pfb, std::mutex& mutex);
+        // Add a chromosome's population frequency data to the map in a thread-safe manner.
+        void addChromosomePopulationFrequency(std::string chr, std::map<int, double> pfb_map, std::mutex &mutex);
 
         // Print to cout in a thread-safe manner.
         void printMessage(std::string message, std::mutex& mutex);

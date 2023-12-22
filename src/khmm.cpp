@@ -8,7 +8,7 @@
 #include <map>
 /// @endcond
 
-#define BUFFER_SIZE 1024
+#define BUFFER_SIZE 4096
 #define STATE_CHANGE 100000.0 /*this is the expected changes (D value) in the transition matrix*/
 #define VITHUGE 100000000000.0
 #define FLOAT_MINIMUM 1.175494351e-38; /*this is indeed machine dependent*/

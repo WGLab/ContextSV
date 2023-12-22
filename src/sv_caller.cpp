@@ -15,16 +15,6 @@
 #include <thread>
 /// @endcond
 
-// Define SV type environment variables
-#define SV_TYPE_DEL 0
-#define SV_TYPE_INS 1
-#define SV_TYPE_INV 2
-#define SV_TYPE_DUP 3
-#define SV_TYPE_BND 4
-
-// Unkown SV type
-#define SV_TYPE_UNKNOWN -1
-
 int SVCaller::readNextAlignment(samFile *fp_in, hts_itr_t *itr, bam1_t *bam1, std::mutex &mtx_bam)
 {
     // Lock the mutex while reading the next alignment
@@ -58,8 +48,7 @@ void SVCaller::detectSVsFromRegion(std::string region, SVData &sv_calls, samFile
         // Skip alignments with low mapping quality
         } else if (bam1->core.qual < this->min_mapq) {
             // Do nothing
-            // std::cout << "Skipping alignment with low mapping quality" << std::endl;
-            // std::cout << bam1->core.qual << " < " << this->min_mapq << std::endl;
+
         } else {
 
             // Get the QNAME (query template name) for associating split reads
@@ -72,14 +61,6 @@ void SVCaller::detectSVsFromRegion(std::string region, SVData &sv_calls, samFile
                 std::string chr = bamHdr->target_name[bam1->core.tid];
                 int64_t start = bam1->core.pos;
                 int64_t end = bam_endpos(bam1);
-
-                // Get the primary alignment query sequence
-                // TODO: Use for getting insertion sequence
-                // std::string seq = "";
-                // uint8_t* seq_ptr = bam_get_seq(bam1);
-                // for (int i = 0; i < bam1->core.l_qseq; i++) {
-                //     seq += seq_nt16_str[bam_seqi(seq_ptr, i)];
-                // }
 
                 AlignmentData alignment(chr, start, end, ".");
                 primary_alignments[qname].push_back(alignment);
@@ -94,21 +75,10 @@ void SVCaller::detectSVsFromRegion(std::string region, SVData &sv_calls, samFile
             // Process supplementary alignments
             } else if (bam1->core.flag & BAM_FSUPPLEMENTARY) {
 
-                //std::cout << "Found supplementary alignment" << std::endl;
-
                 // Add the supplementary alignment to the map
                 std::string chr = bamHdr->target_name[bam1->core.tid];
                 int32_t start = bam1->core.pos;
                 int32_t end = bam_endpos(bam1);
-
-                // Get the supplementary alignment query sequence
-                // TODO: Use for getting insertion sequence
-                // std::string seq = "";
-                // uint8_t* seq_ptr = bam_get_seq(bam1);
-                // for (int i = 0; i < bam1->core.l_qseq; i++) {
-                //     seq += seq_nt16_str[bam_seqi(seq_ptr, i)];
-                // }
-
                 AlignmentData alignment(chr, start, end, ".");
 
                 // Add the supplementary alignment to the map
@@ -146,9 +116,6 @@ void SVCaller::detectSVsFromRegion(std::string region, SVData &sv_calls, samFile
         int32_t primary_start = std::get<1>(primary_alignment);
         int32_t primary_end = std::get<2>(primary_alignment);
 
-        // Get the primary alignment query sequence (TODO: Use for getting insertion sequence)
-        //std::string primary_seq = std::get<3>(primary_alignment);
-
         // Loop through the supplementary alignments and find gaps and overlaps
         AlignmentVector supp_alignments = supplementary_alignments[qname];
         for (const auto& supp_alignment : supp_alignments) {
@@ -168,94 +135,43 @@ void SVCaller::detectSVsFromRegion(std::string region, SVData &sv_calls, samFile
             int32_t supp_start = std::get<1>(supp_alignment);
             int32_t supp_end = std::get<2>(supp_alignment);
 
-            // Get the supplementary alignment query sequence (TODO: Use for getting insertion sequence)
-            //std::string supp_seq = std::get<3>(supp_alignment);
-
-            // Determine the type of gap between alignments.
-            // Gaps are defined as regions between alignments that are not
-            // covered by any alignment.
-            // Overlaps are defined as regions between alignments that are
-            // covered by multiple alignments.
-            // Gaps and overlaps are defined in reference coordinates (1-based).
-
-            // Gaps between alignments are important for classifying the SV type.
-            // Classifying gaps as either deletions or duplications:
-            // If the gap is approximately the same size as the supplementary
-            // alignment, then the supplementary alignment is likely a
-            // duplication of the primary alignment. This is because the
-            // supplementary alignment is likely a split read that is mapping
-            // to the same region as the primary alignment.
+            // Gap analysis (deletion or duplication)
             if (supp_start < primary_start && supp_end < primary_start) {
                 // Gap with supplementary before primary:
                 // [supp_start] [supp_end] -- [primary_start] [primary_end]
 
                 // Use the gap ends as the SV endpoints (Possible insertion
                 // (dup) or deletion)
-                // Regular insertions would not have supplementary alignments
                 if (primary_start - supp_end >= this->min_sv_size) {
-                    // Add duplication
-                    sv_calls.add(supp_chr, supp_end+1, primary_start+1, SV_TYPE_DUP, ".", "GAPINNER_1", mtx_sv_calls);
 
-                    // Add deletion
-                    sv_calls.add(supp_chr, supp_end+1, primary_start+1, SV_TYPE_DEL, ".", "GAPINNER_1", mtx_sv_calls);
+                    // Likely deletion
+                    // SNP CNV predictions will be used to classify the SV type.
+                    sv_calls.add(supp_chr, supp_end+1, primary_start+1, SVData::UNKNOWN, ".", "GAPINNER_A", mtx_sv_calls);
                 }
 
-                // TODO: Classify as insertion or deletion if there is majority
-                // support for one or the other from the CIGAR string
-                //this->classifySVFromCIGAR(bamHdr, bam1, sv_calls, mtx_sv_calls);
-
-                // Use the alignment ends as the SV endpoints (Possible large duplication)
+                // [TEST] Use the alignment ends as the SV endpoints
                 if (primary_end - supp_start >= this->min_sv_size) {
-                    // Add duplication
-                    sv_calls.add(supp_chr, supp_start+1, primary_end+1, SV_TYPE_DUP, ".", "GAPOUTER_1", mtx_sv_calls);
+                    sv_calls.add(supp_chr, supp_start+1, primary_end+1, SVData::UNKNOWN, ".", "GAPOUTER_A", mtx_sv_calls);
                 }
 
-                //std::cout << "FWD GAP at " << supp_chr << ":" << gap_start << "-" << gap_end << std::endl;
                 
             } else if (supp_start > primary_end && supp_end > primary_end) {
                 // Gap with supplementary after primary:
                 // [primary_start] [primary_end] -- [supp_start] [supp_end]
 
-                // Use the gap ends as the SV endpoints (Possible insertion (dup) or deletion)
+                // Use the gap ends as the SV endpoints (Possible deletion)
                 if (supp_start - primary_end >= this->min_sv_size) {
-                    // Add duplication
-                    sv_calls.add(supp_chr, primary_end+1, supp_start+1, SV_TYPE_DUP, ".", "GAPINNER_2", mtx_sv_calls);
+                    // // Add duplication
+                    // sv_calls.add(supp_chr, primary_end+1, supp_start+1, SV_TYPE_DUP, ".", "GAPINNER_2", mtx_sv_calls);
 
-                    // Add deletion
-                    sv_calls.add(supp_chr, primary_end+1, supp_start+1, SV_TYPE_DEL, ".", "GAPINNER_2", mtx_sv_calls);
+                    // Likely deletion
+                    // SNP CNV predictions will be used to classify the SV type.
+                    sv_calls.add(supp_chr, primary_end+1, supp_start+1, SVData::UNKNOWN, ".", "GAPINNER_B", mtx_sv_calls);
                 }
 
-                // Use the alignment ends as the SV endpoints (Possible large duplication)
+                // [TEST] Use the alignment ends as the SV endpoints
                 if (supp_end - primary_start >= this->min_sv_size) {
-                    // Add duplication
-                    sv_calls.add(supp_chr, primary_start+1, supp_end+1, SV_TYPE_DUP, ".", "GAPOUTER_2", mtx_sv_calls);
-                }
-
-                //std::cout << "REV GAP at " << supp_chr << ":" << gap_start << "-" << gap_end << std::endl;
-
-            } else {
-                // Overlap between alignments indicate a possible tandem duplication.
-                // 1=Supplementary first, 2=Primary first
-                // [1] [supp_start] [primary_start] [supp_end] [primary_end]
-                // [2] [primary_start] [supp_start] [primary_end] [supp_end]
-
-                // Identify scenario 1
-                if (supp_start < primary_start && supp_end > primary_start && supp_end < primary_end) {
-                    // [supp_start] [primary_start] [supp_end] [primary_end]
-
-                    // Use the alignment ends as the SV endpoints (Possible tandem duplication)
-                    if (primary_end - supp_start >= this->min_sv_size) {
-                        sv_calls.add(supp_chr, supp_start+1, primary_end+1, -1, ".", "OVERLAP_1", mtx_sv_calls);
-                    }
-
-                // Identify scenario 2
-                } else if (supp_start > primary_start && supp_start < primary_end && supp_end > primary_end) {
-                    // [primary_start] [supp_start] [primary_end] [supp_end]
-
-                    // Use the alignment ends as the SV endpoints (Possible tandem duplication)
-                    if (supp_end - primary_start >= this->min_sv_size) {
-                        sv_calls.add(supp_chr, primary_start+1, supp_end+1, -1, ".", "OVERLAP_2", mtx_sv_calls);
-                    }
+                    sv_calls.add(supp_chr, primary_start+1, supp_end+1, SVData::UNKNOWN, ".", "GAPOUTER_B", mtx_sv_calls);
                 }
             }
         }
@@ -334,7 +250,7 @@ void SVCaller::detectSVsFromCIGAR(bam_hdr_t* header, bam1_t* alignment, SVData& 
                 //"CIGARINS");
                 ref_pos = pos+1;
                 ref_end = ref_pos + op_len -1;
-                sv_calls.add(chr, ref_pos, ref_end, SV_TYPE_INS, ins_seq_str, "CIGARINS", mtx);
+                sv_calls.add(chr, ref_pos, ref_end, SVData::INS, ins_seq_str, "CIGARINS", mtx);
             }
 
         // Check if the CIGAR operation is a deletion
@@ -346,7 +262,7 @@ void SVCaller::detectSVsFromCIGAR(bam_hdr_t* header, bam1_t* alignment, SVData& 
                 // Add the deletion to the SV calls (1-based)
                 ref_pos = pos+1;
                 ref_end = ref_pos + op_len -1;
-                sv_calls.add(chr, ref_pos, ref_end, SV_TYPE_DEL, ".", "CIGARDEL", mtx);
+                sv_calls.add(chr, ref_pos, ref_end, SVData::DEL, ".", "CIGARDEL", mtx);
             }
 
         // Check if the CIGAR operation is a soft clip

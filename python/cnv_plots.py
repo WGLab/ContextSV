@@ -50,7 +50,13 @@ def run(vcf_file, cnv_data_file, output_path, region):
 
     # Filter the VCF file to the region using pandas, and make the chromosome
     # column a string.
-    vcf_data = pd.read_csv(vcf_file, sep="\t", comment="#", header=None, dtype={0: str})
+    log.info("Loading VCF data from %s", vcf_file)
+    try:
+        vcf_data = pd.read_csv(vcf_file, sep="\t", comment="#", header=None, dtype={0: str})
+    except pd.errors.EmptyDataError:
+        log.info("No variants found in %s.", vcf_file)
+        return
+    
     if start_position is not None and end_position is not None:
         vcf_data = vcf_data[(vcf_data[0] == chromosome) & (vcf_data[1] >= start_position) & (vcf_data[1] <= end_position)]
     else:
@@ -103,17 +109,36 @@ def run(vcf_file, cnv_data_file, output_path, region):
             if svtype == "INS" and get_info_field_value(info_field, "REPTYPE") == "DUP":
                 svtype = "DUP"
 
+            # Get the ALN field value (alignment type used to call the SV).
+            aln = get_info_field_value(info_field, "ALN")
+
+            # Skip the SV if SNP CNV data was not used to call it.
+            # Check if ALN contains "SNPCNV"
+            if "SNPCNV" in aln:
+                #log.info(aln)
+                log.info("Found CNV %s %s:%d-%d.", svtype, sv_data[0], sv_data[1], sv_data[1] + int(get_info_field_value(info_field, "SVLEN")) - 1)
+            else:
+                continue
+
             # Analyze the CNV if it is a DEL or DUP (=INS with INFO/REPTYE=DUP)
             if svtype in ("DEL", "DUP"):
 
                 # Get the read depth (DP) value.
                 read_depth = int(get_info_field_value(info_field, "DP"))
 
+                # # Skip the CNV if the read depth is less than 2.
+                # if read_depth < 2:
+                #     continue
+
                 # Get the start position.
                 start_position = int(sv_data[1])
 
                 # Get the SV length.
                 cnv_length = int(get_info_field_value(info_field, "SVLEN"))
+                log.info("CNV length: %d", cnv_length)
+
+                # Use absolute value of CNV length (deletions are negative).
+                cnv_length = abs(cnv_length)
 
                 # Get the end position using the start position and SV length.
                 end_position = start_position + cnv_length - 1
@@ -127,8 +152,16 @@ def run(vcf_file, cnv_data_file, output_path, region):
 
                 # Get the CNV state, log2 ratio, and BAF values for all SNPs in the
                 # plot range.
+                log.info("Getting SNPs in CNV %s %s:%d-%d.", svtype, chromosome, plot_start_position, plot_end_position)
                 sv_data = cnv_data[(cnv_data["position"] >= plot_start_position) & (cnv_data["position"] <= plot_end_position)]
                 
+                # If there are no SNPs in the plot range, skip the CNV.
+                if len(sv_data) == 0:
+                    log.info("No SNPs found in CNV %s %s:%d-%d.", svtype, chromosome, start_position, end_position)
+                    continue
+                else:
+                    log.info("Found %d SNPs in CNV %s %s:%d-%d.", len(sv_data), svtype, chromosome, start_position, end_position)
+
                 # Get the marker colors for the state sequence.
                 marker_colors = []
                 for state in sv_data["cnv_state"]:
@@ -216,7 +249,7 @@ def run(vcf_file, cnv_data_file, output_path, region):
 
                 # Set the figure title.
                 fig.update_layout(
-                    title_text = f"{svtype} (DP={read_depth}, LEN={cnv_length}bp) at {chromosome}:{start_position}-{end_position}",
+                    title_text = f"{svtype} (DP={read_depth}, LEN={cnv_length}bp) at {chromosome}:{start_position}-{end_position} [ALN={aln}]",
                 )
 
                 # Create a shaded rectangle for the CNV, layering it below the CNV

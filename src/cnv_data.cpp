@@ -43,18 +43,23 @@ int CNVData::getMostCommonCNV(std::string chr, int start, int end)
         }
     }
 
-    // Check if the SV region is mostly covered by CNV calls (at least 50%) and
-    // if the majority CNV type is an insertion or deletion
+    // Check if the SV region has SNPs with CNV calls covering at least 20% of
+    // the region
     int cnv_type = -1;
+    int sv_len = end - start + 1;
     if (total_count > 0) {
+    //if (total_count > 0 && (double) total_count / sv_len > 0.2) {
+
+        // Check if the SV region is mostly covered by CNV calls (at least 50%) and
+        // if the majority CNV type is an insertion or deletion
         if (dup_count > del_count && (double) dup_count / total_count > 0.5) {
             cnv_type = 1;
-            //std::cout << "CNV type is DUP, SVLEN=" << sv_len << std::endl;
+            std::cout << "CNV type is DUP, SVLEN=" << sv_len << std::endl;
         } else if (del_count > dup_count && (double) del_count / total_count > 0.5) {
             cnv_type = 0;
-            //std::cout << "CNV type is DEL, SVLEN=" << sv_len << std::endl;
+            std::cout << "CNV type is DEL, SVLEN=" << sv_len << std::endl;
         } else {
-            //std::cout << "CNV type is no call, SVLEN=" << sv_len << std::endl;
+            std::cout << "CNV type is no call, SVLEN=" << sv_len << std::endl;
         }
     }
 

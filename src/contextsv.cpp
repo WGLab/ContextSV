@@ -73,8 +73,10 @@ void ContextSV::labelCNVs(CNVData cnv_calls, SVData& sv_calls)
         int cnv_call = cnv_calls.getMostCommonCNV(chr, start_pos, end_pos);
 
         // Update the SV call's type if the CNV call is not unknown
-        if (cnv_call != -1) {
-            sv_calls.updateSVType(candidate, cnv_call);
+        if (cnv_call != SVData::UNKNOWN) {
+            sv_calls.updateSVType(candidate, cnv_call, "SNPCNV");
         }
     }
 }
+
+// TODO: Label unknown split-read SVs based on CIGAR string support

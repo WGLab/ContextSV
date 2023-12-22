@@ -8,7 +8,7 @@
 #include <thread>
 /// @endcond
 
-#define BUFFER_SIZE 1024
+#define BUFFER_SIZE 4096
 #define MIN_PFB 0.01  // Minimum SNP population allele frequency
 #define MAX_PFB 0.99  // Maximum SNP population allele frequency
 
@@ -508,15 +508,31 @@ void InputData::readChromosomeAFs(std::string chr, std::string filepath, std::mu
     // Load the allele frequency file and create the allele frequency map (position -> allele frequency)
     //std::cout << "Loading allele frequency file: " << filepath << std::endl;
     this->printMessage("Loading file: " + filepath, print_mtx);
-    char buffer[BUFFER_SIZE];
     int af_count = 0;
     int af_min_hit = 0;  // Number of positions with allele frequency below the minimum
     int af_max_hit = 0;  // Number of positions with allele frequency above the maximum
 
     // Use bcftools to read the VCF file and create the allele frequency map
-    std::string cmd = "bcftools query -f '%POS\t%AF\n' -i 'INFO/variant_type=\"snv\"' " + filepath;
+    // If a region is set, use the region
+    std::string cmd;
+    if (this->region == "")
+    {
+        cmd = "bcftools query -f '%POS\t%AF\n' -i 'INFO/variant_type=\"snv\"' " + filepath;
+    } else {
+        // Check if the region is in chr notation
+        std::string target_region = this->region;
+        if (target_region.find("chr") != std::string::npos)
+        {
+            // Remove the chr notation
+            target_region = target_region.substr(3, target_region.size() - 3);
+        }
+        cmd = "bcftools query -f '%POS\t%AF\n' -i 'INFO/variant_type=\"snv\"' -r " + target_region + " " + filepath;
+    }
+
+    std::cout << "Command: " << cmd << std::endl;
 
     // Open a pipe to read the output of the command
+    std::cout << "Opening pipe to read VCF file" << std::endl;
     FILE *pipe = popen(cmd.c_str(), "r");
     if (pipe == NULL)
     {
@@ -524,58 +540,106 @@ void InputData::readChromosomeAFs(std::string chr, std::string filepath, std::mu
         this->printError("Error: Could not open pipe to read VCF file", print_mtx);
         exit(1);
     }
+    std::cout << "Parsing AF values for chromosome " << chr << std::endl;
 
-    // Read the output of the command
+    // Create a PFB map for the chromosome
+    std::map<int, double> chr_pfb_map;
+
+    // Read the output of the command in a highly optimized manner
+    char buffer[BUFFER_SIZE];
+    std::string line;
+    std::istringstream ss;
+    std::string token;
+    //std::vector<std::string> pos_af;
     while (fgets(buffer, BUFFER_SIZE, pipe) != NULL)
     {
         // Remove the newline character
-        buffer[strcspn(buffer, "\n")] = 0;
-
-        // Split the line by tab (position, allele frequency)
-        std::istringstream ss(buffer);
-        std::string token;
-        std::vector<std::string> pos_af;
-
-        while (std::getline(ss, token, '\t'))
-        {
-            pos_af.push_back(token);
-        }
+        line = buffer;
+        line = line.substr(0, line.find_first_of("\r\n"));
 
         // Check if the line is valid
-        if (pos_af.size() == 2)
+        if (line != "")
         {
-            // Get the position and allele frequency
-            int pos = atoi(pos_af[0].c_str());
-            double af = atof(pos_af[1].c_str());
-
-            // Check if the allele frequency is within the valid range
-            if (af >= MIN_PFB && af <= MAX_PFB)
+            // Split the line by tab (position, allele frequency)
+            // std::istringstream ss(line);
+            // std::string token;
+            // std::vector<std::string> pos_af;
+            // ss.str(line);
+            // token.clear();
+            //pos_af.clear();
+            // Obtain the position and allele frequency
+            ss.str(line);
+            try
             {
-                // Add the position and allele frequency to the map
-                //this->pfb_map[chr][pos] = af;
-                this->addPopulationFrequency(chr, pos, af, pfb_mtx);
+                std::getline(ss, token, '\t');
+                int pos = std::stoi(token);
+                std::getline(ss, token, '\t');
+                double af = std::stod(token);
 
                 // Print the position and allele frequency from the map
-                //this->printMessage("Added " + chr + ":" + std::to_string(pos) + " = " + std::to_string(this->pfb_map[chr][pos]), print_mtx);
+                //std::cout << "Added " << chr << ":" << pos << " = " << af << std::endl;
+
+                // Check if the allele frequency is within the valid range
+                if (af >= MIN_PFB && af <= MAX_PFB)
+                {
+                    // Add the position and allele frequency to the map
+                    //this->pfb_map[chr][pos] = af;
+                    //this->addPopulationFrequency(chr, pos, af, pfb_mtx);
+                    chr_pfb_map[pos] = af;
+
+                    // Print the position and allele frequency from the map
+                    //this->printMessage("Added " + chr + ":" + std::to_string(pos) + " = " + std::to_string(this->pfb_map[chr][pos]), print_mtx);
+                }
+                else if (af < MIN_PFB)
+                {
+                    af_min_hit++;
+                    //this->pfb_map[chr][pos] = MIN_PFB;
+                    //this->addPopulationFrequency(chr, pos, MIN_PFB, pfb_mtx);
+                    chr_pfb_map[pos] = MIN_PFB;
+                }
+                else if (af > MAX_PFB)
+                {
+                    af_max_hit++;
+                    //this->pfb_map[chr][pos] = MAX_PFB;
+                    //this->addPopulationFrequency(chr, pos, MAX_PFB, pfb_mtx);
+                    chr_pfb_map[pos] = MAX_PFB;
+                }
+                af_count++;
             }
-            else if (af < MIN_PFB)
+            catch (const std::invalid_argument &ia)
             {
-                af_min_hit++;
-                //this->pfb_map[chr][pos] = MIN_PFB;
-                this->addPopulationFrequency(chr, pos, MIN_PFB, pfb_mtx);
+                //std::cerr << "Error: Could not parse line: " << line << std::endl;
+                // this->printError("Error: Could not parse line: " + line, print_mtx);
+                // exit(1);
+                // Continue if the line is invalid. Usually this is due to the
+                // allele frequency being empty '.' or 'NA'
             }
-            else if (af > MAX_PFB)
-            {
-                af_max_hit++;
-                //this->pfb_map[chr][pos] = MAX_PFB;
-                this->addPopulationFrequency(chr, pos, MAX_PFB, pfb_mtx);
-            }
-            af_count++;
+
+            // Clear the string stream
+            ss.clear();
+
+            // Clear the token
+            token.clear();
+
+            // Clear the line
+            line.clear();
         }
     }
 
     // Close the pipe
     pclose(pipe);
+    std::cout << "Loaded " << af_count << " positions" << std::endl;
+
+    // Check if the PFB map is empty
+    if (chr_pfb_map.size() == 0)
+    {
+        //std::cerr << "Error: No positions found for chromosome " << chr << std::endl;
+        this->printError("Error: No positions found for chromosome " + chr, print_mtx);
+        exit(1);
+    }
+
+    // Add the chromosome PFB map to the PFB map
+    this->addChromosomePopulationFrequency(chr, chr_pfb_map, pfb_mtx);
 
     // Print the number of positions found for the chromosome
     this->printMessage("Loaded " + std::to_string(this->pfb_map[chr].size()) + " positions for chromosome " + chr, print_mtx);
@@ -590,10 +654,10 @@ void InputData::readChromosomeAFs(std::string chr, std::string filepath, std::mu
     // std::cout << "Max. fixed: " << ((double) af_max_hit / (double) af_count) * 100 << "%" << std::endl;
 }
 
-void InputData::addPopulationFrequency(std::string chr, int pos, double pfb, std::mutex &mutex)
+void InputData::addChromosomePopulationFrequency(std::string chr, std::map<int, double> pfb_map, std::mutex &mutex)
 {
     std::lock_guard<std::mutex> lock(mutex);
-    this->pfb_map[chr][pos] = pfb;
+    this->pfb_map[chr] = pfb_map;
 }
 
 void InputData::printMessage(std::string message, std::mutex &mutex)

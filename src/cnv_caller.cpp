@@ -16,7 +16,7 @@
 #include <tuple>
 #include <iomanip>  // Progress bar
 
-#define BUFFER_SIZE 1024
+#define BUFFER_SIZE 4096
 #define MIN_PFB 0.01
 #define MAX_PFB 0.99
 /// @endcond

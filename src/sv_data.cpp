@@ -56,16 +56,14 @@ std::string SVData::getSequence(std::string chr, int64_t pos_start, int64_t pos_
     return this->ref_genome->query(chr, pos_start, pos_end);
 }
 
-void SVData::updateSVType(SVCandidate candidate, int sv_type)
+void SVData::updateSVType(SVCandidate candidate, int sv_type, std::string data_type)
 {
-    // Update the SV type for a given SV candidate
-    if (this->sv_calls.find(candidate) != this->sv_calls.end()) {
-        // Update the SV type
-        SVInfo& sv_info = this->sv_calls[candidate];
-        sv_info.sv_type = sv_type;
-    } else {
-        std::cerr << "Error: Unable to update SV type for SV candidate (" << std::get<0>(candidate) << ", " << std::get<1>(candidate) << ", " << std::get<2>(candidate) << ", " << std::get<3>(candidate) << ")" << std::endl;
-    }
+    // Update the SV type
+    SVInfo& sv_info = this->sv_calls[candidate];
+    sv_info.sv_type = sv_type;
+
+    // Update the alignment type used to call the SV
+    sv_info.data_type.insert(data_type);
 }
 
 void SVData::updateClippedBaseSupport(std::string chr, int64_t pos)
@@ -145,6 +143,8 @@ void SVData::saveToVCF(FASTAQuery& ref_genome, std::string output_dir)
     // Iterate over the SV calls
     std::cout << "Saving SV calls to " << output_vcf << "..." << std::endl;
     std::string sv_method = "CONTEXTSVv0.1";
+    int num_sv_calls = this->sv_calls.size();
+    int skip_count = 0;
     for (auto const& sv_call : this->sv_calls) {
 
         // Get the SV candidate and SV info
@@ -167,7 +167,10 @@ void SVData::saveToVCF(FASTAQuery& ref_genome, std::string output_dir)
         int64_t end = std::get<2>(candidate);
 
         // If the SV type is unknown, skip it
-        if (sv_type == -1) {
+        if (sv_type == UNKNOWN) {
+            //std::cerr << "Skipping SV call at " << chr << ":" << pos << "-" <<
+            //end << " because the SV type is unknown" << std::endl;
+            skip_count += 1;
             continue;
         }
     
@@ -177,7 +180,7 @@ void SVData::saveToVCF(FASTAQuery& ref_genome, std::string output_dir)
         std::string repeat_type = "NA";
 
         // Deletion
-        if (sv_type == 0) {
+        if (sv_type == DEL) {
             // Get the reference allele from the reference genome as well as the
             // previous base preceding the SV
             int64_t preceding_pos = (int64_t) std::max(1, (int) pos-1);  // Make sure the position is not negative
@@ -195,7 +198,7 @@ void SVData::saveToVCF(FASTAQuery& ref_genome, std::string output_dir)
             repeat_type = "CONTRAC";  // Deletion
         
         // Duplications and insertions
-        } else if (sv_type == 1 || sv_type == 3) {
+        } else if (sv_type == INS || sv_type == DUP) {
             // Use the preceding base as the reference allele
             int64_t preceding_pos = (int64_t) std::max(1, (int) pos-1);  // Make sure the position is not negative
             ref_allele = ref_genome.query(chr, preceding_pos, preceding_pos);
@@ -213,7 +216,7 @@ void SVData::saveToVCF(FASTAQuery& ref_genome, std::string output_dir)
             // query to reference coordinates
             end = pos;
 
-            if (sv_type == 1) {
+            if (sv_type == DUP) {
                 repeat_type = "DUP";  // Duplication
             }
         }
@@ -242,6 +245,9 @@ void SVData::saveToVCF(FASTAQuery& ref_genome, std::string output_dir)
         vcf_writer.writeRecord(chr, pos, ".", ref_allele, alt_allele, ".", ".", info_str, format_str, samples);
         //output_stream << chr << "\t" << pos << "\t" << "." << "\t" << ref_allele << "\t" << alt_allele << "\t" << "." << "\t" << "." << "\t" << info_str << "\t" << format_str << "\t" << sample_str << std::endl;
     }
+
+    // Print the number of SV calls skipped
+    std::cout << "Skipped " << skip_count << " of " << num_sv_calls << " SV calls because the SV type is unknown" << std::endl;
 
     // Close the output stream
     vcf_writer.close();
