@@ -14,6 +14,11 @@ using SNPToCNVMap = std::map<SNPLocation,  int>;
 
 class CNVData {
     private:
+        // Define constants for CNV types
+        static const int DEL = 0;  // Deletion
+        static const int DUP = 1;  // Duplication
+        static const int NEUT = 2;  // Copy neutral
+        static const int UNKNOWN = -1;  // Unknown
         SNPToCNVMap cnv_calls;  // Map of SNP positions to CNV types
 
     public:

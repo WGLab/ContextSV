@@ -78,5 +78,3 @@ void ContextSV::labelCNVs(CNVData cnv_calls, SVData& sv_calls)
         }
     }
 }
-
-// TODO: Label unknown split-read SVs based on CIGAR string support

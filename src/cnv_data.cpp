@@ -23,15 +23,10 @@ int CNVData::getMostCommonCNV(std::string chr, int start, int end)
     int no_call_count = 0;
     int total_count = 0;
     
-    //std::cout << "Checking for CNV calls in " << chr << ":" << start << "-" << end << " (SVLEN=" << sv_len << ")" << std::endl;
-
+    // Count the number of CNV calls within the SV region (DEL vs. DUP vs. NEUT)
     for (int pos = start; pos <= end; pos++) {
         SNPLocation key(chr, pos);
-        //std::cout << "Checking for CNV call at " << chr << ":" << pos <<
-        //std::endl;
-        
         if (this->cnv_calls.find(key) != this->cnv_calls.end()) {
-            //std::cout << "State = " << this->cnv_calls[key] << std::endl;
             if (this->cnv_calls[key] == 5 || this->cnv_calls[key] == 6) {
                 dup_count++;
             } else if (this->cnv_calls[key] == 1 || this->cnv_calls[key] == 2) {
@@ -45,21 +40,21 @@ int CNVData::getMostCommonCNV(std::string chr, int start, int end)
 
     // Check if the SV region has SNPs with CNV calls covering at least 20% of
     // the region
-    int cnv_type = -1;
-    int sv_len = end - start + 1;
+    int cnv_type = CNVData::UNKNOWN;
+    // int sv_len = end - start + 1;
     if (total_count > 0) {
     //if (total_count > 0 && (double) total_count / sv_len > 0.2) {
 
         // Check if the SV region is mostly covered by CNV calls (at least 50%) and
         // if the majority CNV type is an insertion or deletion
         if (dup_count > del_count && (double) dup_count / total_count > 0.5) {
-            cnv_type = 1;
-            std::cout << "CNV type is DUP, SVLEN=" << sv_len << std::endl;
+            cnv_type = CNVData::DUP;
+            //std::cout << "CNV type is DUP, SVLEN=" << sv_len << std::endl;
         } else if (del_count > dup_count && (double) del_count / total_count > 0.5) {
-            cnv_type = 0;
-            std::cout << "CNV type is DEL, SVLEN=" << sv_len << std::endl;
+            cnv_type = CNVData::DEL;
+            //std::cout << "CNV type is DEL, SVLEN=" << sv_len << std::endl;
         } else {
-            std::cout << "CNV type is no call, SVLEN=" << sv_len << std::endl;
+            //std::cout << "CNV type is no call, SVLEN=" << sv_len << std::endl;
         }
     }
 

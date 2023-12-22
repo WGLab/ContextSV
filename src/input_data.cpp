@@ -489,24 +489,26 @@ void InputData::readChromosomeAFs(std::string chr, std::string filepath, std::mu
     fclose(fp);
     this->printMessage("Complete.", print_mtx);
 
+    // Run bcftools index on the VCF file to create the index file if it does
+    // not exist
+    this->printMessage("Checking that allele frequency index file exists: " + filepath + ".csi", print_mtx);
+    std::string index_cmd = "bcftools index -f " + filepath;
+    system(index_cmd.c_str());
+    this->printMessage("Complete.", print_mtx);
+
     // Check if the chromosome is in the reference genome and return it with the
     // reference notation
     this->printMessage("Checking that chromosome " + chr + " is in reference genome...", print_mtx);
-    //std::cout << "Checking that chromosome " << chr << " is in reference genome..." << std::endl;
     std::string chr_check = this->fasta_query.hasChromosome(chr);
     this->printMessage("Complete.", print_mtx);
-    //std::cout << "Complete." << std::endl;
     if (chr_check == "")
     {
-        //std::cerr << "Error: Chromosome " << chr << " not in reference genome"
-        //<< std::endl;
         this->printError("Error: Chromosome " + chr + " not in reference genome", print_mtx);
         exit(1);
     }
     chr = chr_check;  // Update the chromosome with the reference notation
 
     // Load the allele frequency file and create the allele frequency map (position -> allele frequency)
-    //std::cout << "Loading allele frequency file: " << filepath << std::endl;
     this->printMessage("Loading file: " + filepath, print_mtx);
     int af_count = 0;
     int af_min_hit = 0;  // Number of positions with allele frequency below the minimum
@@ -536,7 +538,6 @@ void InputData::readChromosomeAFs(std::string chr, std::string filepath, std::mu
     FILE *pipe = popen(cmd.c_str(), "r");
     if (pipe == NULL)
     {
-        //std::cerr << "Error: Could not open pipe to read VCF file" << std::endl;
         this->printError("Error: Could not open pipe to read VCF file", print_mtx);
         exit(1);
     }
@@ -550,7 +551,6 @@ void InputData::readChromosomeAFs(std::string chr, std::string filepath, std::mu
     std::string line;
     std::istringstream ss;
     std::string token;
-    //std::vector<std::string> pos_af;
     while (fgets(buffer, BUFFER_SIZE, pipe) != NULL)
     {
         // Remove the newline character
@@ -561,13 +561,6 @@ void InputData::readChromosomeAFs(std::string chr, std::string filepath, std::mu
         if (line != "")
         {
             // Split the line by tab (position, allele frequency)
-            // std::istringstream ss(line);
-            // std::string token;
-            // std::vector<std::string> pos_af;
-            // ss.str(line);
-            // token.clear();
-            //pos_af.clear();
-            // Obtain the position and allele frequency
             ss.str(line);
             try
             {
@@ -576,52 +569,33 @@ void InputData::readChromosomeAFs(std::string chr, std::string filepath, std::mu
                 std::getline(ss, token, '\t');
                 double af = std::stod(token);
 
-                // Print the position and allele frequency from the map
-                //std::cout << "Added " << chr << ":" << pos << " = " << af << std::endl;
-
                 // Check if the allele frequency is within the valid range
                 if (af >= MIN_PFB && af <= MAX_PFB)
                 {
                     // Add the position and allele frequency to the map
-                    //this->pfb_map[chr][pos] = af;
-                    //this->addPopulationFrequency(chr, pos, af, pfb_mtx);
                     chr_pfb_map[pos] = af;
-
-                    // Print the position and allele frequency from the map
-                    //this->printMessage("Added " + chr + ":" + std::to_string(pos) + " = " + std::to_string(this->pfb_map[chr][pos]), print_mtx);
                 }
                 else if (af < MIN_PFB)
                 {
                     af_min_hit++;
-                    //this->pfb_map[chr][pos] = MIN_PFB;
-                    //this->addPopulationFrequency(chr, pos, MIN_PFB, pfb_mtx);
                     chr_pfb_map[pos] = MIN_PFB;
                 }
                 else if (af > MAX_PFB)
                 {
                     af_max_hit++;
-                    //this->pfb_map[chr][pos] = MAX_PFB;
-                    //this->addPopulationFrequency(chr, pos, MAX_PFB, pfb_mtx);
                     chr_pfb_map[pos] = MAX_PFB;
                 }
                 af_count++;
             }
             catch (const std::invalid_argument &ia)
             {
-                //std::cerr << "Error: Could not parse line: " << line << std::endl;
-                // this->printError("Error: Could not parse line: " + line, print_mtx);
-                // exit(1);
                 // Continue if the line is invalid. Usually this is due to the
                 // allele frequency being empty '.' or 'NA'
             }
 
-            // Clear the string stream
+            // Clear the objects
             ss.clear();
-
-            // Clear the token
             token.clear();
-
-            // Clear the line
             line.clear();
         }
     }
@@ -633,7 +607,6 @@ void InputData::readChromosomeAFs(std::string chr, std::string filepath, std::mu
     // Check if the PFB map is empty
     if (chr_pfb_map.size() == 0)
     {
-        //std::cerr << "Error: No positions found for chromosome " << chr << std::endl;
         this->printError("Error: No positions found for chromosome " + chr, print_mtx);
         exit(1);
     }
@@ -643,7 +616,6 @@ void InputData::readChromosomeAFs(std::string chr, std::string filepath, std::mu
 
     // Print the number of positions found for the chromosome
     this->printMessage("Loaded " + std::to_string(this->pfb_map[chr].size()) + " positions for chromosome " + chr, print_mtx);
-    //std::cout << "Loaded " << this->pfb_map[chr].size() << " positions for chromosome " << chr << std::endl;
 
     // // Log the percentage of PFB values that were fixed
     // std::cout << "AF value count: " << af_count << std::endl;  // DEBUG
