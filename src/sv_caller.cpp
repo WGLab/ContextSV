@@ -66,7 +66,7 @@ void SVCaller::detectSVsFromRegion(std::string region, SVData &sv_calls, samFile
                 primary_alignments[qname].push_back(alignment);
             
                 // Call SVs directly from the CIGAR string
-                if (!this->input_data->getDisableCIGAR()) {
+                if (this->input_data->getDisableCIGAR() == false) {
 
                     //std::cout << "Calling SVs from CIGAR string" << std::endl;
                     this->detectSVsFromCIGAR(bamHdr, bam1, sv_calls, mtx_sv_calls);
@@ -245,12 +245,31 @@ void SVCaller::detectSVsFromCIGAR(bam_hdr_t* header, bam1_t* alignment, SVData& 
                     ins_seq_str += seq_nt16_str[bam_seqi(seq_ptr, query_pos + j)];
                 }
 
-                // Add the insertion to the SV calls (1-based)
-                //sv_calls.add(chr, pos, pos + op_len, 3, ins_seq_str,
-                //"CIGARINS");
+                // To determine whether the insertion is a duplication, check
+                // for sequence identity between the insertion and the
+                // reference genome (> 90% identity is a duplication)
+                // Get the reference sequence
+                std::string ref_seq_str = this->input_data->getRefGenome().query(chr, pos, pos + op_len - 1);
+
+                // Calculate the sequence identity
+                int num_matches = 0;
+                for (int j = 0; j < op_len; j++) {
+                    if (ins_seq_str[j] == ref_seq_str[j]) {
+                        num_matches++;
+                    }
+                }
+                float seq_identity = (float)num_matches / (float)op_len;
+
+                // Add to SV calls (1-based) with the appropriate SV type
                 ref_pos = pos+1;
                 ref_end = ref_pos + op_len -1;
-                sv_calls.add(chr, ref_pos, ref_end, SVData::INS, ins_seq_str, "CIGARINS", mtx);
+                if (seq_identity > 0.9) {
+                    // Likely duplication
+                    sv_calls.add(chr, ref_pos, ref_end, SVData::DUP, ins_seq_str, "CIGARDUP", mtx);
+                } else {
+                    // Likely insertion
+                    sv_calls.add(chr, ref_pos, ref_end, SVData::INS, ins_seq_str, "CIGARINS", mtx);
+                }
             }
 
         // Check if the CIGAR operation is a deletion

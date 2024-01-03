@@ -19,31 +19,44 @@ ContextSV::ContextSV(InputData& input_data)
 // Entry point
 int ContextSV::run()
 {
-    // Check if a file with CNV data was provided
-    CNVData cnv_calls;
-    if (this->input_data->getCNVFilepath() != "") {
-        // Load CNV data
-        std::cout << "Loading CNV data..." << std::endl;
-        cnv_calls.loadFromFile(this->input_data->getCNVFilepath());
-    } else {
-        // Call CNVs at SNP positions
-        std::cout << "Calling CNVs..." << std::endl;
-        CNVCaller cnv_caller(*this->input_data);
-        cnv_caller.run(cnv_calls);
-    }
-
     // Get the reference genome
     FASTAQuery ref_genome = this->input_data->getRefGenome();
 
-    // Call SVs from long read alignments and CNV calls
+    // Check if SNP-based CNV calling is enabled
+    if (this->input_data->getDisableSNPCNV() == false) {
+
+        // Check if a SNP file was provided
+        if (this->input_data->getSNPFilepath() == "") {
+            std::cerr << "Error: SNP file not provided" << std::endl;
+            return 1;
+        }
+    }
+
+    // Call SVs from long read alignments
     std::cout << "Calling SVs..." << std::endl;
     SVData sv_calls(ref_genome);
     SVCaller sv_caller(*this->input_data);
     sv_caller.run(sv_calls);
 
-    // Classify SVs based on CNV calls
-    std::cout << "Labeling CNVs..." << std::endl;
-    this->labelCNVs(cnv_calls, sv_calls);
+    // Classify SVs based on SNP CNV predictions
+    if (this->input_data->getDisableSNPCNV() == false) {
+
+        // Check if a file with CNV data was provided
+        CNVData cnv_calls;
+        if (this->input_data->getCNVFilepath() != "") {
+            // Load CNV data
+            std::cout << "Loading CNV data..." << std::endl;
+            cnv_calls.loadFromFile(this->input_data->getCNVFilepath());
+        } else {
+            // Call CNVs at SNP positions
+            std::cout << "Calling CNVs..." << std::endl;
+            CNVCaller cnv_caller(*this->input_data);
+            cnv_caller.run(cnv_calls);
+        }
+
+        std::cout << "Labeling CNVs from SNP predictions..." << std::endl;
+        this->labelCNVs(cnv_calls, sv_calls);
+    }
 
     // Write SV calls to file
     std::cout << "Writing SV calls to file..." << std::endl;

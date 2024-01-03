@@ -108,11 +108,19 @@ def main():
         required=False
     )
 
-    # Turn off CIGAR string SV detection. This is for debugging purposes (speeds
-    # up the program).
+    # Turn off CIGAR string SV detection (split-read only)
     parser.add_argument(
         "--disable-cigar",
         help="Turn off CIGAR string SV detection.",
+        required=False,
+        action="store_true",
+        default=False
+    )
+
+    # Turn off SNP-based CNV predictions for SV classification.
+    parser.add_argument(
+        "--disable-snp-cnv",
+        help="Turn off SNP-based CNV predictions.",
         required=False,
         action="store_true",
         default=False
@@ -176,9 +184,9 @@ def main():
             log.error("Please provide the reference genome.")
             arg_error = True
 
-        if (args.snps is None):
-            log.error("Please provide the SNPs file.")
-            arg_error = True
+        # if (args.snps is None):
+        #     log.error("Please provide the SNPs file.")
+        #     arg_error = True
 
         # Exit if there are any errors.
         if (arg_error):
@@ -214,6 +222,7 @@ def main():
         input_data.setHMMFilepath(args.hmm)
         input_data.setOutputDir(args.output)
         input_data.setDisableCIGAR(args.disable_cigar)
+        input_data.setDisableSNPCNV(args.disable_snp_cnv)
         input_data.setCNVFilepath(args.cnv)
 
         # Run the analysis.

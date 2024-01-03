@@ -2,9 +2,11 @@
 
 /// @cond
 #include <stdio.h>
-#include <string.h>
+#include <string>
 #include <iostream>
 /// @endcond
+
+#define BUFFER_SIZE 4096
 
 // Print a progress bar
 void printProgress(int progress, int total)
@@ -33,4 +35,47 @@ void printProgress(int progress, int total)
     {
         printf("\n");
     }
+}
+
+// Run bcftools to determine the chr notation of a VCF file
+bool isChrNotation(std::string vcf_filepath)
+{
+    // Create the command to extract the first line and first column of the VCF containing the chromosome
+    std::string command = "bcftools query -f '%CHROM\\n' " + vcf_filepath + " | head -n 1";
+
+    // Open the pipe
+    std::cout << "Running command: " << command << std::endl;
+    FILE* pipe = popen(command.c_str(), "r");
+    if (pipe == NULL)
+    {
+        std::cerr << "Error: could not open pipe" << std::endl;
+        return false;
+    }
+    std::cout << "Done." << std::endl;
+
+    // Read the first line
+    char buffer[BUFFER_SIZE];
+    std::cout << "Reading from pipe..." << std::endl;
+    if (!fgets(buffer, BUFFER_SIZE, pipe))
+    {
+        std::cerr << "Error: could not read from pipe" << std::endl;
+        return false;
+    }
+    std::cout << "Done." << std::endl;
+
+    // Check if the first line contains "chr" using std::string::find
+    bool is_chr_notation = false;
+    std::string line(buffer);
+    std::cout << "Line: " << line << std::endl;
+    if (line.find("chr") != std::string::npos)
+    {
+        is_chr_notation = true;
+    }
+    
+    // Close the pipe
+    std::cout << "Closing pipe..." << std::endl;
+    pclose(pipe);
+    std::cout << "Done." << std::endl;
+
+    return is_chr_notation;
 }

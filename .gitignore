@@ -69,4 +69,5 @@ linktoscripts
 
 # Population allele frequency filepaths
 data/gnomadv2_filepaths.txt
+data/gnomadv3_filepaths.txt
 data/gnomadv4_filepaths.txt

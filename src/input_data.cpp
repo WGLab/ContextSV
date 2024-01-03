@@ -6,6 +6,8 @@
 #include <iostream>
 #include <sstream>
 #include <thread>
+
+#include "utils.h"
 /// @endcond
 
 #define BUFFER_SIZE 4096
@@ -30,6 +32,8 @@ InputData::InputData()
     this->thread_count = 1;
     this->hmm_filepath = "data/wgs.hmm";
     this->whole_genome = true;
+    this->disable_cigar = false;
+    this->disable_snp_cnv = false;
 }
 
 std::string InputData::getShortReadBam()
@@ -453,6 +457,16 @@ bool InputData::getDisableCIGAR()
     return this->disable_cigar;
 }
 
+void InputData::setDisableSNPCNV(bool disable_snp_cnv)
+{
+    this->disable_snp_cnv = disable_snp_cnv;
+}
+
+bool InputData::getDisableSNPCNV()
+{
+    return this->disable_snp_cnv;
+}
+
 void InputData::setCNVFilepath(std::string filepath)
 {
     this->cnv_filepath = filepath;
@@ -521,12 +535,20 @@ void InputData::readChromosomeAFs(std::string chr, std::string filepath, std::mu
     {
         cmd = "bcftools query -f '%POS\t%AF\n' -i 'INFO/variant_type=\"snv\"' " + filepath;
     } else {
-        // Check if the region is in chr notation
+        // Determine if the VCF file is in chr notation
+        bool chr_notation = isChrNotation(filepath);
+
+        // Fix the region's notation if necessary
         std::string target_region = this->region;
-        if (target_region.find("chr") != std::string::npos)
+        if (chr_notation && this->region.find("chr") == std::string::npos)
+        {
+            // Add the chr notation
+            target_region = "chr" + this->region;
+        }
+        else if (!chr_notation && this->region.find("chr") != std::string::npos)
         {
             // Remove the chr notation
-            target_region = target_region.substr(3, target_region.size() - 3);
+            target_region = this->region.substr(3, this->region.size() - 3);
         }
         cmd = "bcftools query -f '%POS\t%AF\n' -i 'INFO/variant_type=\"snv\"' -r " + target_region + " " + filepath;
     }

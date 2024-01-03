@@ -77,6 +77,11 @@ class InputData {
         void setDisableCIGAR(bool disable_cigar);
         bool getDisableCIGAR();
 
+        // Disable SNP-based CNV calling. This is useful for calling SVs on
+        // assemblies since alignment calling is sufficient.
+        void setDisableSNPCNV(bool disable_snp_cnv);
+        bool getDisableSNPCNV();
+
         // Set the filepath to the TSV file with the CNV predictions.
         void setCNVFilepath(std::string filepath);
         std::string getCNVFilepath();
@@ -117,6 +122,7 @@ class InputData {
         int thread_count;
         std::string hmm_filepath;
         bool disable_cigar;
+        bool disable_snp_cnv;
         std::string cnv_filepath;
         bool whole_genome;  // True if the entire genome is being analyzed
 };
