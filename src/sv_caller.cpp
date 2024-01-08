@@ -38,7 +38,7 @@ void SVCaller::detectSVsFromRegion(std::string region, SVData &sv_calls, samFile
     int num_alignments = 0;
     QueryMap primary_alignments;  // TODO: Add depth to primary alignments
     QueryMap supplementary_alignments;
-    std::cout << "Reading alignments..." << std::endl;
+    //std::cout << "Reading alignments..." << std::endl;
     while (readNextAlignment(fp_in, itr, bam1, mtx_bam) >= 0) {
 
         // Skip secondary and unmapped alignments
@@ -90,17 +90,17 @@ void SVCaller::detectSVsFromRegion(std::string region, SVData &sv_calls, samFile
         num_alignments++;
 
         // Print the number of alignments processed every 10 thousand
-        if (num_alignments % 10000 == 0) {
-            std::cout << num_alignments << " alignments processed" << std::endl;
-        }
+        // if (num_alignments % 10000 == 0) {
+        //     std::cout << num_alignments << " alignments processed" << std::endl;
+        // }
     }
     
     // Print the number of alignments processed
-    std::cout << num_alignments << " alignments processed" << std::endl;
+    //std::cout << num_alignments << " alignments processed" << std::endl;
 
     // Loop through the map of primary alignments by QNAME and find gaps and
     // overlaps from supplementary alignments
-    std::cout << "Running split read analysis..." << std::endl;
+    //std::cout << "Running split read analysis..." << std::endl;
     for (const auto& entry : primary_alignments) {
 
         // Get the QNAME
@@ -127,7 +127,7 @@ void SVCaller::detectSVsFromRegion(std::string region, SVData &sv_calls, samFile
             // for now (TODO: Use for identifying trans-chromosomal SVs such as
             // translocations)
             if (primary_chr != supp_chr) {
-                std::cout << "Supplementary alignment on different chromosome" << std::endl;
+                //std::cout << "Supplementary alignment on different chromosome" << std::endl;
                 continue;
             }
 
@@ -184,7 +184,7 @@ void SVCaller::detectSVsFromRegion(std::string region, SVData &sv_calls, samFile
     bam_destroy1(bam1);
 
     // Print the number of SV calls
-    std::cout << sv_calls.size() << " SV calls from " << region << std::endl;
+    //std::cout << sv_calls.size() << " SV calls from " << region << std::endl;
 }
 
 SVCaller::SVCaller(InputData &input_data)
@@ -259,6 +259,22 @@ void SVCaller::detectSVsFromCIGAR(bam_hdr_t* header, bam1_t* alignment, SVData& 
                     }
                 }
                 float seq_identity = (float)num_matches / (float)op_len;
+
+                // Also calculate the sequence identity of the upstream
+                // reference sequence
+                std::string ref_seq_str_up = this->input_data->getRefGenome().query(chr, pos - op_len, pos - 1);
+                int num_matches_up = 0;
+                for (int j = 0; j < op_len; j++) {
+                    if (ins_seq_str[j] == ref_seq_str_up[j]) {
+                        num_matches_up++;
+                    }
+                }
+                float seq_identity_up = (float)num_matches_up / (float)op_len;
+
+                // Use the higher sequence identity
+                if (seq_identity_up > seq_identity) {
+                    seq_identity = seq_identity_up;
+                }
 
                 // Add to SV calls (1-based) with the appropriate SV type
                 ref_pos = pos+1;
@@ -354,17 +370,17 @@ SVData SVCaller::detectSVsFromSplitReads(SVData& sv_calls)
     for (const auto& region : regions) {
 
         // Create a thread for each region, calling detectSVsFromRegion
-        std::cout << "Detecting SVs in " << region << std::endl;
-        std::cout << "Creating thread" << std::endl;
+        std::cout << "Creating thread for region " << region << std::endl;
         std::thread t(&SVCaller::detectSVsFromRegion, this, region, std::ref(sv_calls), fp_in, bamHdr, idx, std::ref(this->mtx_sv_calls), std::ref(this->mtx_bam));
         threads.push_back(std::move(t));
     }
 
     // Join the threads
+    std::cout << "Joining threads..." << std::endl;
     for (auto& t : threads) {
         t.join();
     }
-    std::cout << "Joined threads" << std::endl;
+    std::cout << "Complete." << std::endl;
 
     // Close the BAM file
     sam_close(fp_in);
@@ -376,7 +392,7 @@ SVData SVCaller::detectSVsFromSplitReads(SVData& sv_calls)
     hts_idx_destroy(idx);
 
     // Print the number of SV calls
-    std::cout << sv_calls.size() << " SV calls" << std::endl;
+    //std::cout << sv_calls.size() << " total SV calls" << std::endl;
 
     // Return the SV calls
     return sv_calls;

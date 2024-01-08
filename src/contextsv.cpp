@@ -22,23 +22,14 @@ int ContextSV::run()
     // Get the reference genome
     FASTAQuery ref_genome = this->input_data->getRefGenome();
 
-    // Check if SNP-based CNV calling is enabled
-    if (this->input_data->getDisableSNPCNV() == false) {
-
-        // Check if a SNP file was provided
-        if (this->input_data->getSNPFilepath() == "") {
-            std::cerr << "Error: SNP file not provided" << std::endl;
-            return 1;
-        }
-    }
-
     // Call SVs from long read alignments
     std::cout << "Calling SVs..." << std::endl;
     SVData sv_calls(ref_genome);
     SVCaller sv_caller(*this->input_data);
     sv_caller.run(sv_calls);
+    std::cout << "Found " << sv_calls.size() << " SVs" << std::endl;
 
-    // Classify SVs based on SNP CNV predictions
+    // Classify SVs based on SNP CNV predictions if enabled
     if (this->input_data->getDisableSNPCNV() == false) {
 
         // Check if a file with CNV data was provided

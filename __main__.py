@@ -29,8 +29,8 @@ def main():
     # Add common arguments.
     parser.add_argument(
         "-r", "--region",
-        help="The region to analyze.",
-        required=True
+        help="The region to analyze. If not provided, the entire genome will be analyzed.",
+        required=False,
     )
 
     parser.add_argument(
@@ -137,11 +137,6 @@ def main():
     # Get the command line arguments.
     args = parser.parse_args()
 
-    # Remove commas or spaces from the region.
-    region = args.region
-    region = region.replace(",", "")
-    region = region.replace(" ", "")
-
     # Determine the selected program mode (SV detection or CNV plots).
     if (args.vcf is not None):
         # Run SV analysis mode.
@@ -172,10 +167,6 @@ def main():
 
         # Ensure BAM, reference, and SNPs files are provided.
         arg_error = False
-        if (args.short_read is None):
-            log.error("Please provide the short read alignment file (BAM).")
-            arg_error = True
-
         if (args.long_read is None):
             log.error("Please provide the long read alignment file (BAM).")
             arg_error = True
@@ -184,9 +175,21 @@ def main():
             log.error("Please provide the reference genome.")
             arg_error = True
 
-        # if (args.snps is None):
-        #     log.error("Please provide the SNPs file.")
-        #     arg_error = True
+        # Short read alignment file is optional. Use the long read alignment
+        # file if it is not provided.
+        if (args.short_read is None):
+            log.warning("Short read alignment file not provided. Using long read alignment file in its place.")
+            args.short_read = args.long_read
+
+        # SNPs file is required unless SNP-based CNV predictions are disabled.
+        if (args.snps is None and not args.disable_snp_cnv):
+            log.error("Please provide the SNPs file.")
+            arg_error = True
+
+        # PFB file is required unless SNP-based CNV predictions are disabled.
+        if (args.pfb is None and not args.disable_snp_cnv):
+            log.error("Please provide the PFB file.")
+            arg_error = True
 
         # Exit if there are any errors.
         if (arg_error):
@@ -197,7 +200,6 @@ def main():
         for key, value in vars(args).items():
             if value is None:
                 setattr(args, key, "")
-
             else:
                 log.info("Setting %s to %s", key, value)
         
@@ -231,17 +233,19 @@ def main():
         # Determine the data paths for downstream analysis.
         vcf_path = os.path.join(args.output, "sv_calls.vcf")
         output_dir = args.output
+        region = args.region
 
         if (args.cnv == ""):
             cnv_data_path = os.path.join(args.output, "cnv_data.tsv")
         else:
             cnv_data_path = args.cnv
 
-    # Run the python-based analysis.
-    log.info("Running python-based analysis...")
-    cnv_plots.run(vcf_path, cnv_data_path, output_dir, region)
-    log.info("Done.")
+    # Generate python-based CNV plots if SNP-based CNV predictions are enabled.
+    if (not args.disable_snp_cnv):
+        log.info("Running python-based analysis...")
+        cnv_plots.run(vcf_path, cnv_data_path, output_dir, region)
 
+    log.info("Done.")
 
 if __name__ == '__main__':
 

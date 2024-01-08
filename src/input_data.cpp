@@ -506,9 +506,17 @@ void InputData::readChromosomeAFs(std::string chr, std::string filepath, std::mu
     // Run bcftools index on the VCF file to create the index file if it does
     // not exist
     this->printMessage("Checking that allele frequency index file exists: " + filepath + ".csi", print_mtx);
-    std::string index_cmd = "bcftools index -f " + filepath;
-    system(index_cmd.c_str());
-    this->printMessage("Complete.", print_mtx);
+    FILE *index_fp = fopen((filepath + ".csi").c_str(), "r");
+    if (index_fp == NULL)
+    {
+        this->printMessage("Index file does not exist. Creating index file...", print_mtx);
+        fclose(index_fp);
+
+        // Create the index file
+        std::string index_cmd = "bcftools index -f " + filepath;
+        system(index_cmd.c_str());
+        this->printMessage("Complete.", print_mtx);
+    }
 
     // Check if the chromosome is in the reference genome and return it with the
     // reference notation
@@ -624,7 +632,6 @@ void InputData::readChromosomeAFs(std::string chr, std::string filepath, std::mu
 
     // Close the pipe
     pclose(pipe);
-    std::cout << "Loaded " << af_count << " positions" << std::endl;
 
     // Check if the PFB map is empty
     if (chr_pfb_map.size() == 0)
