@@ -140,16 +140,12 @@ void SVCaller::detectSVsFromRegion(std::string region, SVData &sv_calls, samFile
                 // Gap with supplementary before primary:
                 // [supp_start] [supp_end] -- [primary_start] [primary_end]
 
-                // Use the gap ends as the SV endpoints (Possible insertion
-                // (dup) or deletion)
+                // Use the gap ends as the SV endpoints
                 if (primary_start - supp_end >= this->min_sv_size) {
-
-                    // Likely deletion
-                    // SNP CNV predictions will be used to classify the SV type.
                     sv_calls.add(supp_chr, supp_end+1, primary_start+1, SVData::UNKNOWN, ".", "GAPINNER_A", mtx_sv_calls);
                 }
 
-                // [TEST] Use the alignment ends as the SV endpoints
+                // ALso use the alignment ends as the SV endpoints
                 if (primary_end - supp_start >= this->min_sv_size) {
                     sv_calls.add(supp_chr, supp_start+1, primary_end+1, SVData::UNKNOWN, ".", "GAPOUTER_A", mtx_sv_calls);
                 }
@@ -159,17 +155,12 @@ void SVCaller::detectSVsFromRegion(std::string region, SVData &sv_calls, samFile
                 // Gap with supplementary after primary:
                 // [primary_start] [primary_end] -- [supp_start] [supp_end]
 
-                // Use the gap ends as the SV endpoints (Possible deletion)
+                // Use the gap ends as the SV endpoints
                 if (supp_start - primary_end >= this->min_sv_size) {
-                    // // Add duplication
-                    // sv_calls.add(supp_chr, primary_end+1, supp_start+1, SV_TYPE_DUP, ".", "GAPINNER_2", mtx_sv_calls);
-
-                    // Likely deletion
-                    // SNP CNV predictions will be used to classify the SV type.
                     sv_calls.add(supp_chr, primary_end+1, supp_start+1, SVData::UNKNOWN, ".", "GAPINNER_B", mtx_sv_calls);
                 }
 
-                // [TEST] Use the alignment ends as the SV endpoints
+                // Also use the alignment ends as the SV endpoints
                 if (supp_end - primary_start >= this->min_sv_size) {
                     sv_calls.add(supp_chr, primary_start+1, supp_end+1, SVData::UNKNOWN, ".", "GAPOUTER_B", mtx_sv_calls);
                 }
@@ -247,7 +238,8 @@ void SVCaller::detectSVsFromCIGAR(bam_hdr_t* header, bam1_t* alignment, SVData& 
 
                 // To determine whether the insertion is a duplication, check
                 // for sequence identity between the insertion and the
-                // reference genome (> 90% identity is a duplication)
+                // reference genome (> 90% identity is likely a duplication).
+                
                 // Get the reference sequence
                 std::string ref_seq_str = this->input_data->getRefGenome().query(chr, pos, pos + op_len - 1);
 
