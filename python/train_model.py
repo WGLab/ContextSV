@@ -46,151 +46,24 @@ Example:
 
 import os
 import sys
-import joblib
-import numpy as np
 import logging
+import numpy as np
+import joblib
 from sklearn.linear_model import LogisticRegression
 import pandas as pd
+
+from extract_features import extract_features
 
 # Set up the logger.
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-# # Set up logging to print to standard output.
-# console = logging.StreamHandler()
-# console.setLevel(logging.INFO)
-# formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
-# console.setFormatter(formatter)
-# logging.getLogger('').addHandler(console)
-
-
-def read_vcf(filepath):
-    """Read in the VCF file."""
-    vcf_df = pd.read_csv(filepath, sep='\t', comment='#', header=None, \
-                         names=['CHROM', 'POS', 'ID', 'REF', 'ALT', 'QUAL', 'FILTER', 'INFO', 'FORMAT', 'SAMPLE'], \
-                            dtype={'CHROM': str, 'POS': np.int64, 'ID': str, 'REF': str, 'ALT': str, 'QUAL': str, \
-                                   'FILTER': str, 'INFO': str, 'FORMAT': str, 'SAMPLE': str})
-    return vcf_df
-
-def extract_features(vcf_df):
-    """Extract the features from the VCF file's data."""
-    # Extract the read depth and clipped bases from the INFO column.
-    read_depth = vcf_df['INFO'].str.extract(r'DP=(\d+)', expand=False).astype(np.int32)
-
-    # Check if any read depths are missing.
-    if read_depth.isnull().values.any():
-        logging.error('Read depth is missing.')
-        sys.exit(1)
-
-    clipped_bases = vcf_df['INFO'].str.extract(r'CLIPDP=(\d+)', expand=False).astype(np.int32)
-
-    # Check if any clipped bases are missing.
-    if clipped_bases.isnull().values.any():
-        logging.error('Clipped bases is missing.')
-        sys.exit(1)
-
-    # Get the array of chromosome names.
-    chrom = vcf_df['CHROM']
-
-    # Keep only chromosomes 1-22, X, Y, and MT.
-    chrom = chrom[chrom.isin(['chr' + str(i) for i in range(1, 23)] + ['chrX', 'chrY', 'chrMT'])]
-
-    # If empty, try without the 'chr' prefix.
-    if chrom.empty:
-        chrom = vcf_df['CHROM']
-        chrom = chrom[chrom.isin([str(i) for i in range(1, 23)] + ['X', 'Y', 'MT'])]
-
-    # Remove the 'chr' prefix.
-    chrom = chrom.str.replace('chr', '')
-
-    # Convert the chromosome names to integers.
-    chrom = chrom.replace('X', '23')
-    chrom = chrom.replace('Y', '24')
-    chrom = chrom.replace('MT', '25')
-    chrom = chrom.astype(np.int32)
-
-    # Check if any chromosome names are missing.
-    if chrom.isnull().values.any():
-        logging.error('Chromosome name is missing.')
-        sys.exit(1)
-
-    # Get the start and end positions.
-    start = vcf_df['POS']
-
-    # Check if any start positions are missing.
-    if start.isnull().values.any():
-        logging.error('Start position is missing.')
-        sys.exit(1)
-
-    end = vcf_df['INFO'].str.extract(r'END=(\d+)', expand=False).astype(np.int32)
-
-    # Check if any end positions are missing.
-    if end.isnull().values.any():
-        logging.error('End position is missing.')
-        sys.exit(1)
-
-    # Get the SV length from the INFO column.
-    sv_length = vcf_df['INFO'].str.extract(r'SVLEN=(-?\d+)', expand=False).astype(np.int32)
-
-    # Check if any SV lengths are missing.
-    if sv_length.isnull().values.any():
-        logging.error('SV length is missing.')
-        sys.exit(1)
-
-    # Get the SV type from the INFO column.
-    sv_type = vcf_df['INFO'].str.extract(r'SVTYPE=(\w+)', expand=False)
-
-    # If INFO/REPTYPE=DUP, then the SV type is a duplication.
-    sv_type[vcf_df['INFO'].str.contains('REPTYPE=DUP')] = 'DUP'
-
-    # Convert the SV type to integers.
-    sv_type = sv_type.replace('DEL', '0')
-    sv_type = sv_type.replace('DUP', '1')
-    sv_type = sv_type.replace('INV', '2')
-    sv_type = sv_type.replace('INS', '3')
-    sv_type = sv_type.replace('BND', '4')
-    sv_type = sv_type.replace('CNV', '5')
-    sv_type = sv_type.astype(np.int32)
-
-    # Check if any SV types are missing.
-    if sv_type.isnull().values.any():
-        logging.error('SV type is missing.')
-        sys.exit(1)
-
-    # Loop through the columns and check if any values are missing for all of
-    # the feature arrays.
-    for col in [chrom, start, end, sv_length, sv_type, read_depth, clipped_bases]:
-        if col.isnull().values.all():
-            logging.error('All values are missing for a feature.')
-            logging.error(col)
-            sys.exit(1)
-
-    # Create a dataframe of the features.
-    features = pd.DataFrame({'chrom': chrom, 'start': start, 'end': end, 'sv_length': sv_length, 'sv_type': sv_type, \
-                             'read_depth': read_depth, 'clipped_bases': clipped_bases})
-
-    # Check if any features are missing.
-    if features.isnull().values.any():
-        logging.error('Features are missing.')
-
-        # Get the rows with missing features.
-        missing_features = features[features.isnull().any(axis=1)]
-
-        # Print the rows with missing features.
-        logging.error(missing_features)
-        sys.exit(1)
-
-    # Return the features.
-    return features
 
 def train(true_positives_filepath, false_positives_filepath):
     """Train the binary classification model."""
-    # Read in the true positive and false positive VCF files.
-    tp_vcf = read_vcf(true_positives_filepath)
-    fp_vcf = read_vcf(false_positives_filepath)
 
     # Extract the features from the VCF files.
     logging.info('Extracting features from the true positive VCF file.')
-    tp_data = extract_features(tp_vcf)
+    tp_data = extract_features(true_positives_filepath)
 
     # Check if any features are missing.
     if tp_data.isnull().values.any():
@@ -204,7 +77,7 @@ def train(true_positives_filepath, false_positives_filepath):
         sys.exit(1)
 
     logging.info('Extracting features from the false positive VCF file.')
-    fp_data = extract_features(fp_vcf)
+    fp_data = extract_features(false_positives_filepath)
 
     # Check if any features are missing.
     if fp_data.isnull().values.any():
@@ -220,6 +93,10 @@ def train(true_positives_filepath, false_positives_filepath):
     # Add the labels.
     tp_data['label'] = 1
     fp_data['label'] = 0
+
+    # Print the number of true positives and false positives.
+    logging.info('Number of true labels: %d', tp_data.shape[0])
+    logging.info('Number of false labels: %d', fp_data.shape[0])
 
     # Combine the true positive and false positive data.
     data = pd.concat([tp_data, fp_data])
