@@ -1,3 +1,13 @@
+"""
+sv_merger.py
+Use DBSCAN to merge SVs with the same breakpoint.
+Mode can be 'dbscan', 'gmm', or 'agglomerative'.
+https://scikit-learn.org/stable/modules/generated/sklearn.cluster.DBSCAN.html
+
+Usage: python sv_merger.py <VCF file path>
+Output: <VCF file path>.merged.vcf
+"""
+
 import os
 import numpy as np
 import pandas as pd
@@ -189,8 +199,8 @@ if __name__ == '__main__':
         print(f"Usage: {sys.argv[0]} <VCF file path>")
         sys.exit(1)
 
-    # # Test different eps values from 1 to 99 by 1
-    # for eps in range(1, 100):
+    # # Test different eps values from 1 to 200 by 1
+    # for eps in range(1, 201):
     #     sv_merger(sys.argv[1], eps=eps, min_samples=2, suffix=f'.merged_eps{eps}_min2')
 
     # # Test different min_samples values from 2 to 10
@@ -201,11 +211,14 @@ if __name__ == '__main__':
     # GMM
 
     # Agglomerative, test distance_threshold values from 100 to 1000 by 100
-    for dth in range(100, 1100, 100):
-        sv_merger(sys.argv[1], mode='agglomerative', eps=dth, suffix=f'.merged_agglo_dth{dth}')
+    # for dth in range(100, 1100, 100):
+    #     sv_merger(sys.argv[1], mode='agglomerative', eps=dth, suffix=f'.merged_agglo_dth{dth}')
 
     #sv_merger(sys.argv[1], mode='agglomerative', suffix='.merged_agglo')
 
     # # DBSCAN
     # sv_merger(sys.argv[1], mode='dbscan', suffix='.merged_dbscan')
     
+    # DBSCAN with eps ranging from 30 to 50 by 1
+    for eps in range(30, 51):
+        sv_merger(sys.argv[1], mode='dbscan', eps=eps, suffix=f'.merged_dbscan_eps{eps}')

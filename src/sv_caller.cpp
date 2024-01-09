@@ -239,43 +239,46 @@ void SVCaller::detectSVsFromCIGAR(bam_hdr_t* header, bam1_t* alignment, SVData& 
                 // To determine whether the insertion is a duplication, check
                 // for sequence identity between the insertion and the
                 // reference genome (> 90% identity is likely a duplication).
-                
-                // Get the reference sequence
-                std::string ref_seq_str = this->input_data->getRefGenome().query(chr, pos, pos + op_len - 1);
 
-                // Calculate the sequence identity
-                int num_matches = 0;
-                for (int j = 0; j < op_len; j++) {
-                    if (ins_seq_str[j] == ref_seq_str[j]) {
-                        num_matches++;
+                // Loop starting from the reference position minus the
+                // insertion length to the reference position plus the
+                // insertion length, and obtain the highest sequence identity
+                // using a sliding window of the insertion length
+                bool is_duplication = false;
+                float target_seq_identity = 0.9;
+
+                // Get the reference sequence for the region (+/- insertion length)
+                std::string ref_seq_str = this->input_data->getRefGenome().query(chr, pos - op_len, pos + op_len - 1);
+
+                // Loop through the reference sequence and calculate the
+                // sequence identity at each window of the insertion length
+                for (int j = 0; j < ref_seq_str.length() - op_len; j++) {
+
+                    // Get the string for the window
+                    std::string window_str = ref_seq_str.substr(j, op_len);
+
+                    // Calculate the sequence identity
+                    int num_matches = 0;
+                    for (int k = 0; k < op_len; k++) {
+                        if (ins_seq_str[k] == window_str[k]) {
+                            num_matches++;
+                        }
                     }
-                }
-                float seq_identity = (float)num_matches / (float)op_len;
+                    float seq_identity = (float)num_matches / (float)op_len;
 
-                // Also calculate the sequence identity of the upstream
-                // reference sequence
-                std::string ref_seq_str_up = this->input_data->getRefGenome().query(chr, pos - op_len, pos - 1);
-                int num_matches_up = 0;
-                for (int j = 0; j < op_len; j++) {
-                    if (ins_seq_str[j] == ref_seq_str_up[j]) {
-                        num_matches_up++;
+                    // Check if the target sequence identity is reached
+                    if (seq_identity > target_seq_identity) {
+                        is_duplication = true;
+                        break;
                     }
-                }
-                float seq_identity_up = (float)num_matches_up / (float)op_len;
-
-                // Use the higher sequence identity
-                if (seq_identity_up > seq_identity) {
-                    seq_identity = seq_identity_up;
                 }
 
                 // Add to SV calls (1-based) with the appropriate SV type
                 ref_pos = pos+1;
                 ref_end = ref_pos + op_len -1;
-                if (seq_identity > 0.9) {
-                    // Likely duplication
+                if (is_duplication) {
                     sv_calls.add(chr, ref_pos, ref_end, SVData::DUP, ins_seq_str, "CIGARDUP", mtx);
                 } else {
-                    // Likely insertion
                     sv_calls.add(chr, ref_pos, ref_end, SVData::INS, ins_seq_str, "CIGARINS", mtx);
                 }
             }
