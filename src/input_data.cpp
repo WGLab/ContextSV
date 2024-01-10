@@ -510,12 +510,14 @@ void InputData::readChromosomeAFs(std::string chr, std::string filepath, std::mu
     if (index_fp == NULL)
     {
         this->printMessage("Index file does not exist. Creating index file...", print_mtx);
-        fclose(index_fp);
 
         // Create the index file
         std::string index_cmd = "bcftools index -f " + filepath;
         system(index_cmd.c_str());
         this->printMessage("Complete.", print_mtx);
+    } else {
+        this->printMessage("Complete.", print_mtx);
+        fclose(index_fp);
     }
 
     // Check if the chromosome is in the reference genome and return it with the
