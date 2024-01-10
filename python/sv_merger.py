@@ -220,5 +220,8 @@ if __name__ == '__main__':
     # sv_merger(sys.argv[1], mode='dbscan', suffix='.merged_dbscan')
     
     # DBSCAN with eps ranging from 30 to 50 by 1
-    for eps in range(30, 51):
-        sv_merger(sys.argv[1], mode='dbscan', eps=eps, suffix=f'.merged_dbscan_eps{eps}')
+    for eps in range(1, 101):
+        sv_merger(sys.argv[1], mode='dbscan', eps=eps, suffix=f'.merged_eps{eps}')
+
+    # # DBSCAN with eps equal to 34 (Achieves 100% recall for deletions)
+    # sv_merger(sys.argv[1], mode='dbscan', eps=34, suffix='.merged_eps34')
