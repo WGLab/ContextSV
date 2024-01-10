@@ -1,3 +1,17 @@
+"""
+test_cluster_params.py: Test the cluster parameters for the cluster + merge
+pipeline.
+
+Usage:
+    python test_cluster_params.py <benchmark_file_path> <cluster_type>
+    <output_dir>
+    
+    benchmark_file_path: Path to the benchmark file.
+    cluster_type: Either 'dbscan' or 'agglo'
+    output_dir: Directory for saving the output plots.
+
+"""
+
 import os
 import sys
 
@@ -36,14 +50,16 @@ def get_precision_recall(file_path, sv_type='DEL'):
                 # Split the line by 'Counter'
                 line = line.split('Counter')[1]
 
-                # Get the value after 'comp': and before the comma
+                # Get the value after 'comp':
                 comp_count = line.split("'comp':")[1]
                 comp_count = comp_count.split(',')[0]
+                comp_count = comp_count.split('}')[0]
                 comp_count = int(comp_count)
 
                 # Get the value after 'base':
                 base_count = line.split("'base':")[1]
-                base_count = base_count.split('})')[0]
+                base_count = base_count.split(',')[0]
+                base_count = base_count.split('}')[0]
                 base_count = int(base_count)
 
                 # Add the counts to the lists
@@ -298,19 +314,33 @@ if __name__ == '__main__':
     plot_title = cluster_string + ' Cluster + Merge'
 
     # Plot precision and recall values
+    # Deletions
     eps, prec, rec = get_precision_recall(file_path, sv_type='DEL')
     fig = plot_precision_recall(eps, prec, rec, title=plot_title + ' (DEL)', parameter_name=parameter_name)
     fig.savefig(output_dir + '/Precision_Recall_DEL.png')
 
+    # Duplications
     eps, prec, rec = get_precision_recall(file_path, sv_type='DUP')
     fig = plot_precision_recall(eps, prec, rec, title=plot_title + ' (DUP)', parameter_name=parameter_name)
     fig.savefig(output_dir + '/Precision_Recall_DUP.png')
 
+    # Insertions
+    eps, prec, rec = get_precision_recall(file_path, sv_type='INS')
+    fig = plot_precision_recall(eps, prec, rec, title=plot_title + ' (INS)', parameter_name=parameter_name)
+    fig.savefig(output_dir + '/Precision_Recall_INS.png')
+
     # Plot F1 scores
+    # Deletions
     eps, f1 = get_f1_scores(file_path, sv_type='DEL')
     fig = plot_f1(eps, f1, title=plot_title + ' (DEL)', parameter_name=parameter_name)
     fig.savefig(output_dir + '/F1_DEL.png')
 
+    # Duplications
     eps, f1 = get_f1_scores(file_path, sv_type='DUP')
     fig = plot_f1(eps, f1, title=plot_title + ' (DUP)', parameter_name=parameter_name)
     fig.savefig(output_dir + '/F1_DUP.png')
+
+    # Insertions
+    eps, f1 = get_f1_scores(file_path, sv_type='INS')
+    fig = plot_f1(eps, f1, title=plot_title + ' (INS)', parameter_name=parameter_name)
+    fig.savefig(output_dir + '/F1_INS.png')
