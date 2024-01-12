@@ -44,8 +44,6 @@ bool isChrNotation(std::string vcf_filepath)
     std::string cmd = "bcftools query -f '%CHROM\n' " + vcf_filepath + " 2>/dev/null";
 
     // Open the pipe
-    std::cout << "Checking if VCF is in chr notation..." << std::endl;
-    std::cout << "Running command: " << cmd << std::endl;
     FILE* pipe = popen(cmd.c_str(), "r");
     if (pipe == NULL)
     {
@@ -71,7 +69,20 @@ bool isChrNotation(std::string vcf_filepath)
     
     // Close the pipe
     pclose(pipe);
-    std::cout << "Done." << std::endl;
 
     return is_chr_notation;
+}
+
+// Thread-safe print message function
+void printMessage(std::string message, std::mutex &mutex)
+{
+    std::lock_guard<std::mutex> lock(mutex);
+    std::cout << message << std::endl;
+}
+
+// Thread-safe print error function
+void printError(std::string message, std::mutex &mutex)
+{
+    std::lock_guard<std::mutex> lock(mutex);
+    std::cerr << message << std::endl;
 }

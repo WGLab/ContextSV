@@ -2,6 +2,8 @@
 __main__.py: Run the program.
 """
 
+__version__ = "0.0.1"
+
 import os
 import sys
 import argparse
@@ -43,7 +45,15 @@ def main():
         "-v", "--version",
         help="Print the version number and exit.",
         action="version",
-        version="%(prog)s 0.0.1"
+        version=f"contextSV version {__version__}"
+    )
+
+    # Verbose mode.
+    parser.add_argument(
+        "-d", "--debug",
+        help="Enable debug mode (verbose logging).",
+        action="store_true",
+        default=False
     )
 
     # Thread count.
@@ -213,6 +223,7 @@ def main():
 
         # Set input parameters.
         input_data = contextsv.InputData()
+        input_data.setVerbose(args.debug)
         input_data.setShortReadBam(args.short_read)
         input_data.setLongReadBam(args.long_read)
         input_data.setRefGenome(args.reference)
@@ -242,10 +253,10 @@ def main():
 
     # Generate python-based CNV plots if SNP-based CNV predictions are enabled.
     if (not args.disable_snp_cnv):
-        log.info("Running python-based analysis...")
+        log.info("Generating CNV plots...")
         cnv_plots.run(vcf_path, cnv_data_path, output_dir, region)
 
-    log.info("Done.")
+    log.info("done. Thank you for using contextSV!")
 
 if __name__ == '__main__':
 

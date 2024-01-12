@@ -97,11 +97,9 @@ class InputData {
         // Add a chromosome's population frequency data to the map in a thread-safe manner.
         void addChromosomePopulationFrequency(std::string chr, std::map<int, double> pfb_map, std::mutex &mutex);
 
-        // Print to cout in a thread-safe manner.
-        void printMessage(std::string message, std::mutex& mutex);
-
-        // Print to cerr in a thread-safe manner.
-        void printError(std::string message, std::mutex& mutex);
+        // Set the verbose flag to true if verbose output is desired.
+        void setVerbose(bool verbose);
+        bool getVerbose();
         
     private:
         std::string short_read_bam;
@@ -125,6 +123,7 @@ class InputData {
         bool disable_snp_cnv;
         std::string cnv_filepath;
         bool whole_genome;  // True if the entire genome is being analyzed
+        bool verbose;  // True if verbose output is enabled
 };
 
 #endif // INPUT_DATA_H

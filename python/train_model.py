@@ -170,6 +170,6 @@ if __name__ == '__main__':
     output_dir = sys.argv[3]
 
     # Run the program.
-    logging.info('Training the model.')
+    logging.info('Training the model...')
     run(tp_filepath, fp_filepath, output_dir)
-    logging.info('Done.')
+    logging.info('done.')

@@ -22,8 +22,6 @@ int FASTAQuery::setFilepath(std::string fasta_filepath)
 
     this->fasta_filepath = fasta_filepath;
 
-    std::cout << "Reading FASTA file " << fasta_filepath << std::endl;
-
     // Parse the FASTA file
     std::ifstream fasta_file(fasta_filepath);
     if (!fasta_file.is_open())
@@ -83,7 +81,6 @@ int FASTAQuery::setFilepath(std::string fasta_filepath)
     }
 
     // Close the file
-    std::cout << "Closing FASTA file..." << std::endl;
     fasta_file.close();
 
     // Sort the chromosomes
@@ -92,8 +89,6 @@ int FASTAQuery::setFilepath(std::string fasta_filepath)
     // Set the chromosomes and sequences
     this->chromosomes = chromosomes;
     this->chr_to_seq = chr_to_seq;
-
-    std::cout << "Done." << std::endl;
 
     return 0;
 }

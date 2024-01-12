@@ -56,12 +56,10 @@ void CNVCaller::run(CNVData& cnv_data)
     }
 
     // Read SNP positions and B-allele frequency values from the VCF file
-    std::cout << "Reading SNP positions and BAF values from the VCF file..." << std::endl;
+    std::cout << "Reading SNP allele frequencies from VCF file...";
     std::string snp_filepath = this->input_data->getSNPFilepath();
     readSNPAlleleFrequencies(snp_filepath, snp_data_map, whole_genome);
-    std::cout << "Complete." << std::endl;
-    // int snp_count = (int) snp_data.locations.size();
-    // std::cout << "Complete. Number of SNPs: " << snp_count << std::endl;
+    std::cout << "done." << std::endl;
 
     // Get the population frequencies for each SNP
     if (this->input_data->getAlleleFreqFilepaths() == "")
@@ -77,24 +75,23 @@ void CNVCaller::run(CNVData& cnv_data)
         }
 
     } else {
-        std::cout << "Using provided SNP population frequency filepaths." << std::endl;
-        std::cout << "Getting population frequencies for each SNP..." << std::endl;
+        std::cout << "Obtaining SNP population frequencies...";
         PFBMap pfb_map = this->input_data->getPFBMap();
         getSNPPopulationFrequencies(pfb_map, snp_data_map);
-        std::cout << "Complete." << std::endl;
+        std::cout << "done." << std::endl;
     }
 
     // Calculate LRRs
-    std::cout << "Calculating log2 ratio of coverage at SNP positions..." << std::endl;
+    std::cout << "Calculating log2 ratio of coverage at SNP positions...";
     calculateLog2RatioAtSNPS(snp_data_map);
-    std::cout << "Log2 ratios calculated." << std::endl;
+    std::cout << "done." << std::endl;
 
     // Read the HMM from file
     //std::string hmm_filepath = "data/wgs.hmm";
     std::string hmm_filepath = this->input_data->getHMMFilepath();
-    std::cout << "Reading HMM from file: " << hmm_filepath << std::endl;
+    std::cout << "Reading HMM from file: " << hmm_filepath;
     CHMM hmm = ReadCHMM(hmm_filepath.c_str());
-    std::cout << "HMM read from file." << std::endl;
+    std::cout << "done." << std::endl;
 
     // Loop through each chromosome and run the Viterbi algorithm
     for (auto const& chr : chromosomes)
@@ -112,46 +109,28 @@ void CNVCaller::run(CNVData& cnv_data)
             int *snpdist = NULL;
             double *logprob = NULL;
 
-            // Print the size of the data vectors
-            std::cout << "Number of SNPs: " << snp_count << std::endl;
-            std::cout << "Size of LRR vector: " << snp_data.log2_ratios.size() << std::endl;
-            std::cout << "Size of BAF vector: " << snp_data.bafs.size() << std::endl;
-            std::cout << "Size of PFB vector: " << snp_data.pfbs.size() << std::endl;
-
-            // Print the HMM size
-            std::cout << "HMM size: " << hmm.N << std::endl;
-
             // Run the Viterbi algorithm
-            std::cout << "Running the Viterbi algorithm for chromosome " << chr << "..." << std::endl;
+            std::cout << "Running the Viterbi algorithm for chromosome " << chr << "...";
             std::vector<int> state_sequence;  // Create the output state sequence
             state_sequence = testVit_CHMM(hmm, snp_count, lrr_ptr, baf_ptr, pfb_ptr, snpdist, logprob);
-            std::cout << "testVit_CHMM complete." << std::endl;
             snp_data.state_sequence = state_sequence;
-            std::cout << "Complete." << std::endl;
+            std::cout << "done." << std::endl;
         }
     }
 
     // Save a TSV of the positions, LRRs, BAFs, and state sequence
-    std::cout << "Saving TSV of copy number prediction data..." << std::endl;
+    std::cout << "Saving TSV of copy number prediction data...";
     std::string output_tsv = this->input_data->getOutputDir() + "/cnv_data.tsv";
     saveToTSV(snp_data_map, output_tsv);
+    std::cout << "done." << std::endl;
     std::cout << "Saved to: " << output_tsv << std::endl;
 
     // Save a BED file of the CNV state sequence
-    std::cout << "Saving BED of CNV states..." << std::endl;
+    std::cout << "Saving BED of CNV states...";
     std::string output_bed = this->input_data->getOutputDir() + "/cnv_states.bed";
     saveToBED(snp_data_map, output_bed);
+    std::cout << "done." << std::endl;
     std::cout << "Saved to: " << output_bed << std::endl;
-
-    // // Get the chromosome as a C string
-    // char *chr_cstr = new char[chr.length() + 1];
-    // strcpy(chr_cstr, chr.c_str());
-
-    // // Create a map of the state sequence by position
-    // for (int i = 0; i < snp_count; i++)
-    // {
-    //     cnv_data.addCNVCall(chr_cstr, snp_data.locations[i], snp_data.state_sequence[i]);
-    // }
 
     // Loop through each chromosome and add the CNV calls to the CNVData object
     for (auto const& chr : chromosomes)
@@ -165,18 +144,12 @@ void CNVCaller::run(CNVData& cnv_data)
         {
             // Get the SNP data
             int64_t pos        = snp_data.locations[i];
-            // double  pfb        = snp_data.pfbs[i];
-            // double  baf        = snp_data.bafs[i];
-            // double  log2_ratio = snp_data.log2_ratios[i];
             int     cn_state   = snp_data.state_sequence[i];
 
             // Add the CNV call to the CNVData object
             cnv_data.addCNVCall(chr, pos, cn_state);
         }
     }
-
-    // // Free the C string
-    // delete[] chr_cstr;
 }
 
 void CNVCaller::calculateLog2RatioAtSNPS(SNPDataMap& snp_data_map)
@@ -189,15 +162,11 @@ void CNVCaller::calculateLog2RatioAtSNPS(SNPDataMap& snp_data_map)
     int window_size = this->input_data->getWindowSize();
 
     // Loop through each chromosome in the map and calculate log2 ratios
-    std::cout << "Looping through each chromosome..." << std::endl;
     for (auto& pair : snp_data_map)
     {
         std::string chr = pair.first;
         SNPData& snp_data = pair.second;
         double mean_chr_cov = -1;
-
-        // Print the chromosome and the number of SNPs
-        std::cout << "Chromosome " << chr << ": " << snp_data.locations.size() << " SNPs" << std::endl;
 
         // Skip the chromosome if there are no SNPs
         if (snp_data.locations.size() == 0)
@@ -209,8 +178,9 @@ void CNVCaller::calculateLog2RatioAtSNPS(SNPDataMap& snp_data_map)
         if (this->input_data->getChrCov(chr, mean_chr_cov) == -1)
         {
             // Calculate the mean chromosome coverage
-            std::cout <<  "\nCalculating coverage for chromosome: " << chr << std::endl;
+            std::cout << "Calculating mean coverage for chromosome " << chr << "...";
             mean_chr_cov = calculateMeanChromosomeCoverage(chr);
+            std::cout << "done." << std::endl;
             std::cout << "Mean coverage for chromosome " << chr << ": " << mean_chr_cov << std::endl;
         } else {
             std::cout << "Using user-provided mean coverage for chromosome " << chr << ": " << mean_chr_cov << std::endl;
@@ -220,7 +190,7 @@ void CNVCaller::calculateLog2RatioAtSNPS(SNPDataMap& snp_data_map)
         chr_cov_map[chr] = mean_chr_cov;
 
         // Loop through each SNP and calculate the LRR
-        std::cout << "Calculating log2 ratios for each SNP at chromosome " << chr << "..." << std::endl;
+        std::cout << "Calculating log2 ratios for each SNP at chromosome " << chr << "...";
         int snp_count = (int) snp_data.locations.size();
         for (int i = 0; i < snp_count; i++) {
             int pos = snp_data.locations[i];
@@ -238,6 +208,7 @@ void CNVCaller::calculateLog2RatioAtSNPS(SNPDataMap& snp_data_map)
             //     printProgress(i, snp_count-1);
             // }
         }
+        std::cout << "done." << std::endl;
 
         // // End the progress bar
         // printProgress(snp_count-1, snp_count-1);
@@ -262,7 +233,10 @@ double CNVCaller::calculateMeanChromosomeCoverage(std::string chr)
         "samtools depth -r %s %s | awk '{c++;s+=$3}END{print c, s}'",\
         chr.c_str(), input_filepath.c_str());  // Remove '-a' for debugging
 
-    std::cout << "Running command: " << cmd << std::endl;
+    if (this->input_data->getVerbose()) {
+        std::cout << "Calculating mean coverage for chromosome " << chr << "..." << std::endl;
+        std::cout << "Command: " << cmd << std::endl;
+    }
 
     // Parse the output
     fp = popen(cmd, "r");
@@ -337,9 +311,11 @@ void CNVCaller::readSNPAlleleFrequencies(std::string snp_filepath, SNPDataMap& s
     std::cout << "Parsing SNPs from " << snp_filepath << std::endl;
 
     // Check that the SNP file is sorted by running bcftools index
-    std::cout << "Checking if the SNP file is sorted..." << std::endl;
+    // std::cout << "Checking if the SNP file is sorted..." << std::endl;
     std::string index_cmd = "bcftools index " + snp_filepath + " 2>&1 | grep -i error";
-    std::cout << "> " << index_cmd << std::endl;
+    if (this->input_data->getVerbose()) {
+        std::cout << "Command: " << index_cmd << std::endl;
+    }
 
     // Open a pipe to read the output of the command
     FILE *index_fp = popen(index_cmd.c_str(), "r");
@@ -364,7 +340,6 @@ void CNVCaller::readSNPAlleleFrequencies(std::string snp_filepath, SNPDataMap& s
     std::string cmd;
     if (whole_genome)
     {
-        std::cout << "Filtering SNPs by depth and quality..." << std::endl;
         cmd = "bcftools view -v snps -i 'QUAL > 30 && DP > 10 && FILTER = \"PASS\"' " + snp_filepath + " > " + filtered_snp_vcf_filepath;
     } else {
         std::cout << "Filtering SNPs by depth, quality, and region..." << std::endl;
@@ -374,14 +349,19 @@ void CNVCaller::readSNPAlleleFrequencies(std::string snp_filepath, SNPDataMap& s
         cmd = "bcftools view -r " + region + " -v snps -i 'QUAL > 30 && DP > 10 && FILTER = \"PASS\"' " + snp_filepath + " > " + filtered_snp_vcf_filepath;
     }
 
-    std::cout << "> " << cmd << std::endl;
+    if (this->input_data->getVerbose()) {
+        std::cout << "Filtering SNPs by depth and quality..." << std::endl;
+        std::cout << "Command: " << cmd << std::endl;
+    }
     system(cmd.c_str());
-
-    std::cout << "Filtered SNPs written to " << filtered_snp_vcf_filepath << std::endl;
+    
+    if (this->input_data->getVerbose()) {
+        std::cout << "Filtered SNPs written to " << filtered_snp_vcf_filepath << std::endl;
+    }
 
     // Extract B-allele frequency data from the VCF file and sort by chromosome
     // and position
-    std::cout << "Extracting allelic depth data from filtered SNPs..." << std::endl;
+    std::cout << "Extracting allelic depth data from filtered SNPs...";
     cmd = "bcftools query -f '%CHROM,%POS,[%AD]\n' " + filtered_snp_vcf_filepath + " | sort -k1,1 -k2,2n";
     // cmd = "bcftools query -f '%CHROM,%POS,[%AD]\n' " + filtered_snp_vcf_filepath;
     FILE *fp = popen(cmd.c_str(), "r");
@@ -390,6 +370,7 @@ void CNVCaller::readSNPAlleleFrequencies(std::string snp_filepath, SNPDataMap& s
         std::cerr << "ERROR: Could not open pipe for command: " << cmd << std::endl;
         exit(1);
     }
+    std::cout << "done." << std::endl;
 
     // Read the DP and AD values (AD for alternate allele depth) and store in a
     // map by chromosome and position
@@ -463,7 +444,6 @@ void CNVCaller::getSNPPopulationFrequencies(PFBMap& pfb_map, SNPDataMap& snp_dat
 {
     // Loop through each chromosome in the SNP data map and access the
     // population frequency for each SNP
-    std::cout << "Getting SNPs population frequencies..." << std::endl;
     for (auto& pair : snp_data_map)
     {
         std::string chr = pair.first;
@@ -510,8 +490,9 @@ void CNVCaller::getSNPPopulationFrequencies(PFBMap& pfb_map, SNPDataMap& snp_dat
         }
 
         // Print the percentage of SNPs with population frequencies
-        std::cout << "Chromosome " << chr << ":" << std::endl;
-        std::cout << "Found population frequencies for " << found_count << " of " << snp_count << " SNPs (" << (double) found_count / (double) snp_count * 100 << "%)" << std::endl;
+        std::cout << "For chromosome " << chr << ": ";
+        std::cout << "Found " << found_count << " of " << snp_count << " SNP population frequencies ";
+        std::cout << "(" << (double) found_count / (double) snp_count * 100 << "%)" << std::endl;
     }
 }
 

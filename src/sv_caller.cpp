@@ -13,6 +13,8 @@
 #include <vector>
 #include <map>
 #include <thread>
+
+#include "utils.h"
 /// @endcond
 
 int SVCaller::readNextAlignment(samFile *fp_in, hts_itr_t *itr, bam1_t *bam1, std::mutex &mtx_bam)
@@ -27,7 +29,7 @@ int SVCaller::readNextAlignment(samFile *fp_in, hts_itr_t *itr, bam1_t *bam1, st
     return ret;
 }
 
-void SVCaller::detectSVsFromRegion(std::string region, SVData &sv_calls, samFile *fp_in, bam_hdr_t *bamHdr, hts_idx_t *idx, std::mutex &mtx_sv_calls, std::mutex &mtx_bam)
+void SVCaller::detectSVsFromRegion(std::string region, SVData &sv_calls, samFile *fp_in, bam_hdr_t *bamHdr, hts_idx_t *idx, std::mutex &callset_mtx, std::mutex &bam_mtx, std::mutex &print_mtx)
 {
     // Create a read and iterator for the region
     bam1_t *bam1 = bam_init1();
@@ -38,8 +40,11 @@ void SVCaller::detectSVsFromRegion(std::string region, SVData &sv_calls, samFile
     int num_alignments = 0;
     QueryMap primary_alignments;  // TODO: Add depth to primary alignments
     QueryMap supplementary_alignments;
+
     //std::cout << "Reading alignments..." << std::endl;
-    while (readNextAlignment(fp_in, itr, bam1, mtx_bam) >= 0) {
+    // Thread-safe printing
+    printMessage("Detecting SVs from " + region, print_mtx);
+    while (readNextAlignment(fp_in, itr, bam1, bam_mtx) >= 0) {
 
         // Skip secondary and unmapped alignments
         if (bam1->core.flag & BAM_FSECONDARY || bam1->core.flag & BAM_FUNMAP) {
@@ -68,8 +73,9 @@ void SVCaller::detectSVsFromRegion(std::string region, SVData &sv_calls, samFile
                 // Call SVs directly from the CIGAR string
                 if (this->input_data->getDisableCIGAR() == false) {
 
-                    //std::cout << "Calling SVs from CIGAR string" << std::endl;
-                    this->detectSVsFromCIGAR(bamHdr, bam1, sv_calls, mtx_sv_calls);
+                    printMessage("Calling CIGAR SVs from " + region, print_mtx);
+                    this->detectSVsFromCIGAR(bamHdr, bam1, sv_calls, callset_mtx);
+                    printMessage("Finished calling CIGAR SVs from " + region, print_mtx);
                 }
 
             // Process supplementary alignments
@@ -142,12 +148,12 @@ void SVCaller::detectSVsFromRegion(std::string region, SVData &sv_calls, samFile
 
                 // Use the gap ends as the SV endpoints
                 if (primary_start - supp_end >= this->min_sv_size) {
-                    sv_calls.add(supp_chr, supp_end+1, primary_start+1, SVData::UNKNOWN, ".", "GAPINNER_A", mtx_sv_calls);
+                    sv_calls.add(supp_chr, supp_end+1, primary_start+1, SVData::UNKNOWN, ".", "GAPINNER_A", callset_mtx);
                 }
 
                 // ALso use the alignment ends as the SV endpoints
                 if (primary_end - supp_start >= this->min_sv_size) {
-                    sv_calls.add(supp_chr, supp_start+1, primary_end+1, SVData::UNKNOWN, ".", "GAPOUTER_A", mtx_sv_calls);
+                    sv_calls.add(supp_chr, supp_start+1, primary_end+1, SVData::UNKNOWN, ".", "GAPOUTER_A", callset_mtx);
                 }
 
                 
@@ -157,12 +163,12 @@ void SVCaller::detectSVsFromRegion(std::string region, SVData &sv_calls, samFile
 
                 // Use the gap ends as the SV endpoints
                 if (supp_start - primary_end >= this->min_sv_size) {
-                    sv_calls.add(supp_chr, primary_end+1, supp_start+1, SVData::UNKNOWN, ".", "GAPINNER_B", mtx_sv_calls);
+                    sv_calls.add(supp_chr, primary_end+1, supp_start+1, SVData::UNKNOWN, ".", "GAPINNER_B", callset_mtx);
                 }
 
                 // Also use the alignment ends as the SV endpoints
                 if (supp_end - primary_start >= this->min_sv_size) {
-                    sv_calls.add(supp_chr, primary_start+1, supp_end+1, SVData::UNKNOWN, ".", "GAPOUTER_B", mtx_sv_calls);
+                    sv_calls.add(supp_chr, primary_start+1, supp_end+1, SVData::UNKNOWN, ".", "GAPOUTER_B", callset_mtx);
                 }
             }
         }
@@ -173,6 +179,8 @@ void SVCaller::detectSVsFromRegion(std::string region, SVData &sv_calls, samFile
 
     // Destroy the read
     bam_destroy1(bam1);
+
+    printMessage("Finished detecting SVs from " + region, print_mtx);
 
     // Print the number of SV calls
     //std::cout << sv_calls.size() << " SV calls from " << region << std::endl;
@@ -252,7 +260,8 @@ void SVCaller::detectSVsFromCIGAR(bam_hdr_t* header, bam1_t* alignment, SVData& 
 
                 // Loop through the reference sequence and calculate the
                 // sequence identity at each window of the insertion length
-                for (int j = 0; j < ref_seq_str.length() - op_len; j++) {
+                int ref_seq_end = (int) ref_seq_str.length() - (int) op_len;
+                for (int j = 0; j < ref_seq_end; j++) {
 
                     // Get the string for the window
                     std::string window_str = ref_seq_str.substr(j, op_len);
@@ -362,20 +371,23 @@ SVData SVCaller::detectSVsFromSplitReads(SVData& sv_calls)
 
     // Loop through the regions, creating a thread for each region
     std::vector<std::thread> threads;
+    std::mutex callset_mtx;
+    std::mutex bam_mtx;
+    std::mutex print_mtx;
+    std::cout << "Creating threads..." << std::endl;
     for (const auto& region : regions) {
 
         // Create a thread for each region, calling detectSVsFromRegion
-        std::cout << "Creating thread for region " << region << std::endl;
-        std::thread t(&SVCaller::detectSVsFromRegion, this, region, std::ref(sv_calls), fp_in, bamHdr, idx, std::ref(this->mtx_sv_calls), std::ref(this->mtx_bam));
+        std::thread t(&SVCaller::detectSVsFromRegion, this, region, std::ref(sv_calls), fp_in, bamHdr, idx, std::ref(callset_mtx), std::ref(bam_mtx), std::ref(print_mtx));
         threads.push_back(std::move(t));
     }
 
     // Join the threads
-    std::cout << "Joining threads..." << std::endl;
+    std::cout << "Joining threads...";
     for (auto& t : threads) {
         t.join();
     }
-    std::cout << "Complete." << std::endl;
+    std::cout << "done" << std::endl;
 
     // Close the BAM file
     sam_close(fp_in);

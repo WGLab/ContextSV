@@ -22,31 +22,20 @@ using QueryMap = std::map<std::string, AlignmentVector>;
 
 class SVCaller {
     private:
-        //int max_indel_dist = 1000;  // Maximum distance between two indels to
-        //be considered as a single SV
         int max_indel_dist = 10;  // Maximum distance between two indels to be considered as a single SV
-        //int min_sv_size = 50;       // Minimum SV size to be considered
-        //int min_sv_size = 30;       // Minimum SV size to be considered
         int min_sv_size = 50;       // Minimum SV size to be considered
         int min_mapq = 20;          // Minimum mapping quality to be considered
         InputData* input_data;
 
-        // Mutex for thread safety when writing to the SV calls
-        std::mutex mtx_sv_calls;
-
-        // Mutex for thread safety when reading from the BAM file
-        std::mutex mtx_bam;
-
         // Detect SVs from long read alignments in the CIGAR string
         void detectSVsFromCIGAR(bam_hdr_t* header, bam1_t* alignment, SVData& sv_calls, std::mutex& mtx);
-        //void detectSVsFromCIGAR(SVData& sv_calls, std::string chr, int32_t pos, uint32_t* cigar, int cigar_len, bool debug_mode);
 
         // Detect SVs from split-read alignments (primary and supplementary)
         SVData detectSVsFromSplitReads(SVData& sv_calls);
 
         // Detect SVs at a region from long read alignments. This is used for
         // whole genome analysis running in parallel.
-        void detectSVsFromRegion(std::string region, SVData &sv_calls, samFile *fp_in, bam_hdr_t *bamHdr, hts_idx_t *idx, std::mutex &mtx_sv_calls, std::mutex &mtx_bam);
+        void detectSVsFromRegion(std::string region, SVData &sv_calls, samFile *fp_in, bam_hdr_t *bamHdr, hts_idx_t *idx, std::mutex &callset_mtx, std::mutex &bam_mtx, std::mutex &print_mtx);
 
         // Read the next alignment from the BAM file in a thread-safe manner
         int readNextAlignment(samFile *fp_in, hts_itr_t *itr, bam1_t *bam1, std::mutex &mtx_bam);
