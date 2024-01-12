@@ -73,9 +73,9 @@ void SVCaller::detectSVsFromRegion(std::string region, SVData &sv_calls, samFile
                 // Call SVs directly from the CIGAR string
                 if (this->input_data->getDisableCIGAR() == false) {
 
-                    printMessage("Calling CIGAR SVs from " + region, print_mtx);
+                    // printMessage("Calling CIGAR SVs from " + region, print_mtx);
                     this->detectSVsFromCIGAR(bamHdr, bam1, sv_calls, callset_mtx);
-                    printMessage("Finished calling CIGAR SVs from " + region, print_mtx);
+                    // printMessage("Finished calling CIGAR SVs from " + region, print_mtx);
                 }
 
             // Process supplementary alignments
