@@ -8,6 +8,8 @@ import os
 import sys
 import argparse
 import logging as log
+from io import StringIO
+
 from lib import contextsv
 from python import cnv_plots
 
@@ -19,6 +21,16 @@ log.basicConfig(
         log.StreamHandler(sys.stdout)
     ]
 )
+
+# Define a class for redirecting c++ stdout to python logging info.
+class LogRedirect(StringIO):
+    """Redirect c++ stdout to python logging info."""
+    def write(self, buf):
+        super(LogRedirect, self).write(buf)
+        log.info(buf)
+
+# Redirect c++ stdout to python logging info.
+sys.stdout = LogRedirect()
 
 def main():
     """Entry point and user interface for the program."""
@@ -217,9 +229,6 @@ def main():
         for key, value in vars(args).items():
             if value is None:
                 setattr(args, key, "")
-            
-        log.info("Chromosome mean coverage: %s", args.chr_cov)
-        log.info("PFB filepath: %s", args.pfb)
 
         # Set input parameters.
         input_data = contextsv.InputData()
@@ -230,7 +239,7 @@ def main():
         input_data.setSNPFilepath(args.snps)
         input_data.setRegion(args.region)
         input_data.setThreadCount(args.threads)
-        input_data.setChrCov(args.chr_cov)
+        input_data.setMeanChromosomeCoverage(args.chr_cov)
         input_data.setAlleleFreqFilepaths(args.pfb)
         input_data.setHMMFilepath(args.hmm)
         input_data.setOutputDir(args.output)
@@ -256,7 +265,7 @@ def main():
         log.info("Generating CNV plots...")
         cnv_plots.run(vcf_path, cnv_data_path, output_dir, region)
 
-    log.info("done. Thank you for using contextSV!")
+    log.info("Complete. Thank you for using contextSV!")
 
 if __name__ == '__main__':
 

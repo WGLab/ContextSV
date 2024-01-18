@@ -3,12 +3,13 @@
 
 /// @cond
 #include <string>
-#include <map>
 #include <set>
+#include <map>
 /// @endcond
 
 // CNV candidate location map
 // (chr, snp_pos) : cnv_type
+
 using SNPLocation = std::pair<std::string, int64_t>;
 using SNPToCNVMap = std::map<SNPLocation,  int>;
 

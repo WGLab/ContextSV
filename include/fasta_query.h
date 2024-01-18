@@ -6,6 +6,7 @@
 /// @cond
 #include <string>
 #include <map>
+#include <unordered_map>
 #include <vector>
 /// @endcond
 
@@ -13,7 +14,7 @@ class FASTAQuery {
     private:
         std::string fasta_filepath;
         std::vector<std::string> chromosomes;
-        std::map<std::string, std::string> chr_to_seq;
+        std::unordered_map<std::string, std::string> chr_to_seq;
 
     public:
         int setFilepath(std::string fasta_filepath);

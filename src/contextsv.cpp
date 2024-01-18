@@ -27,7 +27,7 @@ int ContextSV::run()
     SVData sv_calls(ref_genome);
     SVCaller sv_caller(*this->input_data);
     sv_caller.run(sv_calls);
-    std::cout << "Found " << sv_calls.size() << " SVs" << std::endl;
+    std::cout << "All regions complete. Found " << sv_calls.size() << " total SVs" << std::endl;
 
     // Classify SVs based on SNP CNV predictions if enabled
     if (this->input_data->getDisableSNPCNV() == false) {
@@ -53,8 +53,6 @@ int ContextSV::run()
     std::cout << "Writing SV calls to file..." << std::endl;
     std::string output_dir = this->input_data->getOutputDir();
     sv_calls.saveToVCF(ref_genome, output_dir);
-
-    std::cout << "Done!" << std::endl;
 
     return 0;
 }

@@ -8,7 +8,6 @@
 #include <map>
 /// @endcond
 
-#define BUFFER_SIZE 4096
 #define STATE_CHANGE 100000.0 /*this is the expected changes (D value) in the transition matrix*/
 #define VITHUGE 100000000000.0
 #define FLOAT_MINIMUM 1.175494351e-38; /*this is indeed machine dependent*/
@@ -258,7 +257,7 @@ std::vector<int> ViterbiLogNP_CHMM(CHMM *phmm, int T, double *O1, double *O2, do
 	// Initialize the emission probability matrix
 	biot = dmatrix(1, phmm->N, 1, T);  // Allocate a NxT double matrix
 
-	std::cout << "[HMM] Running Viterbi algorithm with " << phmm->N << " states and " << T << " probes\n";
+	//std::cout << "[HMM] Running Viterbi algorithm with " << phmm->N << " states and " << T << " probes\n";
 
 	// Loop through each state N
 	// Start at 1 because states are 1-based (1-6)

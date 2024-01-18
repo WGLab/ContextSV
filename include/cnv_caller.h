@@ -12,6 +12,7 @@
 /// @cond
 #include <string>
 #include <vector>
+#include <unordered_map>
 /// @endcond
 
 // SNP data is a struct containing vectors used in predicting copy number states
@@ -31,7 +32,7 @@ struct SNPData {
 };
 
 // Map of chromosome to SNP data
-using SNPDataMap = std::map<std::string, SNPData>;
+using SNPDataMap = std::unordered_map<std::string, SNPData>;
 
 // CNVCaller: Detect CNVs and return the state sequence by SNP position
 class CNVCaller {

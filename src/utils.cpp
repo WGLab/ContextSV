@@ -6,8 +6,6 @@
 #include <iostream>
 /// @endcond
 
-#define BUFFER_SIZE 4096
-
 // Print a progress bar
 void printProgress(int progress, int total)
 {
@@ -52,8 +50,9 @@ bool isChrNotation(std::string vcf_filepath)
     }
 
     // Read the first line
-    char buffer[BUFFER_SIZE];
-    if (!fgets(buffer, BUFFER_SIZE, pipe))
+    const int line_size = 256;
+    char buffer[line_size];
+    if (!fgets(buffer, line_size, pipe))
     {
         std::cerr << "Error reading from pipe" << std::endl;
         return false;

@@ -10,12 +10,14 @@
 /// @cond
 #include <string>
 #include <vector>
+// #include <map>
 #include <map>
+#include <unordered_map>
 #include <mutex>
 /// @endcond
 
 // Type definition for B-allele population frequency map (chr -> pos -> pfb)
-using PFBMap = std::map<std::string, std::map<int, double>>;
+using PFBMap = std::unordered_map<std::string, std::map<int, double>>;
 
 class InputData {
     public:
@@ -62,8 +64,8 @@ class InputData {
         int getWindowSize();
 
         // Set entire-chromosome mean coverage values to speed up the log2 ratio calculations.
-        void setChrCov(std::string chr_cov);
-        int getChrCov(std::string chr, double& cov);
+        void setMeanChromosomeCoverage(std::string chr_cov);
+        double getMeanChromosomeCoverage(std::string chr);
 
         // Set the output directory where the results will be written.
         void setOutputDir(std::string dirpath);

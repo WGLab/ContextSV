@@ -96,9 +96,9 @@ void SVCaller::detectSVsFromRegion(std::string region, SVData &sv_calls, samFile
         num_alignments++;
 
         // Print the number of alignments processed every 10 thousand
-        // if (num_alignments % 10000 == 0) {
-        //     std::cout << num_alignments << " alignments processed" << std::endl;
-        // }
+        if (num_alignments % 10000 == 0) {
+            std::cout << num_alignments << " alignments processed" << std::endl;
+        }
     }
     
     // Print the number of alignments processed
@@ -383,11 +383,11 @@ SVData SVCaller::detectSVsFromSplitReads(SVData& sv_calls)
     }
 
     // Join the threads
-    std::cout << "Joining threads...";
+    std::cout << "Joining threads..." << std::endl;
     for (auto& t : threads) {
         t.join();
     }
-    std::cout << "done" << std::endl;
+    std::cout << "All threads joined." << std::endl;
 
     // Close the BAM file
     sam_close(fp_in);

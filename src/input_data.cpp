@@ -10,7 +10,6 @@
 #include "utils.h"
 /// @endcond
 
-#define BUFFER_SIZE 4096
 #define MIN_PFB 0.01  // Minimum SNP population allele frequency
 #define MAX_PFB 0.99  // Maximum SNP population allele frequency
 
@@ -242,7 +241,7 @@ bool InputData::getRegionSet()
     return this->region_set;
 }
 
-void InputData::setChrCov(std::string chr_cov)
+void InputData::setMeanChromosomeCoverage(std::string chr_cov)
 {
     // Update the chromosome coverage map if the string is not empty
     if (chr_cov != "")
@@ -287,22 +286,13 @@ void InputData::setChrCov(std::string chr_cov)
     }
 }
 
-int InputData::getChrCov(std::string chr, double &cov)
+double InputData::getMeanChromosomeCoverage(std::string chr)
 {
-    // Check if the chromosome is in the map
-    if (this->chr_cov.find(chr) != this->chr_cov.end())
-    {
-        // Get the coverage
-        cov = this->chr_cov[chr];
 
-        // Return 0 if the chromosome is in the map
-        return 0;
-    }
-    else
-    {
-        // Return -1 if the chromosome is not in the map
-        return -1;
-    }
+    // Check if the chromosome is in the map
+    double mean_cov = this->chr_cov[chr];
+
+    return mean_cov;
 }
 
 void InputData::setAlleleFreqFilepaths(std::string filepath)
@@ -343,12 +333,15 @@ void InputData::setAlleleFreqFilepaths(std::string filepath)
         {
             std::cout << "Loading population allele frequency files from: " << filepath << std::endl;
         }
-        char buffer[BUFFER_SIZE];
+
+        // Read the file line by line
+        const int line_size = 256;  // Sufficient buffer size for each line
+        char buffer[line_size];
         std::vector<std::thread> threads;  // Vector of threads for parallelization
         std::mutex pfb_mtx;  // Mutex for the PFB map
         std::mutex print_mtx;  // Mutex for printing messages
         std::cout << "Creating a thread for each file" << std::endl;
-        while (fgets(buffer, BUFFER_SIZE, fp) != NULL)
+        while (fgets(buffer, line_size, fp) != NULL)
         {
             // Split by equals sign (chromosome, VCF file)
             std::istringstream ss(buffer);
@@ -572,13 +565,12 @@ void InputData::readChromosomeAFs(std::string chr, std::string filepath, std::mu
 
     // Create a PFB map for the chromosome
     std::map<int, double> chr_pfb_map;
-
-    // Read the output of the command in a highly optimized manner
-    char buffer[BUFFER_SIZE];
+    const int line_size = 256;  // Sufficient buffer size for each line
+    char buffer[line_size];
     std::string line;
-    std::istringstream ss;
     std::string token;
-    while (fgets(buffer, BUFFER_SIZE, pipe) != NULL)
+    std::istringstream ss;
+    while (fgets(buffer, line_size, pipe) != NULL)
     {
         // Remove the newline character
         line = buffer;
@@ -645,13 +637,17 @@ void InputData::readChromosomeAFs(std::string chr, std::string filepath, std::mu
         printMessage("Loaded " + std::to_string(chr_pfb_map.size()) + " population allele frequencies for chromosome " + chr, print_mtx);
     }
 
-    // // Log the percentage of PFB values that were fixed
-    // std::cout << "AF value count: " << af_count << std::endl;  // DEBUG
-    // std::cout << "AF min. hit: " << af_min_hit << std::endl;  // DEBUG
-    // std::cout << "AF max. hit: " << af_max_hit << std::endl;  // DEBUG
-    // std::cout << "SNP AF values fixed: " << ((double) (af_min_hit + af_max_hit) / (double) af_count) * 100 << "%" << std::endl;
-    // std::cout << "Min. fixed: " << ((double) af_min_hit / (double) af_count) * 100 << "%" << std::endl;
-    // std::cout << "Max. fixed: " << ((double) af_max_hit / (double) af_count) * 100 << "%" << std::endl;
+    // Log the percentage of PFB values that were fixed
+    // First, create a string with all the statistics
+    std::string stats = "AF value count: " + std::to_string(af_count) + "\n";
+    stats += "AF min. hit: " + std::to_string(af_min_hit) + "\n";
+    stats += "AF max. hit: " + std::to_string(af_max_hit) + "\n";
+    stats += "SNP AF values fixed: " + std::to_string(((double) (af_min_hit + af_max_hit) / (double) af_count) * 100) + "%\n";
+    stats += "Min. fixed: " + std::to_string(((double) af_min_hit / (double) af_count) * 100) + "%\n";
+    stats += "Max. fixed: " + std::to_string(((double) af_max_hit / (double) af_count) * 100) + "%\n";
+
+    // Print the statistics
+    printMessage(stats, print_mtx);
 }
 
 void InputData::addChromosomePopulationFrequency(std::string chr, std::map<int, double> pfb_map, std::mutex &mutex)

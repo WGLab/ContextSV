@@ -11,6 +11,7 @@
 
 /// @cond
 #include <mutex>
+#include <unordered_map>
 /// @endcond
 
 // SV candidate alignment data (chr, start, end, sequence)
@@ -18,7 +19,7 @@ using AlignmentData   = std::tuple<std::string, int64_t, int64_t, std::string>;
 using AlignmentVector = std::vector<AlignmentData>;
 
 // Query map (query name, alignment vector)
-using QueryMap = std::map<std::string, AlignmentVector>;
+using QueryMap = std::unordered_map<std::string, AlignmentVector>;
 
 class SVCaller {
     private:

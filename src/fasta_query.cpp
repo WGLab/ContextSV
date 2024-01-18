@@ -3,7 +3,7 @@
 /// @cond
 #include <string.h>
 #include <iostream>
-#include <map>
+#include <unordered_map>
 #include <string>
 #include <fstream>
 #include <sstream>
@@ -32,7 +32,7 @@ int FASTAQuery::setFilepath(std::string fasta_filepath)
 
     // Get the chromosomes and sequences
     std::vector<std::string> chromosomes;
-    std::map<std::string, std::string> chr_to_seq;
+    std::unordered_map<std::string, std::string> chr_to_seq;
     std::string current_chr = "";
     std::string sequence = "";
     std::string line_str = "";
