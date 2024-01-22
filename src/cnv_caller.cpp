@@ -225,7 +225,7 @@ double CNVCaller::calculateMeanChromosomeCoverage(std::string chr)
         chr.c_str(), input_filepath.c_str());
 
     if (this->input_data->getVerbose()) {
-        std::cout << "Calculating mean coverage for chromosome " << chr << "..." << std::endl;
+        //std::cout << "Calculating mean coverage for chromosome " << chr << "..." << std::endl;
         std::cout << "Command: " << cmd << std::endl;
     }
 

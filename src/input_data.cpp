@@ -288,11 +288,16 @@ void InputData::setMeanChromosomeCoverage(std::string chr_cov)
 
 double InputData::getMeanChromosomeCoverage(std::string chr)
 {
+    // Using find to check if the key exists
+    auto it = chr_cov.find(chr);
 
-    // Check if the chromosome is in the map
-    double mean_cov = this->chr_cov[chr];
+    // If key is not found, throw an error
+    if (it == chr_cov.end()) {
+        throw std::out_of_range("Key not found in the map.");
+    }
 
-    return mean_cov;
+    // Key exists, return the corresponding double value
+    return it->second;
 }
 
 void InputData::setAlleleFreqFilepaths(std::string filepath)

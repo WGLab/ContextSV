@@ -15,11 +15,11 @@ datasets used: [Data
 availability](https://www.nature.com/articles/s41587-023-02024-y#data-availability)
  - HG002 PacBio Hifi
     - Saved to data/sniffles2/hifi
- - HG002 ONT (q20_2021.10)
+ - HG002 ONT (q20_2021.10) [AWS]
     - Saved to data/sniffles2/ont
  - Medical regions VCF
     - Saved to data/sniffles2/medical_regions
- - 3x 1000 Genomes dipcall benchmark
+ - 3x 1000 Genomes dipcall benchmark [AWS]
     - Saved to data/sniffles2/dipcall_benchmark
  - Genome-wide SV v0.6 VCF
     - Saved to data/hg002_giab
