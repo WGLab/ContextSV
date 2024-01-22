@@ -57,8 +57,7 @@ def test_run():
     with open(output_file, 'r') as f:
         assert f.readline().strip() == "chromosome\tposition\tb_allele_freq\tlog2_ratio\tcnv_state\tpopulation_freq"
 
-    # Check that the output file has the correct SNP values (excluding predicted
-    # state) in the last line
+    # Check that the output file has the correct SNP values in the last line
     with open(output_file, 'r') as f:
         last_line = f.readlines()[-1].strip('\n')
         print(last_line)

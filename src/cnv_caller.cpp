@@ -79,7 +79,6 @@ void CNVCaller::run(CNVData& cnv_data)
     }
 
     // Calculate LRRs
-    std::cout << "Calculating log2 ratio of coverage at SNP positions..." << std::endl;
     calculateLog2RatioAtSNPS(snp_data_map);
 
     // Read the HMM from file
@@ -182,29 +181,109 @@ void CNVCaller::calculateLog2RatioAtSNPS(SNPDataMap& snp_data_map)
             std::cout << "Using user-provided mean coverage for chromosome " << chr << ": " << mean_chr_cov << std::endl;
         }
 
-        // Loop through each SNP and calculate the LRR
-        std::cout << "Calculating log2 ratios for each SNP at chromosome " << chr << "..." << std::endl;
+        // We will loop through each SNP and calculate the LRR for a window
+        // centered at the SNP position. The window size is specified by the
+        // user (default: 10 kb). To speed up the calculation, we will use the
+        // SAMtools depth command to obtain read depth values for the entire
+        // region and then calculate the mean read depth for each window.
+
+        // Open a SAMtools process to get read depth values for the entire
+        // region
         int snp_count = (int) snp_data.locations.size();
-        for (int i = 0; i < snp_count; i++) {
-            int pos = snp_data.locations[i];
+        uint64_t region_start = std::max((uint64_t) 0, (uint64_t) snp_data.locations[0] - (uint64_t) window_size);
+        uint64_t region_end = (uint64_t) snp_data.locations[snp_count - 1] + (uint64_t) window_size;
+        const int cmd_size = 1024;
+        char cmd[cmd_size];
 
-            // Calculate window mean coverage
-            int window_start = pos - (window_size / 2);
-            int window_end = pos + (window_size / 2);
-            double lrr = calculateWindowLogRRatio(mean_chr_cov, chr, window_start, window_end);
+        std::cout << "SNP region: " << chr << ":" << region_start << "-" << region_end << std::endl;
 
-            // Set the LRR value
-            snp_data.log2_ratios.push_back(lrr);
+        // Run samtools depth on the entire region, and print positions and
+        // depths (not chromosome)
+        snprintf(cmd, cmd_size,\
+            "samtools depth -r %s:%ld-%ld %s | awk '{print $2, $3}'",\
+            chr.c_str(), region_start, region_end, input_filepath.c_str());
 
-            // // Update the progress bar every 1000 SNPs
-            // if (i % 1000 == 0) {
-            //     printProgress(i, snp_count-1);
-            // }
+        if (this->input_data->getVerbose()) {
+            std::cout << "Command: " << cmd << std::endl;
         }
 
-        // // End the progress bar
-        // printProgress(snp_count-1, snp_count-1);
-        // std::cout << std::endl;
+        FILE *fp = popen(cmd, "r");
+        if (fp == NULL) {
+            std::cerr << "ERROR: Could not open pipe for command: " << cmd << std::endl;
+            exit(EXIT_FAILURE);
+        }
+
+        // Create a map of positions and depths
+        std::cout << "Creating map of positions and depths..." << std::endl;
+        std::unordered_map<uint64_t, int> pos_depth_map;
+        const int line_size = 1024;
+        char line[line_size];
+        while (fgets(line, line_size, fp) != NULL)
+        {
+            // Parse the line
+            uint64_t pos;
+            int depth;
+            if (sscanf(line, "%ld%d", &pos, &depth) == 2)
+            {
+                // Add the position and depth to the map
+                pos_depth_map[pos] = depth;
+            } else {
+                std::cerr << "ERROR: Could not parse output from command: " << cmd << std::endl;
+                exit(EXIT_FAILURE);
+            }
+        }
+
+        // Close the pipe
+        pclose(fp);
+
+        // Loop through each SNP and calculate the LRR for a window centered at
+        // the SNP position
+        std::cout << "Calculating log2 ratios for chromosome " << chr << "..." << std::endl;
+        std::vector<double> log2_ratios = std::vector<double>(snp_count, 0);
+        for (int i=0; i < snp_count; i++)
+        {
+            // Get the SNP position
+            // uint64_t pos = snp_data.locations[i];
+            int pos = snp_data.locations[i];
+
+            // Calculate the window start and end positions
+            int window_start = pos - window_size / 2;
+            int window_end = pos + window_size / 2;
+
+            // Loop through each position in the window and calculate the mean
+            // read depth
+            int pos_count = 0;
+            int cum_depth = 0;
+            for (int j = window_start; j <= window_end; j++)
+            {
+                // Get the depth for the position
+                int depth = pos_depth_map[j];
+
+                // Skip positions with no depth information (depth = 0)
+                if (depth == 0)
+                {
+                    continue;
+                }
+
+                // Update the position count and cumulative depth
+                pos_count++;
+                cum_depth += depth;
+            }
+
+            // Calculate the mean window coverage
+            double mean_window_cov = (double) cum_depth / (double) pos_count;
+
+            // Calculate the LRR
+            double l2r = log2(mean_window_cov / mean_chr_cov);
+
+            // Store the LRR
+            log2_ratios[i] = l2r;
+        }
+
+        // Store the log2 ratios for the chromosome
+        snp_data.log2_ratios = log2_ratios;
+
+        std::cout << "Finished calculating log2 ratios for chromosome " << chr << std::endl;
     }
 }
 
@@ -225,7 +304,6 @@ double CNVCaller::calculateMeanChromosomeCoverage(std::string chr)
         chr.c_str(), input_filepath.c_str());
 
     if (this->input_data->getVerbose()) {
-        //std::cout << "Calculating mean coverage for chromosome " << chr << "..." << std::endl;
         std::cout << "Command: " << cmd << std::endl;
     }
 
@@ -259,8 +337,6 @@ double CNVCaller::calculateMeanChromosomeCoverage(std::string chr)
 double CNVCaller::calculateWindowLogRRatio(double mean_chr_cov, std::string chr, int window_start, int window_end)
 {
     std::string input_filepath = this->input_data->getShortReadBam();
-
-
 
     // Open a SAMtools process to calculate cumulative read depth and position
     // counts (non-zero depths only) for the region
@@ -305,7 +381,6 @@ void CNVCaller::readSNPAlleleFrequencies(std::string snp_filepath, SNPDataMap& s
 
     // Check that the SNP file is sorted by running bcftools index and reading
     // the error output
-    // std::cout << "Checking if the SNP file is sorted..." << std::endl;
     std::string index_cmd = "bcftools index " + snp_filepath + " 2>&1 | grep -i error";
     if (this->input_data->getVerbose()) {
         std::cout << "Command: " << index_cmd << std::endl;

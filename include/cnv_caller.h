@@ -15,7 +15,8 @@
 #include <unordered_map>
 /// @endcond
 
-// SNP data is a struct containing vectors used in predicting copy number states
+// SNP data is a struct containing vectors used in predicting copy number
+// states. It is sorted by SNP position.
 struct SNPData {
     std::vector<int64_t> locations;
     std::vector<double> pfbs;
