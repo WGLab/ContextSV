@@ -17,7 +17,7 @@
 /// @endcond
 
 // Type definition for B-allele population frequency map (chr -> pos -> pfb)
-using PFBMap = std::unordered_map<std::string, std::map<int, double>>;
+// using PFBMap = std::unordered_map<std::string, std::map<int, double>>;
 
 class InputData {
     public:
@@ -39,12 +39,15 @@ class InputData {
 		void setRefGenome(std::string fasta_filepath);
         FASTAQuery getRefGenome();
 
-        // Set the filepath to the tab-delimited file with SNP population frequencies.
+        // Set the filepath to the text file containing the locations of the
+        // VCF files with population frequencies for each chromosome.
         void setAlleleFreqFilepaths(std::string filepath);
-        std::string getAlleleFreqFilepaths();
+
+        // Get the chromosome's VCF filepath with population frequencies.
+        std::string getAlleleFreqFilepath(std::string chr);
 
         // Get the population frequency map.
-        PFBMap getPFBMap();
+        // PFBMap getPFBMap();
 
         // Set the filepath to the VCF file with SNP calls used for CNV
         // detection with the HMM.
@@ -93,12 +96,6 @@ class InputData {
         void setWholeGenome(bool whole_genome);
         bool getWholeGenome();
 
-        // Read a VCF file and store the population frequencies in a map.
-        void readChromosomeAFs(std::string chr, std::string filepath, std::mutex &pfb_mtx, std::mutex &print_mtx);
-
-        // Add a chromosome's population frequency data to the map in a thread-safe manner.
-        void addChromosomePopulationFrequency(std::string chr, std::map<int, double> pfb_map, std::mutex &mutex);
-
         // Set the verbose flag to true if verbose output is desired.
         void setVerbose(bool verbose);
         bool getVerbose();
@@ -108,8 +105,10 @@ class InputData {
         std::string long_read_bam;
         std::string ref_filepath;
         std::string snp_vcf_filepath;
-        std::string pfb_filepath;
-        PFBMap pfb_map;  // Map of population frequencies by SNP position (chr -> pos -> pfb)
+        // std::string pfb_filepath;  // Filepath to the tab-delimited file with SNP population frequencies
+        // PFBMap pfb_map;  // Map of population frequencies by SNP position
+        // (chr -> pos -> pfb)
+        std::unordered_map<std::string, std::string> pfb_filepaths;  // Map of population frequency VCF filepaths by chromosome
         FASTAQuery fasta_query;
         std::string output_dir;
         std::string region;

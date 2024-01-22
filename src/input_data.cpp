@@ -20,7 +20,6 @@ InputData::InputData()
     this->long_read_bam = "";
     this->ref_filepath = "";
     this->snp_vcf_filepath = "";
-    this->pfb_filepath = "";
     this->output_dir = "";
     this->region = "";
     this->window_size = 10000;
@@ -302,7 +301,7 @@ double InputData::getMeanChromosomeCoverage(std::string chr)
 
 void InputData::setAlleleFreqFilepaths(std::string filepath)
 {
-    this->pfb_filepath = filepath;
+    // this->pfb_filepath = filepath;
 
     // Check if empty string
     if (filepath == "")
@@ -314,7 +313,7 @@ void InputData::setAlleleFreqFilepaths(std::string filepath)
         FILE *fp = fopen(filepath.c_str(), "r");
         if (fp == NULL)
         {
-            std::cerr << "PFB file does not exist: " << filepath << std::endl;
+            std::cerr << "Population allele frequency file does not exist: " << filepath << std::endl;
             exit(1);
         }
 
@@ -333,7 +332,7 @@ void InputData::setAlleleFreqFilepaths(std::string filepath)
             //std::cout << "Loading population allele frequency file for chromosome " << target_chr << std::endl;
         }
 
-        // Load the PFB file and create the PFB map (chr -> VCF file)
+        // Load the file and create a map of chromosome -> VCF file
         if (this->verbose)
         {
             std::cout << "Loading population allele frequency files from: " << filepath << std::endl;
@@ -342,12 +341,14 @@ void InputData::setAlleleFreqFilepaths(std::string filepath)
         // Read the file line by line
         const int line_size = 256;  // Sufficient buffer size for each line
         char buffer[line_size];
-        std::vector<std::thread> threads;  // Vector of threads for parallelization
-        std::mutex pfb_mtx;  // Mutex for the PFB map
-        std::mutex print_mtx;  // Mutex for printing messages
-        std::cout << "Creating a thread for each file" << std::endl;
         while (fgets(buffer, line_size, fp) != NULL)
         {
+            // Check if the line is valid
+            if (buffer[0] == '#')
+            {
+                continue;
+            }
+
             // Split by equals sign (chromosome, VCF file)
             std::istringstream ss(buffer);
             std::string token;
@@ -364,50 +365,45 @@ void InputData::setAlleleFreqFilepaths(std::string filepath)
                 // Get the chromosome
                 std::string chr = chr_vcf[0];
 
-                // If the region is set, skip chromosomes not in the region
-                if (this->region_set && chr != target_chr)
-                {
-                    //std::cout << "Skipping chromosome " << chr << std::endl;
-                    continue;
-                }
-
                 // Get the VCF file
                 std::string vcf = chr_vcf[1].substr(0, chr_vcf[1].find_first_of("\r\n"));  // Remove the newline character
 
-                // Create a thread for processing the VCF file for each
-                // chromosome
-                threads.push_back(std::thread(&InputData::readChromosomeAFs, this, chr, vcf, std::ref(pfb_mtx), std::ref(print_mtx)));
+                // Check if the file exists
+                FILE *vcf_fp = fopen(vcf.c_str(), "r");
+                if (vcf_fp == NULL)
+                {
+                    std::cerr << "Error: Allele frequency file does not exist: " << vcf << std::endl;
+                    exit(1);
+                }
+                // Close the file
+                fclose(vcf_fp);
+
+                // Add the chromosome and VCF file to the map
+                this->pfb_filepaths[chr] = vcf;
             }
         }
-
-        // Join the threads
-        if (threads.size() == 0)
-        {
-            std::cerr << "Error: No chromosomes found in PFB file" << std::endl;
-            exit(1);
-        }
-
-        std::cout << "Joining threads" << std::endl;
-        for (auto &thread : threads)
-        {
-            thread.join();
-        }
-
-        // Close the file
-        fclose(fp);
-        std::cout << "Loaded " << this->pfb_map.size() << " population allele frequency file(s)" << std::endl;
     }
 }
 
-std::string InputData::getAlleleFreqFilepaths()
+std::string InputData::getAlleleFreqFilepath(std::string chr)
 {
-    return this->pfb_filepath;
+    // Remove the chr notation
+    if (chr.find("chr") != std::string::npos)
+    {
+        chr = chr.substr(3, chr.size() - 3);
+    }
+    return this->pfb_filepaths[chr];
 }
 
-PFBMap InputData::getPFBMap()
-{
-    return this->pfb_map;
-}
+// std::string InputData::getAlleleFreqFilepaths()
+// {
+//     return this->pfb_filepath;
+// }
+
+// PFBMap InputData::getPFBMap()
+// {
+//     return this->pfb_map;
+// }
 
 void InputData::setThreadCount(int thread_count)
 {
@@ -484,181 +480,6 @@ void InputData::setWholeGenome(bool whole_genome)
 bool InputData::getWholeGenome()
 {
     return this->whole_genome;
-}
-
-void InputData::readChromosomeAFs(std::string chr, std::string filepath, std::mutex &pfb_mtx, std::mutex &print_mtx)
-{
-    // Check if the file exists
-    FILE *fp = fopen(filepath.c_str(), "r");
-    if (fp == NULL)
-    {
-        //std::cerr << "Error: Allele frequency file does not exist: " <<
-        //filepath << std::endl;
-        printError("Error: Allele frequency file does not exist: " + filepath, print_mtx);
-        exit(1);
-    }
-    // Close the file
-    fclose(fp);
-
-    // Run bcftools index on the VCF file to create the index file if it does
-    // not exist
-    FILE *index_fp = fopen((filepath + ".csi").c_str(), "r");
-    if (index_fp == NULL)
-    {
-        printMessage("Creating index file for " + filepath, print_mtx);
-
-        // Create the index file
-        std::string index_cmd = "bcftools index -f " + filepath;
-        system(index_cmd.c_str());
-    } else {
-        fclose(index_fp);
-    }
-
-    // Check if the chromosome is in the reference genome and return it with the
-    // reference notation
-    std::string chr_check = this->fasta_query.hasChromosome(chr);
-    if (chr_check == "")
-    {
-        printError("Error: Chromosome " + chr + " not in reference genome", print_mtx);
-        exit(1);
-    }
-    chr = chr_check;  // Update the chromosome with the reference notation
-
-    // Load the allele frequency file and create the allele frequency map (position -> allele frequency)
-    int af_count = 0;
-    int af_min_hit = 0;  // Number of positions with allele frequency below the minimum
-    int af_max_hit = 0;  // Number of positions with allele frequency above the maximum
-
-    // Use bcftools to read the VCF file and create the allele frequency map
-    // If a region is set, use the region
-    std::string cmd;
-    if (this->region == "")
-    {
-        cmd = "bcftools query -f '%POS\t%AF\n' -i 'INFO/variant_type=\"snv\"' " + filepath;
-    } else {
-        // Determine if the VCF file is in chr notation
-        bool chr_notation = isChrNotation(filepath);
-
-        // Fix the region's notation if necessary
-        std::string target_region = this->region;
-        if (chr_notation && this->region.find("chr") == std::string::npos)
-        {
-            // Add the chr notation
-            target_region = "chr" + this->region;
-        }
-        else if (!chr_notation && this->region.find("chr") != std::string::npos)
-        {
-            // Remove the chr notation
-            target_region = this->region.substr(3, this->region.size() - 3);
-        }
-        cmd = "bcftools query -f '%POS\t%AF\n' -i 'INFO/variant_type=\"snv\"' -r " + target_region + " " + filepath;
-    }
-
-    if (this->verbose)
-    {
-        printMessage("Loading population allele frequency file for chromosome " + chr, print_mtx);
-        printMessage("Command: " + cmd, print_mtx);
-    }
-
-    // Open a pipe to read the output of the command
-    FILE *pipe = popen(cmd.c_str(), "r");
-    if (pipe == NULL)
-    {
-        printError("Error: Could not open pipe to read VCF file", print_mtx);
-        exit(1);
-    }
-
-    // Create a PFB map for the chromosome
-    std::map<int, double> chr_pfb_map;
-    const int line_size = 256;  // Sufficient buffer size for each line
-    char buffer[line_size];
-    std::string line;
-    std::string token;
-    std::istringstream ss;
-    while (fgets(buffer, line_size, pipe) != NULL)
-    {
-        // Remove the newline character
-        line = buffer;
-        line = line.substr(0, line.find_first_of("\r\n"));
-
-        // Check if the line is valid
-        if (line != "")
-        {
-            // Split the line by tab (position, allele frequency)
-            ss.str(line);
-            try
-            {
-                std::getline(ss, token, '\t');
-                int pos = std::stoi(token);
-                std::getline(ss, token, '\t');
-                double af = std::stod(token);
-
-                // Check if the allele frequency is within the valid range
-                if (af >= MIN_PFB && af <= MAX_PFB)
-                {
-                    // Add the position and allele frequency to the map
-                    chr_pfb_map[pos] = af;
-                }
-                else if (af < MIN_PFB)
-                {
-                    af_min_hit++;
-                    chr_pfb_map[pos] = MIN_PFB;
-                }
-                else if (af > MAX_PFB)
-                {
-                    af_max_hit++;
-                    chr_pfb_map[pos] = MAX_PFB;
-                }
-                af_count++;
-            }
-            catch (const std::invalid_argument &ia)
-            {
-                // Continue if the line is invalid. Usually this is due to the
-                // allele frequency being empty '.' or 'NA'
-            }
-
-            // Clear the objects
-            ss.clear();
-            token.clear();
-            line.clear();
-        }
-    }
-
-    // Close the pipe
-    pclose(pipe);
-
-    // Check if the PFB map is empty
-    if (chr_pfb_map.size() == 0)
-    {
-        printError("Error: No positions found for chromosome " + chr, print_mtx);
-        exit(1);
-    }
-
-    // Add the chromosome PFB map to the PFB map
-    this->addChromosomePopulationFrequency(chr, chr_pfb_map, pfb_mtx);
-
-    if (this->verbose)
-    {
-        printMessage("Loaded " + std::to_string(chr_pfb_map.size()) + " population allele frequencies for chromosome " + chr, print_mtx);
-    }
-
-    // Log the percentage of PFB values that were fixed
-    // First, create a string with all the statistics
-    std::string stats = "AF value count: " + std::to_string(af_count) + "\n";
-    stats += "AF min. hit: " + std::to_string(af_min_hit) + "\n";
-    stats += "AF max. hit: " + std::to_string(af_max_hit) + "\n";
-    stats += "SNP AF values fixed: " + std::to_string(((double) (af_min_hit + af_max_hit) / (double) af_count) * 100) + "%\n";
-    stats += "Min. fixed: " + std::to_string(((double) af_min_hit / (double) af_count) * 100) + "%\n";
-    stats += "Max. fixed: " + std::to_string(((double) af_max_hit / (double) af_count) * 100) + "%\n";
-
-    // Print the statistics
-    printMessage(stats, print_mtx);
-}
-
-void InputData::addChromosomePopulationFrequency(std::string chr, std::map<int, double> pfb_map, std::mutex &mutex)
-{
-    std::lock_guard<std::mutex> lock(mutex);
-    this->pfb_map[chr] = pfb_map;
 }
 
 void InputData::setVerbose(bool verbose)

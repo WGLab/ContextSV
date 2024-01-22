@@ -60,23 +60,10 @@ void CNVCaller::run(CNVData& cnv_data)
     readSNPAlleleFrequencies(snp_filepath, snp_data_map, whole_genome);
 
     // Get the population frequencies for each SNP
-    if (this->input_data->getAlleleFreqFilepaths() == "")
-    {
-        std::cout << "No SNP population frequency filepaths provided. Using the minimum PFB value of " << MIN_PFB << " for all SNPs." << std::endl;
-
-        // Populate the PFB vector with the minimum value
-        for (auto const& chr : chromosomes)
-        {
-            SNPData& snp_data = snp_data_map[chr];
-            int snp_count = (int) snp_data.locations.size();
-            snp_data.pfbs = std::vector<double>(snp_count, MIN_PFB);
-        }
-
-    } else {
-        std::cout << "Obtaining SNP population frequencies..." << std::endl;
-        PFBMap pfb_map = this->input_data->getPFBMap();
-        getSNPPopulationFrequencies(pfb_map, snp_data_map);
-    }
+    std::cout << "Obtaining SNP population frequencies..." << std::endl;
+    //PFBMap pfb_map = this->input_data->getPFBMap();
+    //getSNPPopulationFrequencies(pfb_map, snp_data_map);
+    getSNPPopulationFrequencies(snp_data_map);
 
     // Calculate LRRs
     calculateLog2RatioAtSNPS(snp_data_map);
@@ -509,7 +496,7 @@ void CNVCaller::readSNPAlleleFrequencies(std::string snp_filepath, SNPDataMap& s
     pclose(fp);
 }
 
-void CNVCaller::getSNPPopulationFrequencies(PFBMap& pfb_map, SNPDataMap& snp_data_map)
+void CNVCaller::getSNPPopulationFrequencies(SNPDataMap& snp_data_map)
 {
     // Loop through each chromosome in the SNP data map and access the
     // population frequency for each SNP
@@ -518,45 +505,96 @@ void CNVCaller::getSNPPopulationFrequencies(PFBMap& pfb_map, SNPDataMap& snp_dat
         std::string chr = pair.first;
         SNPData& snp_data = pair.second;
 
-        // Check if there are any SNPs for the chromosome
-        if (snp_data.locations.size() == 0)
+        // Read the population frequencies for the chromosome
+        std::string pfb_filepath = this->input_data->getAlleleFreqFilepath(chr);
+
+        // If no population frequency file is provided, use 0.5 as the
+        // population frequency for all SNPs
+        if (pfb_filepath == "")
         {
-            //std::cerr << "WARNING: No SNPs found for chromosome " << chr << std::endl;
+            std::cout << "No population frequency file provided for chromosome " << chr << ". Using the minimum value of " << MIN_PFB << " for all SNPs." << std::endl;
+
+            // Populate the PFB vector with the minimum value
+            int snp_count = (int) snp_data.locations.size();
+            snp_data.pfbs = std::vector<double>(snp_count, MIN_PFB);
             continue;
         }
 
-        // Check if the chromosome is in the PFB map
-        auto it = pfb_map.find(chr);
-        if (it == pfb_map.end())
-        {
-            std::cerr << "WARNING: No population frequencies found for chromosome " << chr << std::endl;
-            continue;
-        }
+        std::cout << "Reading population frequencies for chromosome " << chr << " from " << pfb_filepath << std::endl;
 
-        // Get the SNP count
+        // Get the start and end positions for the chromosome
         int snp_count = (int) snp_data.locations.size();
+        int start_pos = snp_data.locations[0];
+        int end_pos = snp_data.locations[snp_count - 1];
+        
+        // Run bcftools query to get the population frequencies for the
+        // chromosome within the SNP region, assumed to be sorted by position
+        std::string chr_no_chr = chr.substr(3);  // Remove "chr" from the chromosome name (gnomAD uses "1" instead of "chr1")
+        std::string cmd = \
+            "bcftools query \
+            -r " + chr_no_chr + ":" + std::to_string(start_pos) + "-" + std::to_string(end_pos) + \
+             " -f '%POS\t%AF\n' -i 'INFO/variant_type=\"snv\"' " + pfb_filepath + " 2>/dev/null";
+
+        if (this->input_data->getVerbose()) {
+            std::cout << "Command: " << cmd << std::endl;
+        }
+
+        // Open a pipe to read the output of the command
+        FILE *fp = popen(cmd.c_str(), "r");
+        if (fp == NULL)
+        {
+            std::cerr << "ERROR: Could not open pipe for command: " << cmd << std::endl;
+            exit(1);
+        }
+
+        // Vector of population frequencies (default = 0.5)
+        std::vector<double> pfbs = std::vector<double>(snp_count, 0.5);
+
+        // Loop through the SNP positions and population frequencies
+        int snp_pos = 0;  // SNP position
+        int af_pos = 0;  // Allele frequency value position
         int found_count = 0;
+        double pfb;  // Population frequency value
+        const int line_size = 256;
+        char line[line_size];
         for (int i = 0; i < snp_count; i++)
         {
             // Get the SNP position
-            int pos = snp_data.locations[i];
+            snp_pos = snp_data.locations[i];
 
-            // Get the population frequency from the map
-            auto it = pfb_map[chr].find(pos);
-            if (it != pfb_map[chr].end())
+            // Loop through the lines until the position is found
+            while (fgets(line, line_size, fp) != NULL)
             {
-                // Store the population frequency
-                snp_data.pfbs.push_back(it->second);
-                found_count++;
-            }
-            else
-            {
-                //std::cerr << "WARNING: No population frequency found for SNP at position " << chr << ":" << pos << std::endl;
-
-                // Use 0.5 as the population frequency if it is not found
-                snp_data.pfbs.push_back(0.5);
+                // Parse the line
+                // Parse the tab-delimited line (POS\tAF\n)
+                //if (sscanf(line, "%d\t%lf", &af_pos, &pfb) == 2)
+                if (sscanf(line, "%d%lf", &af_pos, &pfb) == 2)
+                {
+                    // If the position is found, add the population frequency
+                    // to the SNP data and break out of the loop
+                    if (snp_pos == af_pos)
+                    {
+                        if (pfb < MIN_PFB)
+                        {
+                            pfb = MIN_PFB;
+                        } else if (pfb > MAX_PFB)
+                        {
+                            pfb = MAX_PFB;
+                        }
+                        
+                        pfbs[i] = pfb;
+                        found_count++;
+                        break;
+                    }
+                }
             }
         }
+
+        // Close the pipe
+        pclose(fp);
+
+        // Store the population frequencies in the SNP data
+        snp_data.pfbs = pfbs;
 
         // Print the percentage of SNPs with population frequencies
         std::cout << "For chromosome " << chr << ": ";

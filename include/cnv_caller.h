@@ -35,6 +35,9 @@ struct SNPData {
 // Map of chromosome to SNP data
 using SNPDataMap = std::unordered_map<std::string, SNPData>;
 
+// Map of chromosome to SNP population frequency data (position -> pfb)
+using PFBMap = std::unordered_map<std::string, std::map<int, double>>;
+
 // CNVCaller: Detect CNVs and return the state sequence by SNP position
 class CNVCaller {
     private:
@@ -57,12 +60,16 @@ class CNVCaller {
         // Calculate region mean coverage
         double calculateWindowLogRRatio(double mean_chr_cov, std::string chr, int start_pos, int end_pos);
 
-        // Read SNP positions and BAF values from the VCF file
+        // Read SNP positions and BAF values from the VCF file of SNP calls
         void readSNPAlleleFrequencies(std::string filepath, SNPDataMap& snp_data_map, bool whole_genome);
+
+        // Read SNP positions and population frequencies from the VCF file for a
+        // single chromosome
+        void readSNPPopAlleleFrequencies(std::string filepath, SNPDataMap& snp_data_map);
 
         // Read SNP population frequencies from the PFB file and return a vector
         // of population frequencies for each SNP location
-        void getSNPPopulationFrequencies(PFBMap& pfb_map, SNPDataMap& snp_data_map);
+        void getSNPPopulationFrequencies(SNPDataMap& snp_data_map);
 
         // Save a BED file with predicted copy number states
         void saveToBED(SNPDataMap& snp_data_map, std::string filepath);
