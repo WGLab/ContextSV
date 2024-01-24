@@ -529,7 +529,13 @@ void CNVCaller::getSNPPopulationFrequencies(SNPDataMap& snp_data_map)
         
         // Run bcftools query to get the population frequencies for the
         // chromosome within the SNP region, assumed to be sorted by position
-        std::string chr_no_chr = chr.substr(3);  // Remove "chr" from the chromosome name (gnomAD uses "1" instead of "chr1")
+        // Check if the chromosome name starts with "chr"
+        std::string chr_no_chr = chr;
+        if (chr_no_chr.substr(0, 3) == "chr")
+        {
+            // Remove "chr" from the chromosome name (gnomAD uses "1" instead of "chr1")
+            chr_no_chr = chr_no_chr.substr(3);
+        }
         std::string cmd = \
             "bcftools query \
             -r " + chr_no_chr + ":" + std::to_string(start_pos) + "-" + std::to_string(end_pos) + \
