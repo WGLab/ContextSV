@@ -6,6 +6,7 @@
 /// @cond
 #include <string>
 #include <mutex>
+#include <chrono>
 /// @endcond
 
 
@@ -20,5 +21,7 @@ void printMessage(std::string message, std::mutex & mutex);
 
 // Print an error message to stderr in a thread-safe manner
 void printError(std::string message, std::mutex & mutex);
+
+std::string getElapsedTime(std::chrono::high_resolution_clock::time_point start, std::chrono::high_resolution_clock::time_point end);
 
 #endif // UTILS_H

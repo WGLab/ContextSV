@@ -252,5 +252,5 @@ void SVData::saveToVCF(FASTAQuery& ref_genome, std::string output_dir)
     // Close the output stream
     vcf_writer.close();
     // output_stream.close();
-    std::cout << "Saved SV calls to " << output_vcf << std::endl;
+    //std::cout << "Saved SV calls to " << output_vcf << std::endl;
 }

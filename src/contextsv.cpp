@@ -9,6 +9,9 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <chrono>
+
+#include "utils.h"
 /// @endcond
 
 ContextSV::ContextSV(InputData& input_data)
@@ -22,12 +25,17 @@ int ContextSV::run()
     // Get the reference genome
     FASTAQuery ref_genome = this->input_data->getRefGenome();
 
-    // Call SVs from long read alignments
-    std::cout << "Calling SVs..." << std::endl;
+    // Call SVs from long read alignments:
+    std::cout << "Running alignment-based SV calling..." << std::endl;
+    auto start_sv = std::chrono::high_resolution_clock::now();
     SVData sv_calls(ref_genome);
     SVCaller sv_caller(*this->input_data);
     sv_caller.run(sv_calls);
-    std::cout << "All regions complete. Found " << sv_calls.size() << " total SVs" << std::endl;
+    auto end_sv = std::chrono::high_resolution_clock::now();
+
+    // Format and print the time taken to call SVs
+    std::string elapsed_time = getElapsedTime(start_sv, end_sv);
+    std::cout << "Alignment-based SV calling complete. Found " << sv_calls.size() << " total SVs. Time taken (h:m:s) = " << elapsed_time << std::endl;
 
     // Classify SVs based on SNP CNV predictions if enabled
     if (this->input_data->getDisableSNPCNV() == false) {
@@ -40,19 +48,33 @@ int ContextSV::run()
             cnv_calls.loadFromFile(this->input_data->getCNVFilepath());
         } else {
             // Call CNVs at SNP positions
-            std::cout << "Calling CNVs..." << std::endl;
+            std::cout << "Running SNP CNV calling..." << std::endl;
+            auto start_cnv = std::chrono::high_resolution_clock::now();
             CNVCaller cnv_caller(*this->input_data);
             cnv_caller.run(cnv_calls);
+            auto end_cnv = std::chrono::high_resolution_clock::now();
+
+            // Format and print the time taken to call CNVs
+            elapsed_time = getElapsedTime(start_cnv, end_cnv);
+            std::cout << "SNP CNV calling complete. Time taken (h:m:s) = " << elapsed_time << std::endl;
         }
 
-        std::cout << "Labeling CNVs from SNP predictions..." << std::endl;
+        std::cout << "Running SV CNV labeling from SNP predictions..." << std::endl;
+        auto start_label = std::chrono::high_resolution_clock::now();
         this->labelCNVs(cnv_calls, sv_calls);
+        auto end_label = std::chrono::high_resolution_clock::now();
+        elapsed_time = getElapsedTime(start_label, end_label);
+        std::cout << "SV CNV labeling complete. Time taken (h:m:s) = " << elapsed_time << std::endl;
     }
 
     // Write SV calls to file
-    std::cout << "Writing SV calls to file..." << std::endl;
     std::string output_dir = this->input_data->getOutputDir();
+    std::cout << "Writing SV calls to file " << output_dir << "/sv_calls.vcf..." << std::endl;
+    auto start_write = std::chrono::high_resolution_clock::now();
     sv_calls.saveToVCF(ref_genome, output_dir);
+    auto end_write = std::chrono::high_resolution_clock::now();
+    elapsed_time = getElapsedTime(start_write, end_write);
+    std::cout << "SV calls written to file. Time taken (h:m:s) = " << elapsed_time << std::endl;
 
     return 0;
 }

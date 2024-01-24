@@ -14,15 +14,7 @@ SWIG wrapper for C++ code.
 %include "std_string.i"
 %include "stdint.i"
 
-// Define an output handler to redirect stdout to Python
-%feature("python:output") {
-    // Redirect stdout to Python
-    void print_stdout(const std::string& msg) {
-        PySys_WriteStdout("%s", msg.c_str());
-    }
-}
-
-// Expose the InputData class
+// Set up the namespace
 %include "input_data.h"
 
 // Include functions

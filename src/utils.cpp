@@ -85,3 +85,14 @@ void printError(std::string message, std::mutex &mutex)
     std::lock_guard<std::mutex> lock(mutex);
     std::cerr << message << std::endl;
 }
+
+// Return the elapsed time given a start and end time (hours:minutes:seconds)
+std::string getElapsedTime(std::chrono::high_resolution_clock::time_point start, std::chrono::high_resolution_clock::time_point end)
+{
+    std::chrono::duration<double> elapsed = end - start;
+    int hours = elapsed.count() / 3600;
+    int minutes = (elapsed.count() - (hours * 3600)) / 60;
+    int seconds = elapsed.count() - (hours * 3600) - (minutes * 60);
+    std::string elapsed_time = std::to_string(hours) + ":" + std::to_string(minutes) + ":" + std::to_string(seconds);
+    return elapsed_time;
+}

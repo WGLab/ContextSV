@@ -1,6 +1,5 @@
 
 #include "cnv_caller.h"
-#include "utils.h"
 
 #include <htslib/sam.h>
 
@@ -15,6 +14,8 @@
 #include <limits>
 #include <tuple>
 #include <iomanip>  // Progress bar
+
+#include "utils.h"
 
 #define MIN_PFB 0.01
 #define MAX_PFB 0.99
