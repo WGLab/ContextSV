@@ -30,14 +30,41 @@ int SVCaller::readNextAlignment(samFile *fp_in, hts_itr_t *itr, bam1_t *bam1)
     return ret;
 }
 
-SVData SVCaller::detectSVsFromRegion(std::string region, samFile *fp_in, bam_hdr_t *bamHdr, hts_idx_t *idx)
+// SVData SVCaller::detectSVsFromRegion(std::string region, samFile *fp_in, bam_hdr_t *bamHdr, hts_idx_t *idx)
+SVData SVCaller::detectSVsFromRegion(std::string region)
 {
     SVData sv_calls;
+    std::string bam_filepath = this->input_data->getLongReadBam();
+
+    // Lock the mutex while setting up the BAM file
+    this->bam_mtx.lock();
+
+    // Open the BAM file in a thread-safe manner
+    samFile *fp_in = sam_open(bam_filepath.c_str(), "r");
+    if (fp_in == NULL) {
+        std::cerr << "ERROR: failed to open " << bam_filepath << std::endl;
+        exit(1);
+    }
+
+    // Get the header in a thread-safe manner
+    bam_hdr_t *bamHdr = sam_hdr_read(fp_in);
+    if (bamHdr == NULL) {
+        std::cerr << "ERROR: failed to read header for " << bam_filepath << std::endl;
+        exit(1);
+    }
+
+    // Get the index in a thread-safe manner
+    hts_idx_t *idx = sam_index_load(fp_in, bam_filepath.c_str());
+    if (idx == NULL) {
+        std::cerr << "ERROR: failed to load index for " << bam_filepath << std::endl;
+        exit(1);
+    }
 
     // Create a read and iterator for the region in a thread-safe manner
     bam1_t *bam1 = bam_init1();
-    this->bam_mtx.lock();
     hts_itr_t *itr = sam_itr_querys(idx, bamHdr, region.c_str());
+
+    // Unlock the mutex after setting up the BAM file
     this->bam_mtx.unlock();
 
     // Loop through the alignments
@@ -49,8 +76,6 @@ SVData SVCaller::detectSVsFromRegion(std::string region, samFile *fp_in, bam_hdr
     //std::cout << "Reading alignments..." << std::endl;
     // Thread-safe printing
     printMessage("Detecting SVs from " + region);
-
-    // Thread every 10 thousand alignments
 
     //printMessage("Starting SV count: " + std::to_string(sv_calls.size()));
     while (readNextAlignment(fp_in, itr, bam1) >= 0) {
@@ -357,18 +382,18 @@ SVData SVCaller::detectSVsFromSplitReads()
 {
     // Open the BAM file
     std::string bam_filepath = this->input_data->getLongReadBam();
-    samFile *fp_in = sam_open(bam_filepath.c_str(), "r");
-    if (fp_in == NULL) {
-        std::cerr << "ERROR: failed to open " << bam_filepath << std::endl;
-        exit(1);
-    }
+    // samFile *fp_in = sam_open(bam_filepath.c_str(), "r");
+    // if (fp_in == NULL) {
+    //     std::cerr << "ERROR: failed to open " << bam_filepath << std::endl;
+    //     exit(1);
+    // }
 
-    // Get the header
-    bam_hdr_t *bamHdr = sam_hdr_read(fp_in);
-    if (bamHdr == NULL) {
-        std::cerr << "ERROR: failed to read header for " << bam_filepath << std::endl;
-        exit(1);
-    }
+    // // Get the header
+    // bam_hdr_t *bamHdr = sam_hdr_read(fp_in);
+    // if (bamHdr == NULL) {
+    //     std::cerr << "ERROR: failed to read header for " << bam_filepath << std::endl;
+    //     exit(1);
+    // }
 
     // Get the region data
     bool whole_genome = this->input_data->getWholeGenome();
@@ -379,25 +404,48 @@ SVData SVCaller::detectSVsFromSplitReads()
         regions.push_back(this->input_data->getRegion());
     }
 
-    // Get the index
-    hts_idx_t *idx = sam_index_load(fp_in, bam_filepath.c_str());
-    if (idx == NULL) {
-        std::cerr << "ERROR: failed to load index for " << bam_filepath << std::endl;
-        exit(1);
-    }
+    // // Get the index
+    // hts_idx_t *idx = sam_index_load(fp_in, bam_filepath.c_str());
+    // if (idx == NULL) {
+    //     std::cerr << "ERROR: failed to load index for " << bam_filepath << std::endl;
+    //     exit(1);
+    // }
 
-    // ----- Non-threading -----
+    // ----- Safe threading -----
 
     // Loop through each region and detect SVs
     std::cout << "Detecting SVs from " << regions.size() << " regions..." << std::endl;
     auto start1 = std::chrono::high_resolution_clock::now();
     std::vector<SVData> sv_calls_vec;
+    std::vector<std::thread> threads;
     for (const auto& region : regions) {
-        SVData sv_calls = this->detectSVsFromRegion(region, fp_in, bamHdr, idx);
-        sv_calls_vec.push_back(sv_calls);
+        threads.push_back(std::thread([&, region] {
+            SVData sv_calls = this->detectSVsFromRegion(region);
+            std::lock_guard<std::mutex> lock(this->print_mtx);
+            sv_calls_vec.push_back(sv_calls);
+        }));
+    }
+
+    // Join the threads
+    std::cout << "Joining threads..." << std::endl;
+    for (auto& thread : threads) {
+        thread.join();
     }
     auto end1 = std::chrono::high_resolution_clock::now();
     std::cout << "Finished detecting SVs from " << regions.size() << " regions. Elapsed time: " << getElapsedTime(start1, end1) << std::endl;
+
+    // // ----- Non-threading -----
+
+    // // Loop through each region and detect SVs
+    // std::cout << "Detecting SVs from " << regions.size() << " regions..." << std::endl;
+    // auto start1 = std::chrono::high_resolution_clock::now();
+    // std::vector<SVData> sv_calls_vec;
+    // for (const auto& region : regions) {
+    //     SVData sv_calls = this->detectSVsFromRegion(region, fp_in, bamHdr, idx);
+    //     sv_calls_vec.push_back(sv_calls);
+    // }
+    // auto end1 = std::chrono::high_resolution_clock::now();
+    // std::cout << "Finished detecting SVs from " << regions.size() << " regions. Elapsed time: " << getElapsedTime(start1, end1) << std::endl;
 
     // // ----- Threading -----
 
@@ -440,14 +488,14 @@ SVData SVCaller::detectSVsFromSplitReads()
     auto end2 = std::chrono::high_resolution_clock::now();
     std::cout << "Combining SV calls finished. Elapsed time: " << getElapsedTime(start2, end2) << std::endl;
 
-    // Close the BAM file
-    sam_close(fp_in);
+    // // Close the BAM file
+    // sam_close(fp_in);
 
-    // Destroy the header
-    bam_hdr_destroy(bamHdr);
+    // // Destroy the header
+    // bam_hdr_destroy(bamHdr);
 
-    // Destroy the index
-    hts_idx_destroy(idx);
+    // // Destroy the index
+    // hts_idx_destroy(idx);
 
     // Print the number of SV calls
     //std::cout << sv_calls.size() << " total SV calls" << std::endl;

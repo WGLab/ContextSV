@@ -38,7 +38,8 @@ class SVCaller {
 
         // Detect SVs at a region from long read alignments. This is used for
         // whole genome analysis running in parallel.
-        SVData detectSVsFromRegion(std::string region, samFile *fp_in, bam_hdr_t *bamHdr, hts_idx_t *idx);
+        SVData detectSVsFromRegion(std::string region);
+        // SVData detectSVsFromRegion(std::string region, samFile *fp_in, bam_hdr_t *bamHdr, hts_idx_t *idx);
 
         // Read the next alignment from the BAM file in a thread-safe manner
         int readNextAlignment(samFile *fp_in, hts_itr_t *itr, bam1_t *bam1);
