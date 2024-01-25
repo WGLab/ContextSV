@@ -6,10 +6,11 @@
 #include <fstream>
 /// @endcond
 
-void SVData::add(std::string chr, int64_t start, int64_t end, int sv_type, std::string alt_allele, std::string data_type, std::mutex& mtx)
+void SVData::add(std::string chr, int64_t start, int64_t end, int sv_type, std::string alt_allele, std::string data_type)
 {
     // Lock the mutex for thread safety
-    std::lock_guard<std::mutex> lock(mtx);
+    // std::lock_guard<std::mutex> lock(mtx);
+    // std::lock_guard<std::mutex> lock(this->sv_calls_mtx);
 
     // Add the SV call to the map of candidate locations
     SVCandidate candidate(chr, start, end, alt_allele);
@@ -39,21 +40,22 @@ void SVData::add(std::string chr, int64_t start, int64_t end, int sv_type, std::
     }
 }
 
-SVData::SVData(FASTAQuery &ref_genome)
+void SVData::concatenate(const SVData &sv_data)
 {
-    // Set the reference genome
-    this->ref_genome = &ref_genome;
-}
+    // Lock the mutex for thread safety
+    // std::lock_guard<std::mutex> lock(mtx);
+    // std::lock_guard<std::mutex> lock(this->sv_calls_mtx);
 
-std::string SVData::getRefGenome()
-{
-    return this->ref_genome->getFilepath();
-}
+    // Iterate over the SV calls in the other SVData object
+    for (auto const& sv_call : sv_data.sv_calls) {
 
-std::string SVData::getSequence(std::string chr, int64_t pos_start, int64_t pos_end)
-{
-    // Query the reference genome
-    return this->ref_genome->query(chr, pos_start, pos_end);
+        // Add the SV call to the map of candidate locations. Since the region
+        // is unique (per chromosome), there is no need to check if the SV
+        // candidate already exists in the map.
+        SVCandidate candidate = sv_call.first;  // (chr, start, end, alt_allele)
+        SVInfo info = sv_call.second;  // (sv_type, read_depth, data_type, sv_length)
+        this->sv_calls[candidate] = info;
+    }
 }
 
 void SVData::updateSVType(SVCandidate candidate, int sv_type, std::string data_type)

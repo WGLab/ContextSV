@@ -31,9 +31,7 @@ using SVDepthMap = std::map<SVCandidate, SVInfo>;  // SV candidate to read depth
 class SVData {
     private:
         SVDepthMap sv_calls;
-                
-        // Reference genome for querying sequences
-        FASTAQuery *ref_genome;
+        // mutable std::mutex sv_calls_mtx;  // Mutex for locking the SV candidate map
 
         // Map of clipped base support by position (chr, pos) : depth
         std::map<std::pair<std::string, int64_t>, int> clipped_base_support;
@@ -58,15 +56,13 @@ class SVData {
         static const int UNKNOWN = -1;
 
         // Constructor
-        SVData(FASTAQuery& ref_genome);
+        SVData() {};
 
         // Add a new SV candidate to the map
-        void add(std::string chr, int64_t start, int64_t end, int sv_type, std::string alt_allele, std::string data_type, std::mutex& mtx);
+        void add(std::string chr, int64_t start, int64_t end, int sv_type, std::string alt_allele, std::string data_type);
 
-        std::string getRefGenome();
-        
-        // Query the reference genome for a given sequence
-        std::string getSequence(std::string chr, int64_t pos_start, int64_t pos_end);
+        // Concatenates two SVData objects
+        void concatenate(const SVData& sv_data);
 
         // Update the SV type for a given SV candidate
         void updateSVType(SVCandidate key, int sv_type, std::string data_type);

@@ -27,25 +27,27 @@ class SVCaller {
         int min_sv_size = 50;       // Minimum SV size to be considered
         int min_mapq = 20;          // Minimum mapping quality to be considered
         InputData* input_data;
+        std::mutex bam_mtx;  // Mutex for locking the BAM file
+        std::mutex print_mtx;  // Mutex for locking printing to stdout
 
         // Detect SVs from long read alignments in the CIGAR string
-        void detectSVsFromCIGAR(bam_hdr_t* header, bam1_t* alignment, SVData& sv_calls, std::mutex& mtx);
+        void detectSVsFromCIGAR(bam_hdr_t* header, bam1_t* alignment, SVData& sv_calls);
 
         // Detect SVs from split-read alignments (primary and supplementary)
-        SVData detectSVsFromSplitReads(SVData& sv_calls);
+        SVData detectSVsFromSplitReads();
 
         // Detect SVs at a region from long read alignments. This is used for
         // whole genome analysis running in parallel.
-        void detectSVsFromRegion(std::string region, SVData &sv_calls, samFile *fp_in, bam_hdr_t *bamHdr, hts_idx_t *idx, std::mutex &callset_mtx, std::mutex &bam_mtx, std::mutex &print_mtx);
+        SVData detectSVsFromRegion(std::string region, samFile *fp_in, bam_hdr_t *bamHdr, hts_idx_t *idx);
 
         // Read the next alignment from the BAM file in a thread-safe manner
-        int readNextAlignment(samFile *fp_in, hts_itr_t *itr, bam1_t *bam1, std::mutex &mtx_bam);
+        int readNextAlignment(samFile *fp_in, hts_itr_t *itr, bam1_t *bam1);
 
     public:
         SVCaller(InputData& input_data);
 
         // Detect SVs and predict SV type from long read alignments and CNV calls
-        void run(SVData& sv_calls);
+        SVData run();
 };
 
 #endif // SV_CALLER_H

@@ -28,9 +28,8 @@ int ContextSV::run()
     // Call SVs from long read alignments:
     std::cout << "Running alignment-based SV calling..." << std::endl;
     auto start_sv = std::chrono::high_resolution_clock::now();
-    SVData sv_calls(ref_genome);
     SVCaller sv_caller(*this->input_data);
-    sv_caller.run(sv_calls);
+    SVData sv_calls = sv_caller.run();
     auto end_sv = std::chrono::high_resolution_clock::now();
 
     // Format and print the time taken to call SVs

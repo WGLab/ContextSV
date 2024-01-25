@@ -6,6 +6,10 @@
 #include <iostream>
 /// @endcond
 
+
+// Define print mutex
+std::mutex print_mtx;
+
 // Print a progress bar
 void printProgress(int progress, int total)
 {
@@ -73,16 +77,16 @@ bool isChrNotation(std::string vcf_filepath)
 }
 
 // Thread-safe print message function
-void printMessage(std::string message, std::mutex &mutex)
+void printMessage(std::string message)
 {
-    std::lock_guard<std::mutex> lock(mutex);
+    std::lock_guard<std::mutex> lock(print_mtx);
     std::cout << message << std::endl;
 }
 
 // Thread-safe print error function
-void printError(std::string message, std::mutex &mutex)
+void printError(std::string message)
 {
-    std::lock_guard<std::mutex> lock(mutex);
+    std::lock_guard<std::mutex> lock(print_mtx);
     std::cerr << message << std::endl;
 }
 

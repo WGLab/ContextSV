@@ -41,9 +41,7 @@ int CNVData::getMostCommonCNV(std::string chr, int start, int end)
     // Check if the SV region has SNPs with CNV calls covering at least 20% of
     // the region
     int cnv_type = CNVData::UNKNOWN;
-    // int sv_len = end - start + 1;
     if (total_count > 0) {
-    //if (total_count > 0 && (double) total_count / sv_len > 0.2) {
 
         // Check if the SV region is mostly covered by CNV calls (at least 50%) and
         // if the majority CNV type is an insertion or deletion

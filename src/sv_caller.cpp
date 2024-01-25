@@ -13,14 +13,15 @@
 #include <vector>
 #include <map>
 #include <thread>
+#include <chrono>
 
 #include "utils.h"
 /// @endcond
 
-int SVCaller::readNextAlignment(samFile *fp_in, hts_itr_t *itr, bam1_t *bam1, std::mutex &mtx_bam)
+int SVCaller::readNextAlignment(samFile *fp_in, hts_itr_t *itr, bam1_t *bam1)
 {
     // Lock the mutex while reading the next alignment
-    std::lock_guard<std::mutex> lock(mtx_bam);
+    std::lock_guard<std::mutex> lock(this->bam_mtx);
 
     // Read the next alignment
     int ret = sam_itr_next(fp_in, itr, bam1);
@@ -29,11 +30,15 @@ int SVCaller::readNextAlignment(samFile *fp_in, hts_itr_t *itr, bam1_t *bam1, st
     return ret;
 }
 
-void SVCaller::detectSVsFromRegion(std::string region, SVData &sv_calls, samFile *fp_in, bam_hdr_t *bamHdr, hts_idx_t *idx, std::mutex &callset_mtx, std::mutex &bam_mtx, std::mutex &print_mtx)
+SVData SVCaller::detectSVsFromRegion(std::string region, samFile *fp_in, bam_hdr_t *bamHdr, hts_idx_t *idx)
 {
-    // Create a read and iterator for the region
+    SVData sv_calls;
+
+    // Create a read and iterator for the region in a thread-safe manner
     bam1_t *bam1 = bam_init1();
+    this->bam_mtx.lock();
     hts_itr_t *itr = sam_itr_querys(idx, bamHdr, region.c_str());
+    this->bam_mtx.unlock();
 
     // Loop through the alignments
     // Create a map of primary and supplementary alignments by QNAME (query template name)
@@ -43,8 +48,12 @@ void SVCaller::detectSVsFromRegion(std::string region, SVData &sv_calls, samFile
 
     //std::cout << "Reading alignments..." << std::endl;
     // Thread-safe printing
-    printMessage("Detecting SVs from " + region, print_mtx);
-    while (readNextAlignment(fp_in, itr, bam1, bam_mtx) >= 0) {
+    printMessage("Detecting SVs from " + region);
+
+    // Thread every 10 thousand alignments
+
+    //printMessage("Starting SV count: " + std::to_string(sv_calls.size()));
+    while (readNextAlignment(fp_in, itr, bam1) >= 0) {
 
         // Skip secondary and unmapped alignments
         if (bam1->core.flag & BAM_FSECONDARY || bam1->core.flag & BAM_FUNMAP) {
@@ -74,7 +83,7 @@ void SVCaller::detectSVsFromRegion(std::string region, SVData &sv_calls, samFile
                 if (this->input_data->getDisableCIGAR() == false) {
 
                     // printMessage("Calling CIGAR SVs from " + region, print_mtx);
-                    this->detectSVsFromCIGAR(bamHdr, bam1, sv_calls, callset_mtx);
+                    this->detectSVsFromCIGAR(bamHdr, bam1, sv_calls);
                     // printMessage("Finished calling CIGAR SVs from " + region, print_mtx);
                 }
 
@@ -97,7 +106,7 @@ void SVCaller::detectSVsFromRegion(std::string region, SVData &sv_calls, samFile
 
         // Print the number of alignments processed every 10 thousand
         if (num_alignments % 10000 == 0) {
-            std::cout << num_alignments << " alignments processed" << std::endl;
+            std::cout << "Region: " << region << " Alignments processed: " << num_alignments << std::endl;
         }
     }
     
@@ -148,12 +157,12 @@ void SVCaller::detectSVsFromRegion(std::string region, SVData &sv_calls, samFile
 
                 // Use the gap ends as the SV endpoints
                 if (primary_start - supp_end >= this->min_sv_size) {
-                    sv_calls.add(supp_chr, supp_end+1, primary_start+1, SVData::UNKNOWN, ".", "GAPINNER_A", callset_mtx);
+                    sv_calls.add(supp_chr, supp_end+1, primary_start+1, SVData::UNKNOWN, ".", "GAPINNER_A");
                 }
 
                 // ALso use the alignment ends as the SV endpoints
                 if (primary_end - supp_start >= this->min_sv_size) {
-                    sv_calls.add(supp_chr, supp_start+1, primary_end+1, SVData::UNKNOWN, ".", "GAPOUTER_A", callset_mtx);
+                    sv_calls.add(supp_chr, supp_start+1, primary_end+1, SVData::UNKNOWN, ".", "GAPOUTER_A");
                 }
 
                 
@@ -163,12 +172,12 @@ void SVCaller::detectSVsFromRegion(std::string region, SVData &sv_calls, samFile
 
                 // Use the gap ends as the SV endpoints
                 if (supp_start - primary_end >= this->min_sv_size) {
-                    sv_calls.add(supp_chr, primary_end+1, supp_start+1, SVData::UNKNOWN, ".", "GAPINNER_B", callset_mtx);
+                    sv_calls.add(supp_chr, primary_end+1, supp_start+1, SVData::UNKNOWN, ".", "GAPINNER_B");
                 }
 
                 // Also use the alignment ends as the SV endpoints
                 if (supp_end - primary_start >= this->min_sv_size) {
-                    sv_calls.add(supp_chr, primary_start+1, supp_end+1, SVData::UNKNOWN, ".", "GAPOUTER_B", callset_mtx);
+                    sv_calls.add(supp_chr, primary_start+1, supp_end+1, SVData::UNKNOWN, ".", "GAPOUTER_B");
                 }
             }
         }
@@ -180,7 +189,10 @@ void SVCaller::detectSVsFromRegion(std::string region, SVData &sv_calls, samFile
     // Destroy the read
     bam_destroy1(bam1);
 
-    printMessage("Finished detecting SVs from " + region, print_mtx);
+    printMessage("Finished detecting " + std::to_string(sv_calls.size()) + " SVs from " + region);
+
+    // Return the SV calls
+    return sv_calls;
 
     // Print the number of SV calls
     //std::cout << sv_calls.size() << " SV calls from " << region << std::endl;
@@ -192,15 +204,17 @@ SVCaller::SVCaller(InputData &input_data)
 }
 
 // Main function for SV detection
-void SVCaller::run(SVData& sv_calls)
+SVData SVCaller::run()
 {
     // Get SV calls from split read alignments (primary and supplementary) and
     // directly from the CIGAR string
-    this->detectSVsFromSplitReads(sv_calls);
+    SVData sv_calls = this->detectSVsFromSplitReads();
+
+    return sv_calls;
 }
 
 // Detect SVs from the CIGAR string of a read alignment.
-void SVCaller::detectSVsFromCIGAR(bam_hdr_t* header, bam1_t* alignment, SVData& sv_calls, std::mutex& mtx)
+void SVCaller::detectSVsFromCIGAR(bam_hdr_t* header, bam1_t* alignment, SVData& sv_calls)
 {
     // Get the chromosome
     std::string chr = header->target_name[alignment->core.tid];
@@ -286,9 +300,11 @@ void SVCaller::detectSVsFromCIGAR(bam_hdr_t* header, bam1_t* alignment, SVData& 
                 ref_pos = pos+1;
                 ref_end = ref_pos + op_len -1;
                 if (is_duplication) {
-                    sv_calls.add(chr, ref_pos, ref_end, SVData::DUP, ins_seq_str, "CIGARDUP", mtx);
+                    sv_calls.add(chr, ref_pos, ref_end, SVData::DUP, ins_seq_str, "CIGARDUP");
+                    //std::cout << "ADDED CIGAR SV" << std::endl;
                 } else {
-                    sv_calls.add(chr, ref_pos, ref_end, SVData::INS, ins_seq_str, "CIGARINS", mtx);
+                    sv_calls.add(chr, ref_pos, ref_end, SVData::INS, ins_seq_str, "CIGARINS");
+                    //std::cout << "ADDED CIGAR SV" << std::endl;
                 }
             }
 
@@ -301,7 +317,8 @@ void SVCaller::detectSVsFromCIGAR(bam_hdr_t* header, bam1_t* alignment, SVData& 
                 // Add the deletion to the SV calls (1-based)
                 ref_pos = pos+1;
                 ref_end = ref_pos + op_len -1;
-                sv_calls.add(chr, ref_pos, ref_end, SVData::DEL, ".", "CIGARDEL", mtx);
+                sv_calls.add(chr, ref_pos, ref_end, SVData::DEL, ".", "CIGARDEL");
+                //std::cout << "ADDED CIGAR SV" << std::endl;
             }
 
         // Check if the CIGAR operation is a soft clip
@@ -336,7 +353,7 @@ void SVCaller::detectSVsFromCIGAR(bam_hdr_t* header, bam1_t* alignment, SVData& 
 
 // Detect SVs from split read alignments (primary and supplementary) and
 // directly from the CIGAR string
-SVData SVCaller::detectSVsFromSplitReads(SVData& sv_calls)
+SVData SVCaller::detectSVsFromSplitReads()
 {
     // Open the BAM file
     std::string bam_filepath = this->input_data->getLongReadBam();
@@ -369,25 +386,59 @@ SVData SVCaller::detectSVsFromSplitReads(SVData& sv_calls)
         exit(1);
     }
 
-    // Loop through the regions, creating a thread for each region
-    std::vector<std::thread> threads;
-    std::mutex callset_mtx;
-    std::mutex bam_mtx;
-    std::mutex print_mtx;
-    std::cout << "Creating threads..." << std::endl;
+    // ----- Non-threading -----
+
+    // Loop through each region and detect SVs
+    std::cout << "Detecting SVs from " << regions.size() << " regions..." << std::endl;
+    auto start1 = std::chrono::high_resolution_clock::now();
+    std::vector<SVData> sv_calls_vec;
     for (const auto& region : regions) {
-
-        // Create a thread for each region, calling detectSVsFromRegion
-        std::thread t(&SVCaller::detectSVsFromRegion, this, region, std::ref(sv_calls), fp_in, bamHdr, idx, std::ref(callset_mtx), std::ref(bam_mtx), std::ref(print_mtx));
-        threads.push_back(std::move(t));
+        SVData sv_calls = this->detectSVsFromRegion(region, fp_in, bamHdr, idx);
+        sv_calls_vec.push_back(sv_calls);
     }
+    auto end1 = std::chrono::high_resolution_clock::now();
+    std::cout << "Finished detecting SVs from " << regions.size() << " regions. Elapsed time: " << getElapsedTime(start1, end1) << std::endl;
 
-    // Join the threads
-    std::cout << "Joining threads..." << std::endl;
-    for (auto& t : threads) {
-        t.join();
+    // // ----- Threading -----
+
+    // // Loop through the regions, creating a thread for each region
+    // std::vector<std::thread> threads;
+    // std::mutex callset_mtx;
+    // std::mutex bam_mtx;
+    // std::mutex print_mtx;
+
+    // // For each region in regions, run detectSVsFromRegion in a thread and
+    // // store the SV calls in a vector
+    // std::cout << "Creating threads..." << std::endl;
+    // std::vector<SVData> sv_calls_vec;
+    // for (const auto& region : regions) {
+    //     threads.push_back(std::thread([&, region] {
+    //         SVData sv_calls = this->detectSVsFromRegion(region, fp_in, bamHdr, idx);
+    //         std::lock_guard<std::mutex> lock(callset_mtx);
+    //         sv_calls_vec.push_back(sv_calls);
+    //     }));
+    // }
+
+    // // Join the threads
+    // std::cout << "Joining threads..." << std::endl;
+    // auto start = std::chrono::high_resolution_clock::now();
+    // for (auto& thread : threads) {
+    //     thread.join();
+    // }
+    // auto end = std::chrono::high_resolution_clock::now();
+    // std::cout << "Finished joining threads. Elapsed time: " << getElapsedTime(start, end) << std::endl;
+
+    // // ----- Threading End -----
+
+    // Combine the SV calls from each region
+    std::cout << "Combining SV calls..." << std::endl;
+    auto start2 = std::chrono::high_resolution_clock::now();
+    SVData sv_calls;
+    for (const auto& sv_calls_region : sv_calls_vec) {
+        sv_calls.concatenate(sv_calls_region);
     }
-    std::cout << "All threads joined." << std::endl;
+    auto end2 = std::chrono::high_resolution_clock::now();
+    std::cout << "Combining SV calls finished. Elapsed time: " << getElapsedTime(start2, end2) << std::endl;
 
     // Close the BAM file
     sam_close(fp_in);
