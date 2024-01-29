@@ -106,6 +106,20 @@ std::string FASTAQuery::query(std::string chr, int64_t pos_start, int64_t pos_en
     // Convert positions from 1-indexed (reference) to 0-indexed (string indexing)
     pos_start--;
     pos_end--;
+
+    // Ensure that the start position is not negative, and the end position is
+    // not larger than the chromosome length
+    if (pos_start < 0)
+    {
+        std::cout << "Start position " << pos_start << " is negative" << std::endl;
+        return "";
+    }
+    if (pos_end >= (int64_t)this->chr_to_seq[chr].length())
+    {
+        std::cout << "End position " << pos_end << " is larger than chromosome length " << this->chr_to_seq[chr].length() << std::endl;
+        return "";
+    }
+
     int64_t length = pos_end - pos_start + 1;
 
     // Check if a FASTA file has been set

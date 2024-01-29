@@ -21,7 +21,7 @@
 int SVCaller::readNextAlignment(samFile *fp_in, hts_itr_t *itr, bam1_t *bam1)
 {
     // Lock the mutex while reading the next alignment
-    std::lock_guard<std::mutex> lock(this->bam_mtx);
+//    std::lock_guard<std::mutex> lock(this->bam_mtx);
 
     // Read the next alignment
     int ret = sam_itr_next(fp_in, itr, bam1);
@@ -37,7 +37,10 @@ SVData SVCaller::detectSVsFromRegion(std::string region)
     std::string bam_filepath = this->input_data->getLongReadBam();
 
     // Lock the mutex while setting up the BAM file
-    this->bam_mtx.lock();
+//    this->bam_mtx.lock();
+
+    // Check if the CIGAR string should be used for SV calling
+    bool disable_cigar = this->input_data->getDisableCIGAR();
 
     // Open the BAM file in a thread-safe manner
     samFile *fp_in = sam_open(bam_filepath.c_str(), "r");
@@ -65,7 +68,7 @@ SVData SVCaller::detectSVsFromRegion(std::string region)
     hts_itr_t *itr = sam_itr_querys(idx, bamHdr, region.c_str());
 
     // Unlock the mutex after setting up the BAM file
-    this->bam_mtx.unlock();
+//    this->bam_mtx.unlock();
 
     // Loop through the alignments
     // Create a map of primary and supplementary alignments by QNAME (query template name)
@@ -97,15 +100,17 @@ SVData SVCaller::detectSVsFromRegion(std::string region)
             if (!(bam1->core.flag & BAM_FSUPPLEMENTARY)) {
 
                 // Get the primary alignment chromosome, start, end, and depth
+//                this->bam_mtx.lock();
                 std::string chr = bamHdr->target_name[bam1->core.tid];
                 int64_t start = bam1->core.pos;
                 int64_t end = bam_endpos(bam1);
+//                this->bam_mtx.unlock();
 
                 AlignmentData alignment(chr, start, end, ".");
                 primary_alignments[qname].push_back(alignment);
             
                 // Call SVs directly from the CIGAR string
-                if (this->input_data->getDisableCIGAR() == false) {
+                if (disable_cigar == false) {
 
                     // printMessage("Calling CIGAR SVs from " + region, print_mtx);
                     this->detectSVsFromCIGAR(bamHdr, bam1, sv_calls);
@@ -116,10 +121,12 @@ SVData SVCaller::detectSVsFromRegion(std::string region)
             } else if (bam1->core.flag & BAM_FSUPPLEMENTARY) {
 
                 // Add the supplementary alignment to the map
+//                this->bam_mtx.lock();
                 std::string chr = bamHdr->target_name[bam1->core.tid];
                 int32_t start = bam1->core.pos;
                 int32_t end = bam_endpos(bam1);
                 AlignmentData alignment(chr, start, end, ".");
+//                this->bam_mtx.unlock();
 
                 // Add the supplementary alignment to the map
                 supplementary_alignments[qname].push_back(alignment);
@@ -214,6 +221,15 @@ SVData SVCaller::detectSVsFromRegion(std::string region)
     // Destroy the read
     bam_destroy1(bam1);
 
+    // Close the BAM file
+    sam_close(fp_in);
+
+    // Destroy the header
+    bam_hdr_destroy(bamHdr);
+
+    // Destroy the index
+    hts_idx_destroy(idx);
+
     printMessage("Finished detecting " + std::to_string(sv_calls.size()) + " SVs from " + region);
 
     // Return the SV calls
@@ -241,6 +257,8 @@ SVData SVCaller::run()
 // Detect SVs from the CIGAR string of a read alignment.
 void SVCaller::detectSVsFromCIGAR(bam_hdr_t* header, bam1_t* alignment, SVData& sv_calls)
 {
+//    this->bam_mtx.lock();
+
     // Get the chromosome
     std::string chr = header->target_name[alignment->core.tid];
 
@@ -252,6 +270,8 @@ void SVCaller::detectSVsFromCIGAR(bam_hdr_t* header, bam1_t* alignment, SVData& 
 
     // Get the CIGAR length
     int cigar_len = alignment->core.n_cigar;
+
+//    this->bam_mtx.unlock();
 
     // Track the query position
     int query_pos = 0;
@@ -292,34 +312,124 @@ void SVCaller::detectSVsFromCIGAR(bam_hdr_t* header, bam1_t* alignment, SVData& 
                 // insertion length, and obtain the highest sequence identity
                 // using a sliding window of the insertion length
                 bool is_duplication = false;
-                float target_seq_identity = 0.9;
+                float target_seq_identity = 0.5;
 
                 // Get the reference sequence for the region (+/- insertion length)
+//                this->bam_mtx.lock();
                 std::string ref_seq_str = this->input_data->getRefGenome().query(chr, pos - op_len, pos + op_len - 1);
+//                std::string ref_seq_before = this->input_data->getRefGenome().query(chr, pos - op_len, pos - 1);
+//                std::string ref_seq_after = this->input_data->getRefGenome().query(chr, pos + 1, pos + op_len);
+//                this->bam_mtx.unlock();
 
-                // Loop through the reference sequence and calculate the
-                // sequence identity at each window of the insertion length
+                // Check if the insertion sequence before or after the insertion position (+/- 5 bp)
+                // matches the reference sequence with > 80% identity
+
+//                // Before
+//                int bp_window = 5;
+//                int ref_seq_before_start = pos - op_len - bp_window;
+//                int ref_seq_before_end = ref_seq_before_start + 2 * bp_window;
+//                for (int j = ref_seq_before_start; j < ref_seq_before_end; j++) {
+//
+//                    // Get the string for the window
+//                    std::string window_str = this->input_data->getRefGenome().query(chr, j, j + op_len - 1);
+//
+//                    // Out-of-bounds check
+//                    if (window_str == "") {
+//                        continue;
+//                    }
+//
+//                    // Calculate the sequence identity
+//                    int num_matches = 0;
+//                    for (int k = 0; k < op_len; k++) {
+//                        if (ins_seq_str[k] == window_str[k]) {
+//                            num_matches++;
+//                        }
+//                    }
+//                    float seq_identity = (float)num_matches / (float)op_len;
+//
+//                    // Check if the target sequence identity is reached
+//                    if (seq_identity > target_seq_identity) {
+//                        is_duplication = true;
+//                        break;
+//                    }
+//                }
+//
+//                // After
+//                int ref_seq_after_start = pos - bp_window;
+//                int ref_seq_after_end = ref_seq_after_start + 2 * bp_window;
+//                if (!is_duplication) {
+//                    for (int j = ref_seq_after_start; j < ref_seq_after_end; j++) {
+//
+//                        // Get the string for the window
+//                        std::string window_str = this->input_data->getRefGenome().query(chr, j, j + op_len - 1);
+//
+//                        // Out-of-bounds check
+//                        if (window_str == "") {
+//                            continue;
+//                        }
+//
+//                        // Calculate the sequence identity
+//                        int num_matches = 0;
+//                        for (int k = 0; k < op_len; k++) {
+//                            if (ins_seq_str[k] == window_str[k]) {
+//                                num_matches++;
+//                            }
+//                        }
+//                        float seq_identity = (float)num_matches / (float)op_len;
+//
+//                        // Check if the target sequence identity is reached
+//                        if (seq_identity > target_seq_identity) {
+//                            is_duplication = true;
+//                            break;
+//                        }
+//                    }
+//                }
+
+                // Check if the insertion sequence before or after the insertion position
+                // matches the reference sequence with > 50% identity
+                int ref_seq_start = 0;
                 int ref_seq_end = (int) ref_seq_str.length() - (int) op_len;
-                for (int j = 0; j < ref_seq_end; j++) {
-
-                    // Get the string for the window
-                    std::string window_str = ref_seq_str.substr(j, op_len);
-
-                    // Calculate the sequence identity
-                    int num_matches = 0;
-                    for (int k = 0; k < op_len; k++) {
-                        if (ins_seq_str[k] == window_str[k]) {
-                            num_matches++;
-                        }
+                std::string ref_seq_before = ref_seq_str.substr(ref_seq_start, op_len);
+                std::string ref_seq_after = ref_seq_str.substr(ref_seq_end, op_len);
+                int num_matches_before = 0;
+                int num_matches_after = 0;
+                for (int j = 0; j < op_len; j++) {
+                    if (ins_seq_str[j] == ref_seq_before[j]) {
+                        num_matches_before++;
                     }
-                    float seq_identity = (float)num_matches / (float)op_len;
-
-                    // Check if the target sequence identity is reached
-                    if (seq_identity > target_seq_identity) {
-                        is_duplication = true;
-                        break;
+                    if (ins_seq_str[j] == ref_seq_after[j]) {
+                        num_matches_after++;
                     }
                 }
+                float seq_identity_before = (float)num_matches_before / (float)op_len;
+                float seq_identity_after = (float)num_matches_after / (float)op_len;
+                if (seq_identity_before > target_seq_identity || seq_identity_after > target_seq_identity) {
+                    is_duplication = true;
+                }
+
+//                // Loop through the reference sequence and calculate the
+//                // sequence identity at each window of the insertion length
+//                int ref_seq_end = (int) ref_seq_str.length() - (int) op_len;
+//                for (int j = 0; j < ref_seq_end; j++) {
+//
+//                    // Get the string for the window
+//                    std::string window_str = ref_seq_str.substr(j, op_len);
+//
+//                    // Calculate the sequence identity
+//                    int num_matches = 0;
+//                    for (int k = 0; k < op_len; k++) {
+//                        if (ins_seq_str[k] == window_str[k]) {
+//                            num_matches++;
+//                        }
+//                    }
+//                    float seq_identity = (float)num_matches / (float)op_len;
+//
+//                    // Check if the target sequence identity is reached
+//                    if (seq_identity > target_seq_identity) {
+//                        is_duplication = true;
+//                        break;
+//                    }
+//                }
 
                 // Add to SV calls (1-based) with the appropriate SV type
                 ref_pos = pos+1;
@@ -411,28 +521,87 @@ SVData SVCaller::detectSVsFromSplitReads()
     //     exit(1);
     // }
 
-    // ----- Safe threading -----
+//    // ----- Safe threading -----
+//
+//    // Loop through each region and detect SVs
+//    std::cout << "Detecting SVs from " << regions.size() << " regions..." << std::endl;
+//    auto start1 = std::chrono::high_resolution_clock::now();
+//    std::vector<SVData> sv_calls_vec;
+//    std::vector<std::thread> threads;
+//
+//    // Start a thread for every 3 regions, joining the threads after each set of 3 until all regions are processed
+//    int num_regions = regions.size();
+//    int num_threads = 3;
+//    int num_sets = num_regions / num_threads;
+//    std::cout << "Number of sets: " << num_sets << std::endl;
+//    std::cout << "Number of regions: " << num_regions << std::endl;
+//    std::cout << "Number of threads: " << num_threads << std::endl;
+//    int num_remainder = num_regions % num_threads;
+//    int num_sets_processed = 0;
+//    int num_regions_processed = 0;
+//    while (num_sets_processed < num_sets) {
+//
+//        // Create a thread for each region in the set within the range
+//        for (int i = 0; i < num_threads; i++) {
+//            if (num_regions_processed + i >= num_regions) {
+//                break;
+//            }
+//            threads.push_back(std::thread([&, i] {
+//                SVData sv_calls = this->detectSVsFromRegion(regions[num_regions_processed + i]);
+//                std::lock_guard<std::mutex> lock(this->print_mtx);
+//                sv_calls_vec.push_back(sv_calls);
+//            }));
+//        }
+//
+//        // Join the threads
+//        for (auto& thread : threads) {
+//            thread.join();
+//        }
+//
+//        std::cout << "Finished detecting " sv_calls_vec.size() << " SVs from set " << num_sets_processed << std::endl;
+//
+//        // Increment the number of sets processed
+//        num_sets_processed++;
+//
+//        // Increment the number of regions processed
+//        num_regions_processed += num_threads;
+//
+//        // Clear the threads vector
+//        threads.clear();
+//    }
+//
+//
+//
+//    // Do each region
+////    for (const auto& region : regions) {
+////        threads.push_back(std::thread([&, region] {
+////            SVData sv_calls = this->detectSVsFromRegion(region);
+////            std::lock_guard<std::mutex> lock(this->print_mtx);
+////            sv_calls_vec.push_back(sv_calls);
+////        }));
+////    }
+////
+////    // Join the threads
+////    std::cout << "Joining threads..." << std::endl;
+////    for (auto& thread : threads) {
+////        thread.join();
+////    }
+//    auto end1 = std::chrono::high_resolution_clock::now();
+//    std::cout << "Finished detecting SVs from " << regions.size() << " regions. Elapsed time: " << getElapsedTime(start1, end1) << std::endl;
 
+    // ----- Safe threading End -----
+
+    // ----- Non-threading -----
     // Loop through each region and detect SVs
     std::cout << "Detecting SVs from " << regions.size() << " regions..." << std::endl;
     auto start1 = std::chrono::high_resolution_clock::now();
     std::vector<SVData> sv_calls_vec;
-    std::vector<std::thread> threads;
     for (const auto& region : regions) {
-        threads.push_back(std::thread([&, region] {
-            SVData sv_calls = this->detectSVsFromRegion(region);
-            std::lock_guard<std::mutex> lock(this->print_mtx);
-            sv_calls_vec.push_back(sv_calls);
-        }));
-    }
-
-    // Join the threads
-    std::cout << "Joining threads..." << std::endl;
-    for (auto& thread : threads) {
-        thread.join();
+        SVData sv_calls = this->detectSVsFromRegion(region);
+        sv_calls_vec.push_back(sv_calls);
     }
     auto end1 = std::chrono::high_resolution_clock::now();
-    std::cout << "Finished detecting SVs from " << regions.size() << " regions. Elapsed time: " << getElapsedTime(start1, end1) << std::endl;
+    std::cout << "Finished detecting SVs from " << regions.size() << " regions. Elapsed time (h:m:s): " << getElapsedTime(start1, end1) << std::endl;
 
     // // ----- Non-threading -----
 
