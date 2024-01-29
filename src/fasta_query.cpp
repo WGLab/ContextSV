@@ -122,24 +122,25 @@ std::string FASTAQuery::query(std::string chr, int64_t pos_start, int64_t pos_en
 
     int64_t length = pos_end - pos_start + 1;
 
-    // Check if a FASTA file has been set
-    if (this->fasta_filepath == "")
-    {
-        std::cout << "No FASTA file set" << std::endl;
-        return "";
-    }
+    // // Check if a FASTA file has been set
+    // if (this->fasta_filepath == "")
+    // {
+    //     std::cout << "No FASTA file set" << std::endl;
+    //     return "";
+    // }
 
-    // Check if the chromosome is in the map
-    if (this->chr_to_seq.find(chr) == this->chr_to_seq.end())
-    {
-        std::cout << "Chromosome " << chr << " not found in FASTA file" << std::endl;
-        return "";
-    }
+    // // Check if the chromosome is in the map
+    // if (this->chr_to_seq.find(chr) == this->chr_to_seq.end())
+    // {
+    //     std::cout << "Chromosome " << chr << " not found in FASTA file" << std::endl;
+    //     return "";
+    // }
     
     //std::cout << "Querying " << chr << ":" << pos_start << "-" << pos_end << std::endl;
 
     // Get the sequence
-    std::string sequence = this->chr_to_seq[chr];
+    // std::string sequence = this->chr_to_seq[chr];
+    const std::string& sequence = this->chr_to_seq[chr];
 
     //std::cout << "Sequence length: " << sequence.length() << std::endl;
 

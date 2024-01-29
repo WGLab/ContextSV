@@ -331,10 +331,12 @@ void SVCaller::detectSVsFromCIGAR(bam_hdr_t* header, bam1_t* alignment, SVData& 
 
                 // Tricky region START
                 // Get the reference sequence for the region (+/- insertion length)
-//                this->bam_mtx.lock();
-                // this->query_mtx.lock();
-                // std::string ref_seq_str = this->input_data->getRefGenome().query(chr, pos - op_len, pos + op_len - 1);
-                // this->query_mtx.unlock();
+                this->query_mtx.lock();
+                //std::string ref_seq_str =
+                //this->input_data->getRefGenome().query(chr, pos - op_len, pos
+                //+ op_len - 1);
+                std::string ref_seq_str = this->input_data->queryRefGenome(chr, pos - op_len, pos + op_len - 1);
+                this->query_mtx.unlock();
 
                 // // Check if the insertion sequence before or after the insertion position
                 // // matches the reference sequence with > 50% identity
