@@ -29,6 +29,7 @@ class SVCaller {
         InputData* input_data;
         std::mutex bam_mtx;  // Mutex for locking the BAM file
         std::mutex print_mtx;  // Mutex for locking printing to stdout
+        std::mutex query_mtx;  // Mutex for locking the query map
 
         // Detect SVs from long read alignments in the CIGAR string
         void detectSVsFromCIGAR(bam_hdr_t* header, bam1_t* alignment, SVData& sv_calls);

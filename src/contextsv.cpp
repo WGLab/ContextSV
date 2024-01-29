@@ -39,6 +39,8 @@ int ContextSV::run()
     // Classify SVs based on SNP CNV predictions if enabled
     if (this->input_data->getDisableSNPCNV() == false) {
 
+        std::cout << "Running SNP CNV calling..." << std::endl;
+
         // Check if a file with CNV data was provided
         CNVData cnv_calls;
         if (this->input_data->getCNVFilepath() != "") {

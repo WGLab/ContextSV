@@ -205,3 +205,8 @@ std::string FASTAQuery::hasChromosome(std::string chr)
     }
     return chr_found;
 }
+
+int64_t FASTAQuery::getChromosomeLength(std::string chr)
+{
+    return this->chr_to_seq[chr].length();
+}
