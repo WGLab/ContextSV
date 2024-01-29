@@ -37,7 +37,19 @@ class InputData {
 
         // Set the filepath to the reference genome FASTA file.
 		void setRefGenome(std::string fasta_filepath);
-        FASTAQuery getRefGenome();
+
+        // Return a reference to the FASTAQuery object.
+        const FASTAQuery& getRefGenome() const;
+        // FASTAQuery getRefGenome();
+
+        // Query the reference genome for a sequence.
+        std::string queryRefGenome(std::string chr, int64_t pos_start, int64_t pos_end);
+
+        // Get the chromosomes in the reference genome.
+        std::vector<std::string> getRefGenomeChromosomes();
+
+        // Get a chromosome's length in the reference genome.
+        int64_t getRefGenomeChromosomeLength(std::string chr);
 
         // Set the filepath to the text file containing the locations of the
         // VCF files with population frequencies for each chromosome.

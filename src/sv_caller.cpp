@@ -426,7 +426,7 @@ SVData SVCaller::detectSVsFromSplitReads()
     bool whole_genome = this->input_data->getWholeGenome();
     std::vector<std::string> regions;
     if (whole_genome) {
-        regions = this->input_data->getRefGenome().getChromosomes();
+        regions = this->input_data->getRefGenomeChromosomes();
     } else {
         regions.push_back(this->input_data->getRegion());
     }
@@ -447,7 +447,8 @@ SVData SVCaller::detectSVsFromSplitReads()
         int num_threads = std::thread::hardware_concurrency();
 
         // Get the chromosome length
-        int chr_len = this->input_data->getRefGenome().getChromosomeLength(region);
+        int chr_len = this->input_data->getRefGenomeChromosomeLength(region);
+        std::cout << "Chromosome length: " << chr_len << std::endl;
 
         // Split the region into chunks
         int chunk_size = chr_len / num_threads;

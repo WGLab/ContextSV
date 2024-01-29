@@ -43,7 +43,7 @@ void CNVCaller::run(CNVData& cnv_data)
     std::vector<std::string> chromosomes;
     if (whole_genome)
     {
-        chromosomes = this->input_data->getRefGenome().getChromosomes();
+        chromosomes = this->input_data->getRefGenomeChromosomes();
     } else {
         chromosomes.push_back(this->input_data->getRegionChr());
     }

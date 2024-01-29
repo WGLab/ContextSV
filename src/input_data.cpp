@@ -91,9 +91,24 @@ void InputData::setRefGenome(std::string fasta_filepath)
     this->fasta_query.setFilepath(fasta_filepath);
 }
 
-FASTAQuery InputData::getRefGenome()
+const FASTAQuery &InputData::getRefGenome() const
 {
     return this->fasta_query;
+}
+
+std::string InputData::queryRefGenome(std::string chr, int64_t pos_start, int64_t pos_end)
+{
+    return this->fasta_query.query(chr, pos_start, pos_end);
+}
+
+std::vector<std::string> InputData::getRefGenomeChromosomes()
+{
+    return this->fasta_query.getChromosomes();
+}
+
+int64_t InputData::getRefGenomeChromosomeLength(std::string chr)
+{
+    return this->fasta_query.getChromosomeLength(chr);
 }
 
 std::string InputData::getOutputDir()
