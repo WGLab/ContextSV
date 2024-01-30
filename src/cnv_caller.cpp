@@ -14,6 +14,7 @@
 #include <limits>
 #include <tuple>
 #include <iomanip>  // Progress bar
+#include <numeric>  // std::iota
 
 #include "utils.h"
 
@@ -420,7 +421,7 @@ void CNVCaller::readSNPAlleleFrequencies(std::string snp_filepath, SNPDataMap& s
     // Extract B-allele frequency data from the VCF file and sort by chromosome
     // and position
     std::cout << "Extracting allelic depth data from filtered SNPs..." << std::endl;
-    cmd = "bcftools query -f '%CHROM,%POS,[%AD]\n' " + filtered_snp_vcf_filepath + " | sort -k1,1 -k2,2n";
+    cmd = "bcftools query -f '%CHROM,%POS,[%AD]\n' " + filtered_snp_vcf_filepath + " 2>/dev/null";
     FILE *fp = popen(cmd.c_str(), "r");
     if (fp == NULL)
     {
@@ -438,6 +439,8 @@ void CNVCaller::readSNPAlleleFrequencies(std::string snp_filepath, SNPDataMap& s
     const int line_size = 256;
     char line[line_size];  // Line buffer
     SNPData *snp_data;   // Pointer to the SNP data for the current chromosome
+    std::vector<int64_t> locations;
+    std::vector<double> bafs;
     while (fgets(line, line_size, fp) != NULL)
     {
         // Parse the line
@@ -489,12 +492,39 @@ void CNVCaller::readSNPAlleleFrequencies(std::string snp_filepath, SNPDataMap& s
         double baf = (double) alt_ad / (double) (ref_ad + alt_ad);
 
         // Add a new location and BAF value to the chromosome's SNP data
+//        locations.push_back(pos);
+//        bafs.push_back(baf);
         snp_data->locations.push_back(pos);
         snp_data->bafs.push_back(baf);
     }
 
     // Close the pipe
     pclose(fp);
+
+    // Sort the SNP data by position and get the indices to use for sorting
+    std::vector<int> indices(snp_data->locations.size());
+    std::iota(indices.begin(), indices.end(), 0);
+
+    // Sort the indices by the SNP positions
+    std::sort(indices.begin(), indices.end(), [&snp_data](int i, int j) { return snp_data->locations[i] < snp_data->locations[j]; });
+
+    // Reorder the SNP data vectors by the sorted indices
+    std::vector<int64_t> sorted_locations(snp_data->locations.size());
+    std::vector<double> sorted_bafs(snp_data->bafs.size());
+    int snp_count = (int) snp_data->locations.size();
+    for (int i = 0; i < snp_count; i++)
+    {
+        sorted_locations[i] = snp_data->locations[indices[i]];
+        sorted_bafs[i] = snp_data->bafs[indices[i]];
+    }
+
+    std::cout << "Sorted " << sorted_locations.size() << " SNPs by position" << std::endl;
+    std::cout << "First SNP: " << sorted_locations[0] << ", BAF: " << sorted_bafs[0] << std::endl;
+    std::cout << "Last SNP: " << sorted_locations[sorted_locations.size() - 1] << ", BAF: " << sorted_bafs[sorted_bafs.size() - 1] << std::endl;
+
+    // Update the SNP data vectors
+    snp_data->locations = sorted_locations;
+    snp_data->bafs = sorted_bafs;
 }
 
 void CNVCaller::getSNPPopulationFrequencies(SNPDataMap& snp_data_map)
@@ -527,20 +557,20 @@ void CNVCaller::getSNPPopulationFrequencies(SNPDataMap& snp_data_map)
         int snp_count = (int) snp_data.locations.size();
         int start_pos = snp_data.locations[0];
         int end_pos = snp_data.locations[snp_count - 1];
+
+        std::cout << "First SNP: " << start_pos << ", Last SNP: " << end_pos << std::endl;
         
         // Run bcftools query to get the population frequencies for the
         // chromosome within the SNP region, assumed to be sorted by position
-        // Check if the chromosome name starts with "chr"
-        std::string chr_no_chr = chr;
-        if (chr_no_chr.substr(0, 3) == "chr")
+        // Check if the chromosome name starts with "chr", gnomaAD uses "chr1" instead of "1"
+        std::string chr_with_chr = chr;
+        if (chr_with_chr.substr(0, 3) != "chr")
         {
-            // Remove "chr" from the chromosome name (gnomAD uses "1" instead of "chr1")
-            chr_no_chr = chr_no_chr.substr(3);
+            chr_with_chr = "chr" + chr;
         }
+        std::string region_str = chr_with_chr + ":" + std::to_string(start_pos) + "-" + std::to_string(end_pos);
         std::string cmd = \
-            "bcftools query \
-            -r " + chr_no_chr + ":" + std::to_string(start_pos) + "-" + std::to_string(end_pos) + \
-             " -f '%POS\t%AF\n' -i 'INFO/variant_type=\"snv\"' " + pfb_filepath + " 2>/dev/null";
+            "bcftools query -r " + region_str + " -f '%POS\t%AF\n' -i 'INFO/variant_type=\"snv\"' " + pfb_filepath + " 2>/dev/null";
 
         if (this->input_data->getVerbose()) {
             std::cout << "Command: " << cmd << std::endl;

@@ -137,10 +137,10 @@ SVData SVCaller::detectSVsFromRegion(std::string region)
         // Increment the number of alignment records processed
         num_alignments++;
 
-        // Print the number of alignments processed every 10 thousand
-        if (num_alignments % 10000 == 0) {
-            std::cout << "Region: " << region << " Alignments processed: " << num_alignments << std::endl;
-        }
+        // // Print the number of alignments processed every 10 thousand
+        // if (num_alignments % 10000 == 0) {
+        //     std::cout << "Region: " << region << " Alignments processed: " << num_alignments << std::endl;
+        // }
     }
     
     // Print the number of alignments processed
@@ -323,54 +323,60 @@ void SVCaller::detectSVsFromCIGAR(bam_hdr_t* header, bam1_t* alignment, SVData& 
                 // for sequence identity between the insertion and the
                 // reference genome (> 90% identity is likely a duplication).
 
-                // Loop starting from the reference position minus the
-                // insertion length to the reference position plus the
-                // insertion length, and obtain the highest sequence identity
-                // using a sliding window of the insertion length
+                // Loop from the leftmost position of the insertion (pos-op_len)
+                // to the rightmost position of the insertion (pos+op_len-1) and
+                // calculate the sequence identity at each window of the
+                // insertion length to identify potential duplications.
                 bool is_duplication = false;
+                float target_seq_identity = 0.5;
 
-                // Tricky region START
                 // Get the reference sequence for the region (+/- insertion length)
-                this->query_mtx.lock();
-                //std::string ref_seq_str =
-                //this->input_data->getRefGenome().query(chr, pos - op_len, pos
-                //+ op_len - 1);
                 std::string ref_seq_str = this->input_data->queryRefGenome(chr, pos - op_len, pos + op_len - 1);
-                this->query_mtx.unlock();
+                //std::string ref_seq_str = this->input_data->getRefGenome().query(chr, pos - op_len, pos + op_len - 1);
 
-                // // Check if the insertion sequence before or after the insertion position
-                // // matches the reference sequence with > 50% identity
-                // float target_seq_identity = 0.5;
-                // int ref_seq_start = 0;
-                // int ref_seq_end = (int) ref_seq_str.length() - (int) op_len;
-                // std::string ref_seq_before = ref_seq_str.substr(ref_seq_start, op_len);
-                // std::string ref_seq_after = ref_seq_str.substr(ref_seq_end, op_len);
-                // int num_matches_before = 0;
-                // int num_matches_after = 0;
-                // for (int j = 0; j < op_len; j++) {
-                //     if (ins_seq_str[j] == ref_seq_before[j]) {
-                //         num_matches_before++;
-                //     }
-                //     if (ins_seq_str[j] == ref_seq_after[j]) {
-                //         num_matches_after++;
-                //     }
-                // }
-                // float seq_identity_before = (float)num_matches_before / (float)op_len;
-                // float seq_identity_after = (float)num_matches_after / (float)op_len;
-                // if (seq_identity_before > target_seq_identity || seq_identity_after > target_seq_identity) {
-                //     is_duplication = true;
-                // }
-                // Tricky region END
+                // Loop through the reference sequence and calculate the
+                // sequence identity +/- insertion length from the insertion
+                // position.
+                int ref_seq_len = ref_seq_str.length();
+                for (int j = 0; j < ref_seq_len - op_len; j++) {
+
+                    // Get the string for the window
+                    std::string window_str = "";
+                    try
+                    {
+                        window_str = ref_seq_str.substr(j, op_len);
+                    }
+                    catch(const std::exception& e)
+                    {
+                        std::cerr << "ERROR: " << e.what() << std::endl;
+                        std::cerr << "j: " << j << " op_len: " << op_len << " ref_seq_str.length(): " << ref_seq_str.length() << std::endl;
+                        std::cerr << "ref_seq_str: " << ref_seq_str << std::endl;
+                        exit(1);
+                    }
+
+                    // Calculate the sequence identity
+                    int num_matches = 0;
+                    for (int k = 0; k < op_len; k++) {
+                        if (ins_seq_str[k] == window_str[k]) {
+                            num_matches++;
+                        }
+                    }
+                    float seq_identity = (float)num_matches / (float)op_len;
+
+                    // Check if the target sequence identity is reached
+                    if (seq_identity > target_seq_identity) {
+                        is_duplication = true;
+                        break;
+                    }
+                }
 
                 // Add to SV calls (1-based) with the appropriate SV type
                 ref_pos = pos+1;
                 ref_end = ref_pos + op_len -1;
                 if (is_duplication) {
                     sv_calls.add(chr, ref_pos, ref_end, SVData::DUP, ins_seq_str, "CIGARDUP");
-                    //std::cout << "ADDED CIGAR SV" << std::endl;
                 } else {
                     sv_calls.add(chr, ref_pos, ref_end, SVData::INS, ins_seq_str, "CIGARINS");
-                    //std::cout << "ADDED CIGAR SV" << std::endl;
                 }
             }
 
@@ -456,7 +462,7 @@ SVData SVCaller::detectSVsFromSplitReads()
         int chunk_size = chr_len / num_threads;
         std::vector<std::string> region_chunks;
         for (int i = 0; i < num_threads; i++) {
-            int start = i * chunk_size;
+            int start = i * chunk_size + 1;  // 1-based
             int end = start + chunk_size;
             if (i == num_threads - 1) {
                 end = chr_len;
