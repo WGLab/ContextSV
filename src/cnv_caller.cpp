@@ -587,48 +587,59 @@ void CNVCaller::getSNPPopulationFrequencies(SNPDataMap& snp_data_map)
         // Vector of population frequencies (default = 0.5)
         std::vector<double> pfbs = std::vector<double>(snp_count, 0.5);
 
-        // Loop through the SNP positions and population frequencies
-        int snp_pos = 0;  // SNP position
-        int af_pos = 0;  // Allele frequency value position
-        int found_count = 0;
-        double pfb;  // Population frequency value
+        // Loop through the BCFTOOLS output and populate the map of population
+        // frequencies
+        std::cout << "Populating map of population frequencies..." << std::endl;
+        std::unordered_map<int, double> pos_pfb_map;
         const int line_size = 256;
         char line[line_size];
-        for (int i = 0; i < snp_count; i++)
+        while (fgets(line, line_size, fp) != NULL)
         {
-            // Get the SNP position
-            snp_pos = snp_data.locations[i];
-
-            // Loop through the lines until the position is found
-            while (fgets(line, line_size, fp) != NULL)
+            // Parse the line
+            int pos;
+            double pfb;
+            if (sscanf(line, "%d%lf", &pos, &pfb) == 2)
             {
-                // Parse the line
-                // Parse the tab-delimited line (POS\tAF\n)
-                //if (sscanf(line, "%d\t%lf", &af_pos, &pfb) == 2)
-                if (sscanf(line, "%d%lf", &af_pos, &pfb) == 2)
-                {
-                    // If the position is found, add the population frequency
-                    // to the SNP data and break out of the loop
-                    if (snp_pos == af_pos)
-                    {
-                        if (pfb < MIN_PFB)
-                        {
-                            pfb = MIN_PFB;
-                        } else if (pfb > MAX_PFB)
-                        {
-                            pfb = MAX_PFB;
-                        }
-                        
-                        pfbs[i] = pfb;
-                        found_count++;
-                        break;
-                    }
-                }
+                // Add the position and population frequency to the map
+                pos_pfb_map[pos] = pfb;
             }
         }
 
         // Close the pipe
         pclose(fp);
+
+        std::cout << "Populated map of population frequencies for " << pos_pfb_map.size() << " SNPs" << std::endl;
+
+        // Loop through the SNP positions and set the population frequencies
+        int snp_pos = 0;  // SNP position
+        int found_count = 0;
+        int min_fixed_pfb = 0;
+        int max_fixed_pfb = 0;
+        double pfb;  // Population frequency value
+        for (int i = 0; i < snp_count; i++)
+        {
+            // Get the SNP position
+            snp_pos = snp_data.locations[i];
+
+            // If the position is found, add the population frequency to the SNP
+            // data
+            auto it = pos_pfb_map.find(snp_pos);
+            if (it != pos_pfb_map.end())
+            {
+                pfb = it->second;
+                if (pfb < MIN_PFB)
+                {
+                    pfb = MIN_PFB;
+                    min_fixed_pfb++;
+                } else if (pfb > MAX_PFB)
+                {
+                    pfb = MAX_PFB;
+                    max_fixed_pfb++;
+                }
+                pfbs[i] = pfb;
+                found_count++;
+            }
+        }
 
         // Store the population frequencies in the SNP data
         snp_data.pfbs = pfbs;
@@ -637,6 +648,8 @@ void CNVCaller::getSNPPopulationFrequencies(SNPDataMap& snp_data_map)
         std::cout << "For chromosome " << chr << ": ";
         std::cout << "Found " << found_count << " of " << snp_count << " SNP population frequencies ";
         std::cout << "(" << (double) found_count / (double) snp_count * 100 << "%)" << std::endl;
+        std::cout << "Fixed " << min_fixed_pfb << " population frequencies below " << MIN_PFB << " and ";
+        std::cout << max_fixed_pfb << " population frequencies above " << MAX_PFB << std::endl;
     }
 }
 

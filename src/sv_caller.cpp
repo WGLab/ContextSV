@@ -331,27 +331,25 @@ void SVCaller::detectSVsFromCIGAR(bam_hdr_t* header, bam1_t* alignment, SVData& 
                 float target_seq_identity = 0.5;
 
                 // Get the reference sequence for the region (+/- insertion length)
-                std::string ref_seq_str = this->input_data->queryRefGenome(chr, pos - op_len, pos + op_len - 1);
+                // std::string ref_seq_str = this->input_data->queryRefGenome(chr, pos - op_len, pos + op_len - 1);
                 //std::string ref_seq_str = this->input_data->getRefGenome().query(chr, pos - op_len, pos + op_len - 1);
 
                 // Loop through the reference sequence and calculate the
                 // sequence identity +/- insertion length from the insertion
                 // position.
-                int ref_seq_len = ref_seq_str.length();
-                for (int j = 0; j < ref_seq_len - op_len; j++) {
+                // int ref_seq_len = ref_seq_str.length();
+                // Loop starting from the leftmost position of the insertion
+                // until POS
+                int ins_ref_pos;
+                for (int j = pos - op_len; j <= pos; j++) {
 
-                    // Get the string for the window
-                    std::string window_str = "";
-                    try
-                    {
-                        window_str = ref_seq_str.substr(j, op_len);
-                    }
-                    catch(const std::exception& e)
-                    {
-                        std::cerr << "ERROR: " << e.what() << std::endl;
-                        std::cerr << "j: " << j << " op_len: " << op_len << " ref_seq_str.length(): " << ref_seq_str.length() << std::endl;
-                        std::cerr << "ref_seq_str: " << ref_seq_str << std::endl;
-                        exit(1);
+                    // Get the string for the window (1-based coordinates)
+                    ins_ref_pos = j + 1;
+                    std::string window_str = this->input_data->queryRefGenome(chr, ins_ref_pos, ins_ref_pos + op_len - 1);
+
+                    // Continue if the window string is empty (out-of-range)
+                    if (window_str == "") {
+                        continue;
                     }
 
                     // Calculate the sequence identity
