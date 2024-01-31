@@ -111,43 +111,22 @@ std::string FASTAQuery::query(std::string chr, int64_t pos_start, int64_t pos_en
     // not larger than the chromosome length
     if (pos_start < 0)
     {
-        std::cout << "Start position " << pos_start << " is negative" << std::endl;
+        //std::cout << "Start position " << pos_start << " is negative" << std::endl;
         return "";
     }
     if (pos_end >= (int64_t)this->chr_to_seq[chr].length())
     {
-        std::cout << "End position " << pos_end << " is larger than chromosome length " << this->chr_to_seq[chr].length() << std::endl;
+        //std::cout << "End position " << pos_end << " is larger than chromosome length " << this->chr_to_seq[chr].length() << std::endl;
         return "";
     }
 
     int64_t length = pos_end - pos_start + 1;
-
-    // // Check if a FASTA file has been set
-    // if (this->fasta_filepath == "")
-    // {
-    //     std::cout << "No FASTA file set" << std::endl;
-    //     return "";
-    // }
-
-    // // Check if the chromosome is in the map
-    // if (this->chr_to_seq.find(chr) == this->chr_to_seq.end())
-    // {
-    //     std::cout << "Chromosome " << chr << " not found in FASTA file" << std::endl;
-    //     return "";
-    // }
     
-    //std::cout << "Querying " << chr << ":" << pos_start << "-" << pos_end << std::endl;
-
     // Get the sequence
-    // std::string sequence = this->chr_to_seq[chr];
     const std::string& sequence = this->chr_to_seq[chr];
-
-    //std::cout << "Sequence length: " << sequence.length() << std::endl;
 
     // Get the substring
     std::string subsequence = sequence.substr(pos_start, length);
-
-    //std::cout << "Subsequence length: " << subsequence.length() << std::endl;
 
     // If the subsequence is empty, return VCF missing data character
     if (subsequence == "")

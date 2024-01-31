@@ -492,8 +492,6 @@ void CNVCaller::readSNPAlleleFrequencies(std::string snp_filepath, SNPDataMap& s
         double baf = (double) alt_ad / (double) (ref_ad + alt_ad);
 
         // Add a new location and BAF value to the chromosome's SNP data
-//        locations.push_back(pos);
-//        bafs.push_back(baf);
         snp_data->locations.push_back(pos);
         snp_data->bafs.push_back(baf);
     }
@@ -517,10 +515,6 @@ void CNVCaller::readSNPAlleleFrequencies(std::string snp_filepath, SNPDataMap& s
         sorted_locations[i] = snp_data->locations[indices[i]];
         sorted_bafs[i] = snp_data->bafs[indices[i]];
     }
-
-    std::cout << "Sorted " << sorted_locations.size() << " SNPs by position" << std::endl;
-    std::cout << "First SNP: " << sorted_locations[0] << ", BAF: " << sorted_bafs[0] << std::endl;
-    std::cout << "Last SNP: " << sorted_locations[sorted_locations.size() - 1] << ", BAF: " << sorted_bafs[sorted_bafs.size() - 1] << std::endl;
 
     // Update the SNP data vectors
     snp_data->locations = sorted_locations;
@@ -557,8 +551,6 @@ void CNVCaller::getSNPPopulationFrequencies(SNPDataMap& snp_data_map)
         int snp_count = (int) snp_data.locations.size();
         int start_pos = snp_data.locations[0];
         int end_pos = snp_data.locations[snp_count - 1];
-
-        std::cout << "First SNP: " << start_pos << ", Last SNP: " << end_pos << std::endl;
         
         // Run bcftools query to get the population frequencies for the
         // chromosome within the SNP region, assumed to be sorted by position

@@ -37,9 +37,6 @@ SVData SVCaller::detectSVsFromRegion(std::string region)
     SVData sv_calls;
     std::string bam_filepath = this->input_data->getLongReadBam();
 
-    // Lock the mutex while setting up the BAM file
-//    this->bam_mtx.lock();
-
     // Check if the CIGAR string should be used for SV calling
     bool disable_cigar = this->input_data->getDisableCIGAR();
 
@@ -68,20 +65,14 @@ SVData SVCaller::detectSVsFromRegion(std::string region)
     bam1_t *bam1 = bam_init1();
     hts_itr_t *itr = sam_itr_querys(idx, bamHdr, region.c_str());
 
-    // Unlock the mutex after setting up the BAM file
-//    this->bam_mtx.unlock();
-
     // Loop through the alignments
     // Create a map of primary and supplementary alignments by QNAME (query template name)
     int num_alignments = 0;
     QueryMap primary_alignments;  // TODO: Add depth to primary alignments
     QueryMap supplementary_alignments;
 
-    //std::cout << "Reading alignments..." << std::endl;
-    // Thread-safe printing
     printMessage("Detecting SVs from " + region);
 
-    //printMessage("Starting SV count: " + std::to_string(sv_calls.size()));
     while (readNextAlignment(fp_in, itr, bam1) >= 0) {
 
         // Skip secondary and unmapped alignments
@@ -101,33 +92,27 @@ SVData SVCaller::detectSVsFromRegion(std::string region)
             if (!(bam1->core.flag & BAM_FSUPPLEMENTARY)) {
 
                 // Get the primary alignment chromosome, start, end, and depth
-//                this->bam_mtx.lock();
                 std::string chr = bamHdr->target_name[bam1->core.tid];
                 int64_t start = bam1->core.pos;
                 int64_t end = bam_endpos(bam1);
-//                this->bam_mtx.unlock();
 
+                // Add the primary alignment to the map
                 AlignmentData alignment(chr, start, end, ".");
                 primary_alignments[qname].push_back(alignment);
             
                 // Call SVs directly from the CIGAR string
                 if (disable_cigar == false) {
-
-                    // printMessage("Calling CIGAR SVs from " + region, print_mtx);
                     this->detectSVsFromCIGAR(bamHdr, bam1, sv_calls);
-                    // printMessage("Finished calling CIGAR SVs from " + region, print_mtx);
                 }
 
             // Process supplementary alignments
             } else if (bam1->core.flag & BAM_FSUPPLEMENTARY) {
 
                 // Add the supplementary alignment to the map
-//                this->bam_mtx.lock();
                 std::string chr = bamHdr->target_name[bam1->core.tid];
                 int32_t start = bam1->core.pos;
                 int32_t end = bam_endpos(bam1);
                 AlignmentData alignment(chr, start, end, ".");
-//                this->bam_mtx.unlock();
 
                 // Add the supplementary alignment to the map
                 supplementary_alignments[qname].push_back(alignment);
@@ -136,11 +121,6 @@ SVData SVCaller::detectSVsFromRegion(std::string region)
 
         // Increment the number of alignment records processed
         num_alignments++;
-
-        // // Print the number of alignments processed every 10 thousand
-        // if (num_alignments % 10000 == 0) {
-        //     std::cout << "Region: " << region << " Alignments processed: " << num_alignments << std::endl;
-        // }
     }
     
     // Print the number of alignments processed
@@ -148,7 +128,6 @@ SVData SVCaller::detectSVsFromRegion(std::string region)
 
     // Loop through the map of primary alignments by QNAME and find gaps and
     // overlaps from supplementary alignments
-    //std::cout << "Running split read analysis..." << std::endl;
     for (const auto& entry : primary_alignments) {
 
         // Get the QNAME
@@ -234,13 +213,9 @@ SVData SVCaller::detectSVsFromRegion(std::string region)
     if (sv_calls.size() > 0) {
         printMessage("Found " + std::to_string(sv_calls.size()) + " SVs from " + region);
     }
-    // printMessage("Finished detecting " + std::to_string(sv_calls.size()) + " SVs from " + region);
 
     // Return the SV calls
     return sv_calls;
-
-    // Print the number of SV calls
-    //std::cout << sv_calls.size() << " SV calls from " << region << std::endl;
 }
 
 SVCaller::SVCaller(InputData &input_data)
@@ -261,8 +236,6 @@ SVData SVCaller::run()
 // Detect SVs from the CIGAR string of a read alignment.
 void SVCaller::detectSVsFromCIGAR(bam_hdr_t* header, bam1_t* alignment, SVData& sv_calls)
 {
-//    this->bam_mtx.lock();
-
     // Get the chromosome
     std::string chr = header->target_name[alignment->core.tid];
 
@@ -274,8 +247,6 @@ void SVCaller::detectSVsFromCIGAR(bam_hdr_t* header, bam1_t* alignment, SVData& 
 
     // Get the CIGAR length
     int cigar_len = alignment->core.n_cigar;
-
-//    this->bam_mtx.unlock();
 
     // Track the query position
     int query_pos = 0;
@@ -330,16 +301,9 @@ void SVCaller::detectSVsFromCIGAR(bam_hdr_t* header, bam1_t* alignment, SVData& 
                 bool is_duplication = false;
                 float target_seq_identity = 0.5;
 
-                // Get the reference sequence for the region (+/- insertion length)
-                // std::string ref_seq_str = this->input_data->queryRefGenome(chr, pos - op_len, pos + op_len - 1);
-                //std::string ref_seq_str = this->input_data->getRefGenome().query(chr, pos - op_len, pos + op_len - 1);
-
                 // Loop through the reference sequence and calculate the
                 // sequence identity +/- insertion length from the insertion
                 // position.
-                // int ref_seq_len = ref_seq_str.length();
-                // Loop starting from the leftmost position of the insertion
-                // until POS
                 int ins_ref_pos;
                 for (int j = pos - op_len; j <= pos; j++) {
 
@@ -444,8 +408,7 @@ SVData SVCaller::detectSVsFromSplitReads()
     // std::vector<SVData> sv_calls_vec;
     SVData sv_calls;
     for (const auto& region : regions) {
-        // SVData sv_calls = this->detectSVsFromRegion(region);
-        // sv_calls_vec.push_back(sv_calls);
+        std::cout << "Starting region: " << region << std::endl;
 
         // Split the region into chunks and process each chunk in a separate
         // thread
@@ -454,7 +417,6 @@ SVData SVCaller::detectSVsFromSplitReads()
 
         // Get the chromosome length
         int chr_len = this->input_data->getRefGenomeChromosomeLength(region);
-        std::cout << "Chromosome length: " << chr_len << std::endl;
 
         // Split the region into chunks
         int chunk_size = chr_len / num_threads;
@@ -493,17 +455,14 @@ SVData SVCaller::detectSVsFromSplitReads()
 
             // Get the SV calls from the future
             SVData sv_calls_region = future.get();
-            //std::cout << "Future SV calls: " << sv_calls_region.size() << std::endl;
             sv_calls_vec.push_back(sv_calls_region);
         }
 
         // Combine the SV calls from each region
-        std::cout << "Combining SV calls..." << std::endl;
+        std::cout << "Region complete. Combining SV calls..." << std::endl;
         auto start2 = std::chrono::high_resolution_clock::now();
         for (auto it = sv_calls_vec.begin(); it != sv_calls_vec.end(); ++it) {
-            //std::cout << "SV calls: " << it->size() << std::endl;
             sv_calls.concatenate(*it);
-            //std::cout << "Updated SV calls: " << sv_calls.size() << std::endl;
         }
 
         auto end2 = std::chrono::high_resolution_clock::now();
