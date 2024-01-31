@@ -15,6 +15,8 @@
 #include <tuple>
 #include <iomanip>  // Progress bar
 #include <numeric>  // std::iota
+#include <thread>
+#include <future>
 
 #include "utils.h"
 
@@ -530,6 +532,13 @@ void CNVCaller::getSNPPopulationFrequencies(SNPDataMap& snp_data_map)
         std::string chr = pair.first;
         SNPData& snp_data = pair.second;
 
+        // Check if the chromosome name starts with "chr", gnomaAD uses "chr1" instead of "1"
+        std::string chr_with_chr = chr;
+        if (chr_with_chr.substr(0, 3) != "chr")
+        {
+            chr_with_chr = "chr" + chr;
+        }
+
         // Read the population frequencies for the chromosome
         std::string pfb_filepath = this->input_data->getAlleleFreqFilepath(chr);
 
@@ -547,67 +556,108 @@ void CNVCaller::getSNPPopulationFrequencies(SNPDataMap& snp_data_map)
 
         std::cout << "Reading population frequencies for chromosome " << chr << " from " << pfb_filepath << std::endl;
 
-        // Get the start and end positions for the chromosome
+        // Get the start and end SNP positions for the chromosome (1-based index)
         int snp_count = (int) snp_data.locations.size();
-        int start_pos = snp_data.locations[0];
-        int end_pos = snp_data.locations[snp_count - 1];
-        
-        // Run bcftools query to get the population frequencies for the
-        // chromosome within the SNP region, assumed to be sorted by position
-        // Check if the chromosome name starts with "chr", gnomaAD uses "chr1" instead of "1"
-        std::string chr_with_chr = chr;
-        if (chr_with_chr.substr(0, 3) != "chr")
+        int snp_start = snp_data.locations[0];
+        int snp_end = snp_data.locations[snp_count - 1];
+
+        // Get the number of avaiable threads
+        int num_threads = std::thread::hardware_concurrency();
+
+        // Get the region size
+        int region_size = snp_end - snp_start;
+
+        // Split the region into equal parts for each thread
+        int region_size_per_thread = region_size / num_threads;
+        std::vector<std::string> region_chunks;
+        for (int i = 0; i < num_threads; i++)
         {
-            chr_with_chr = "chr" + chr;
-        }
-        std::string region_str = chr_with_chr + ":" + std::to_string(start_pos) + "-" + std::to_string(end_pos);
-        std::string cmd = \
-            "bcftools query -r " + region_str + " -f '%POS\t%AF\n' -i 'INFO/variant_type=\"snv\"' " + pfb_filepath + " 2>/dev/null";
-
-        if (this->input_data->getVerbose()) {
-            std::cout << "Command: " << cmd << std::endl;
+            int start = snp_start + i * region_size_per_thread;
+            int end = start + region_size_per_thread;
+            region_chunks.push_back(chr_with_chr + ":" + std::to_string(start) + "-" + std::to_string(end));
         }
 
-        // Open a pipe to read the output of the command
-        FILE *fp = popen(cmd.c_str(), "r");
-        if (fp == NULL)
-        {
-            std::cerr << "ERROR: Could not open pipe for command: " << cmd << std::endl;
-            exit(1);
-        }
-
-        // Vector of population frequencies (default = 0.5)
-        std::vector<double> pfbs = std::vector<double>(snp_count, 0.5);
-
-        // Loop through the BCFTOOLS output and populate the map of population
-        // frequencies
-        std::cout << "Populating map of population frequencies..." << std::endl;
+        // Loop through each region chunk and get the population frequencies in
+        // parallel
         std::unordered_map<int, double> pos_pfb_map;
-        const int line_size = 256;
-        char line[line_size];
-        while (fgets(line, line_size, fp) != NULL)
+        std::vector<std::thread> threads;
+        
+        // Vector of futures
+        std::vector<std::future<std::unordered_map<int, double>>> futures;
+        for (const auto& region_chunk : region_chunks)
         {
-            // Parse the line
-            int pos;
-            double pfb;
-            if (sscanf(line, "%d%lf", &pos, &pfb) == 2)
+            // Create a lambda function to get the population frequencies for the
+            // region chunk
+            auto get_pfb = [region_chunk, pfb_filepath]() -> std::unordered_map<int, double>
             {
-                // Add the position and population frequency to the map
-                pos_pfb_map[pos] = pfb;
-            }
+                // Run bcftools query to get the population frequencies for the
+                // chromosome within the SNP region, assumed to be sorted by
+                // position
+                std::string cmd = \
+                    "bcftools query -r " + region_chunk + " -f '%POS\t%AF\n' -i 'INFO/variant_type=\"snv\"' " + pfb_filepath + " 2>/dev/null";
+
+                //std::cout << "Command: " << cmd << std::endl;
+
+                // Open a pipe to read the output of the command
+                FILE *fp = popen(cmd.c_str(), "r");
+                if (fp == NULL)
+                {
+                    std::cerr << "ERROR: Could not open pipe for command: " << cmd << std::endl;
+                    exit(1);
+                }
+
+                // Loop through the BCFTOOLS output and populate the map of population
+                // frequencies
+                std::unordered_map<int, double> pos_pfb_map;
+                const int line_size = 256;
+                char line[line_size];
+                while (fgets(line, line_size, fp) != NULL)
+                {
+                    // Parse the line
+                    int pos;
+                    double pfb;
+                    if (sscanf(line, "%d%lf", &pos, &pfb) == 2)
+                    {
+                        // Add the position and population frequency to the map
+                        pos_pfb_map[pos] = pfb;
+                    }
+                }
+
+                // Close the pipe
+                pclose(fp);
+
+                return pos_pfb_map;
+            };
+
+            // Create a future for the thread
+            std::future<std::unordered_map<int, double>> future = std::async(std::launch::async, get_pfb);
+            futures.push_back(std::move(future));
         }
 
-        // Close the pipe
-        pclose(fp);
+        // Loop through the futures and get the results
+        std::cout << "Merging population frequencies for chromosome " << chr << "..." << std::endl;
+        for (auto& future : futures)
+        {
+            // Wait for the future to finish
+            future.wait();
 
-        std::cout << "Populated map of population frequencies for " << pos_pfb_map.size() << " SNPs" << std::endl;
+            // Get the result from the future
+            std::unordered_map<int, double> result = future.get();
 
+            // Merge the result into the map of population frequencies
+            pos_pfb_map.insert(result.begin(), result.end());
+        }
+        std::cout << "Finished merging population frequencies for chromosome " << chr << std::endl;
+        std::cout << "Found " << pos_pfb_map.size() << " population frequencies for chromosome " << chr << std::endl;
+        
         // Loop through the SNP positions and set the population frequencies
+        std::cout << "Setting SNP population frequencies for chromosome " << chr << "..." << std::endl;
         int snp_pos = 0;  // SNP position
         int found_count = 0;
         int min_fixed_pfb = 0;
         int max_fixed_pfb = 0;
         double pfb;  // Population frequency value
+        std::vector<double> pfbs(snp_count, 0);
         for (int i = 0; i < snp_count; i++)
         {
             // Get the SNP position

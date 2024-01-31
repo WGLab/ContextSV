@@ -70,9 +70,6 @@ SVData SVCaller::detectSVsFromRegion(std::string region)
     int num_alignments = 0;
     QueryMap primary_alignments;  // TODO: Add depth to primary alignments
     QueryMap supplementary_alignments;
-
-    printMessage("Detecting SVs from " + region);
-
     while (readNextAlignment(fp_in, itr, bam1) >= 0) {
 
         // Skip secondary and unmapped alignments
