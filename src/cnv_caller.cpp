@@ -525,6 +525,10 @@ void CNVCaller::readSNPAlleleFrequencies(std::string snp_filepath, SNPDataMap& s
 
 void CNVCaller::getSNPPopulationFrequencies(SNPDataMap& snp_data_map)
 {
+    // Get the number of chromosomes
+    int num_chromosomes = (int) snp_data_map.size();
+    int chr_count = 0;
+
     // Loop through each chromosome in the SNP data map and access the
     // population frequency for each SNP
     for (auto& pair : snp_data_map)
@@ -532,15 +536,27 @@ void CNVCaller::getSNPPopulationFrequencies(SNPDataMap& snp_data_map)
         std::string chr = pair.first;
         SNPData& snp_data = pair.second;
 
-        // Check if the chromosome name starts with "chr", gnomaAD uses "chr1" instead of "1"
-        std::string chr_with_chr = chr;
-        if (chr_with_chr.substr(0, 3) != "chr")
-        {
-            chr_with_chr = "chr" + chr;
-        }
-
-        // Read the population frequencies for the chromosome
+        // Get the population frequency file for the chromosome
         std::string pfb_filepath = this->input_data->getAlleleFreqFilepath(chr);
+
+        // Check if the filepath uses the 'chr' prefix notations based on the
+        // chromosome name (e.g., *.chr1.vcf.gz vs *.1.vcf.gz)
+        std::string chr_gnomad = chr;
+        std::string chr_prefix = "chr";
+        if (pfb_filepath.find(chr_prefix) == std::string::npos)
+        {
+            // Remove the 'chr' prefix from the chromosome name
+            if (chr_gnomad.find(chr_prefix) != std::string::npos)
+            {
+                chr_gnomad = chr_gnomad.substr(chr_prefix.length());
+            }
+        } else {
+            // Add the 'chr' prefix to the chromosome name
+            if (chr_gnomad.find(chr_prefix) == std::string::npos)
+            {
+                chr_gnomad = chr_prefix + chr;
+            }
+        }
 
         // If no population frequency file is provided, use 0.5 as the
         // population frequency for all SNPs
@@ -574,7 +590,7 @@ void CNVCaller::getSNPPopulationFrequencies(SNPDataMap& snp_data_map)
         {
             int start = snp_start + i * region_size_per_thread;
             int end = start + region_size_per_thread;
-            region_chunks.push_back(chr_with_chr + ":" + std::to_string(start) + "-" + std::to_string(end));
+            region_chunks.push_back(chr_gnomad + ":" + std::to_string(start) + "-" + std::to_string(end));
         }
 
         // Loop through each region chunk and get the population frequencies in
@@ -635,7 +651,7 @@ void CNVCaller::getSNPPopulationFrequencies(SNPDataMap& snp_data_map)
         }
 
         // Loop through the futures and get the results
-        std::cout << "Merging population frequencies for chromosome " << chr << "..." << std::endl;
+        //std::cout << "Merging population frequencies for chromosome " << chr << "..." << std::endl;
         for (auto& future : futures)
         {
             // Wait for the future to finish
@@ -647,8 +663,8 @@ void CNVCaller::getSNPPopulationFrequencies(SNPDataMap& snp_data_map)
             // Merge the result into the map of population frequencies
             pos_pfb_map.insert(result.begin(), result.end());
         }
-        std::cout << "Finished merging population frequencies for chromosome " << chr << std::endl;
-        std::cout << "Found " << pos_pfb_map.size() << " population frequencies for chromosome " << chr << std::endl;
+        //std::cout << "Finished merging population frequencies for chromosome " << chr << std::endl;
+        //std::cout << "Found " << pos_pfb_map.size() << " population frequencies for chromosome " << chr << std::endl;
         
         // Loop through the SNP positions and set the population frequencies
         std::cout << "Setting SNP population frequencies for chromosome " << chr << "..." << std::endl;
@@ -687,11 +703,15 @@ void CNVCaller::getSNPPopulationFrequencies(SNPDataMap& snp_data_map)
         snp_data.pfbs = pfbs;
 
         // Print the percentage of SNPs with population frequencies
-        std::cout << "For chromosome " << chr << ": ";
         std::cout << "Found " << found_count << " of " << snp_count << " SNP population frequencies ";
         std::cout << "(" << (double) found_count / (double) snp_count * 100 << "%)" << std::endl;
         std::cout << "Fixed " << min_fixed_pfb << " population frequencies below " << MIN_PFB << " and ";
         std::cout << max_fixed_pfb << " population frequencies above " << MAX_PFB << std::endl;
+
+
+        // Update the progress (number of chromosomes processed)
+        chr_count++;
+        std::cout << std::to_string(chr_count) + "/" + std::to_string(num_chromosomes) + " chromosomes processed" << std::endl;
     }
 }
 

@@ -42,7 +42,7 @@ class SVData {
             {0, "DEL"},
             {1, "INS"},
             {2, "INV"},
-            {3, "INS"},
+            {3, "DUP"},
             {4, "BND"}
         };
         

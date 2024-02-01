@@ -397,35 +397,45 @@ SVData SVCaller::detectSVsFromSplitReads()
     } else {
         regions.push_back(this->input_data->getRegion());
     }
+    int num_regions = regions.size();
 
     // ----- Non-threading -----
     // Loop through each region and detect SVs
-    std::cout << "Detecting SVs from " << regions.size() << " regions..." << std::endl;
+    std::cout << "Detecting SVs from " << num_regions << " region(s)..." << std::endl;
+    int region_count = 0;
     auto start1 = std::chrono::high_resolution_clock::now();
-    // std::vector<SVData> sv_calls_vec;
     SVData sv_calls;
     for (const auto& region : regions) {
         std::cout << "Starting region: " << region << std::endl;
 
         // Split the region into chunks and process each chunk in a separate
         // thread
-        // Get the number of available threads
-        int num_threads = std::thread::hardware_concurrency();
+        int num_threads = 1;
 
-        // Get the chromosome length
-        int chr_len = this->input_data->getRefGenomeChromosomeLength(region);
-
-        // Split the region into chunks
-        int chunk_size = chr_len / num_threads;
+        // If a region range is specified (e.g., chr1:1-1000), use a single
+        // thread
         std::vector<std::string> region_chunks;
-        for (int i = 0; i < num_threads; i++) {
-            int start = i * chunk_size + 1;  // 1-based
-            int end = start + chunk_size;
-            if (i == num_threads - 1) {
-                end = chr_len;
+        if (region.find(":") != std::string::npos) {
+            num_threads = 1;
+            region_chunks.push_back(region);
+        } else {
+            // Get the number of available threads
+            num_threads = std::thread::hardware_concurrency();
+
+            // Get the chromosome length
+            int chr_len = this->input_data->getRefGenomeChromosomeLength(region);
+
+            // Split the region into chunks
+            int chunk_size = chr_len / num_threads;
+            for (int i = 0; i < num_threads; i++) {
+                int start = i * chunk_size + 1;  // 1-based
+                int end = start + chunk_size;
+                if (i == num_threads - 1) {
+                    end = chr_len;
+                }
+                std::string chunk = region + ":" + std::to_string(start) + "-" + std::to_string(end);
+                region_chunks.push_back(chunk);
             }
-            std::string chunk = region + ":" + std::to_string(start) + "-" + std::to_string(end);
-            region_chunks.push_back(chunk);
         }
 
         // Loop through the chunks and process each chunk in a separate thread
@@ -435,7 +445,7 @@ SVData SVCaller::detectSVsFromSplitReads()
         // Vector of futures
         std::vector<std::future<SVData>> futures;
         for (const auto& sub_region : region_chunks) {
-            // std::cout << "Sub-region: " << sub_region << std::endl;
+            //std::cout << "Sub-region: " << sub_region << std::endl;
 
             // Detect SVs from the sub-region in a separate thread using a
             // future
@@ -464,6 +474,10 @@ SVData SVCaller::detectSVsFromSplitReads()
 
         auto end2 = std::chrono::high_resolution_clock::now();
         std::cout << "Combining SV calls finished. Elapsed time: " << getElapsedTime(start2, end2) << std::endl;
+
+        // Increment the region count
+        region_count++;
+        std::cout << "Region " << region_count << " of " << num_regions << " complete" << std::endl;
     }
     auto end1 = std::chrono::high_resolution_clock::now();
     std::cout << "Finished detecting SVs from " << regions.size() << " regions. Elapsed time (h:m:s): " << getElapsedTime(start1, end1) << std::endl;

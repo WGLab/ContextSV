@@ -112,10 +112,20 @@ def sv_merger(vcf_file_path, mode='dbscan', eps=100, min_samples=2, suffix='.mer
                 dbscan = DBSCAN(eps=eps, min_samples=min_samples)
 
                 # Cluster deletion breakpoints
-                del_labels = dbscan.fit_predict(chr_del_breakpoints)
+                if len(chr_del_breakpoints) > 0:
+                    print(f"Clustering deletion breakpoints using DBSCAN with eps={eps} and min_samples={min_samples}...")
+                    del_labels = dbscan.fit_predict(chr_del_breakpoints)
+                    print(f"Deletion label counts: {len(np.unique(del_labels))}")
+                else:
+                    del_labels = []
 
                 # Cluster insertion breakpoints
-                ins_labels = dbscan.fit_predict(chr_ins_breakpoints)
+                if len(chr_ins_breakpoints) > 0:
+                    print(f"Clustering insertion breakpoints using DBSCAN with eps={eps} and min_samples={min_samples}...")
+                    ins_labels = dbscan.fit_predict(chr_ins_breakpoints)
+                    print(f"Insertion label counts: {len(np.unique(ins_labels))}")
+                else:
+                    ins_labels = []
 
             elif mode == 'agglomerative':
                 # Cluster SV breakpoints using agglomerative clustering
@@ -220,8 +230,8 @@ if __name__ == '__main__':
     # sv_merger(sys.argv[1], mode='dbscan', suffix='.merged_dbscan')
     
     # DBSCAN with eps ranging from 30 to 50 by 1
-    for eps in range(1, 101):
-        sv_merger(sys.argv[1], mode='dbscan', eps=eps, suffix=f'.merged_eps{eps}')
+    # for eps in range(1, 101):
+    #     sv_merger(sys.argv[1], mode='dbscan', eps=eps, suffix=f'.merged_eps{eps}')
 
-    # # DBSCAN with eps equal to 34 (Achieves 100% recall for deletions)
-    # sv_merger(sys.argv[1], mode='dbscan', eps=34, suffix='.merged_eps34')
+    # DBSCAN with eps equal to 34 (Achieves 100% recall for deletions)
+    sv_merger(sys.argv[1], mode='dbscan', eps=34, suffix='.merged_eps34')
