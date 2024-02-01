@@ -183,7 +183,17 @@ void CNVCaller::calculateLog2RatioAtSNPS(SNPDataMap& snp_data_map)
         int snp_count = (int) snp_data.locations.size();
         int chr_len = this->input_data->getRefGenomeChromosomeLength(chr);
         uint64_t region_start = std::max(1, (int) snp_data.locations[0] - window_size / 2);
-        uint64_t region_end = std::min(chr_len, (int) snp_data.locations[snp_count - 1] + window_size / 2);
+
+        // Have to check this since my github unit tests do not have a full ref
+        // genome at this time.
+        // TOOO: Add a full ref genome to the unit tests via a tarball
+        uint64_t region_end;
+        if (chr_len > 0)
+        {
+            region_end = std::min(chr_len, (int) snp_data.locations[snp_count - 1] + window_size / 2);
+        } else {
+            region_end = snp_data.locations[snp_count - 1] + window_size / 2;
+        }
         std::unordered_map<uint64_t, int> pos_depth_map = calculateDepthsForSNPRegion(chr, region_start, region_end);
 
         // Loop through each SNP and calculate the LRR for a window centered at
