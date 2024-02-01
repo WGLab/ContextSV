@@ -57,6 +57,9 @@ class CNVCaller {
         // Calculate the mean chromosome coverage
         double calculateMeanChromosomeCoverage(std::string chr);
 
+        // Calculate read depths for a region
+        std::unordered_map<uint64_t, int> calculateDepthsForSNPRegion(std::string chr, int start_pos, int end_pos);
+
         // Calculate region mean coverage
         double calculateWindowLogRRatio(double mean_chr_cov, std::string chr, int start_pos, int end_pos);
 

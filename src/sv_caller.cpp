@@ -420,7 +420,8 @@ SVData SVCaller::detectSVsFromSplitReads()
             region_chunks.push_back(region);
         } else {
             // Get the number of available threads
-            num_threads = std::thread::hardware_concurrency();
+            //num_threads = std::thread::hardware_concurrency();
+            num_threads = this->input_data->getThreadCount();
 
             // Get the chromosome length
             int chr_len = this->input_data->getRefGenomeChromosomeLength(region);

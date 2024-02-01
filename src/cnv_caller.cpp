@@ -181,51 +181,10 @@ void CNVCaller::calculateLog2RatioAtSNPS(SNPDataMap& snp_data_map)
         // Open a SAMtools process to get read depth values for the entire
         // region
         int snp_count = (int) snp_data.locations.size();
-        uint64_t region_start = std::max((uint64_t) 0, (uint64_t) snp_data.locations[0] - (uint64_t) window_size);
-        uint64_t region_end = (uint64_t) snp_data.locations[snp_count - 1] + (uint64_t) window_size;
-        const int cmd_size = 1024;
-        char cmd[cmd_size];
-
-        std::cout << "SNP region: " << chr << ":" << region_start << "-" << region_end << std::endl;
-
-        // Run samtools depth on the entire region, and print positions and
-        // depths (not chromosome)
-        snprintf(cmd, cmd_size,\
-            "samtools depth -r %s:%ld-%ld %s | awk '{print $2, $3}'",\
-            chr.c_str(), region_start, region_end, input_filepath.c_str());
-
-        if (this->input_data->getVerbose()) {
-            std::cout << "Command: " << cmd << std::endl;
-        }
-
-        FILE *fp = popen(cmd, "r");
-        if (fp == NULL) {
-            std::cerr << "ERROR: Could not open pipe for command: " << cmd << std::endl;
-            exit(EXIT_FAILURE);
-        }
-
-        // Create a map of positions and depths
-        std::cout << "Creating map of positions and depths..." << std::endl;
-        std::unordered_map<uint64_t, int> pos_depth_map;
-        const int line_size = 1024;
-        char line[line_size];
-        while (fgets(line, line_size, fp) != NULL)
-        {
-            // Parse the line
-            uint64_t pos;
-            int depth;
-            if (sscanf(line, "%ld%d", &pos, &depth) == 2)
-            {
-                // Add the position and depth to the map
-                pos_depth_map[pos] = depth;
-            } else {
-                std::cerr << "ERROR: Could not parse output from command: " << cmd << std::endl;
-                exit(EXIT_FAILURE);
-            }
-        }
-
-        // Close the pipe
-        pclose(fp);
+        int chr_len = this->input_data->getRefGenomeChromosomeLength(chr);
+        uint64_t region_start = std::max(1, (int) snp_data.locations[0] - window_size / 2);
+        uint64_t region_end = std::min(chr_len, (int) snp_data.locations[snp_count - 1] + window_size / 2);
+        std::unordered_map<uint64_t, int> pos_depth_map = calculateDepthsForSNPRegion(chr, region_start, region_end);
 
         // Loop through each SNP and calculate the LRR for a window centered at
         // the SNP position
@@ -288,41 +247,193 @@ double CNVCaller::calculateMeanChromosomeCoverage(std::string chr)
 
     // Run the entire chromosome, printing the number of positions and the
     // cumulative read depth
-    const int cmd_size = 1024;
-    char cmd[cmd_size];
-    snprintf(cmd, cmd_size,\
-        "samtools depth -r %s %s | awk '{c++;s+=$3}END{print c, s}'",\
-        chr.c_str(), input_filepath.c_str());
 
-    if (this->input_data->getVerbose()) {
-        std::cout << "Command: " << cmd << std::endl;
+    // Get the number of threads
+    //int num_threads = std::thread::hardware_concurrency();
+    int num_threads = this->input_data->getThreadCount();
+
+    // Split the chromosome into equal parts for each thread
+    int chr_len = this->input_data->getRefGenomeChromosomeLength(chr);
+
+    // Split the chromosome into equal parts for each thread
+    int chunk_size = chr_len / num_threads;
+    std::vector<std::string> region_chunks;
+    for (int i = 0; i < num_threads; i++)
+    {
+        int start = i * chunk_size + 1;  // 1-based index
+        int end = start + chunk_size;
+        //std::cout << "Chromosome chunk: " << chr << ":" << start << "-" << end << std::endl;
+        region_chunks.push_back(chr + ":" + std::to_string(start) + "-" + std::to_string(end));
     }
 
-    FILE *fp = popen(cmd, "r");
-    if (fp == NULL) {
-        std::cerr << "ERROR: Could not open pipe for command: " << cmd << std::endl;
-        exit(EXIT_FAILURE);
-    }
-
-    // Parse the outputs
-    uint64_t pos_count, cum_depth;
-    double mean_chr_cov = -1;
-    const int line_size = 256;
-    char line[line_size];
-    if (fgets(line, line_size, fp) != NULL)
-    {           
-        if (sscanf(line, "%ld%ld", &pos_count, &cum_depth) == 2)
+    // Loop through each region chunk and get the mean chromosome coverage in
+    // parallel
+    uint64_t pos_count = 0;
+    uint64_t cum_depth = 0;
+    std::vector<std::future<std::tuple<uint64_t, uint64_t>>> futures;
+    for (const auto& region_chunk : region_chunks)
+    {
+        // Create a lambda function to get the mean chromosome coverage for the
+        // region chunk
+        auto get_mean_chr_cov = [region_chunk, input_filepath]() -> std::tuple<uint64_t, uint64_t>
         {
-            // Calculate the mean chromosome coverage
-            mean_chr_cov = (double) cum_depth / (double) pos_count;
-        } else {
-            std::cerr << "ERROR: Could not parse output from command: " << cmd << std::endl;
-            exit(EXIT_FAILURE);
-        }
+            // Run samtools depth on the entire region, and print positions and
+            // depths (not chromosome)
+            const int cmd_size = 256;
+            char cmd[cmd_size];
+            snprintf(cmd, cmd_size,\
+                "samtools depth -r %s %s | awk '{c++;s+=$3}END{print c, s}'",\
+                region_chunk.c_str(), input_filepath.c_str());
+
+            // Open a pipe to read the output of the command
+            FILE *fp = popen(cmd, "r");
+            if (fp == NULL)
+            {
+                std::cerr << "ERROR: Could not open pipe for command: " << cmd << std::endl;
+                exit(EXIT_FAILURE);
+            }
+
+            // Parse the outputs
+            uint64_t pos_count, cum_depth;
+            const int line_size = 256;
+            char line[line_size];
+            if (fgets(line, line_size, fp) != NULL)
+            {           
+                if (sscanf(line, "%ld%ld", &pos_count, &cum_depth) == 2)
+                {
+                    // Update the position count and cumulative depth
+                    pos_count += pos_count;
+                    cum_depth += cum_depth;
+                } else {
+                    std::cerr << "ERROR: Could not parse output from command: " << cmd << std::endl;
+                    exit(EXIT_FAILURE);
+                }
+            }
+            pclose(fp);  // Close the process
+
+            return std::make_tuple(pos_count, cum_depth);
+        };
+
+        // Create a future for the thread
+        std::future<std::tuple<uint64_t, uint64_t>> future = std::async(std::launch::async, get_mean_chr_cov);
+
+        // Add the future to the vector
+        futures.push_back(std::move(future));
     }
-    pclose(fp);  // Close the process
+
+    // Loop through the futures and get the results
+    for (auto& future : futures)
+    {
+        // Wait for the future to finish
+        future.wait();
+
+        // Get the result from the future
+        std::tuple<uint64_t, uint64_t> result = future.get();
+
+        // Update the position count and cumulative depth
+        pos_count += std::get<0>(result);
+        cum_depth += std::get<1>(result);
+    }
+
+    // Calculate the mean chromosome coverage
+    double mean_chr_cov = (double) cum_depth / (double) pos_count;
 
     return mean_chr_cov;
+}
+
+std::unordered_map<uint64_t, int> CNVCaller::calculateDepthsForSNPRegion(std::string chr, int start_pos, int end_pos)
+{
+    std::string input_filepath = this->input_data->getShortReadBam();
+
+    // Get the number of threads
+    //int num_threads = std::thread::hardware_concurrency();
+    int num_threads = this->input_data->getThreadCount();
+
+    // Split the region into equal parts for each thread
+    int region_size = end_pos - start_pos;
+    int chunk_size = region_size / num_threads;
+    std::vector<std::string> region_chunks;
+    for (int i = 0; i < num_threads; i++)
+    {
+        int start = start_pos + i * chunk_size + 1;  // 1-based index
+        int end = start + chunk_size;
+        //std::cout << "SNP region chunk: " << chr << ":" << start << "-" << end << std::endl;
+        region_chunks.push_back(chr + ":" + std::to_string(start) + "-" + std::to_string(end));
+    }
+
+    // Loop through each region chunk and get the mean chromosome coverage in
+    // parallel
+    std::unordered_map<uint64_t, int> pos_depth_map;
+    std::vector<std::future<std::unordered_map<uint64_t, int>>> futures;
+    for (const auto& region_chunk : region_chunks)
+    {
+        // Create a lambda function to get the mean chromosome coverage for the
+        // region chunk
+        auto get_pos_depth_map = [region_chunk, input_filepath]() -> std::unordered_map<uint64_t, int>
+        {
+            // Run samtools depth on the entire region, and print positions and
+            // depths (not chromosome)
+            const int cmd_size = 256;
+            char cmd[cmd_size];
+            snprintf(cmd, cmd_size,\
+                "samtools depth -r %s %s | awk '{print $2, $3}'",\
+                region_chunk.c_str(), input_filepath.c_str());
+
+            // Open a pipe to read the output of the command
+            FILE *fp = popen(cmd, "r");
+            if (fp == NULL)
+            {
+                std::cerr << "ERROR: Could not open pipe for command: " << cmd << std::endl;
+                exit(EXIT_FAILURE);
+            }
+
+            // Create a map of positions and depths
+            std::unordered_map<uint64_t, int> pos_depth_map;
+            const int line_size = 1024;
+            char line[line_size];
+            while (fgets(line, line_size, fp) != NULL)
+            {
+                // Parse the line
+                uint64_t pos;
+                int depth;
+                if (sscanf(line, "%ld%d", &pos, &depth) == 2)
+                {
+                    // Add the position and depth to the map
+                    pos_depth_map[pos] = depth;
+                } else {
+                    std::cerr << "ERROR: Could not parse output from command: " << cmd << std::endl;
+                    std::cerr << "Line: " << line << std::endl;
+                    exit(EXIT_FAILURE);
+                }
+            }
+
+            // Close the pipe
+            pclose(fp);
+
+            return pos_depth_map;
+        };
+
+        // Create a future for the thread
+        std::future<std::unordered_map<uint64_t, int>> future = std::async(std::launch::async, get_pos_depth_map);
+
+        // Add the future to the vector
+        futures.push_back(std::move(future));
+    }
+
+    // Loop through the futures and get the results
+    for (auto& future : futures)
+    {
+        // Wait for the future to finish
+        future.wait();
+
+        // Get the result from the future
+        std::unordered_map<uint64_t, int> result = future.get();
+
+        // Merge the result into the map of positions and depths
+        pos_depth_map.insert(result.begin(), result.end());
+    }
+
+    return pos_depth_map;
 }
 
 double CNVCaller::calculateWindowLogRRatio(double mean_chr_cov, std::string chr, int window_start, int window_end)
@@ -331,9 +442,10 @@ double CNVCaller::calculateWindowLogRRatio(double mean_chr_cov, std::string chr,
 
     // Open a SAMtools process to calculate cumulative read depth and position
     // counts (non-zero depths only) for the region
-    const int cmd_size = 1024;
+    const int cmd_size = 256;
     char cmd[cmd_size];
     FILE *fp;
+    std::cout << "Calculating log2 ratio for window " << chr << ":" << window_start << "-" << window_end << "..." << std::endl;
     snprintf(cmd, cmd_size,\
         "samtools depth -r %s:%d-%d %s | awk '{c++;s+=$3}END{print c, s}'",\
         chr.c_str(), window_start, window_end, input_filepath.c_str());
@@ -578,7 +690,8 @@ void CNVCaller::getSNPPopulationFrequencies(SNPDataMap& snp_data_map)
         int snp_end = snp_data.locations[snp_count - 1];
 
         // Get the number of avaiable threads
-        int num_threads = std::thread::hardware_concurrency();
+        //int num_threads = std::thread::hardware_concurrency();
+        int num_threads = this->input_data->getThreadCount();
 
         // Get the region size
         int region_size = snp_end - snp_start;
