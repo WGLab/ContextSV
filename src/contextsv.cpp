@@ -49,7 +49,6 @@ int ContextSV::run()
             cnv_calls.loadFromFile(this->input_data->getCNVFilepath());
         } else {
             // Call CNVs at SNP positions
-            std::cout << "Running SNP CNV calling..." << std::endl;
             auto start_cnv = std::chrono::high_resolution_clock::now();
             CNVCaller cnv_caller(*this->input_data);
             cnv_caller.run(cnv_calls);

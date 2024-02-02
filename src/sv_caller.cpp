@@ -289,14 +289,15 @@ void SVCaller::detectSVsFromCIGAR(bam_hdr_t* header, bam1_t* alignment, SVData& 
 
                 // To determine whether the insertion is a duplication, check
                 // for sequence identity between the insertion and the
-                // reference genome (> 90% identity is likely a duplication).
+                // reference genome (duplications are typically >= 90%)
+
 
                 // Loop from the leftmost position of the insertion (pos-op_len)
                 // to the rightmost position of the insertion (pos+op_len-1) and
                 // calculate the sequence identity at each window of the
                 // insertion length to identify potential duplications.
                 bool is_duplication = false;
-                float target_seq_identity = 0.5;
+                float target_seq_identity = 0.9;
 
                 // Loop through the reference sequence and calculate the
                 // sequence identity +/- insertion length from the insertion
@@ -323,7 +324,7 @@ void SVCaller::detectSVsFromCIGAR(bam_hdr_t* header, bam1_t* alignment, SVData& 
                     float seq_identity = (float)num_matches / (float)op_len;
 
                     // Check if the target sequence identity is reached
-                    if (seq_identity > target_seq_identity) {
+                    if (seq_identity >= target_seq_identity) {
                         is_duplication = true;
                         break;
                     }

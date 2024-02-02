@@ -40,9 +40,9 @@ class SVData {
         // DUPs [1] are INS with INFO/REPTYPE=DUP
         std::map<int, std::string> sv_type_map = {
             {0, "DEL"},
-            {1, "INS"},
+            {1, "DUP"},
             {2, "INV"},
-            {3, "DUP"},
+            {3, "INS"},
             {4, "BND"}
         };
         

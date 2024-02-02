@@ -52,6 +52,8 @@ int CNVData::getMostCommonCNV(std::string chr, int start, int end)
             cnv_type = CNVData::DEL;
             //std::cout << "CNV type is DEL, SVLEN=" << sv_len << std::endl;
         } else {
+            // TODO: Use this information for copy neutral calls
+            //cnv_type = CNVData::NEUT;
             //std::cout << "CNV type is no call, SVLEN=" << sv_len << std::endl;
         }
     }

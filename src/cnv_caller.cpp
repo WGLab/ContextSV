@@ -264,6 +264,7 @@ double CNVCaller::calculateMeanChromosomeCoverage(std::string chr)
 
     // Split the chromosome into equal parts for each thread
     int chr_len = this->input_data->getRefGenomeChromosomeLength(chr);
+    //std::cout << "Chr " << chr << " length: " << chr_len << std::endl;
 
     // Split the chromosome into equal parts for each thread
     int chunk_size = chr_len / num_threads;
@@ -272,6 +273,10 @@ double CNVCaller::calculateMeanChromosomeCoverage(std::string chr)
     {
         int start = i * chunk_size + 1;  // 1-based index
         int end = start + chunk_size;
+        if (i == num_threads - 1)
+        {
+            end = chr_len;
+        }
         //std::cout << "Chromosome chunk: " << chr << ":" << start << "-" << end << std::endl;
         region_chunks.push_back(chr + ":" + std::to_string(start) + "-" + std::to_string(end));
     }
@@ -315,8 +320,11 @@ double CNVCaller::calculateMeanChromosomeCoverage(std::string chr)
                     pos_count += pos_count;
                     cum_depth += cum_depth;
                 } else {
-                    std::cerr << "ERROR: Could not parse output from command: " << cmd << std::endl;
-                    exit(EXIT_FAILURE);
+                    // Do nothing. This is likely due to the region not having
+                    // any reads.
+                    //std::cerr << "ERROR: Could not parse output from command: " << cmd << std::endl;
+                    //std::cerr << "Line: " << line << std::endl;
+                    //exit(EXIT_FAILURE);
                 }
             }
             pclose(fp);  // Close the process
@@ -367,6 +375,10 @@ std::unordered_map<uint64_t, int> CNVCaller::calculateDepthsForSNPRegion(std::st
     {
         int start = start_pos + i * chunk_size + 1;  // 1-based index
         int end = start + chunk_size;
+        if (i == num_threads - 1)
+        {
+            end = end_pos;
+        }
         //std::cout << "SNP region chunk: " << chr << ":" << start << "-" << end << std::endl;
         region_chunks.push_back(chr + ":" + std::to_string(start) + "-" + std::to_string(end));
     }
@@ -411,9 +423,11 @@ std::unordered_map<uint64_t, int> CNVCaller::calculateDepthsForSNPRegion(std::st
                     // Add the position and depth to the map
                     pos_depth_map[pos] = depth;
                 } else {
-                    std::cerr << "ERROR: Could not parse output from command: " << cmd << std::endl;
-                    std::cerr << "Line: " << line << std::endl;
-                    exit(EXIT_FAILURE);
+                    // Do nothing. This is likely due to the region not having
+                    // any reads.
+                    //std::cerr << "ERROR: Could not parse output from command: " << cmd << std::endl;
+                    //std::cerr << "Line: " << line << std::endl;
+                    //exit(EXIT_FAILURE);
                 }
             }
 
