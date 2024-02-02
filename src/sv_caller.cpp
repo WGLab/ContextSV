@@ -166,12 +166,12 @@ SVData SVCaller::detectSVsFromRegion(std::string region)
 
                 // Use the gap ends as the SV endpoints
                 if (primary_start - supp_end >= this->min_sv_size) {
-                    sv_calls.add(supp_chr, supp_end+1, primary_start+1, SVData::UNKNOWN, ".", "GAPINNER_A");
+                    sv_calls.add(supp_chr, supp_end+1, primary_start+1, UNKNOWN, ".", "GAPINNER_A");
                 }
 
                 // ALso use the alignment ends as the SV endpoints
                 if (primary_end - supp_start >= this->min_sv_size) {
-                    sv_calls.add(supp_chr, supp_start+1, primary_end+1, SVData::UNKNOWN, ".", "GAPOUTER_A");
+                    sv_calls.add(supp_chr, supp_start+1, primary_end+1, UNKNOWN, ".", "GAPOUTER_A");
                 }
 
                 
@@ -181,12 +181,12 @@ SVData SVCaller::detectSVsFromRegion(std::string region)
 
                 // Use the gap ends as the SV endpoints
                 if (supp_start - primary_end >= this->min_sv_size) {
-                    sv_calls.add(supp_chr, primary_end+1, supp_start+1, SVData::UNKNOWN, ".", "GAPINNER_B");
+                    sv_calls.add(supp_chr, primary_end+1, supp_start+1, UNKNOWN, ".", "GAPINNER_B");
                 }
 
                 // Also use the alignment ends as the SV endpoints
                 if (supp_end - primary_start >= this->min_sv_size) {
-                    sv_calls.add(supp_chr, primary_start+1, supp_end+1, SVData::UNKNOWN, ".", "GAPOUTER_B");
+                    sv_calls.add(supp_chr, primary_start+1, supp_end+1, UNKNOWN, ".", "GAPOUTER_B");
                 }
             }
         }
@@ -334,9 +334,9 @@ void SVCaller::detectSVsFromCIGAR(bam_hdr_t* header, bam1_t* alignment, SVData& 
                 ref_pos = pos+1;
                 ref_end = ref_pos + op_len -1;
                 if (is_duplication) {
-                    sv_calls.add(chr, ref_pos, ref_end, SVData::DUP, ins_seq_str, "CIGARDUP");
+                    sv_calls.add(chr, ref_pos, ref_end, DUP, ins_seq_str, "CIGARDUP");
                 } else {
-                    sv_calls.add(chr, ref_pos, ref_end, SVData::INS, ins_seq_str, "CIGARINS");
+                    sv_calls.add(chr, ref_pos, ref_end, INS, ins_seq_str, "CIGARINS");
                 }
             }
 
@@ -349,7 +349,7 @@ void SVCaller::detectSVsFromCIGAR(bam_hdr_t* header, bam1_t* alignment, SVData& 
                 // Add the deletion to the SV calls (1-based)
                 ref_pos = pos+1;
                 ref_end = ref_pos + op_len -1;
-                sv_calls.add(chr, ref_pos, ref_end, SVData::DEL, ".", "CIGARDEL");
+                sv_calls.add(chr, ref_pos, ref_end, DEL, ".", "CIGARDEL");
                 //std::cout << "ADDED CIGAR SV" << std::endl;
             }
 

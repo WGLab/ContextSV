@@ -33,7 +33,7 @@ void SVData::add(std::string chr, int64_t start, int64_t end, int sv_type, std::
         int sv_length = end - start + 1;
 
         // Create a new SVInfo object
-        SVInfo sv_info(sv_type, 1, data_type, sv_length);
+        SVInfo sv_info(sv_type, 1, data_type, sv_length, "./.");
 
         // Add the SV candidate to the map
         this->sv_calls[candidate] = sv_info;
@@ -66,6 +66,13 @@ void SVData::updateSVType(SVCandidate candidate, int sv_type, std::string data_t
 
     // Update the alignment type used to call the SV
     sv_info.data_type.insert(data_type);
+}
+
+void SVData::updateGenotype(SVCandidate key, std::string genotype)
+{
+    // Update the SV genotype
+    SVInfo& sv_info = this->sv_calls[key];
+    sv_info.genotype = genotype;
 }
 
 void SVData::updateClippedBaseSupport(std::string chr, int64_t pos)
@@ -156,6 +163,7 @@ void SVData::saveToVCF(FASTAQuery& ref_genome, std::string output_dir)
         int depth = info.read_depth;
         int sv_length = info.sv_length;
         std::set<std::string> data_type = info.data_type;
+        std::string genotype = info.genotype;
 
         // Convert the data type set to a string
         std::string data_type_str = "";
@@ -228,9 +236,6 @@ void SVData::saveToVCF(FASTAQuery& ref_genome, std::string output_dir)
         
         // Get the SV type string
         std::string sv_type_str = this->sv_type_map[sv_type];
-
-        // Set the genotype as unspecified for now (Haven't distinguished b/w homozygous, heterozygous)
-        std::string genotype = "./.";
 
         // Create the INFO string
         std::string info_str = "END=" + std::to_string(end) + ";SVTYPE=" + sv_type_str + ";SVLEN=" + std::to_string(sv_length) + ";DP=" + std::to_string(depth) + ";SVMETHOD=" + sv_method + ";ALN=" + data_type_str + ";REPTYPE=" + repeat_type + ";CLIPDP=" + std::to_string(clipped_base_support);

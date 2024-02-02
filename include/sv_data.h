@@ -8,7 +8,12 @@
 #include <map>
 #include <set>
 #include <mutex>
+
+#include "sv_types.h"
 /// @endcond
+
+// Include the SV types namespace
+using namespace sv_types;
 
 // Create a struct for storing SV information
 struct SVInfo {
@@ -16,12 +21,13 @@ struct SVInfo {
     int read_depth;
     std::set<std::string> data_type;  // Alignment type used to call the SV
     int sv_length;
+    std::string genotype = "./.";  // Default genotype (no call)
 
     SVInfo() :
-        sv_type(-1), read_depth(0), data_type({}), sv_length(0) {}
+        sv_type(-1), read_depth(0), data_type({}), sv_length(0), genotype("./.") {}
         
-    SVInfo(int sv_type, int read_depth, std::string data_type, int sv_length) :
-        sv_type(sv_type), read_depth(read_depth), data_type({data_type}), sv_length(sv_length) {}
+    SVInfo(int sv_type, int read_depth, std::string data_type, int sv_length, std::string genotype) :
+        sv_type(sv_type), read_depth(read_depth), data_type({data_type}), sv_length(sv_length), genotype(genotype) {}
 };
 
 using SVCandidate = std::tuple<std::string, int64_t, int64_t, std::string>;  // SV (chr, start, end, alt_allele)
@@ -47,13 +53,13 @@ class SVData {
         };
         
     public:
-        // Define constants for SV types
-        static const int DEL = 0;
-        static const int DUP = 1;
-        static const int INV = 2;
-        static const int INS = 3;
-        static const int BND = 4;
-        static const int UNKNOWN = -1;
+        // // Define constants for SV types
+        // static const int DEL = 0;
+        // static const int DUP = 1;
+        // static const int INV = 2;
+        // static const int INS = 3;
+        // static const int BND = 4;
+        // static const int UNKNOWN = -1;
 
         // Constructor
         SVData() {};
@@ -66,6 +72,9 @@ class SVData {
 
         // Update the SV type for a given SV candidate
         void updateSVType(SVCandidate key, int sv_type, std::string data_type);
+
+        // Update the SV genotype for a given SV candidate
+        void updateGenotype(SVCandidate key, std::string genotype);
 
         // Update clipped base support for a given breakpoint location
         void updateClippedBaseSupport(std::string chr, int64_t pos);

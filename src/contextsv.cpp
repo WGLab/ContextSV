@@ -80,7 +80,7 @@ int ContextSV::run()
 }
 
 // Label SVs based on CNV calls
-void ContextSV::labelCNVs(CNVData cnv_calls, SVData& sv_calls)
+void ContextSV::labelCNVs(CNVData& cnv_calls, SVData& sv_calls)
 {
     // Iterate over SV calls
     for (auto const& sv_call : sv_calls) {
@@ -94,11 +94,18 @@ void ContextSV::labelCNVs(CNVData cnv_calls, SVData& sv_calls)
 
         // Get CNV calls within the SV coordinate range and identify the most
         // common call
-        int cnv_call = cnv_calls.getMostCommonCNV(chr, start_pos, end_pos);
+        std::tuple<int, std::string> cnv_info = cnv_calls.getMostCommonCNV(chr, start_pos, end_pos);
+
+        // Get the CNV type and genotype
+        int cnv_type = std::get<0>(cnv_info);
+        std::string cnv_genotype = std::get<1>(cnv_info);
 
         // Update the SV call's type if the CNV call is not unknown
-        if (cnv_call != SVData::UNKNOWN) {
-            sv_calls.updateSVType(candidate, cnv_call, "SNPCNV");
+        if (cnv_type != UNKNOWN) {
+            sv_calls.updateSVType(candidate, cnv_type, "SNPCNV");
         }
+
+        // Update the SV call's genotype
+        sv_calls.updateGenotype(candidate, cnv_genotype);
     }
 }

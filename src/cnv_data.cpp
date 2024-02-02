@@ -5,7 +5,14 @@
 #include <string>
 #include <sstream>
 #include <fstream>
+#include <vector>
+#include <algorithm>
+
+#include "sv_types.h"
 /// @endcond
+
+// Include the SV types namespace
+using namespace sv_types;
 
 void CNVData::addCNVCall(std::string chr, int snp_pos, int cnv_type)
 {
@@ -14,7 +21,7 @@ void CNVData::addCNVCall(std::string chr, int snp_pos, int cnv_type)
     this->cnv_calls[key] = cnv_type;
 }
 
-int CNVData::getMostCommonCNV(std::string chr, int start, int end)
+std::tuple<int, std::string> CNVData::getMostCommonCNV(std::string chr, int start, int end)
 {
     // Get the majority CNV type within the SV region start and end positions
     // (0 = deletion, 1 = duplication, -1 = no CNV call)
@@ -24,9 +31,16 @@ int CNVData::getMostCommonCNV(std::string chr, int start, int end)
     int total_count = 0;
     
     // Count the number of CNV calls within the SV region (DEL vs. DUP vs. NEUT)
+    // Also keep track of the highest frequency CNV state (1-6)
+    std::vector<int> cnv_state_counts(6, 0);
     for (int pos = start; pos <= end; pos++) {
         SNPLocation key(chr, pos);
         if (this->cnv_calls.find(key) != this->cnv_calls.end()) {
+            // Update CNV state counts
+            int cnv_state = this->cnv_calls[key];
+            cnv_state_counts[cnv_state - 1]++;  // 1 to 0-based index
+
+            // Update SV type counts
             if (this->cnv_calls[key] == 5 || this->cnv_calls[key] == 6) {
                 dup_count++;
             } else if (this->cnv_calls[key] == 1 || this->cnv_calls[key] == 2) {
@@ -40,25 +54,35 @@ int CNVData::getMostCommonCNV(std::string chr, int start, int end)
 
     // Check if the SV region has SNPs with CNV calls covering at least 20% of
     // the region
-    int cnv_type = CNVData::UNKNOWN;
+    int sv_type = UNKNOWN;
+    std::string genotype = "./.";  // Default genotype (no call)
     if (total_count > 0) {
 
         // Check if the SV region is mostly covered by CNV calls (at least 50%) and
         // if the majority CNV type is an insertion or deletion
         if (dup_count > del_count && (double) dup_count / total_count > 0.5) {
-            cnv_type = CNVData::DUP;
+            sv_type = DUP;
+            // cnv_type = CNVData::DUP;
             //std::cout << "CNV type is DUP, SVLEN=" << sv_len << std::endl;
         } else if (del_count > dup_count && (double) del_count / total_count > 0.5) {
-            cnv_type = CNVData::DEL;
+            sv_type = DEL;
             //std::cout << "CNV type is DEL, SVLEN=" << sv_len << std::endl;
         } else {
+            sv_type = UNKNOWN;
             // TODO: Use this information for copy neutral calls
-            //cnv_type = CNVData::NEUT;
-            //std::cout << "CNV type is no call, SVLEN=" << sv_len << std::endl;
+            // cnv_type = CNVData::NEUT;
+            // std::cout << "CNV type is no call, SVLEN=" << sv_len << std::endl;
         }
+
+        // Get the most common CNV state and corresponding genotype
+        int max_cnv_state = std::distance(cnv_state_counts.begin(), std::max_element(cnv_state_counts.begin(), cnv_state_counts.end())) + 1;
+        genotype = this->cnv_genotype_map[max_cnv_state];
     }
 
-    return cnv_type;
+    // Return the most common CNV type, and its corresponding genotype
+    std::tuple<int, std::string> cnv_type_tuple(sv_type, genotype);
+
+    return cnv_type_tuple;
 }
 
 void CNVData::loadFromFile(std::string filepath)

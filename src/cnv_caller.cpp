@@ -32,15 +32,7 @@ CNVCaller::CNVCaller(InputData& input_data)
 
 void CNVCaller::run(CNVData& cnv_data)
 {
-    // Predict copy number states at SNP positions.
-    // Each of the 6 state predictions corresponds to a copy number state:
-    // 1: 0/0 (Two copy loss)
-    // 2: 1/0 (One copy loss)
-    // 3: 1/1 (Normal)
-    // 4: 1/1 (Copy neutral LOH)
-    // 5: 2/1 (One copy gain)
-    // 6: 2/2 (Two copy gain)
-
+    // Predict copy number states at SNP positions using a hidden Markov model
     // Get the region data
     bool whole_genome = this->input_data->getWholeGenome();
     std::vector<std::string> chromosomes;
