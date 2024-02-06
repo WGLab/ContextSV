@@ -53,14 +53,6 @@ class SVData {
         };
         
     public:
-        // // Define constants for SV types
-        // static const int DEL = 0;
-        // static const int DUP = 1;
-        // static const int INV = 2;
-        // static const int INS = 3;
-        // static const int BND = 4;
-        // static const int UNKNOWN = -1;
-
         // Constructor
         SVData() {};
 

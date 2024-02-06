@@ -17,6 +17,7 @@
 #include <future>
 
 #include "utils.h"
+#include "sv_types.h"
 /// @endcond
 
 int SVCaller::readNextAlignment(samFile *fp_in, hts_itr_t *itr, bam1_t *bam1)

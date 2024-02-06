@@ -21,7 +21,7 @@ void SVData::add(std::string chr, int64_t start, int64_t end, int sv_type, std::
         sv_info.read_depth += 1;
 
         // Update the SV type if it is unknown
-        if (sv_info.sv_type == -1) {
+        if (sv_info.sv_type == UNKNOWN) {
             sv_info.sv_type = sv_type;
         }
 

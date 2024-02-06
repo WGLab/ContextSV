@@ -72,29 +72,26 @@ def sv_merger(vcf_file_path, mode='dbscan', eps=100, min_samples=2, suffix='.mer
 
         # Iterate over each chromosome
         for chromosome in chromosomes:
-            # Get the chromosome deletion and insertion records
+            # Get the chromosome deletion, insertion, and duplication breakpoints
             chr_del_df = vcf_df[(vcf_df['CHROM'] == chromosome) & (vcf_df['INFO'].str.contains('SVTYPE=DEL'))]
-            chr_ins_df = vcf_df[(vcf_df['CHROM'] == chromosome) & (vcf_df['INFO'].str.contains('SVTYPE=INS'))]
-
-            # # Further filter insertions to duplications only (INFO/REPTYPE=DUP)
-            # chr_ins_df = chr_ins_df[chr_ins_df['INFO'].str.contains('REPTYPE=DUP')]
+            chr_ins_dup_df = vcf_df[(vcf_df['CHROM'] == chromosome) & ((vcf_df['INFO'].str.contains('SVTYPE=INS')) | (vcf_df['INFO'].str.contains('SVTYPE=DUP')))]
 
             # Get the deletion start and end positions
             chr_del_start = chr_del_df['POS'].values
             chr_del_end = chr_del_df['INFO'].str.extract(r'END=(\d+)', expand=False).astype(np.int32)
 
-            # Get the insertion start and end positions (end = start + length)
-            chr_ins_start = chr_ins_df['POS'].values
-            chr_ins_len = chr_ins_df['INFO'].str.extract(r'SVLEN=(-?\d+)', expand=False).astype(np.int32)
-            chr_ins_end = chr_ins_start + chr_ins_len - 1
+            # Get the insertion and duplication start and end positions
+            chr_ins_dup_start = chr_ins_dup_df['POS'].values
+            chr_ins_dup_len = chr_ins_dup_df['INFO'].str.extract(r'SVLEN=(-?\d+)', expand=False).astype(np.int32)
+            chr_ins_dup_end = chr_ins_dup_start + chr_ins_dup_len - 1
 
             # Format the deletion breakpoints
             chr_del_breakpoints = np.column_stack((chr_del_start, chr_del_end))
             print("Number of deletion breakpoints: " + str(len(chr_del_breakpoints)))
 
-            # Format the insertion breakpoints
-            chr_ins_breakpoints = np.column_stack((chr_ins_start, chr_ins_end))
-            print("Number of insertion breakpoints: " + str(len(chr_ins_breakpoints)))
+            # Format the insertion and duplication breakpoints
+            chr_ins_dup_breakpoints = np.column_stack((chr_ins_dup_start, chr_ins_dup_end))
+            print("Number of insertion and duplication breakpoints: " + str(len(chr_ins_dup_breakpoints)))
 
             # Get the SV depth and clipped base evidence scores for deletions
             chr_del_depth_scores = chr_del_df['INFO'].str.extract(r'DP=(\d+)', expand=False).astype(np.int32)
@@ -102,9 +99,10 @@ def sv_merger(vcf_file_path, mode='dbscan', eps=100, min_samples=2, suffix='.mer
             chr_del_depth_scores = chr_del_depth_scores + chr_del_clipped_bases
 
             # Get the SV depth and clipped base evidence scores for insertions
-            chr_ins_depth_scores = chr_ins_df['INFO'].str.extract(r'DP=(\d+)', expand=False).astype(np.int32)
-            chr_ins_clipped_bases = chr_ins_df['INFO'].str.extract(r'CLIPDP=(\d+)', expand=False).astype(np.int32)
-            chr_ins_depth_scores = chr_ins_depth_scores + chr_ins_clipped_bases
+            # and duplications
+            chr_ins_dup_depth_scores = chr_ins_dup_df['INFO'].str.extract(r'DP=(\d+)', expand=False).astype(np.int32)
+            chr_ins_dup_clipped_bases = chr_ins_dup_df['INFO'].str.extract(r'CLIPDP=(\d+)', expand=False).astype(np.int32)
+            chr_ins_dup_depth_scores = chr_ins_dup_depth_scores + chr_ins_dup_clipped_bases
 
             # Cluster SV breakpoints using the specified mode
             if mode == 'dbscan':
@@ -119,13 +117,14 @@ def sv_merger(vcf_file_path, mode='dbscan', eps=100, min_samples=2, suffix='.mer
                 else:
                     del_labels = []
 
-                # Cluster insertion breakpoints
-                if len(chr_ins_breakpoints) > 0:
-                    print(f"Clustering insertion breakpoints using DBSCAN with eps={eps} and min_samples={min_samples}...")
-                    ins_labels = dbscan.fit_predict(chr_ins_breakpoints)
-                    print(f"Insertion label counts: {len(np.unique(ins_labels))}")
+                # Cluster insertion and duplication breakpoints together since
+                # insertions are a subset of duplications
+                if len(chr_ins_dup_breakpoints) > 0:
+                    print(f"Clustering insertion and duplication breakpoints using DBSCAN with eps={eps} and min_samples={min_samples}...")
+                    ins_dup_labels = dbscan.fit_predict(chr_ins_dup_breakpoints)
+                    print(f"Insertion and duplication label counts: {len(np.unique(ins_dup_labels))}")
                 else:
-                    ins_labels = []
+                    ins_dup_labels = []
 
             elif mode == 'agglomerative':
                 # Cluster SV breakpoints using agglomerative clustering
@@ -137,15 +136,15 @@ def sv_merger(vcf_file_path, mode='dbscan', eps=100, min_samples=2, suffix='.mer
                 print(f"Deletion label counts: {len(np.unique(del_labels))}")
 
                 # Cluster insertion breakpoints
-                print(f"Clustering insertion breakpoints using agglomerative clustering with eps={eps}...")
-                ins_labels = agglomerative.fit_predict(chr_ins_breakpoints)
+                print(f"Clustering insertion and duplication breakpoints using agglomerative clustering with eps={eps}...")
+                ins_labels = agglomerative.fit_predict(chr_ins_dup_breakpoints)
                 print(f"Insertion label counts: {len(np.unique(ins_labels))}")
 
             # Get the unique deletion labels for the chromosome
             unique_del_labels = np.unique(del_labels)
 
-            # Get the unique insertion labels for the chromosome
-            unique_ins_labels = np.unique(ins_labels)
+            # Get the unique insertion and duplication labels for the chromosome
+            unique_ins_dup_labels = np.unique(ins_dup_labels)
 
             # Merge deletions with the same label
             del_count = 0
@@ -172,32 +171,37 @@ def sv_merger(vcf_file_path, mode='dbscan', eps=100, min_samples=2, suffix='.mer
 
                 del_count += 1
 
-            # Merge insertions with the same label
+            # Merge insertions and duplications with the same label
             ins_count = 0
-            for label in unique_ins_labels:
+            dup_count = 0
+            for label in unique_ins_dup_labels:
 
                 # Skip label -1 (outliers)
                 if label == -1:
                     continue
 
                 # Get the indices of SVs with the same label
-                idx = ins_labels == label
+                idx = ins_dup_labels == label
 
                 # Get the SV depth scores with the same label
-                depth_scores = chr_ins_depth_scores[idx]
+                depth_scores = chr_ins_dup_depth_scores[idx]
 
                 # Get the index of the SV with the highest depth score
                 max_depth_score_idx = np.argmax(depth_scores)
 
-                # Get the VCF record with the highest depth score
-                vcf_record = chr_ins_df.iloc[idx, :].iloc[max_depth_score_idx, :]
+                # Get the VCF record with the highest depth score (This also determines if the SV is an insertion or duplication)
+                vcf_record = chr_ins_dup_df.iloc[idx, :].iloc[max_depth_score_idx, :]
+
+                # Update SV type count
+                if 'SVTYPE=INS' in vcf_record['INFO']:
+                    ins_count += 1
+                elif 'SVTYPE=DUP' in vcf_record['INFO']:
+                    dup_count += 1
 
                 # Write the full VCF record to the merged VCF file
                 merged_vcf_file.write(f"{vcf_record['CHROM']}\t{vcf_record['POS']}\t{vcf_record['ID']}\t{vcf_record['REF']}\t{vcf_record['ALT']}\t{vcf_record['QUAL']}\t{vcf_record['FILTER']}\t{vcf_record['INFO']}\t{vcf_record['FORMAT']}\t{vcf_record['SAMPLE']}\n")
 
-                ins_count += 1
-
-            print(f"Chromosome {chromosome} - {del_count} deletions and {ins_count} insertions merged")
+            print(f"Chromosome {chromosome} - {del_count} deletions, {ins_count} insertions, and {dup_count} duplications merged.")
 
     print("Saved merged VCF file to " + merged_vcf)
 
