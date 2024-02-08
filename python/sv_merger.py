@@ -213,29 +213,14 @@ if __name__ == '__main__':
         print(f"Usage: {sys.argv[0]} <VCF file path>")
         sys.exit(1)
 
-    # # Test different eps values from 1 to 200 by 1
-    # for eps in range(1, 201):
-    #     sv_merger(sys.argv[1], eps=eps, min_samples=2, suffix=f'.merged_eps{eps}_min2')
+    # Get the VCF file path from the command line
+    vcf_file_path = sys.argv[1]
 
-    # # Test different min_samples values from 2 to 10
-    # for min_samples in range(2, 11):
-    #     merge_svs_by_breakpoint(sys.argv[1], eps=100, min_samples=min_samples, suffix=f'.merged_eps100_min{min_samples}')
+    # Get the epsilon value from the command line
+    if len(sys.argv) > 2:
+        eps = int(sys.argv[2])
+    else:
+        eps = 30
 
-    # Test with different clustering algorithms: DBSCAN, GMM, and agglomerative
-    # GMM
-
-    # Agglomerative, test distance_threshold values from 100 to 1000 by 100
-    # for dth in range(100, 1100, 100):
-    #     sv_merger(sys.argv[1], mode='agglomerative', eps=dth, suffix=f'.merged_agglo_dth{dth}')
-
-    #sv_merger(sys.argv[1], mode='agglomerative', suffix='.merged_agglo')
-
-    # # DBSCAN
-    # sv_merger(sys.argv[1], mode='dbscan', suffix='.merged_dbscan')
-    
-    # DBSCAN with eps ranging from 30 to 50 by 1
-    # for eps in range(1, 101):
-    #     sv_merger(sys.argv[1], mode='dbscan', eps=eps, suffix=f'.merged_eps{eps}')
-
-    # DBSCAN with eps equal to 34 (Achieves 100% recall for deletions)
-    sv_merger(sys.argv[1], mode='dbscan', eps=34, suffix='.merged_eps34')
+    # DBSCAN 
+    sv_merger(sys.argv[1], mode='dbscan', eps=eps, suffix='.merged_eps' + str(eps))

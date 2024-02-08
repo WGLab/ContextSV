@@ -20,6 +20,8 @@
 #include "sv_types.h"
 /// @endcond
 
+# define DUP_SEQSIM_THRESHOLD 0.9  // Sequence similarity threshold for duplication detection
+
 int SVCaller::readNextAlignment(samFile *fp_in, hts_itr_t *itr, bam1_t *bam1)
 {
     // Lock the mutex while reading the next alignment
@@ -298,7 +300,6 @@ void SVCaller::detectSVsFromCIGAR(bam_hdr_t* header, bam1_t* alignment, SVData& 
                 // calculate the sequence identity at each window of the
                 // insertion length to identify potential duplications.
                 bool is_duplication = false;
-                float target_seq_identity = 0.9;
 
                 // Loop through the reference sequence and calculate the
                 // sequence identity +/- insertion length from the insertion
@@ -325,7 +326,7 @@ void SVCaller::detectSVsFromCIGAR(bam_hdr_t* header, bam1_t* alignment, SVData& 
                     float seq_identity = (float)num_matches / (float)op_len;
 
                     // Check if the target sequence identity is reached
-                    if (seq_identity >= target_seq_identity) {
+                    if (seq_identity >= DUP_SEQSIM_THRESHOLD) {
                         is_duplication = true;
                         break;
                     }

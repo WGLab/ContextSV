@@ -74,3 +74,6 @@ data/gnomadv4_filepaths.txt
 
 # Training data
 data/sv_scoring_dataset/
+
+# Chain files
+data/hg38ToHg19.over.chain.gz
