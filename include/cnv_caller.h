@@ -7,13 +7,16 @@
 #include "khmm.h"
 #include "input_data.h"
 #include "cnv_data.h"
-#include "region.h"
+#include "sv_data.h"
+#include "sv_types.h"
 
 /// @cond
 #include <string>
 #include <vector>
 #include <unordered_map>
 /// @endcond
+
+using namespace sv_types;
 
 // SNP data is a struct containing vectors used in predicting copy number
 // states. It is sorted by SNP position.
@@ -49,7 +52,7 @@ class CNVCaller {
 
         // Detect CNVs and return the state sequence by SNP position
         // (key = [chromosome, SNP position], value = state)
-		void run(CNVData& cnv_calls);
+		void run(SVData& sv_calls);
 
         // Calculate coverage log2 ratios at SNP positions
 		void calculateLog2RatioAtSNPS(SNPDataMap& snp_data_map);

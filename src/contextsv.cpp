@@ -1,7 +1,6 @@
 #include "contextsv.h"
 #include "cnv_caller.h"
 #include "sv_caller.h"
-#include "region.h"
 
 #include <htslib/sam.h>
 
@@ -51,7 +50,7 @@ int ContextSV::run()
             // Call CNVs at SNP positions
             auto start_cnv = std::chrono::high_resolution_clock::now();
             CNVCaller cnv_caller(*this->input_data);
-            cnv_caller.run(cnv_calls);
+            cnv_caller.run(sv_calls);
             auto end_cnv = std::chrono::high_resolution_clock::now();
 
             // Format and print the time taken to call CNVs
@@ -61,7 +60,7 @@ int ContextSV::run()
 
         std::cout << "Running SV CNV labeling from SNP predictions..." << std::endl;
         auto start_label = std::chrono::high_resolution_clock::now();
-        this->labelCNVs(cnv_calls, sv_calls);
+        //this->labelCNVs(cnv_calls, sv_calls);
         auto end_label = std::chrono::high_resolution_clock::now();
         elapsed_time = getElapsedTime(start_label, end_label);
         std::cout << "SV CNV labeling complete. Time taken (h:m:s) = " << elapsed_time << std::endl;

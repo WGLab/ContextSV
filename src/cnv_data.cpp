@@ -76,7 +76,7 @@ std::tuple<int, std::string> CNVData::getMostCommonCNV(std::string chr, int star
 
         // Get the most common CNV state and corresponding genotype
         int max_cnv_state = std::distance(cnv_state_counts.begin(), std::max_element(cnv_state_counts.begin(), cnv_state_counts.end())) + 1;
-        genotype = this->cnv_genotype_map[max_cnv_state];
+        // genotype = this->cnv_genotype_map[max_cnv_state];
     }
 
     // Return the most common CNV type, and its corresponding genotype

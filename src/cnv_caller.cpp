@@ -19,10 +19,14 @@
 #include <future>
 
 #include "utils.h"
+#include "sv_data.h"
+#include "sv_types.h"
 
 #define MIN_PFB 0.01
 #define MAX_PFB 0.99
 /// @endcond
+
+using namespace sv_types;
 
 
 CNVCaller::CNVCaller(InputData& input_data)
@@ -30,8 +34,35 @@ CNVCaller::CNVCaller(InputData& input_data)
     this->input_data = &input_data;
 }
 
-void CNVCaller::run(CNVData& cnv_data)
+void CNVCaller::run(SVData& sv_calls)
 {
+    // Define a map of CNV genotypes by HMM predicted state.
+    // Each of the 6 state predictions corresponds to a copy number state:
+    // 1: 0/0 (Two copy loss: homozygous deletion, GT: 0/0)
+    // 2: 1/0 (One copy loss: heterozygous deletion, GT: 0/1)
+    // 3: 1/1 (Normal diploid: no copy number change, GT: 1/1)
+    // 4: 1/1 (Copy neutral LOH: no copy number change, GT: 1/1)
+    // 5: 2/1 (One copy gain: heterozygous duplication, GT: 1/2)
+    // 6: 2/2 (Two copy gain: homozygous duplication, GT: 2/2)
+    std ::map<int, std::string> cnv_genotype_map = {
+        {1, "0/0"},
+        {2, "0/1"},
+        {3, "1/1"},
+        {4, "1/1"},
+        {5, "1/2"},
+        {6, "2/2"}
+    };
+
+    // Define a map of CNV types by HMM predicted state.
+    std ::map<int, int> cnv_type_map = {
+        {1, sv_types::DEL},
+        {2, sv_types::DEL},
+        {3, sv_types::UNKNOWN},
+        {4, sv_types::UNKNOWN},
+        {5, sv_types::DUP},
+        {6, sv_types::DUP}
+    };
+
     // Predict copy number states at SNP positions using a hidden Markov model
     // Get the region data
     bool whole_genome = this->input_data->getWholeGenome();
@@ -106,24 +137,112 @@ void CNVCaller::run(CNVData& cnv_data)
     saveToBED(snp_data_map, output_bed);
     std::cout << "Saved to: " << output_bed << std::endl;
 
-    // Loop through each chromosome and add the CNV calls to the CNVData object
-    for (auto const& chr : chromosomes)
+    // Loop through each SV call and check for overlap with CNV calls from the
+    // SNP data
+    std::cout << "Checking for overlap with CNV calls..." << std::endl;
+    std::vector<SVCandidate> svs_no_snps;
+    for (auto const& sv_call : sv_calls)
     {
+        SVCandidate candidate = sv_call.first;
+
+        //TESTED
+
+        // Get the SV coordinates
+        std::string chr = std::get<0>(candidate);
+        int start_pos = std::get<1>(candidate);
+        int end_pos = std::get<2>(candidate);
+
         // Get the SNP data for the chromosome
         SNPData& snp_data = snp_data_map[chr];
 
-        // Get the SNP count
+        // Check for overlap with CNV calls. Since the SNP data is sorted by
+        // position, we can use a binary search to find the SNP positions that
+        // overlap with the SV call
         int snp_count = (int) snp_data.locations.size();
-        for (int i = 0; i < snp_count; i++)
-        {
-            // Get the SNP data
-            int64_t pos        = snp_data.locations[i];
-            int     cn_state   = snp_data.state_sequence[i];
+        std::vector<int64_t>::iterator start_it = std::lower_bound(snp_data.locations.begin(), snp_data.locations.end(), start_pos);
+        std::vector<int64_t>::iterator end_it = std::lower_bound(snp_data.locations.begin(), snp_data.locations.end(), end_pos);
 
-            // Add the CNV call to the CNVData object
-            cnv_data.addCNVCall(chr, pos, cn_state);
+        // Get the indices of the SNP positions that overlap with the SV call
+        int start_idx = start_it - snp_data.locations.begin();
+        int end_idx = end_it - snp_data.locations.begin();
+
+        // TESTED
+
+        // If no SNPs overlap with the SV call, then add the SV call to the list
+        if (start_idx == snp_count || end_idx == 0)
+        {
+            // Add the SV call to the list of SVs with no overlap
+            svs_no_snps.push_back(candidate);
+            continue;
+        }
+
+        // TESTED
+
+        // Loop through the SNP positions that overlap with the SV call and get
+        // the CNV state
+        std::vector<int> state_counts(6, 0);
+        int dup_count = 0;
+        int del_count = 0;
+        int no_call_count = 0;
+        int total_count = 0;
+        for (int i = start_idx; i < end_idx; i++)
+        {
+            // Get the SNP position and CNV state
+            int64_t pos = snp_data.locations[i];
+
+            // TESTED
+            int state = snp_data.state_sequence[i];
+
+            // TESTED
+
+            // Update the state counts (Note: State index is 0-5 instead of 1-6)
+            state_counts[state - 1]++;
+
+            // Update the SV type counts
+            if (state == 5 || state == 6)
+            {
+                dup_count++;
+            } else if (state == 1 || state == 2)
+            {
+                del_count++;
+            } else {
+                no_call_count++;
+            }
+            total_count++;
+        }
+
+        // Find the most common CNV state (1-6, 0-based index to 1-based index)
+        int max_state = std::distance(state_counts.begin(), std::max_element(state_counts.begin(), state_counts.end())) + 1;
+
+        // Check if the SV region has duplication or deletion calls for at least
+        // 50% of predictions
+        int sv_type = UNKNOWN;
+        if (total_count > 0)
+        {
+            if (dup_count >= total_count / 2 && dup_count > del_count)
+            {
+                // Update the CNV type
+                sv_calls.updateSVType(candidate, DUP, "SNPCNV");
+
+                // Update the genotype based on the most common CNV state
+                sv_calls.updateGenotype(candidate, cnv_genotype_map[max_state]);
+
+            } else if (del_count >= total_count / 2 && del_count > dup_count)
+            {
+                // Update the CNV type
+                sv_calls.updateSVType(candidate, DEL, "SNPCNV");
+
+                // Update the genotype based on the most common CNV state
+                sv_calls.updateGenotype(candidate, cnv_genotype_map[max_state]);
+            } else {
+                // No CNV call from SNP data, thus add the SV call to the list
+                // of SVs with no overlap
+                svs_no_snps.push_back(candidate);
+            }
         }
     }
+    std::cout << "Number of SVs with no overlap: " << svs_no_snps.size() << std::endl;
+    std::cout << "Number of SVs with overlap: " << sv_calls.size() - svs_no_snps.size() << std::endl;
 }
 
 void CNVCaller::calculateLog2RatioAtSNPS(SNPDataMap& snp_data_map)
