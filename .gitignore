@@ -71,6 +71,7 @@ linktoscripts
 data/gnomadv2_filepaths.txt
 data/gnomadv3_filepaths.txt
 data/gnomadv4_filepaths.txt
+data/gnomadv4_hg19_filepaths.txt
 
 # Training data
 data/sv_scoring_dataset/

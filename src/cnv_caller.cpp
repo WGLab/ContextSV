@@ -145,8 +145,6 @@ void CNVCaller::run(SVData& sv_calls)
     {
         SVCandidate candidate = sv_call.first;
 
-        //TESTED
-
         // Get the SV coordinates
         std::string chr = std::get<0>(candidate);
         int start_pos = std::get<1>(candidate);
@@ -166,8 +164,6 @@ void CNVCaller::run(SVData& sv_calls)
         int start_idx = start_it - snp_data.locations.begin();
         int end_idx = end_it - snp_data.locations.begin();
 
-        // TESTED
-
         // If no SNPs overlap with the SV call, then add the SV call to the list
         if (start_idx == snp_count || end_idx == 0)
         {
@@ -175,8 +171,6 @@ void CNVCaller::run(SVData& sv_calls)
             svs_no_snps.push_back(candidate);
             continue;
         }
-
-        // TESTED
 
         // Loop through the SNP positions that overlap with the SV call and get
         // the CNV state
@@ -189,11 +183,7 @@ void CNVCaller::run(SVData& sv_calls)
         {
             // Get the SNP position and CNV state
             int64_t pos = snp_data.locations[i];
-
-            // TESTED
             int state = snp_data.state_sequence[i];
-
-            // TESTED
 
             // Update the state counts (Note: State index is 0-5 instead of 1-6)
             state_counts[state - 1]++;
