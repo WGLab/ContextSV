@@ -241,8 +241,64 @@ void CNVCaller::run(SVData& sv_calls)
             }
         }
     }
+
     std::cout << "Number of SVs with no overlap: " << svs_no_snps.size() << std::endl;
     std::cout << "Number of SVs with overlap: " << sv_calls.size() - svs_no_snps.size() << std::endl;
+
+    // Loop through the SVs with no overlap and call the CNV type based on the
+    // log2 ratio
+    std::vector<double> sv_log2_ratios;
+    for (auto const& sv_no_snp : svs_no_snps)
+    {
+        // Get the SV coordinates
+        std::string chr = std::get<0>(sv_no_snp);
+        int start_pos = std::get<1>(sv_no_snp);
+        int end_pos = std::get<2>(sv_no_snp);
+
+        // Get the mean chromosome coverage from the SNP data
+        double mean_chr_cov = snp_data_map[chr].mean_chr_cov;
+
+        // Get the log2 ratios for the SV region
+        double sv_log2_ratio = calculateWindowLogRRatio(mean_chr_cov, chr, start_pos, end_pos);
+
+        // Add the log2 ratio to the list
+        sv_log2_ratios.push_back(sv_log2_ratio);
+    }
+
+    // Use a default B-allele frequency of 0.5 for SVs with no overlap
+    std::vector<double> sv_bafs(svs_no_snps.size(), 0.5);
+
+    // Use a default population frequency of MIN_PFB for SVs with no overlap
+    std::vector<double> sv_pfbs(svs_no_snps.size(), MIN_PFB);
+
+    // Run the Viterbi algorithm for SVs with no overlap
+    std::vector<int> sv_state_sequence;
+    if (sv_log2_ratios.size() > 0)
+    {
+        // Run the Viterbi algorithm
+        std::cout << "Running the Viterbi algorithm for SVs with no overlap..." << std::endl;
+        sv_state_sequence = testVit_CHMM(hmm, sv_log2_ratios.size(), sv_log2_ratios.data(), sv_bafs.data(), sv_pfbs.data(), NULL, NULL);
+    }
+
+    // Update the SV calls with the CNV type and genotype
+    int sv_no_snp_count = (int) svs_no_snps.size();
+    for (int i = 0; i < sv_no_snp_count; i++)
+    {
+        SVCandidate candidate = svs_no_snps[i];
+        int state = sv_state_sequence[i];
+        int cnv_type = cnv_type_map[state];
+        std::string genotype = cnv_genotype_map[state];
+
+        // Update the SV type if not unknown
+        if (cnv_type != UNKNOWN)
+        {
+            sv_calls.updateSVType(candidate, cnv_type, "Log2CNV");
+            std::cout << "Log2CNV call: " << cnv_type << ", genotype: " << genotype << std::endl;
+        }
+
+        // Update the genotype
+        sv_calls.updateGenotype(candidate, genotype);
+    }
 }
 
 void CNVCaller::calculateLog2RatioAtSNPS(SNPDataMap& snp_data_map)
@@ -282,6 +338,9 @@ void CNVCaller::calculateLog2RatioAtSNPS(SNPDataMap& snp_data_map)
         } else {
             std::cout << "Using user-provided mean coverage for chromosome " << chr << ": " << mean_chr_cov << std::endl;
         }
+
+        // Set the mean chromosome coverage for the SNP data
+        snp_data.mean_chr_cov = mean_chr_cov;
 
         // We will loop through each SNP and calculate the LRR for a window
         // centered at the SNP position. The window size is specified by the

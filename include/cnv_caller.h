@@ -26,13 +26,15 @@ struct SNPData {
     std::vector<double> bafs;
     std::vector<double> log2_ratios;
     std::vector<int> state_sequence;
+    double mean_chr_cov = 0;  // Mean coverage for the chromosome
 
     SNPData():
         locations({}),\
         pfbs({}), \
         bafs({}), \
         log2_ratios({}), \
-        state_sequence({}) {}
+        state_sequence({}), \
+        mean_chr_cov(0) {}
 };
 
 // Map of chromosome to SNP data
