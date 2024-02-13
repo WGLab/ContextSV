@@ -9,6 +9,9 @@ namespace sv_types {
     static const int INS = 3;
     static const int BND = 4;
     static const int UNKNOWN = -1;
+
+    // Define SVTypeString for SV types
+    static const std::string SVTypeString[] = {"DEL", "DUP", "INV", "INS", "BND", "UNKNOWN"};
 }
 
 #endif // SV_TYPES_H

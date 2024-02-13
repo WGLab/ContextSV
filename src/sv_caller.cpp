@@ -210,8 +210,8 @@ SVData SVCaller::detectSVsFromRegion(std::string region)
     // Destroy the index
     hts_idx_destroy(idx);
 
-    if (sv_calls.size() > 0) {
-        printMessage("Found " + std::to_string(sv_calls.size()) + " SVs from " + region);
+    if (sv_calls.totalCalls() > 0) {
+        printMessage("Found " + std::to_string(sv_calls.totalCalls()) + " SVs from " + region);
     }
 
     // Return the SV calls
@@ -470,22 +470,32 @@ SVData SVCaller::detectSVsFromSplitReads()
         }
 
         // Combine the SV calls from each region
-        std::cout << "Region complete. Combining SV calls..." << std::endl;
+        //std::cout << "Region complete. Combining SV calls..." << std::endl;
         auto start2 = std::chrono::high_resolution_clock::now();
         for (auto it = sv_calls_vec.begin(); it != sv_calls_vec.end(); ++it) {
+            //std::cout << "SV size before: " << sv_calls.size() << std::endl;
+            //std::cout << "SV size to add: " << it->size() << std::endl;
             sv_calls.concatenate(*it);
+            //std::cout << "SV size after: " << sv_calls.size() << std::endl;
         }
 
         auto end2 = std::chrono::high_resolution_clock::now();
-        std::cout << "Combining SV calls finished. Elapsed time: " << getElapsedTime(start2, end2) << std::endl;
+        //std::cout << "Combining SV calls finished. Elapsed time: " << getElapsedTime(start2, end2) << std::endl;
 
         // Increment the region count
         region_count++;
         std::cout << "Region " << region_count << " of " << num_regions << " complete" << std::endl;
     }
     auto end1 = std::chrono::high_resolution_clock::now();
-    std::cout << "Finished detecting SVs from " << regions.size() << " regions. Elapsed time (h:m:s): " << getElapsedTime(start1, end1) << std::endl;
+    std::cout << "Finished detecting " << sv_calls.totalCalls() << " SVs from " << num_regions << " region(s). Elapsed time: " << getElapsedTime(start1, end1) << std::endl;
+
+    // Merge SV calls with 50% reciprocal overlap and return the merged SV calls
+    // See review: https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7402362/
+    std::cout << "Merging SV calls with 50% reciprocal overlap..." << std::endl;
+    auto start3 = std::chrono::high_resolution_clock::now();
+    //SVData merged_sv_calls = sv_calls.merge(50);
 
     // Return the SV calls
+    //return merged_sv_calls;
     return sv_calls;
 }

@@ -33,7 +33,7 @@ int ContextSV::run()
 
     // Format and print the time taken to call SVs
     std::string elapsed_time = getElapsedTime(start_sv, end_sv);
-    std::cout << "Alignment-based SV calling complete. Found " << sv_calls.size() << " total SVs. Time taken (h:m:s) = " << elapsed_time << std::endl;
+    std::cout << "Alignment-based SV calling complete. Found " << sv_calls.totalCalls() << " total SVs. Time taken (h:m:s) = " << elapsed_time << std::endl;
 
     // Classify SVs based on SNP CNV predictions if enabled
     if (this->input_data->getDisableSNPCNV() == false) {
@@ -81,30 +81,30 @@ int ContextSV::run()
 // Label SVs based on CNV calls
 void ContextSV::labelCNVs(CNVData& cnv_calls, SVData& sv_calls)
 {
-    // Iterate over SV calls
-    for (auto const& sv_call : sv_calls) {
-
-        SVCandidate candidate = sv_call.first;
-        
-        // Get the SV coordinates
-        std::string chr = std::get<0>(candidate);
-        int start_pos = std::get<1>(candidate);
-        int end_pos = std::get<2>(candidate);
-
-        // Get CNV calls within the SV coordinate range and identify the most
-        // common call
-        std::tuple<int, std::string> cnv_info = cnv_calls.getMostCommonCNV(chr, start_pos, end_pos);
-
-        // Get the CNV type and genotype
-        int cnv_type = std::get<0>(cnv_info);
-        std::string cnv_genotype = std::get<1>(cnv_info);
-
-        // Update the SV call's type if the CNV call is not unknown
-        if (cnv_type != UNKNOWN) {
-            sv_calls.updateSVType(candidate, cnv_type, "SNPCNV");
-        }
-
-        // Update the SV call's genotype
-        sv_calls.updateGenotype(candidate, cnv_genotype);
-    }
+//    // Iterate over SV calls
+//    for (auto const& sv_call : sv_calls) {
+//
+//        SVCandidate candidate = sv_call.first;
+//
+//        // Get the SV coordinates
+//        std::string chr = std::get<0>(candidate);
+//        int start_pos = std::get<1>(candidate);
+//        int end_pos = std::get<2>(candidate);
+//
+//        // Get CNV calls within the SV coordinate range and identify the most
+//        // common call
+//        std::tuple<int, std::string> cnv_info = cnv_calls.getMostCommonCNV(chr, start_pos, end_pos);
+//
+//        // Get the CNV type and genotype
+//        int cnv_type = std::get<0>(cnv_info);
+//        std::string cnv_genotype = std::get<1>(cnv_info);
+//
+//        // Update the SV call's type if the CNV call is not unknown
+//        if (cnv_type != UNKNOWN) {
+//            sv_calls.updateSVType(candidate, cnv_type, "SNPCNV");
+//        }
+//
+//        // Update the SV call's genotype
+//        sv_calls.updateGenotype(candidate, cnv_genotype);
+//    }
 }

@@ -12,11 +12,53 @@ import os
 import numpy as np
 import pandas as pd
 
+import matplotlib.pyplot as plt  # For plotting merge behavior
+
 # DBSCAN clustering algorithm
 from sklearn.cluster import DBSCAN
 
 # Agglomerative clustering algorithm
 from sklearn.cluster import AgglomerativeClustering
+
+
+def plot_dbscan(breakpoints, chosen_breakpoints, filename='dbscan_clustering.png'):
+    """
+    Plot the DBSCAN clustering behavior for SV breakpoints.
+    """
+    # Print the filename
+    print(f"Plotting DBSCAN clustering behavior to {filename}...")
+
+    # Print all breakpoints
+    print(f"Breakpoints:")
+    for i in range(breakpoints.shape[0]):
+        print(f"Row {i+1} - Breakpoints: {breakpoints[i, :]}")
+
+    # Remove the chosen breakpoints from the breakpoints array
+    breakpoints = np.delete(breakpoints, np.where(breakpoints == chosen_breakpoints), axis=0)
+
+    # Plot the SV breakpoints as individual lines in each row, and the chosen
+    # SV breakpoint as a red line at the top
+    # Create a new figure
+    plt.close()
+    plt.clf()
+    plt.cla()
+    plt.figure(figsize=(10, 10))
+    for i in range(breakpoints.shape[0]):
+        row = i+1
+        plt.plot(breakpoints[i, :], [row, row], 'b-')
+
+    plt.plot(chosen_breakpoints, [0, 0], 'r-')
+    print(f"Chosen breakpoints: {chosen_breakpoints}")
+
+    # Set plot labels
+    plt.title('DBSCAN Clustering Behavior')
+    plt.xlabel('Breakpoint Position')
+    plt.ylabel('SVs')
+    plt.legend()
+
+    # Save the plot
+    plt.savefig(filename)
+
 
 def sv_merger(vcf_file_path, mode='dbscan', eps=100, min_samples=2, suffix='.merged'):
     """
@@ -57,6 +99,10 @@ def sv_merger(vcf_file_path, mode='dbscan', eps=100, min_samples=2, suffix='.mer
     # # Create dictionaries with each chromosome as a key and a list of SV depth scores
     # chr_del_depth_scores = {}
     # chr_ins_depth_scores = {}
+
+    # Number of clustering plots to generate
+    max_plots = 10
+    num_plots = 0
 
     # Open a new VCF file for writing
     merged_vcf = os.path.splitext(vcf_file_path)[0] + suffix + '.vcf'
@@ -157,11 +203,31 @@ def sv_merger(vcf_file_path, mode='dbscan', eps=100, min_samples=2, suffix='.mer
                 # Get the indices of SVs with the same label
                 idx = del_labels == label
 
+                # Print the number of SVs with the same label
+                #print(f"Chromosome {chromosome} - {len(chr_del_breakpoints[idx])} deletions with label {label}")
+
                 # Get the SV depth scores with the same label
                 depth_scores = chr_del_depth_scores[idx]
 
                 # Get the index of the SV with the highest depth score
                 max_depth_score_idx = np.argmax(depth_scores)
+
+                # Plot the DBSCAN clustering behavior if there are 10 < X < 20 SVs with the same label
+                plot_enabled = False
+                if plot_enabled:
+                    if len(chr_del_breakpoints[idx]) > 10 and len(chr_del_breakpoints[idx]) < 20 and num_plots < max_plots:
+
+                        # Increment the number of plots
+                        num_plots += 1
+
+                        # Convert the max depth score index (index within labels) to the index within the original deletion DataFrame
+                        chosen_idx = np.where(idx)[0][max_depth_score_idx]
+                        chosen_breakpoints = chr_del_breakpoints[chosen_idx]
+                        plot_dbscan(chr_del_breakpoints[idx], chosen_breakpoints, filename=f"dbscan_clustering_{num_plots}.png")
+
+                        # TEST: Return if the number of plots is reached
+                        if num_plots == max_plots:
+                            return
 
                 # Get the VCF record with the highest depth score
                 vcf_record = chr_del_df.iloc[idx, :].iloc[max_depth_score_idx, :]

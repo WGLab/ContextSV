@@ -49,6 +49,9 @@ class CNVCaller {
         InputData* input_data;
         double chr_mean_coverage = 0;
 
+        // Map of chromosome to mean coverage
+        std::unordered_map<std::string, double> chr_mean_cov;
+
     public:
         CNVCaller(InputData& input_data);
 
@@ -67,6 +70,9 @@ class CNVCaller {
 
         // Calculate region mean coverage
         double calculateWindowLogRRatio(double mean_chr_cov, std::string chr, int start_pos, int end_pos);
+
+        // Call calculateWindowLogRRatio for each SV candidate in the input vector
+        std::vector<double> runBatchLog2Ratios(std::string chr, std::vector<SVCandidate> sv_candidates);
 
         // Read SNP positions and BAF values from the VCF file of SNP calls
         void readSNPAlleleFrequencies(std::string filepath, SNPDataMap& snp_data_map, bool whole_genome);

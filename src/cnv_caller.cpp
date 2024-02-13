@@ -140,154 +140,232 @@ void CNVCaller::run(SVData& sv_calls)
     // Loop through each SV call and check for overlap with CNV calls from the
     // SNP data
     std::cout << "Checking for overlap with CNV calls..." << std::endl;
-    std::vector<SVCandidate> svs_no_snps;
-    for (auto const& sv_call : sv_calls)
+    std::unordered_map<std::string, std::vector<SVCandidate>> svs_no_snps;
+
+    // Loop over SV call chromosomes
+    std::set<std::string> sv_chromosomes = sv_calls.getChromosomes();
+    int sv_no_snp_count = 0;
+    for (auto const& chr : sv_chromosomes)
     {
-        SVCandidate candidate = sv_call.first;
+        // Get the SV candidates for the chromosome if any
+        std::map<SVCandidate, SVInfo> sv_candidates = sv_calls.getChromosomeSVs(chr);
 
-        // Get the SV coordinates
-        std::string chr = std::get<0>(candidate);
-        int start_pos = std::get<1>(candidate);
-        int end_pos = std::get<2>(candidate);
-
-        // Get the SNP data for the chromosome
-        SNPData& snp_data = snp_data_map[chr];
-
-        // Check for overlap with CNV calls. Since the SNP data is sorted by
-        // position, we can use a binary search to find the SNP positions that
-        // overlap with the SV call
-        int snp_count = (int) snp_data.locations.size();
-        std::vector<int64_t>::iterator start_it = std::lower_bound(snp_data.locations.begin(), snp_data.locations.end(), start_pos);
-        std::vector<int64_t>::iterator end_it = std::lower_bound(snp_data.locations.begin(), snp_data.locations.end(), end_pos);
-
-        // Get the indices of the SNP positions that overlap with the SV call
-        int start_idx = start_it - snp_data.locations.begin();
-        int end_idx = end_it - snp_data.locations.begin();
-
-        // If no SNPs overlap with the SV call, then add the SV call to the list
-        if (start_idx == snp_count || end_idx == 0)
+        // Iterate over the SV candidates for the chromosome
+        for (auto it = sv_candidates.begin(); it != sv_candidates.end(); it++)
         {
-            // Add the SV call to the list of SVs with no overlap
-            svs_no_snps.push_back(candidate);
+            SVCandidate candidate = it->first;
+
+            // Get the SV coordinates for the candidate
+            int start_pos = std::get<0>(candidate);
+            int end_pos = std::get<1>(candidate);
+
+            // Get the SNP data for the chromosome
+            SNPData& snp_data = snp_data_map[chr];
+
+            // Check for overlap with CNV calls. Since the SNP data is sorted by
+            // position, we can use a binary search to find the SNP positions that
+            // overlap with the SV call
+            int snp_count = (int) snp_data.locations.size();
+            std::vector<int64_t>::iterator start_it = std::lower_bound(snp_data.locations.begin(), snp_data.locations.end(), start_pos);
+            std::vector<int64_t>::iterator end_it = std::lower_bound(snp_data.locations.begin(), snp_data.locations.end(), end_pos);
+
+            // Get the indices of the SNP positions that overlap with the SV call
+            int start_idx = start_it - snp_data.locations.begin();
+            int end_idx = end_it - snp_data.locations.begin();
+
+            // If no SNPs overlap with the SV call, then add the SV call to the list
+            if (start_idx == snp_count || end_idx == 0)
+            {
+                // Add the SV call to the list of SVs with no overlap
+                svs_no_snps[chr].push_back(candidate);
+                sv_no_snp_count++;
+                continue;
+            }
+
+            // Loop through the SNP positions that overlap with the SV call and get
+            // the CNV state
+            std::vector<int> state_counts(6, 0);
+            int dup_count = 0;
+            int del_count = 0;
+            int no_call_count = 0;
+            int total_count = 0;
+            for (int i = start_idx; i < end_idx; i++)
+            {
+                // Get the SNP position and CNV state
+                int64_t pos = snp_data.locations[i];
+                int state = snp_data.state_sequence[i];
+
+                // Update the state counts (Note: State index is 0-5 instead of 1-6)
+                state_counts[state - 1]++;
+
+                // Update the SV type counts
+                if (state == 5 || state == 6)
+                {
+                    dup_count++;
+                } else if (state == 1 || state == 2)
+                {
+                    del_count++;
+                } else {
+                    no_call_count++;
+                }
+                total_count++;
+            }
+
+            // Find the most common CNV state (1-6, 0-based index to 1-based index)
+            int max_state = std::distance(state_counts.begin(), std::max_element(state_counts.begin(), state_counts.end())) + 1;
+
+            // Check if the SV region has duplication or deletion calls for at least
+            // 50% of predictions
+            int sv_type = UNKNOWN;
+            if (total_count > 0)
+            {
+                if (dup_count >= total_count / 2 && dup_count > del_count)
+                {
+                    // Update the CNV type
+                    //std::cout << "[SNP] Updating SV type to " << sv_types::SVTypeString[DUP] << " for chromosome " << chr << " SV " << start_pos << "-" << end_pos << "..." << std::endl;
+                    sv_calls.updateSVType(chr, candidate, DUP, "SNPCNV");
+
+                    // Update the genotype based on the most common CNV state
+                    sv_calls.updateGenotype(chr, candidate, cnv_genotype_map[max_state]);
+
+                } else if (del_count >= total_count / 2 && del_count > dup_count)
+                {
+                    // Update the CNV type
+                    sv_calls.updateSVType(chr, candidate, DEL, "SNPCNV");
+
+                    // Update the genotype based on the most common CNV state
+                    //std::cout << "[SNP] Updating SV type to " << sv_types::SVTypeString[DEL] << " for chromosome " << chr << " SV " << start_pos << "-" << end_pos << "..." << std::endl;
+                    sv_calls.updateGenotype(chr, candidate, cnv_genotype_map[max_state]);
+                } else {
+                    // No CNV call from SNP data, thus add the SV call to the list
+                    // of SVs with no overlap
+                    svs_no_snps[chr].push_back(candidate);
+                }
+            }
+        }
+    }
+
+    std::cout << "Number of SVs with no overlap: " << sv_no_snp_count << std::endl;
+    std::cout << "Number of SVs with overlap: " << sv_calls.totalCalls() - svs_no_snps.size() << std::endl;
+
+    // Loop through each chromosome and calculate the log2 ratios in parallel
+    for (auto const& chr : sv_chromosomes)
+    {
+        // Get the chromosome SVs, if any
+
+        // Check if the chromosome has SVs with no overlap
+        std::vector<SVCandidate> chr_svs_no_snps;
+        if (svs_no_snps.find(chr) != svs_no_snps.end())
+        {
+            chr_svs_no_snps = svs_no_snps[chr];
+        } else {
             continue;
         }
 
-        // Loop through the SNP positions that overlap with the SV call and get
-        // the CNV state
-        std::vector<int> state_counts(6, 0);
-        int dup_count = 0;
-        int del_count = 0;
-        int no_call_count = 0;
-        int total_count = 0;
-        for (int i = start_idx; i < end_idx; i++)
+        // Get the chromosome coverage
+        double mean_chr_cov = this->chr_mean_cov[chr];
+
+        // Create a vector to store the log2 ratios
+        std::vector<double> sv_log2_ratios(chr_svs_no_snps.size(), 0);
+
+        // SV candidates are already sorted by position, so get the min and max
+        // positions for the chromosome to obtain the read depth for the entire
+        // region
+        int min_pos = std::get<0>(chr_svs_no_snps[0]);
+        int max_pos = std::get<1>(chr_svs_no_snps[chr_svs_no_snps.size() - 1]);
+
+        // Get the read depth for the entire region
+        std::cout << "Calculating read depth for chromosome " << chr << " SV region " << min_pos << "-" << max_pos << "..." << std::endl;
+        std::unordered_map<uint64_t, int> pos_depth_map = calculateDepthsForSNPRegion(chr, min_pos, max_pos);
+        std::cout << "Finished calculating read depth for chromosome " << chr << " SV region " << min_pos << "-" << max_pos << "..." << std::endl;
+
+        // Loop through each SV and calculate the log2 ratio
+        std::cout << "Calculating log2 ratios for chromosome " << chr << " SVs..." << std::endl;
+        int sv_index = 0;
+        for (auto const& candidate : chr_svs_no_snps)
         {
-            // Get the SNP position and CNV state
-            int64_t pos = snp_data.locations[i];
-            int state = snp_data.state_sequence[i];
+            // Get the SV coordinates
+            int window_start = std::get<0>(candidate);
+            int window_end = std::get<1>(candidate);
 
-            // Update the state counts (Note: State index is 0-5 instead of 1-6)
-            state_counts[state - 1]++;
-
-            // Update the SV type counts
-            if (state == 5 || state == 6)
+            // If the region is larger than the window size, then use the window
+            // size centered at the SV position. Otherwise, use the entire region
+            if (window_end - window_start > this->input_data->getWindowSize())
             {
-                dup_count++;
-            } else if (state == 1 || state == 2)
-            {
-                del_count++;
-            } else {
-                no_call_count++;
+                // Get the window start and end positions
+                int center = (window_start + window_end) / 2;
+                window_start = std::max(min_pos, center - this->input_data->getWindowSize() / 2);
+                window_end = std::min(max_pos, center + this->input_data->getWindowSize() / 2);
+                //printMessage("Large SV region of length " + std::to_string(window_end - window_start) + "...");
+                //std::cout << "Large SV region of length " << end_pos - start_pos << "..." << std::endl;
             }
-            total_count++;
+
+            // Loop through each position in the window and calculate the mean
+            // read depth
+            int pos_count = 0;
+            int cum_depth = 0;
+            for (int j = window_start; j <= window_end; j++)
+            {
+                // Get the depth for the position
+                int depth = pos_depth_map[j];
+
+                // Skip positions with no depth information (depth = 0)
+                if (depth == 0)
+                {
+                    continue;
+                }
+
+                // Update the position count and cumulative depth
+                pos_count++;
+                cum_depth += depth;
+            }
+
+            // Calculate the mean window coverage
+            double mean_window_cov = (double) cum_depth / (double) pos_count;
+
+            // Calculate the LRR
+            double l2r = log2(mean_window_cov / mean_chr_cov);
+
+            // Store the LRR
+            sv_log2_ratios[sv_index] = l2r;
+            sv_index++;
         }
 
-        // Find the most common CNV state (1-6, 0-based index to 1-based index)
-        int max_state = std::distance(state_counts.begin(), std::max_element(state_counts.begin(), state_counts.end())) + 1;
+        // Run the Viterbi algorithm using the log2 ratios
+        std::cout << "Running the Viterbi algorithm for chromosome " << chr << " SVs..." << std::endl;
+        double *lrr_ptr = sv_log2_ratios.data();
+        double *baf_ptr = std::vector<double>(chr_svs_no_snps.size(), 0.5).data();
+        double *pfb_ptr = std::vector<double>(chr_svs_no_snps.size(), MIN_PFB).data();
+        int *snpdist = NULL;
+        double *logprob = NULL;
 
-        // Check if the SV region has duplication or deletion calls for at least
-        // 50% of predictions
-        int sv_type = UNKNOWN;
-        if (total_count > 0)
-        {
-            if (dup_count >= total_count / 2 && dup_count > del_count)
-            {
-                // Update the CNV type
-                sv_calls.updateSVType(candidate, DUP, "SNPCNV");
+        std::cout << "SV Count: " << chr_svs_no_snps.size() << std::endl;
 
-                // Update the genotype based on the most common CNV state
-                sv_calls.updateGenotype(candidate, cnv_genotype_map[max_state]);
-
-            } else if (del_count >= total_count / 2 && del_count > dup_count)
-            {
-                // Update the CNV type
-                sv_calls.updateSVType(candidate, DEL, "SNPCNV");
-
-                // Update the genotype based on the most common CNV state
-                sv_calls.updateGenotype(candidate, cnv_genotype_map[max_state]);
-            } else {
-                // No CNV call from SNP data, thus add the SV call to the list
-                // of SVs with no overlap
-                svs_no_snps.push_back(candidate);
-            }
-        }
-    }
-
-    std::cout << "Number of SVs with no overlap: " << svs_no_snps.size() << std::endl;
-    std::cout << "Number of SVs with overlap: " << sv_calls.size() - svs_no_snps.size() << std::endl;
-
-    // Loop through the SVs with no overlap and call the CNV type based on the
-    // log2 ratio
-    std::vector<double> sv_log2_ratios;
-    for (auto const& sv_no_snp : svs_no_snps)
-    {
-        // Get the SV coordinates
-        std::string chr = std::get<0>(sv_no_snp);
-        int start_pos = std::get<1>(sv_no_snp);
-        int end_pos = std::get<2>(sv_no_snp);
-
-        // Get the mean chromosome coverage from the SNP data
-        double mean_chr_cov = snp_data_map[chr].mean_chr_cov;
-
-        // Get the log2 ratios for the SV region
-        double sv_log2_ratio = calculateWindowLogRRatio(mean_chr_cov, chr, start_pos, end_pos);
-
-        // Add the log2 ratio to the list
-        sv_log2_ratios.push_back(sv_log2_ratio);
-    }
-
-    // Use a default B-allele frequency of 0.5 for SVs with no overlap
-    std::vector<double> sv_bafs(svs_no_snps.size(), 0.5);
-
-    // Use a default population frequency of MIN_PFB for SVs with no overlap
-    std::vector<double> sv_pfbs(svs_no_snps.size(), MIN_PFB);
-
-    // Run the Viterbi algorithm for SVs with no overlap
-    std::vector<int> sv_state_sequence;
-    if (sv_log2_ratios.size() > 0)
-    {
         // Run the Viterbi algorithm
-        std::cout << "Running the Viterbi algorithm for SVs with no overlap..." << std::endl;
-        sv_state_sequence = testVit_CHMM(hmm, sv_log2_ratios.size(), sv_log2_ratios.data(), sv_bafs.data(), sv_pfbs.data(), NULL, NULL);
-    }
+        std::vector<int> sv_state_sequence = testVit_CHMM(hmm, chr_svs_no_snps.size(), lrr_ptr, baf_ptr, pfb_ptr, snpdist, logprob);
+        std::cout << "Finished running the Viterbi algorithm for chromosome " << chr << " SVs..." << std::endl;
 
-    // Update the SV calls with the CNV type and genotype
-    int sv_no_snp_count = (int) svs_no_snps.size();
-    for (int i = 0; i < sv_no_snp_count; i++)
-    {
-        SVCandidate candidate = svs_no_snps[i];
-        int state = sv_state_sequence[i];
-        int cnv_type = cnv_type_map[state];
-        std::string genotype = cnv_genotype_map[state];
-
-        // Update the SV type if not unknown
-        if (cnv_type != UNKNOWN)
+        // Update the SV calls with the CNV type and genotype
+        std::cout << "Updating SV calls for chromosome " << chr << "..." << std::endl;
+        int chr_sv_count = (int) chr_svs_no_snps.size();
+        for (int i = 0; i < chr_sv_count; i++)
         {
-            sv_calls.updateSVType(candidate, cnv_type, "Log2CNV");
-            std::cout << "Log2CNV call: " << cnv_type << ", genotype: " << genotype << std::endl;
-        }
+            SVCandidate candidate = chr_svs_no_snps[i];
+            int state = sv_state_sequence[i];
+            int cnv_type = cnv_type_map[state];
+            std::string genotype = cnv_genotype_map[state];
 
-        // Update the genotype
-        sv_calls.updateGenotype(candidate, genotype);
+            // Update the SV type if not unknown
+            if (cnv_type != UNKNOWN)
+            {
+                //std::cout << "Updating SV type to " << sv_types::SVTypeString[cnv_type] << " for chromosome " << chr << " SV " << i << "..." << std::endl;
+                sv_calls.updateSVType(chr, candidate, cnv_type, "Log2CNV");
+            }
+
+            // Update the genotype
+            //std::cout << "Updating genotype for chromosome " << chr << " SV " << i << "..." << std::endl;
+            sv_calls.updateGenotype(chr, candidate, genotype);
+        }
     }
 }
 
@@ -331,6 +409,9 @@ void CNVCaller::calculateLog2RatioAtSNPS(SNPDataMap& snp_data_map)
 
         // Set the mean chromosome coverage for the SNP data
         snp_data.mean_chr_cov = mean_chr_cov;
+
+        // Set the mean chromosome coverage for the class
+        this->chr_mean_cov[chr] = mean_chr_cov;
 
         // We will loop through each SNP and calculate the LRR for a window
         // centered at the SNP position. The window size is specified by the
@@ -620,6 +701,45 @@ std::unordered_map<uint64_t, int> CNVCaller::calculateDepthsForSNPRegion(std::st
     return pos_depth_map;
 }
 
+std::vector<double> CNVCaller::runBatchLog2Ratios(std::string chr, std::vector<SVCandidate> sv_candidates)
+{
+    int index = 0;
+    int batch_size = (int) sv_candidates.size();
+    std::vector<double> log2_ratios(batch_size, 0);
+    for (auto const& candidate : sv_candidates)
+    {
+        // Get the SV coordinates
+        int start_pos = std::get<0>(candidate);
+        int end_pos = std::get<1>(candidate);
+
+        // Get the mean chromosome coverage
+        double mean_chr_cov = this->chr_mean_cov[chr];
+
+        // If the region is larger than the window size, then use the window
+        // size centered at the SV position. Otherwise, use the entire region
+        if (end_pos - start_pos > this->input_data->getWindowSize())
+        {
+            // Get the window start and end positions
+            int center = (start_pos + end_pos) / 2;
+            start_pos = center - this->input_data->getWindowSize() / 2;
+            end_pos = center + this->input_data->getWindowSize() / 2;
+            printMessage("Large SV region of length " + std::to_string(end_pos - start_pos) + "...");
+            //std::cout << "Large SV region of length " << end_pos - start_pos << "..." << std::endl;
+        }
+
+        // Calculate the log2 ratio for the SV
+        printMessage("Calculating log2 ratio for SV " + chr + ":" + std::to_string(start_pos) + "-" + std::to_string(end_pos) + "...");
+        //std::cout << "Calculating log2 ratio for SV " << chr << ":" << start_pos << "-" << end_pos << "..." << std::endl;
+        double l2r = this->calculateWindowLogRRatio(mean_chr_cov, chr, start_pos, end_pos);
+        printMessage("Completed " + std::to_string(index + 1) + " of " + std::to_string(batch_size) + " log2 ratios...");
+
+        // Store the log2 ratio
+        log2_ratios[index] = l2r;
+        index++;
+    }
+    return log2_ratios;
+}
+
 double CNVCaller::calculateWindowLogRRatio(double mean_chr_cov, std::string chr, int window_start, int window_end)
 {
     std::string input_filepath = this->input_data->getShortReadBam();
@@ -629,7 +749,7 @@ double CNVCaller::calculateWindowLogRRatio(double mean_chr_cov, std::string chr,
     const int cmd_size = 256;
     char cmd[cmd_size];
     FILE *fp;
-    std::cout << "Calculating log2 ratio for window " << chr << ":" << window_start << "-" << window_end << "..." << std::endl;
+    //std::cout << "Calculating log2 ratio for window " << chr << ":" << window_start << "-" << window_end << "..." << std::endl;
     snprintf(cmd, cmd_size,\
         "samtools depth -r %s:%d-%d %s | awk '{c++;s+=$3}END{print c, s}'",\
         chr.c_str(), window_start, window_end, input_filepath.c_str());
@@ -647,7 +767,7 @@ double CNVCaller::calculateWindowLogRRatio(double mean_chr_cov, std::string chr,
     const int line_size = 256;
     char line[line_size];
     if (fgets(line, line_size, fp) != NULL)
-    {           
+    {
         if (sscanf(line, "%ld%ld", &pos_count, &cum_depth) == 2)
         {
             // Calculate the LRR

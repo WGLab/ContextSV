@@ -30,8 +30,10 @@ struct SVInfo {
         sv_type(sv_type), read_depth(read_depth), data_type({data_type}), sv_length(sv_length), genotype(genotype) {}
 };
 
-using SVCandidate = std::tuple<std::string, int64_t, int64_t, std::string>;  // SV (chr, start, end, alt_allele)
-using SVDepthMap = std::map<SVCandidate, SVInfo>;  // SV candidate to read depth map
+using SVCandidate = std::tuple<int64_t, int64_t, std::string>;  // SV (start, end, alt_allele)
+// Chromosome to SV candidate to read depth map
+using SVDepthMap = std::unordered_map<std::string, std::map<SVCandidate, SVInfo>>;
+//using SVDepthMap = std::map<std::string, SVCandidate, SVInfo>;
 
 // SV data class
 class SVData {
@@ -63,10 +65,10 @@ class SVData {
         void concatenate(const SVData& sv_data);
 
         // Update the SV type for a given SV candidate
-        void updateSVType(SVCandidate key, int sv_type, std::string data_type);
+        void updateSVType(std::string chr, SVCandidate key, int sv_type, std::string data_type);
 
         // Update the SV genotype for a given SV candidate
-        void updateGenotype(SVCandidate key, std::string genotype);
+        void updateGenotype(std::string chr, SVCandidate key, std::string genotype);
 
         // Update clipped base support for a given breakpoint location
         void updateClippedBaseSupport(std::string chr, int64_t pos);
@@ -77,12 +79,21 @@ class SVData {
         // Save SV calls to VCF
         void saveToVCF(FASTAQuery& ref_genome, std::string output_dir);
 
+        // Merge SV calls using the minimum overlap criterion (% reciprocal overlap)
+        SVData merge(float min_pct_overlap);
+
+        // Get the chromosome SVs
+        std::map<SVCandidate, SVInfo> getChromosomeSVs(std::string chr);
+
+        // Get the chromosomes
+        std::set<std::string> getChromosomes();
+
         // Begin and end iterators for the SV candidate map
         SVDepthMap::iterator begin() { return this->sv_calls.begin(); }
         SVDepthMap::iterator end() { return this->sv_calls.end(); }
 
         // Define the size of the SV candidate map
-        int size() { return this->sv_calls.size(); }
+        int totalCalls();
 };
 
 #endif // SV_DATA_H
