@@ -62,33 +62,6 @@ void SVData::concatenate(const SVData &sv_data)
             this->sv_calls[chr][candidate] = info;
         }
     }
-
-//    // Iterate over the chromosomes in the other SVData object
-//    for (auto const& chr_sv_calls : sv_calls) {
-//        std::string chr = chr_sv_calls.first;
-//
-//        // Iterate over the SV calls in the other SVData object
-//        for (auto const& sv_call : chr_sv_calls.second) {
-//
-//            // Add the SV call to the map of candidate locations. Since the region
-//            // is unique (per chromosome), there is no need to check if the SV
-//            // candidate already exists in the map.
-//            SVCandidate candidate = sv_call.first;  // (start, end, alt_allele)
-//            SVInfo info = sv_call.second;  // (sv_type, read_depth, data_type, sv_length)
-//            this->sv_calls[chr][candidate] = info;
-//        }
-//    }
-
-//    // Iterate over the SV calls in the other SVData object
-//    for (auto const& sv_call : sv_data.sv_calls) {
-//
-//        // Add the SV call to the map of candidate locations. Since the region
-//        // is unique (per chromosome), there is no need to check if the SV
-//        // candidate already exists in the map.
-//        SVCandidate candidate = sv_call.first;  // (chr, start, end, alt_allele)
-//        SVInfo info = sv_call.second;  // (sv_type, read_depth, data_type, sv_length)
-//        this->sv_calls[candidate] = info;
-//    }
 }
 
 void SVData::updateSVType(std::string chr, SVCandidate candidate, int sv_type, std::string data_type)

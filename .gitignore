@@ -78,3 +78,6 @@ data/sv_scoring_dataset/
 
 # Chain files
 data/hg38ToHg19.over.chain.gz
+
+# Test cluster images
+python/dbscan_clustering*.png

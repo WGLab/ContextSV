@@ -241,6 +241,14 @@ void CNVCaller::run(SVData& sv_calls)
                     // of SVs with no overlap
                     svs_no_snps[chr].push_back(candidate);
                 }
+            } else {
+                // No CNV call from SNP data, thus add the SV call to the list
+                // of SVs with no overlap
+                svs_no_snps[chr].push_back(candidate);
+
+                // Throw an error if there are no SNP positions
+                //std::cerr << "ERROR: No SNP positions found for SV " << chr << ":" << start_pos << "-" << end_pos << std::endl;
+                //std::exit(EXIT_FAILURE);
             }
         }
     }
