@@ -306,7 +306,7 @@ SVData SVData::merge(float min_pct_overlap)
 
 }
 
-std::map<SVCandidate, SVInfo> SVData::getChromosomeSVs(std::string chr)
+std::map<SVCandidate, SVInfo>& SVData::getChromosomeSVs(std::string chr)
 {
     return this->sv_calls[chr];
 }
@@ -328,4 +328,29 @@ int SVData::totalCalls()
     }
 
     return sv_calls;
+}
+
+void SVData::addCopyNumberInfo(std::string chr, SVCopyNumberMap& cnv_calls)
+{
+    // Loop through the SV calls and add the copy number information
+    for (auto const& sv_call : this->sv_calls[chr]) {
+        SVCandidate candidate = sv_call.first;
+        SVInfo& sv_info = this->sv_calls[chr][candidate];
+
+        // Get the copy number information
+        int cnv_type = std::get<0>(cnv_calls[candidate]);
+        std::string genotype = std::get<1>(cnv_calls[candidate]);
+        std::string data_type = std::get<2>(cnv_calls[candidate]);
+
+        // Update the SV type
+        if (cnv_type != UNKNOWN) {
+            sv_info.sv_type = cnv_type;
+        }
+
+        // Update the alignment type used to call the SV
+        sv_info.data_type.insert(data_type);
+
+        // Update the SV genotype
+        sv_info.genotype = genotype;
+    }
 }

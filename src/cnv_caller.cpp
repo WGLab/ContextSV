@@ -17,6 +17,7 @@
 #include <numeric>  // std::iota
 #include <thread>
 #include <future>
+#include <string>
 
 #include "utils.h"
 #include "sv_data.h"
@@ -28,41 +29,118 @@
 
 using namespace sv_types;
 
+SVCopyNumberMap CNVCaller::runCopyNumberPrediction(std::string chr, std::vector<SVCandidate> sv_calls, SNPInfo& snp_info, CHMM hmm, int window_size)
+{
+    // Create a map of SV candidate to SV type, genotype, and data type
+    std::map<SVCandidate, std::tuple<int, std::string, std::string>> sv_call_map;
 
-CNVCaller::CNVCaller(InputData& input_data)
+    // Get the mean chromosome coverage
+    double mean_chr_cov = this->chr_mean_cov[chr];
+
+    // Run copy number prediction for the SV candidates
+    // Loop through each SV candidate and predict the copy number state
+    for (auto const& sv_call : sv_calls)
+    {
+        // Get the SV coordinates
+        int64_t start_pos = std::get<0>(sv_call);
+        int64_t end_pos = std::get<1>(sv_call);
+
+        // Get the read depths for the entire region
+        std::unordered_map<uint64_t, int> pos_depth_map = calculateDepthsForSNPRegion(chr, start_pos, end_pos);
+
+        // Loop through the SV region, calculate the log2 ratios, and run the
+        // Viterbi algorithm
+        std::vector<double> log2_ratios;
+        std::vector<int> sv_state_sequence;
+        std::vector<int64_t> pos;
+        std::vector<double> bafs;
+        std::vector<double> pfbs;
+        bool snps_found = false;
+        for (int64_t i = start_pos; i <= end_pos; i++)
+        {
+            // Run a sliding non-overlapping window of size window_size across
+            // the SV region and calculate the log2 ratio for each window
+            int64_t window_start = i;
+            int64_t window_end = std::min(i + window_size, end_pos);
+            double l2r = calculateWindowLogRRatio(mean_chr_cov, chr, window_start, window_end);
+
+            // Get the SNP info for the window
+            std::tuple<std::vector<double>, std::vector<double>> snp_data = snp_info.querySNPs(chr, window_start, window_end);
+
+            // If there are no SNPs in the window, then use the default BAF and
+            // PFB values, and the coverage log2 ratio
+            if (std::get<0>(snp_data).size() == 0)
+            {
+                bafs.push_back(0.5);
+                pfbs.push_back(MIN_PFB);
+                log2_ratios.push_back(l2r);
+            } else {
+                snps_found = true;
+
+                // Get the B-allele frequencies and population frequencies
+                std::vector<double>& window_bafs = std::get<0>(snp_data);
+                std::vector<double>& window_pfbs = std::get<1>(snp_data);
+
+                // Add the BAFs and PFBs to the vectors
+                for (size_t j = 0; j < window_bafs.size(); j++)
+                {
+                    bafs.push_back(window_bafs[j]);
+                    pfbs.push_back(window_pfbs[j]);
+                    log2_ratios.push_back(l2r);
+                }
+            }
+        }
+
+        // Run the Viterbi algorithm
+        int interval_count = (int) log2_ratios.size();
+        double *lrr_ptr = log2_ratios.data();
+        double *baf_ptr = bafs.data();
+        double *pfb_ptr = pfbs.data();
+        int *snpdist = NULL;
+        double *logprob = NULL;
+        sv_state_sequence = testVit_CHMM(hmm, interval_count, lrr_ptr, baf_ptr, pfb_ptr, snpdist, logprob);
+        
+        // Find the most common CNV state (1-6, 0-based index to 1-based index)
+        std::vector<int> state_counts(6, 0);
+        for (int i = 0; i < interval_count; i++)
+        {
+            int state = sv_state_sequence[i];
+            state_counts[state - 1]++;
+        }
+
+        // Find the most common CNV state (1-6, 0-based index to 1-based index)
+        int max_state = std::distance(state_counts.begin(), std::max_element(state_counts.begin(), state_counts.end())) + 1;
+
+        // Update the SV calls with the CNV type and genotype
+        int cnv_type = cnv_type_map[max_state];
+        std::string genotype = cnv_genotype_map[max_state];
+        std::string data_type = "Log2CNV";
+
+        // Update the CNV type
+        if (snps_found)
+        {
+            data_type = "SNPCNV";
+        }
+
+        // Update the SV call map
+        sv_call_map[sv_call] = std::make_tuple(cnv_type, genotype, data_type);
+
+        // Update the genotype
+        //sv_calls.updateGenotype(chr, sv_call, genotype);
+    }
+
+    // Return the updated SV calls
+    return sv_call_map;
+}
+
+
+CNVCaller::CNVCaller(InputData &input_data)
 {
     this->input_data = &input_data;
 }
 
 void CNVCaller::run(SVData& sv_calls)
 {
-    // Define a map of CNV genotypes by HMM predicted state.
-    // Each of the 6 state predictions corresponds to a copy number state:
-    // 1: 0/0 (Two copy loss: homozygous deletion, GT: 0/0)
-    // 2: 1/0 (One copy loss: heterozygous deletion, GT: 0/1)
-    // 3: 1/1 (Normal diploid: no copy number change, GT: 1/1)
-    // 4: 1/1 (Copy neutral LOH: no copy number change, GT: 1/1)
-    // 5: 2/1 (One copy gain: heterozygous duplication, GT: 1/2)
-    // 6: 2/2 (Two copy gain: homozygous duplication, GT: 2/2)
-    std ::map<int, std::string> cnv_genotype_map = {
-        {1, "0/0"},
-        {2, "0/1"},
-        {3, "1/1"},
-        {4, "1/1"},
-        {5, "1/2"},
-        {6, "2/2"}
-    };
-
-    // Define a map of CNV types by HMM predicted state.
-    std ::map<int, int> cnv_type_map = {
-        {1, sv_types::DEL},
-        {2, sv_types::DEL},
-        {3, sv_types::UNKNOWN},
-        {4, sv_types::UNKNOWN},
-        {5, sv_types::DUP},
-        {6, sv_types::DUP}
-    };
-
     // Predict copy number states at SNP positions using a hidden Markov model
     // Get the region data
     bool whole_genome = this->input_data->getWholeGenome();
@@ -74,26 +152,15 @@ void CNVCaller::run(SVData& sv_calls)
         chromosomes.push_back(this->input_data->getRegionChr());
     }
 
-    // Initialize the SNP data map (chr -> SNPData)
-    SNPDataMap snp_data_map;
-    for (auto const& chr : chromosomes)
-    {
-        snp_data_map[chr] = SNPData();
-    }
-
     // Read SNP positions and B-allele frequency values from the VCF file
+    SNPInfo snp_info;
     std::cout << "Reading SNP allele frequencies from VCF file..." << std::endl;
     std::string snp_filepath = this->input_data->getSNPFilepath();
-    readSNPAlleleFrequencies(snp_filepath, snp_data_map, whole_genome);
+    readSNPAlleleFrequencies(snp_filepath, snp_info, whole_genome);
 
     // Get the population frequencies for each SNP
     std::cout << "Obtaining SNP population frequencies..." << std::endl;
-    //PFBMap pfb_map = this->input_data->getPFBMap();
-    //getSNPPopulationFrequencies(pfb_map, snp_data_map);
-    getSNPPopulationFrequencies(snp_data_map);
-
-    // Calculate LRRs
-    calculateLog2RatioAtSNPS(snp_data_map);
+    getSNPPopulationFrequencies(snp_info);
 
     // Read the HMM from file
     //std::string hmm_filepath = "data/wgs.hmm";
@@ -101,46 +168,11 @@ void CNVCaller::run(SVData& sv_calls)
     std::cout << "Reading HMM from file: " << hmm_filepath << std::endl;
     CHMM hmm = ReadCHMM(hmm_filepath.c_str());
 
-    // Loop through each chromosome and run the Viterbi algorithm
-    for (auto const& chr : chromosomes)
-    {
-        // Get the data vectors for the chromosome
-        SNPData& snp_data = snp_data_map[chr];
-        int snp_count = (int) snp_data.locations.size();
+    // Get the number of threads
+    int num_threads = this->input_data->getThreadCount();
 
-        // Run the Viterbi algorithm if there are SNPs
-        if (snp_count > 0)
-        {
-            double *lrr_ptr = snp_data.log2_ratios.data();
-            double *baf_ptr = snp_data.bafs.data();
-            double *pfb_ptr = snp_data.pfbs.data();
-            int *snpdist = NULL;
-            double *logprob = NULL;
-
-            // Run the Viterbi algorithm
-            std::cout << "Running the Viterbi algorithm for chromosome " << chr << "..." << std::endl;
-            std::vector<int> state_sequence;  // Create the output state sequence
-            state_sequence = testVit_CHMM(hmm, snp_count, lrr_ptr, baf_ptr, pfb_ptr, snpdist, logprob);
-            snp_data.state_sequence = state_sequence;
-        }
-    }
-
-    // Save a TSV of the positions, LRRs, BAFs, and state sequence
-    std::cout << "Saving TSV of copy number prediction data..." << std::endl;
-    std::string output_tsv = this->input_data->getOutputDir() + "/cnv_data.tsv";
-    saveToTSV(snp_data_map, output_tsv);
-    std::cout << "Saved to: " << output_tsv << std::endl;
-
-    // Save a BED file of the CNV state sequence
-    std::cout << "Saving BED of CNV states..." << std::endl;
-    std::string output_bed = this->input_data->getOutputDir() + "/cnv_states.bed";
-    saveToBED(snp_data_map, output_bed);
-    std::cout << "Saved to: " << output_bed << std::endl;
-
-    // Loop through each SV call and check for overlap with CNV calls from the
-    // SNP data
-    std::cout << "Checking for overlap with CNV calls..." << std::endl;
-    std::unordered_map<std::string, std::vector<SVCandidate>> svs_no_snps;
+    // Get the window size for HMM observations
+    int window_size = this->input_data->getWindowSize();
 
     // Loop over SV call chromosomes
     std::set<std::string> sv_chromosomes = sv_calls.getChromosomes();
@@ -150,231 +182,49 @@ void CNVCaller::run(SVData& sv_calls)
         // Get the SV candidates for the chromosome if any
         std::map<SVCandidate, SVInfo> sv_candidates = sv_calls.getChromosomeSVs(chr);
 
-        // Iterate over the SV candidates for the chromosome
-        for (auto it = sv_candidates.begin(); it != sv_candidates.end(); it++)
+        // Split the SV candidates into equal parts for each thread
+        int sv_count = (int) sv_candidates.size();
+        int chunk_size = sv_count / num_threads;
+
+        // Create a vector of futures for the threads
+        std::vector<std::future<SVCopyNumberMap>> futures;
+
+        // Run the copy number prediction for each thread
+        std::vector<SVCandidate> chunk_sv_calls;
+        for (int i = 0; i < num_threads; i++)
         {
-            SVCandidate candidate = it->first;
-
-            // Get the SV coordinates for the candidate
-            int start_pos = std::get<0>(candidate);
-            int end_pos = std::get<1>(candidate);
-
-            // Get the SNP data for the chromosome
-            SNPData& snp_data = snp_data_map[chr];
-
-            // Check for overlap with CNV calls. Since the SNP data is sorted by
-            // position, we can use a binary search to find the SNP positions that
-            // overlap with the SV call
-            int snp_count = (int) snp_data.locations.size();
-            std::vector<int64_t>::iterator start_it = std::lower_bound(snp_data.locations.begin(), snp_data.locations.end(), start_pos);
-            std::vector<int64_t>::iterator end_it = std::lower_bound(snp_data.locations.begin(), snp_data.locations.end(), end_pos);
-
-            // Get the indices of the SNP positions that overlap with the SV call
-            int start_idx = start_it - snp_data.locations.begin();
-            int end_idx = end_it - snp_data.locations.begin();
-
-            // If no SNPs overlap with the SV call, then add the SV call to the list
-            if (start_idx == snp_count || end_idx == 0)
+            // Pop the next chunk of SV candidates
+            for (int j = 0; j < chunk_size; j++)
             {
-                // Add the SV call to the list of SVs with no overlap
-                svs_no_snps[chr].push_back(candidate);
-                sv_no_snp_count++;
-                continue;
-            }
-
-            // Loop through the SNP positions that overlap with the SV call and get
-            // the CNV state
-            std::vector<int> state_counts(6, 0);
-            int dup_count = 0;
-            int del_count = 0;
-            int no_call_count = 0;
-            int total_count = 0;
-            for (int i = start_idx; i < end_idx; i++)
-            {
-                // Get the SNP position and CNV state
-                int64_t pos = snp_data.locations[i];
-                int state = snp_data.state_sequence[i];
-
-                // Update the state counts (Note: State index is 0-5 instead of 1-6)
-                state_counts[state - 1]++;
-
-                // Update the SV type counts
-                if (state == 5 || state == 6)
+                if (sv_candidates.size() == 0)
                 {
-                    dup_count++;
-                } else if (state == 1 || state == 2)
-                {
-                    del_count++;
-                } else {
-                    no_call_count++;
+                    break;
                 }
-                total_count++;
+                SVCandidate sv_call = sv_candidates.begin()->first;
+                chunk_sv_calls.push_back(sv_call);
+                sv_candidates.erase(sv_call);
             }
 
-            // Find the most common CNV state (1-6, 0-based index to 1-based index)
-            int max_state = std::distance(state_counts.begin(), std::max_element(state_counts.begin(), state_counts.end())) + 1;
-
-            // Check if the SV region has duplication or deletion calls for at least
-            // 50% of predictions
-            int sv_type = UNKNOWN;
-            if (total_count > 0)
-            {
-                if (dup_count >= total_count / 2 && dup_count > del_count)
-                {
-                    // Update the CNV type
-                    //std::cout << "[SNP] Updating SV type to " << sv_types::SVTypeString[DUP] << " for chromosome " << chr << " SV " << start_pos << "-" << end_pos << "..." << std::endl;
-                    sv_calls.updateSVType(chr, candidate, DUP, "SNPCNV");
-
-                    // Update the genotype based on the most common CNV state
-                    sv_calls.updateGenotype(chr, candidate, cnv_genotype_map[max_state]);
-
-                } else if (del_count >= total_count / 2 && del_count > dup_count)
-                {
-                    // Update the CNV type
-                    sv_calls.updateSVType(chr, candidate, DEL, "SNPCNV");
-
-                    // Update the genotype based on the most common CNV state
-                    //std::cout << "[SNP] Updating SV type to " << sv_types::SVTypeString[DEL] << " for chromosome " << chr << " SV " << start_pos << "-" << end_pos << "..." << std::endl;
-                    sv_calls.updateGenotype(chr, candidate, cnv_genotype_map[max_state]);
-                } else {
-                    // No CNV call from SNP data, thus add the SV call to the list
-                    // of SVs with no overlap
-                    svs_no_snps[chr].push_back(candidate);
-                }
-            } else {
-                // No CNV call from SNP data, thus add the SV call to the list
-                // of SVs with no overlap
-                svs_no_snps[chr].push_back(candidate);
-
-                // Throw an error if there are no SNP positions
-                //std::cerr << "ERROR: No SNP positions found for SV " << chr << ":" << start_pos << "-" << end_pos << std::endl;
-                //std::exit(EXIT_FAILURE);
-            }
+            // Run the copy number prediction for the chunk
+            futures.push_back(std::async(std::launch::async, &CNVCaller::runCopyNumberPrediction, this, chr, chunk_sv_calls, std::ref(snp_info), hmm, window_size));
         }
+
+        // Concatenate the results from each thread
+        for (auto& future : futures)
+        {
+            // Get the results from the future
+            SVCopyNumberMap chunk_sv_calls = future.get();
+
+            // Concatenate the results
+            sv_calls.addCopyNumberInfo(chr, chunk_sv_calls);
+        }
+
+        // Print progress
+        std::cout << "Finished predicting copy number states for chromosome " << chr << std::endl;
     }
 
-    std::cout << "Number of SVs with no overlap: " << sv_no_snp_count << std::endl;
-    std::cout << "Number of SVs with overlap: " << sv_calls.totalCalls() - svs_no_snps.size() << std::endl;
-
-    // Loop through each chromosome and calculate the log2 ratios in parallel
-    for (auto const& chr : sv_chromosomes)
-    {
-        // Get the chromosome SVs, if any
-
-        // Check if the chromosome has SVs with no overlap
-        std::vector<SVCandidate> chr_svs_no_snps;
-        if (svs_no_snps.find(chr) != svs_no_snps.end())
-        {
-            chr_svs_no_snps = svs_no_snps[chr];
-        } else {
-            continue;
-        }
-
-        // Get the chromosome coverage
-        double mean_chr_cov = this->chr_mean_cov[chr];
-
-        // Create a vector to store the log2 ratios
-        std::vector<double> sv_log2_ratios(chr_svs_no_snps.size(), 0);
-
-        // SV candidates are already sorted by position, so get the min and max
-        // positions for the chromosome to obtain the read depth for the entire
-        // region
-        int min_pos = std::get<0>(chr_svs_no_snps[0]);
-        int max_pos = std::get<1>(chr_svs_no_snps[chr_svs_no_snps.size() - 1]);
-
-        // Get the read depth for the entire region
-        std::cout << "Calculating read depth for chromosome " << chr << " SV region " << min_pos << "-" << max_pos << "..." << std::endl;
-        std::unordered_map<uint64_t, int> pos_depth_map = calculateDepthsForSNPRegion(chr, min_pos, max_pos);
-        std::cout << "Finished calculating read depth for chromosome " << chr << " SV region " << min_pos << "-" << max_pos << "..." << std::endl;
-
-        // Loop through each SV and calculate the log2 ratio
-        std::cout << "Calculating log2 ratios for chromosome " << chr << " SVs..." << std::endl;
-        int sv_index = 0;
-        for (auto const& candidate : chr_svs_no_snps)
-        {
-            // Get the SV coordinates
-            int window_start = std::get<0>(candidate);
-            int window_end = std::get<1>(candidate);
-
-            // If the region is larger than the window size, then use the window
-            // size centered at the SV position. Otherwise, use the entire region
-            if (window_end - window_start > this->input_data->getWindowSize())
-            {
-                // Get the window start and end positions
-                int center = (window_start + window_end) / 2;
-                window_start = std::max(min_pos, center - this->input_data->getWindowSize() / 2);
-                window_end = std::min(max_pos, center + this->input_data->getWindowSize() / 2);
-                //printMessage("Large SV region of length " + std::to_string(window_end - window_start) + "...");
-                //std::cout << "Large SV region of length " << end_pos - start_pos << "..." << std::endl;
-            }
-
-            // Loop through each position in the window and calculate the mean
-            // read depth
-            int pos_count = 0;
-            int cum_depth = 0;
-            for (int j = window_start; j <= window_end; j++)
-            {
-                // Get the depth for the position
-                int depth = pos_depth_map[j];
-
-                // Skip positions with no depth information (depth = 0)
-                if (depth == 0)
-                {
-                    continue;
-                }
-
-                // Update the position count and cumulative depth
-                pos_count++;
-                cum_depth += depth;
-            }
-
-            // Calculate the mean window coverage
-            double mean_window_cov = (double) cum_depth / (double) pos_count;
-
-            // Calculate the LRR
-            double l2r = log2(mean_window_cov / mean_chr_cov);
-
-            // Store the LRR
-            sv_log2_ratios[sv_index] = l2r;
-            sv_index++;
-        }
-
-        // Run the Viterbi algorithm using the log2 ratios
-        std::cout << "Running the Viterbi algorithm for chromosome " << chr << " SVs..." << std::endl;
-        double *lrr_ptr = sv_log2_ratios.data();
-        double *baf_ptr = std::vector<double>(chr_svs_no_snps.size(), 0.5).data();
-        double *pfb_ptr = std::vector<double>(chr_svs_no_snps.size(), MIN_PFB).data();
-        int *snpdist = NULL;
-        double *logprob = NULL;
-
-        std::cout << "SV Count: " << chr_svs_no_snps.size() << std::endl;
-
-        // Run the Viterbi algorithm
-        std::vector<int> sv_state_sequence = testVit_CHMM(hmm, chr_svs_no_snps.size(), lrr_ptr, baf_ptr, pfb_ptr, snpdist, logprob);
-        std::cout << "Finished running the Viterbi algorithm for chromosome " << chr << " SVs..." << std::endl;
-
-        // Update the SV calls with the CNV type and genotype
-        std::cout << "Updating SV calls for chromosome " << chr << "..." << std::endl;
-        int chr_sv_count = (int) chr_svs_no_snps.size();
-        for (int i = 0; i < chr_sv_count; i++)
-        {
-            SVCandidate candidate = chr_svs_no_snps[i];
-            int state = sv_state_sequence[i];
-            int cnv_type = cnv_type_map[state];
-            std::string genotype = cnv_genotype_map[state];
-
-            // Update the SV type if not unknown
-            if (cnv_type != UNKNOWN)
-            {
-                //std::cout << "Updating SV type to " << sv_types::SVTypeString[cnv_type] << " for chromosome " << chr << " SV " << i << "..." << std::endl;
-                sv_calls.updateSVType(chr, candidate, cnv_type, "Log2CNV");
-            }
-
-            // Update the genotype
-            //std::cout << "Updating genotype for chromosome " << chr << " SV " << i << "..." << std::endl;
-            sv_calls.updateGenotype(chr, candidate, genotype);
-        }
-    }
+    std::cout << "Finished predicting copy number states for all chromosomes" << std::endl;
+    std::cout << "Found a total of " << sv_calls.totalCalls() << " SV candidates" << std::endl;
 }
 
 void CNVCaller::calculateLog2RatioAtSNPS(SNPDataMap& snp_data_map)
@@ -788,7 +638,7 @@ double CNVCaller::calculateWindowLogRRatio(double mean_chr_cov, std::string chr,
     return region_lrr;
 }
 
-void CNVCaller::readSNPAlleleFrequencies(std::string snp_filepath, SNPDataMap& snp_data_map, bool whole_genome)
+void CNVCaller::readSNPAlleleFrequencies(std::string snp_filepath, SNPInfo& snp_info, bool whole_genome)
 {
     // Create a VCF filepath of filtered SNPs
     std::string filtered_snp_vcf_filepath = this->input_data->getOutputDir() + "/filtered_snps.vcf";
@@ -864,7 +714,7 @@ void CNVCaller::readSNPAlleleFrequencies(std::string snp_filepath, SNPDataMap& s
     int alt_ad = 0;
     const int line_size = 256;
     char line[line_size];  // Line buffer
-    SNPData *snp_data;   // Pointer to the SNP data for the current chromosome
+    // SNPData *snp_data;   // Pointer to the SNP data for the current chromosome
     std::vector<int64_t> locations;
     std::vector<double> bafs;
     while (fgets(line, line_size, fp) != NULL)
@@ -879,16 +729,16 @@ void CNVCaller::readSNPAlleleFrequencies(std::string snp_filepath, SNPDataMap& s
             {
                 chr = tok;
 
-                // Find the SNP data for the chromosome and skip if not found
-                auto it = snp_data_map.find(chr);
-                if (it == snp_data_map.end())
-                {
-                    // Skip the line if the chromosome is not found
-                    tok = strtok(NULL, ",");
-                    col++;
-                    continue;
-                }
-                snp_data = &snp_data_map[chr];
+                // // Find the SNP data for the chromosome and skip if not found
+                // auto it = snp_data_map.find(chr);
+                // if (it == snp_data_map.end())
+                // {
+                //     // Skip the line if the chromosome is not found
+                //     tok = strtok(NULL, ",");
+                //     col++;
+                //     continue;
+                // }
+                // snp_data = &snp_data_map[chr];
             }
 
             // Get the position from column 2
@@ -918,47 +768,55 @@ void CNVCaller::readSNPAlleleFrequencies(std::string snp_filepath, SNPDataMap& s
         double baf = (double) alt_ad / (double) (ref_ad + alt_ad);
 
         // Add a new location and BAF value to the chromosome's SNP data
-        snp_data->locations.push_back(pos);
-        snp_data->bafs.push_back(baf);
+        // (population frequency and log2 ratio will be added later)
+        snp_info.insertSNPAlleleFrequency(chr, pos, baf);
+
+        // snp_data->locations.push_back(pos);
+        // snp_data->bafs.push_back(baf);
     }
 
     // Close the pipe
     pclose(fp);
 
-    // Sort the SNP data by position and get the indices to use for sorting
-    std::vector<int> indices(snp_data->locations.size());
-    std::iota(indices.begin(), indices.end(), 0);
+    // // Sort the SNP data by position and get the indices to use for sorting
+    // std::vector<int> indices(snp_data->locations.size());
+    // std::iota(indices.begin(), indices.end(), 0);
 
-    // Sort the indices by the SNP positions
-    std::sort(indices.begin(), indices.end(), [&snp_data](int i, int j) { return snp_data->locations[i] < snp_data->locations[j]; });
+    // // Sort the indices by the SNP positions
+    // std::sort(indices.begin(), indices.end(), [&snp_data](int i, int j) { return snp_data->locations[i] < snp_data->locations[j]; });
 
-    // Reorder the SNP data vectors by the sorted indices
-    std::vector<int64_t> sorted_locations(snp_data->locations.size());
-    std::vector<double> sorted_bafs(snp_data->bafs.size());
-    int snp_count = (int) snp_data->locations.size();
-    for (int i = 0; i < snp_count; i++)
-    {
-        sorted_locations[i] = snp_data->locations[indices[i]];
-        sorted_bafs[i] = snp_data->bafs[indices[i]];
-    }
+    // // Reorder the SNP data vectors by the sorted indices
+    // std::vector<int64_t> sorted_locations(snp_data->locations.size());
+    // std::vector<double> sorted_bafs(snp_data->bafs.size());
+    // int snp_count = (int) snp_data->locations.size();
+    // for (int i = 0; i < snp_count; i++)
+    // {
+    //     sorted_locations[i] = snp_data->locations[indices[i]];
+    //     sorted_bafs[i] = snp_data->bafs[indices[i]];
+    // }
 
-    // Update the SNP data vectors
-    snp_data->locations = sorted_locations;
-    snp_data->bafs = sorted_bafs;
+    // // Update the SNP data vectors
+    // snp_data->locations = sorted_locations;
+    // snp_data->bafs = sorted_bafs;
 }
 
-void CNVCaller::getSNPPopulationFrequencies(SNPDataMap& snp_data_map)
+void CNVCaller::getSNPPopulationFrequencies(SNPInfo& snp_info)
 {
-    // Get the number of chromosomes
-    int num_chromosomes = (int) snp_data_map.size();
+    // Get the number of available threads
+    int num_threads = this->input_data->getThreadCount();
+
+    // Get the chromosome names
+    std::vector<std::string> chr_names = snp_info.getChromosomes();
+
+    // // Get the number of chromosomes
+    int num_chromosomes = (int) chr_names.size();
     int chr_count = 0;
 
-    // Loop through each chromosome in the SNP data map and access the
-    // population frequency for each SNP
-    for (auto& pair : snp_data_map)
+    // Loop through each chromosome in list
+    for (const auto& chr : chr_names)
     {
-        std::string chr = pair.first;
-        SNPData& snp_data = pair.second;
+        // std::string chr = pair.first;
+        // SNPData& snp_data = pair.second;
 
         // Get the population frequency file for the chromosome
         std::string pfb_filepath = this->input_data->getAlleleFreqFilepath(chr);
@@ -986,35 +844,35 @@ void CNVCaller::getSNPPopulationFrequencies(SNPDataMap& snp_data_map)
         // population frequency for all SNPs
         if (pfb_filepath == "")
         {
-            std::cout << "No population frequency file provided for chromosome " << chr << ". Using the minimum value of " << MIN_PFB << " for all SNPs." << std::endl;
-
-            // Populate the PFB vector with the minimum value
-            int snp_count = (int) snp_data.locations.size();
-            snp_data.pfbs = std::vector<double>(snp_count, MIN_PFB);
+            std::cout << "No population frequency file provided for chromosome " << chr << std::endl;
             continue;
         }
 
         std::cout << "Reading population frequencies for chromosome " << chr << " from " << pfb_filepath << std::endl;
 
-        // Get the start and end SNP positions for the chromosome (1-based index)
-        int snp_count = (int) snp_data.locations.size();
-        int snp_start = snp_data.locations[0];
-        int snp_end = snp_data.locations[snp_count - 1];
+        // Get the start and end SNP positions for the chromosome (1-based
+        // index)
+        std::pair<int64_t, int64_t> snp_range = snp_info.getSNPRange(chr);
+        int64_t snp_start = snp_range.first;
+        int64_t snp_end = snp_range.second;
+        // int snp_count = (int) snp_data.locations.size();
+        // int snp_start = snp_data.locations[0];
+        // int snp_end = snp_data.locations[snp_count - 1];
 
         // Get the number of avaiable threads
         //int num_threads = std::thread::hardware_concurrency();
         int num_threads = this->input_data->getThreadCount();
 
         // Get the region size
-        int region_size = snp_end - snp_start;
+        int64_t region_size = snp_end - snp_start;
 
         // Split the region into equal parts for each thread
         int region_size_per_thread = region_size / num_threads;
         std::vector<std::string> region_chunks;
         for (int i = 0; i < num_threads; i++)
         {
-            int start = snp_start + i * region_size_per_thread;
-            int end = start + region_size_per_thread;
+            int64_t start = snp_start + i * region_size_per_thread;
+            int64_t end = start + region_size_per_thread;
             region_chunks.push_back(chr_gnomad + ":" + std::to_string(start) + "-" + std::to_string(end));
         }
 
@@ -1085,53 +943,86 @@ void CNVCaller::getSNPPopulationFrequencies(SNPDataMap& snp_data_map)
             // Get the result from the future
             std::unordered_map<int, double> result = future.get();
 
+            // Loop through the result and add to SNPInfo
+            for (auto& pair : result)
+            {
+                int pos = pair.first;
+                double pfb = pair.second;
+                snp_info.insertSNPPopulationFrequency(chr, pos, pfb);
+            }
+
             // Merge the result into the map of population frequencies
-            pos_pfb_map.insert(result.begin(), result.end());
         }
         //std::cout << "Finished merging population frequencies for chromosome " << chr << std::endl;
         //std::cout << "Found " << pos_pfb_map.size() << " population frequencies for chromosome " << chr << std::endl;
         
-        // Loop through the SNP positions and set the population frequencies
-        std::cout << "Setting SNP population frequencies for chromosome " << chr << "..." << std::endl;
-        int snp_pos = 0;  // SNP position
-        int found_count = 0;
-        int min_fixed_pfb = 0;
-        int max_fixed_pfb = 0;
-        double pfb;  // Population frequency value
-        std::vector<double> pfbs(snp_count, 0);
-        for (int i = 0; i < snp_count; i++)
-        {
-            // Get the SNP position
-            snp_pos = snp_data.locations[i];
+        // // Loop through the SNP positions and set the population frequencies
+        // std::cout << "Setting SNP population frequencies for chromosome " << chr << "..." << std::endl;
+        // int found_count = 0;
+        // int snp_count = (int) snp_data.locations.size();
+        // int min_fixed_pfb = 0;
+        // int max_fixed_pfb = 0;
+        // for (int i = 0; i < snp_count; i++)
+        // {
+        //     // Get the SNP position
+        //     int64_t pos = snp_data.locations[i];
 
-            // If the position is found, add the population frequency to the SNP
-            // data
-            auto it = pos_pfb_map.find(snp_pos);
-            if (it != pos_pfb_map.end())
-            {
-                pfb = it->second;
-                if (pfb < MIN_PFB)
-                {
-                    pfb = MIN_PFB;
-                    min_fixed_pfb++;
-                } else if (pfb > MAX_PFB)
-                {
-                    pfb = MAX_PFB;
-                    max_fixed_pfb++;
-                }
-                pfbs[i] = pfb;
-                found_count++;
-            }
-        }
+        //     // If the position is found, add the population frequency to the SNP
+        //     // data
+        //     auto it = pos_pfb_map.find(pos);
+        //     if (it != pos_pfb_map.end())
+        //     {
+        //         double pfb = it->second;
+        //         if (pfb < MIN_PFB)
+        //         {
+        //             pfb = MIN_PFB;
+        //             min_fixed_pfb++;
+        //         } else if (pfb > MAX_PFB)
+        //         {
+        //             pfb = MAX_PFB;
+        //             max_fixed_pfb++;
+        //         }
+        //         snp_data.pfbs[i] = pfb;
+        //         found_count++;
+        //     }
+        // }
 
-        // Store the population frequencies in the SNP data
-        snp_data.pfbs = pfbs;
+        // Loop through each chromosome and set the population frequencies
+        
+        // std::vector<double> pfbs(snp_count, 0);
+        // for (int i = 0; i < snp_count; i++)
+        // {
+        //     // Get the SNP position
+        //     snp_pos = snp_data.locations[i];
+
+        //     // If the position is found, add the population frequency to the SNP
+        //     // data
+        //     auto it = pos_pfb_map.find(snp_pos);
+        //     if (it != pos_pfb_map.end())
+        //     {
+        //         pfb = it->second;
+        //         if (pfb < MIN_PFB)
+        //         {
+        //             pfb = MIN_PFB;
+        //             min_fixed_pfb++;
+        //         } else if (pfb > MAX_PFB)
+        //         {
+        //             pfb = MAX_PFB;
+        //             max_fixed_pfb++;
+        //         }
+        //         pfbs[i] = pfb;
+        //         found_count++;
+        //     }
+        // }
+
+        // // Store the population frequencies in the SNP data
+        // snp_data.pfbs = pfbs;
 
         // Print the percentage of SNPs with population frequencies
-        std::cout << "Found " << found_count << " of " << snp_count << " SNP population frequencies ";
-        std::cout << "(" << (double) found_count / (double) snp_count * 100 << "%)" << std::endl;
-        std::cout << "Fixed " << min_fixed_pfb << " population frequencies below " << MIN_PFB << " and ";
-        std::cout << max_fixed_pfb << " population frequencies above " << MAX_PFB << std::endl;
+        // std::cout << "Found " << found_count << " of " << snp_count << " SNP population frequencies ";
+        // std::cout << "(" << (double) found_count / (double) snp_count * 100 << "%)" << std::endl;
+        // std::cout << "Fixed " << min_fixed_pfb << " population frequencies below " << MIN_PFB << " and ";
+        // std::cout << max_fixed_pfb << " population frequencies above " << MAX_PFB << std::endl;
 
 
         // Update the progress (number of chromosomes processed)

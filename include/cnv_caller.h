@@ -14,6 +14,10 @@
 #include <string>
 #include <vector>
 #include <unordered_map>
+#include <set>
+#include <mutex>
+
+#include "snp_info.h"
 /// @endcond
 
 using namespace sv_types;
@@ -37,6 +41,27 @@ struct SNPData {
         mean_chr_cov(0) {}
 };
 
+// SNPValues is a struct for storing chromosome SNP information
+struct SNPValues {
+    int64_t pos;  // SNP location
+    double pfb;  // Population frequency of the B allele
+    double log2_ratio;
+    double baf;  // B-allele frequency
+};
+
+// Define the comparison operator for SNPValues (by location)
+struct SNPValuesCompare {
+    bool operator()(const SNPValues& a, const SNPValues& b) const {
+        return a.pos < b.pos;
+    }
+};
+
+// Define the data structure for SNP values
+using BST = std::set<SNPValues, SNPValuesCompare>;  // Binary search tree
+
+// Define the map of chromosome to SNP BST
+using ChrToSNPMap = std::unordered_map<std::string, BST>;
+
 // Map of chromosome to SNP data
 using SNPDataMap = std::unordered_map<std::string, SNPData>;
 
@@ -51,6 +76,37 @@ class CNVCaller {
 
         // Map of chromosome to mean coverage
         std::unordered_map<std::string, double> chr_mean_cov;
+
+        // Define a map of CNV genotypes by HMM predicted state.
+        // Each of the 6 state predictions corresponds to a copy number state:
+        // 1: 0/0 (Two copy loss: homozygous deletion, GT: 0/0)
+        // 2: 1/0 (One copy loss: heterozygous deletion, GT: 0/1)
+        // 3: 1/1 (Normal diploid: no copy number change, GT: 1/1)
+        // 4: 1/1 (Copy neutral LOH: no copy number change, GT: 1/1)
+        // 5: 2/1 (One copy gain: heterozygous duplication, GT: 1/2)
+        // 6: 2/2 (Two copy gain: homozygous duplication, GT: 2/2)
+        std ::map<int, std::string> cnv_genotype_map = {
+            {1, "0/0"},
+            {2, "0/1"},
+            {3, "1/1"},
+            {4, "1/1"},
+            {5, "1/2"},
+            {6, "2/2"}
+        };
+
+        // Define a map of CNV types by HMM predicted state.
+        std ::map<int, int> cnv_type_map = {
+            {1, sv_types::DEL},
+            {2, sv_types::DEL},
+            {3, sv_types::UNKNOWN},
+            {4, sv_types::UNKNOWN},
+            {5, sv_types::DUP},
+            {6, sv_types::DUP}
+        };
+
+        // Function which takes in the chunk and the SNP info and updates the
+        // SVData object with CNV type and genotype
+        SVCopyNumberMap runCopyNumberPrediction(std::string chr, std::vector<SVCandidate> sv_calls, SNPInfo& snp_info, CHMM hmm, int window_size);
 
     public:
         CNVCaller(InputData& input_data);
@@ -75,7 +131,7 @@ class CNVCaller {
         std::vector<double> runBatchLog2Ratios(std::string chr, std::vector<SVCandidate> sv_candidates);
 
         // Read SNP positions and BAF values from the VCF file of SNP calls
-        void readSNPAlleleFrequencies(std::string filepath, SNPDataMap& snp_data_map, bool whole_genome);
+        void readSNPAlleleFrequencies(std::string filepath, SNPInfo& snp_info, bool whole_genome);
 
         // Read SNP positions and population frequencies from the VCF file for a
         // single chromosome
@@ -83,7 +139,7 @@ class CNVCaller {
 
         // Read SNP population frequencies from the PFB file and return a vector
         // of population frequencies for each SNP location
-        void getSNPPopulationFrequencies(SNPDataMap& snp_data_map);
+        void getSNPPopulationFrequencies(SNPInfo& snp_info);
 
         // Save a BED file with predicted copy number states
         void saveToBED(SNPDataMap& snp_data_map, std::string filepath);

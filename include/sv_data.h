@@ -15,25 +15,7 @@
 // Include the SV types namespace
 using namespace sv_types;
 
-// Create a struct for storing SV information
-struct SVInfo {
-    int sv_type;
-    int read_depth;
-    std::set<std::string> data_type;  // Alignment type used to call the SV
-    int sv_length;
-    std::string genotype = "./.";  // Default genotype (no call)
 
-    SVInfo() :
-        sv_type(-1), read_depth(0), data_type({}), sv_length(0), genotype("./.") {}
-        
-    SVInfo(int sv_type, int read_depth, std::string data_type, int sv_length, std::string genotype) :
-        sv_type(sv_type), read_depth(read_depth), data_type({data_type}), sv_length(sv_length), genotype(genotype) {}
-};
-
-using SVCandidate = std::tuple<int64_t, int64_t, std::string>;  // SV (start, end, alt_allele)
-// Chromosome to SV candidate to read depth map
-using SVDepthMap = std::unordered_map<std::string, std::map<SVCandidate, SVInfo>>;
-//using SVDepthMap = std::map<std::string, SVCandidate, SVInfo>;
 
 // SV data class
 class SVData {
@@ -83,7 +65,7 @@ class SVData {
         SVData merge(float min_pct_overlap);
 
         // Get the chromosome SVs
-        std::map<SVCandidate, SVInfo> getChromosomeSVs(std::string chr);
+        std::map<SVCandidate, SVInfo>& getChromosomeSVs(std::string chr);
 
         // Get the chromosomes
         std::set<std::string> getChromosomes();
@@ -94,6 +76,9 @@ class SVData {
 
         // Define the size of the SV candidate map
         int totalCalls();
+
+        // Add copy number information to the SV data
+        void addCopyNumberInfo(std::string chr, SVCopyNumberMap& cnv_calls);
 };
 
 #endif // SV_DATA_H

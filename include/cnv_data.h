@@ -13,6 +13,7 @@
 using SNPLocation = std::pair<std::string, int64_t>;
 using SNPToCNVMap = std::map<SNPLocation,  int>;
 
+
 class CNVData {
     private:
         SNPToCNVMap cnv_calls;  // Map of SNP positions to CNV types
