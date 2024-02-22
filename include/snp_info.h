@@ -18,7 +18,7 @@ public:
     void insertSNPPopulationFrequency(std::string chr, int64_t pos, double pfb);
     
     // Query SNPs within a range (start, end) and return their BAF and PFB values
-    std::tuple<std::vector<double>, std::vector<double>> querySNPs(std::string chr, int64_t start, int64_t end);
+    std::tuple<std::vector<int64_t>, std::vector<double>, std::vector<double>> querySNPs(std::string chr, int64_t start, int64_t end);
 
     // Get a list of chromosomes with SNP information
     std::vector<std::string> getChromosomes();

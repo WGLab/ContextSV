@@ -25,19 +25,21 @@ using namespace sv_types;
 // SNP data is a struct containing vectors used in predicting copy number
 // states. It is sorted by SNP position.
 struct SNPData {
-    std::vector<int64_t> locations;
-    std::vector<double> pfbs;
-    std::vector<double> bafs;
-    std::vector<double> log2_ratios;
-    std::vector<int> state_sequence;
+    std::vector<int64_t> pos;
+    std::vector<double> pfb;
+    std::vector<double> baf;
+    std::vector<double> log2_cov;
+    std::vector<int> state_sequence;  // Predicted copy number states
+    std::vector<bool> is_snp;  // True if the position is a SNP
     double mean_chr_cov = 0;  // Mean coverage for the chromosome
 
     SNPData():
-        locations({}),\
-        pfbs({}), \
-        bafs({}), \
-        log2_ratios({}), \
+        pos({}),\
+        pfb({}), \
+        baf({}), \
+        log2_cov({}), \
         state_sequence({}), \
+        is_snp({}), \
         mean_chr_cov(0) {}
 };
 
@@ -106,7 +108,7 @@ class CNVCaller {
 
         // Function which takes in the chunk and the SNP info and updates the
         // SVData object with CNV type and genotype
-        SVCopyNumberMap runCopyNumberPrediction(std::string chr, std::vector<SVCandidate> sv_calls, SNPInfo& snp_info, CHMM hmm, int window_size);
+        void runCopyNumberPrediction(std::string chr, SVData& sv_calls, SNPInfo& snp_info, SNPData& snp_data, CHMM hmm, int window_size);
 
     public:
         CNVCaller(InputData& input_data);
@@ -115,20 +117,11 @@ class CNVCaller {
         // (key = [chromosome, SNP position], value = state)
 		void run(SVData& sv_calls);
 
-        // Calculate coverage log2 ratios at SNP positions
-		void calculateLog2RatioAtSNPS(SNPDataMap& snp_data_map);
-
         // Calculate the mean chromosome coverage
         double calculateMeanChromosomeCoverage(std::string chr);
 
         // Calculate read depths for a region
-        std::unordered_map<uint64_t, int> calculateDepthsForSNPRegion(std::string chr, int start_pos, int end_pos);
-
-        // Calculate region mean coverage
-        double calculateWindowLogRRatio(double mean_chr_cov, std::string chr, int start_pos, int end_pos);
-
-        // Call calculateWindowLogRRatio for each SV candidate in the input vector
-        std::vector<double> runBatchLog2Ratios(std::string chr, std::vector<SVCandidate> sv_candidates);
+        void calculateDepthsForSNPRegion(std::string chr, int start_pos, int end_pos, std::unordered_map<uint64_t, int>& pos_depth_map);
 
         // Read SNP positions and BAF values from the VCF file of SNP calls
         void readSNPAlleleFrequencies(std::string filepath, SNPInfo& snp_info, bool whole_genome);
@@ -145,7 +138,7 @@ class CNVCaller {
         void saveToBED(SNPDataMap& snp_data_map, std::string filepath);
 
         // Save a TSV with B-allele frequencies, log 2 ratios, and copy number predictions
-        void saveToTSV(SNPDataMap& snp_data_map, std::string filepath);
+        void saveToTSV(SNPData& snp_data, std::string filepath);
 };
 
 #endif // CNV_CALLER_H

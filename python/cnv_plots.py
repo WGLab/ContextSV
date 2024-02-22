@@ -73,7 +73,10 @@ def run(vcf_file, cnv_data_file, output_path, region):
     else:
         cnv_data = cnv_data[(cnv_data["chromosome"] == chromosome)]
 
-    log.info("Loaded %d CNVs.", len(cnv_data))
+    # Filter the CNV data to only include SNPs.
+    cnv_data = cnv_data[cnv_data["snp"] == 1]
+
+    log.info("Loaded %d SNPs from %s", len(cnv_data), cnv_data_file)
 
     # Create an output html file where we will append the CNV plots.
     if start_position is not None and end_position is not None:
@@ -175,7 +178,8 @@ def run(vcf_file, cnv_data_file, output_path, region):
                 # Get the hover text for the state sequence markers.
                 hover_text = []
                 for _, row in sv_data.iterrows():
-                    hover_text.append(f"TYPE: {cnv_types[row['cnv_state']]}<br>CHR: {row['chromosome']}<br>POS: {row['position']}<br>L2R: {row['log2_ratio']}<br>BAF: {row['b_allele_freq']}<br>PFB: {row['population_freq']}")
+                    hover_text.append(f"SNP: {row['snp']}<br>TYPE: {cnv_types[row['cnv_state']]}<br>CHR: {row['chromosome']}<br>POS: {row['position']}<br>L2R: {row['log2_ratio']}<br>BAF: {row['b_allele_freq']}<br>PFB: {row['population_freq']}")
+                    # hover_text.append(f"TYPE: {cnv_types[row['cnv_state']]}<br>CHR: {row['chromosome']}<br>POS: {row['position']}<br>L2R: {row['log2_ratio']}<br>BAF: {row['b_allele_freq']}<br>PFB: {row['population_freq']}")
 
                 # Create the log2 ratio trace.
                 log2_ratio_trace = plotly.graph_objs.Scatter(
