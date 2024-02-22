@@ -61,9 +61,6 @@ class SVData {
         // Save SV calls to VCF
         void saveToVCF(FASTAQuery& ref_genome, std::string output_dir);
 
-        // Merge SV calls using the minimum overlap criterion (% reciprocal overlap)
-        SVData merge(float min_pct_overlap);
-
         // Get the chromosome SVs
         std::map<SVCandidate, SVInfo>& getChromosomeSVs(std::string chr);
 

@@ -122,14 +122,10 @@ SVData SVCaller::detectSVsFromRegion(std::string region)
         // Increment the number of alignment records processed
         num_alignments++;
     }
-    
-    // Print the number of alignments processed
-    //std::cout << num_alignments << " alignments processed" << std::endl;
 
     // Loop through the map of primary alignments by QNAME and find gaps and
     // overlaps from supplementary alignments
     for (const auto& entry : primary_alignments) {
-
         // Get the QNAME
         std::string qname = entry.first;
 
@@ -172,7 +168,7 @@ SVData SVCaller::detectSVsFromRegion(std::string region)
                     sv_calls.add(supp_chr, supp_end+1, primary_start+1, UNKNOWN, ".", "GAPINNER_A");
                 }
 
-                // ALso use the alignment ends as the SV endpoints
+                // Also use the alignment ends as the SV endpoints
                 if (primary_end - supp_start >= this->min_sv_size) {
                     sv_calls.add(supp_chr, supp_start+1, primary_end+1, UNKNOWN, ".", "GAPOUTER_A");
                 }
@@ -256,13 +252,6 @@ void SVCaller::detectSVsFromCIGAR(bam_hdr_t* header, bam1_t* alignment, SVData& 
     // POS is the leftmost position of where the alignment maps to the reference:
     // https://genome.sph.umich.edu/wiki/SAM
 
-    // Get the reference genome
-    // FASTAQuery ref_genome = this->input_data->getRefGenome();
-
-    // This will be done using threading. The CIGAR string will be split into
-    // chunks and each chunk will be processed in a separate thread. The
-    // resulting SV calls will be concatenated at the end.
-
     std::vector<std::thread> threads;
     std::vector<SVData> sv_calls_vec;
 
@@ -293,7 +282,6 @@ void SVCaller::detectSVsFromCIGAR(bam_hdr_t* header, bam1_t* alignment, SVData& 
                 // To determine whether the insertion is a duplication, check
                 // for sequence identity between the insertion and the
                 // reference genome (duplications are typically >= 90%)
-
 
                 // Loop from the leftmost position of the insertion (pos-op_len)
                 // to the rightmost position of the insertion (pos+op_len-1) and
@@ -488,14 +476,8 @@ SVData SVCaller::detectSVsFromSplitReads()
     }
     auto end1 = std::chrono::high_resolution_clock::now();
     std::cout << "Finished detecting " << sv_calls.totalCalls() << " SVs from " << num_regions << " region(s). Elapsed time: " << getElapsedTime(start1, end1) << std::endl;
-
-    // Merge SV calls with 50% reciprocal overlap and return the merged SV calls
-    // See review: https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7402362/
-    std::cout << "Merging SV calls with 50% reciprocal overlap..." << std::endl;
     auto start3 = std::chrono::high_resolution_clock::now();
-    //SVData merged_sv_calls = sv_calls.merge(50);
 
     // Return the SV calls
-    //return merged_sv_calls;
     return sv_calls;
 }

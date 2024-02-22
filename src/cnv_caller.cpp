@@ -36,6 +36,16 @@ void CNVCaller::runCopyNumberPrediction(std::string chr, SVData& sv_calls, SNPIn
     int sv_count = (int) sv_candidates.size();
     printMessage("Total SV count: " + std::to_string(sv_count));
 
+    // Get the first and last positions of the chromosome SVs
+    int64_t first_pos = std::get<0>(sv_candidates.begin()->first);  // Start position is element 0
+    int64_t last_pos = std::get<1>(sv_candidates.rbegin()->first);  // End position is element 1
+
+    // Generate the read depth map for the entire SV region
+    std::unordered_map<uint64_t, int> pos_depth_map;
+    std::cout << "Calculating read depths for SV region " << chr << ":" << first_pos << "-" << last_pos << "..." << std::endl;
+    calculateDepthsForSNPRegion(chr, first_pos, last_pos, pos_depth_map);
+    std::cout << "Finished calculating read depths for SV region " << chr << ":" << first_pos << "-" << last_pos << std::endl;
+
     // If there are no SV candidates, then return
     if (sv_count == 0)
     {
@@ -74,20 +84,8 @@ void CNVCaller::runCopyNumberPrediction(std::string chr, SVData& sv_calls, SNPIn
         int64_t start_pos = std::get<0>(candidate);
         int64_t end_pos = std::get<1>(candidate);
 
-        // Get the read depths for the entire region
-        std::unordered_map<uint64_t, int> pos_depth_map;
-        calculateDepthsForSNPRegion(chr, start_pos, end_pos, pos_depth_map);
-
-        // Continue if there are no positions in the region
-        if (pos_depth_map.size() == 0)
-        {
-            std::cout << "No reads found in SV region " << chr << ":" << start_pos << "-" << end_pos << std::endl;
-            continue;
-        }
-
         // Loop through the SV region, calculate the log2 ratios, and run the
         // Viterbi algorithm
-        //std::cout << "Calculating log2 ratios for SV region " << chr << ":" << start_pos << "-" << end_pos << "..." << std::endl;
         std::vector<double> log2_cov;
         std::vector<int> state_sequence;
         std::vector<int64_t> pos;
@@ -98,12 +96,13 @@ void CNVCaller::runCopyNumberPrediction(std::string chr, SVData& sv_calls, SNPIn
         bool snps_found = false;
         int sv_length = end_pos - start_pos;
 
-        // Estimate the number of positions in the SV region
-        int interval_count = std::ceil((double) sv_length / (double) window_size);
-        int current_interval = 0;
+        // // Estimate the number of positions in the SV region
+        // int interval_count = std::ceil((double) sv_length / (double) window_size);
+        // int current_interval = 0;
 
-        // Loop as a sliding non-overlapping window across the SV region
-        // Note: SV coordinates are 1-based
+        // Loop as a sliding non-overlapping window across the SV region. When a
+        // SNP is encountered, split the window and calculate the log2 ratio for
+        // the SNP and the window (= 3 positions)
         for (int64_t i = start_pos; i <= end_pos; i += window_size)
         {
             // Run a sliding non-overlapping window of size window_size across
@@ -112,88 +111,81 @@ void CNVCaller::runCopyNumberPrediction(std::string chr, SVData& sv_calls, SNPIn
             int64_t window_end = std::min(i + window_size - 1, end_pos);
             //std::cout << "Calculating log2 ratio for window " << chr << ":" << window_start << "-" << window_end << "..." << std::endl;
 
-            // Use the position and depth map to calculate the log2 ratio
-            double cum_depth = 0;
-            int pos_count = 0;
-            for (int64_t j = window_start; j <= window_end; j++)
-            {
-                // Check if the position is in the map
-                auto it = pos_depth_map.find(j);
-                if (it == pos_depth_map.end())
-                {
-                    std::cout << "Position " << j << " not found in depth map" << std::endl;
-                    continue;
-                }
-
-                // Get the depth for the position
-                int depth = pos_depth_map[j];
-
-                // Update the position count and cumulative depth
-                pos_count++;
-                cum_depth += depth;
-            }
-
-            // Continue if there are no positions in the window
-            if (pos_count == 0)
-            {
-                std::cout << "No positions found in window " << chr << ":" << window_start << "-" << window_end << std::endl;
-                continue;
-            }
-
-            // Calculate the window coverage log2 ratio
-            double window_mean_cov = (double) cum_depth / (double) pos_count;
-
-            // Calculate the log2 ratio for the window
-            double window_log2_ratio = log2(window_mean_cov / mean_chr_cov);
-
-            // If result is infinite, print calculation details
-            if (std::isinf(window_log2_ratio))
-            {
-                std::cout << "[DEBUG] Window mean coverage: " << window_mean_cov << std::endl;
-                std::cout << "[DEBUG] Mean chromosome coverage: " << mean_chr_cov << std::endl;
-                std::cout << "[DEBUG] Log2 ratio: " << window_log2_ratio << std::endl;
-            }
-
             // Get the SNP info for the window
             //printMessage("Querying SNPs for window " + chr + ":" + std::to_string(window_start) + "-" + std::to_string(window_end) + "...");
             std::tuple<std::vector<int64_t>, std::vector<double>, std::vector<double>> window_snps = snp_info.querySNPs(chr, window_start, window_end);
             //printMessage("Finished querying SNPs for window " + chr + ":" + std::to_string(window_start) + "-" + std::to_string(window_end) + "...");
-            std::vector<int64_t>& window_pos = std::get<0>(window_snps);  // SNP positions
-            std::vector<double>& window_bafs = std::get<1>(window_snps);  // B-allele frequencies
-            std::vector<double>& window_pfbs = std::get<2>(window_snps);  // Population frequencies of the B allele
+            std::vector<int64_t>& snp_window_pos = std::get<0>(window_snps);  // SNP positions
+            std::vector<double>& snp_window_bafs = std::get<1>(window_snps);  // B-allele frequencies
+            std::vector<double>& snp_window_pfbs = std::get<2>(window_snps);  // Population frequencies of the B allele
 
-            // Create the boolean vector for SNPs
-            std::vector<bool> window_is_snp(window_pos.size(), true);
+            // Loop though the SNP positions and calculate the log2 ratio for
+            // the window up to the SNP, then calculate the log2 ratio centered
+            // at the SNP, and finally calculate the log2 ratio for the window
+            // after the SNP, and continue until the end of the window
+            std::vector<double> window_log2_ratios;
+            int snp_count = (int) snp_window_pos.size();
 
             // If there are no SNPs in the window, then use the default BAF and
             // PFB values, and the coverage log2 ratio
-            if (window_pos.size() == 0)
+            if (snp_count == 0)
             {
+                // Calculate the log2 ratio for the window
+                double window_log2_ratio = calculateLog2Ratio(window_start, window_end, pos_depth_map, mean_chr_cov);
+
                 // Use the window center position
                 pos.push_back((window_start + window_end) / 2);
                 baf.push_back(0.5);
                 pfb.push_back(MIN_PFB);
                 log2_cov.push_back(window_log2_ratio);
                 is_snp.push_back(false);
-
-            // If there are SNPs in the window, then use the BAF and PFB values
             } else {
                 snps_found = true;
 
-                // Add the BAFs and PFBs to the vectors
-                pos.insert(pos.end(), window_pos.begin(), window_pos.end());
-                baf.insert(baf.end(), window_bafs.begin(), window_bafs.end());
-                pfb.insert(pfb.end(), window_pfbs.begin(), window_pfbs.end());
-                log2_cov.insert(log2_cov.end(), window_pos.size(), window_log2_ratio);
-                is_snp.insert(is_snp.end(), window_is_snp.begin(), window_is_snp.end());
+                // Loop through the SNPs and calculate the log2 ratios
+                for (int j = 0; j < snp_count; j++)
+                {
+                    // Get the SNP position
+                    int64_t snp_pos = snp_window_pos[j];
+
+                    // Calculate the log2 ratio for the window up to the SNP (with
+                    // default B-allete frequency and population frequency values)
+                    double window_log2_ratio = this->calculateLog2Ratio(window_start, snp_pos-1, pos_depth_map, mean_chr_cov);
+                    log2_cov.push_back(window_log2_ratio);
+                    pos.push_back(std::round((window_start + (snp_pos-1)) / 2));  // Use the window center position
+                    baf.push_back(0.5);
+                    pfb.push_back(MIN_PFB);
+                    is_snp.push_back(false);
+
+                    // Calculate the log2 ratio for the SNP +/- window_size/2
+                    double snp_log2_ratio = calculateLog2Ratio(snp_pos - window_size / 2, snp_pos + window_size / 2, pos_depth_map, mean_chr_cov);
+                    log2_cov.push_back(snp_log2_ratio);
+                    pos.push_back(snp_pos);
+                    baf.push_back(snp_window_bafs[j]);
+                    pfb.push_back(snp_window_pfbs[j]);
+                    is_snp.push_back(true);
+
+                    // Calculate the log2 ratio for the window after the SNP
+                    if (j < snp_count - 1)
+                    {
+                        int64_t next_snp_pos = snp_window_pos[j + 1];
+                        double window_log2_ratio = calculateLog2Ratio(snp_pos+1, next_snp_pos-1, pos_depth_map, mean_chr_cov);
+                        log2_cov.push_back(window_log2_ratio);
+                        pos.push_back(std::round((snp_pos + next_snp_pos) / 2));  // Use the window center position
+                        baf.push_back(0.5);
+                        pfb.push_back(MIN_PFB);
+                        is_snp.push_back(false);
+                    }
+                }
+
+                // Calculate the log2 ratio for the window after the last SNP
+                double window_log2_ratio = calculateLog2Ratio(snp_window_pos[snp_count-1]+1, window_end, pos_depth_map, mean_chr_cov);
+                log2_cov.push_back(window_log2_ratio);
+                pos.push_back((snp_window_pos[snp_count-1] + window_end) / 2);  // Use the window center position
+                baf.push_back(0.5);
+                pfb.push_back(MIN_PFB);
+                is_snp.push_back(false);
             }
-
-            // Update the position counter
-            pos_count;
-
-            // Print progress
-            current_interval++;
-            //std::cout << "Progress: " << std::to_string(current_interval) << " of " << std::to_string(interval_count) << " intervals" << std::endl;
         }
 
         // Run the Viterbi algorithm
@@ -233,8 +225,6 @@ void CNVCaller::runCopyNumberPrediction(std::string chr, SVData& sv_calls, SNPIn
         {
             //sv_info.sv_type = cnv_type;
             sv_calls.updateSVType(chr, candidate, cnv_type, data_type);
-
-            std::cout << "[TEST] Found SV type: " << sv_types::SVTypeString[cnv_type] << std::endl;
         }
 
         // Update the SV genotype
@@ -247,10 +237,11 @@ void CNVCaller::runCopyNumberPrediction(std::string chr, SVData& sv_calls, SNPIn
         snp_data.state_sequence.insert(snp_data.state_sequence.end(), state_sequence.begin(), state_sequence.end());
         snp_data.pfb.insert(snp_data.pfb.end(), pfb.begin(), pfb.end());
         snp_data.is_snp.insert(snp_data.is_snp.end(), is_snp.begin(), is_snp.end());
+
+        std::cout << "Finished copy number predictions for SV " << current_sv << " of " << sv_count << std::endl;
     }
 
     std::cout << "Finished predicting copy number states for chromosome " << chr << std::endl;
-    // std::cout << "Saved copy number data to " << output_tsv << std::endl;
 
     // Print the first three positions and BAFs
     std::cout << "First three positions and BAFs:" << std::endl;
@@ -536,7 +527,45 @@ void CNVCaller::calculateDepthsForSNPRegion(std::string chr, int start_pos, int 
     // return pos_depth_map;
 }
 
-void CNVCaller::readSNPAlleleFrequencies(std::string snp_filepath, SNPInfo& snp_info, bool whole_genome)
+double CNVCaller::calculateLog2Ratio(int start_pos, int end_pos, std::unordered_map<uint64_t, int> &pos_depth_map, double mean_chr_cov)
+{
+    // Use the position and depth map to calculate the log2 ratio
+    double cum_depth = 0;
+    int pos_count = 0;
+    for (int i = start_pos; i <= end_pos; i++)
+    {
+        // Check if the position is in the map
+        auto it = pos_depth_map.find(i);
+        if (it == pos_depth_map.end())
+        {
+            //std::cout << "Position " << i << " not found in depth map" << std::endl;
+            continue;
+        }
+
+        // Get the depth for the position
+        int depth = pos_depth_map[i];
+
+        // Update the position count and cumulative depth
+        pos_count++;        cum_depth += depth;
+    }
+
+    // Continue if there are no positions in the region
+    if (pos_count == 0)
+    {
+        //std::cout << "No positions found in region " << start_pos << "-" << end_pos << std::endl;
+        return 0;
+    }
+
+    // Calculate the window coverage log2 ratio
+    double window_mean_cov = (double) cum_depth / (double) pos_count;
+
+    // Calculate the log2 ratio for the window
+    double window_log2_ratio = log2(window_mean_cov / mean_chr_cov);
+
+    return window_log2_ratio;
+}
+
+void CNVCaller::readSNPAlleleFrequencies(std::string snp_filepath, SNPInfo &snp_info, bool whole_genome)
 {
     // Create a VCF filepath of filtered SNPs
     std::string filtered_snp_vcf_filepath = this->input_data->getOutputDir() + "/filtered_snps.vcf";
@@ -815,7 +844,6 @@ void CNVCaller::getSNPPopulationFrequencies(SNPInfo& snp_info)
         }
 
         // Loop through the futures and get the results
-        //std::cout << "Merging population frequencies for chromosome " << chr << "..." << std::endl;
         for (auto& future : futures)
         {
             // Wait for the future to finish

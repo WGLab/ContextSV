@@ -66,7 +66,7 @@ std::tuple<std::vector<int64_t>, std::vector<double>, std::vector<double>> SNPIn
     
     // Check if the chromosome exists in the B-allele frequency map
     if (this->snp_baf_map.find(chr) == this->snp_baf_map.end()) {
-        std::cerr << "Chromosome " << chr << " not found in SNP BAF map" << std::endl;
+        //std::cerr << "Chromosome " << chr << " not found in SNP BAF map" << std::endl;
         return std::make_tuple(pos, bafs, pfbs);
     }
 

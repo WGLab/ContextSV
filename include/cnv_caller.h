@@ -123,6 +123,10 @@ class CNVCaller {
         // Calculate read depths for a region
         void calculateDepthsForSNPRegion(std::string chr, int start_pos, int end_pos, std::unordered_map<uint64_t, int>& pos_depth_map);
 
+        // Calculate the log2 ratio for a region given the read depths and mean
+        // chromosome coverage
+        double calculateLog2Ratio(int start_pos, int end_pos, std::unordered_map<uint64_t, int>& pos_depth_map, double mean_chr_cov);
+
         // Read SNP positions and BAF values from the VCF file of SNP calls
         void readSNPAlleleFrequencies(std::string filepath, SNPInfo& snp_info, bool whole_genome);
 

@@ -208,10 +208,10 @@ def main():
             log.error("Please provide the SNPs file.")
             arg_error = True
 
-        # PFB file is required unless SNP-based CNV predictions are disabled.
-        if (args.pfb is None and not args.disable_snp_cnv):
-            log.error("Please provide the PFB file.")
-            arg_error = True
+        # # PFB file is required unless SNP-based CNV predictions are disabled.
+        # if (args.pfb is None and not args.disable_snp_cnv):
+        #     log.error("Please provide the PFB file.")
+        #     arg_error = True
 
         # Exit if there are any errors.
         if (arg_error):

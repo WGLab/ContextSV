@@ -284,28 +284,6 @@ void SVData::saveToVCF(FASTAQuery& ref_genome, std::string output_dir)
     //std::cout << "Saved SV calls to " << output_vcf << std::endl;
 }
 
-SVData SVData::merge(float min_pct_overlap)
-{
-    // Create a new SVData object
-    SVData merged_sv_data;
-
-//    // Iterate over the SV calls
-//    SVCandidate prev_candidate;
-//    for (auto const& sv_call : this->sv_calls) {
-//
-//        // Get the SV candidate
-//        SVCandidate candidate = sv_call.first;
-//
-//        // Get the SV coordinates
-//        std::string chr = std::get<0>(candidate);
-//        int64_t pos = std::get<1>(candidate);
-//        int64_t end = std::get<2>(candidate);
-//
-//        // If the previous candidate is empty, set it to the current candidate
-    return merged_sv_data;
-
-}
-
 std::map<SVCandidate, SVInfo>& SVData::getChromosomeSVs(std::string chr)
 {
     return this->sv_calls[chr];

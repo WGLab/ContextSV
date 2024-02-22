@@ -149,9 +149,13 @@ def run(vcf_file, cnv_data_file, output_path, region):
                 # Get the chromosome.
                 chromosome = sv_data[0]
 
-                # Get the plot range.
-                plot_start_position = start_position - (plot_range * cnv_length)
-                plot_end_position = end_position + (plot_range * cnv_length)
+                # Get the plot range as a multiple of the CNV length.
+                # plot_start_position = start_position - (plot_range * cnv_length)
+                # plot_end_position = end_position + (plot_range * cnv_length)
+
+                # [Test] Simply use the start and end positions of the CNV as the plot range.
+                plot_start_position = start_position
+                plot_end_position = end_position
 
                 # Get the CNV state, log2 ratio, and BAF values for all SNPs in the
                 # plot range.
@@ -247,6 +251,20 @@ def run(vcf_file, cnv_data_file, output_path, region):
 
                 fig.update_yaxes(
                     title_text = "B-Allele Frequency",
+                    row = 2,
+                    col = 1
+                )
+
+                # Set the Y-axis range for the log2 ratio plot.
+                fig.update_yaxes(
+                    range = [-1.2, 1.2],
+                    row = 1,
+                    col = 1
+                )
+
+                # Set the Y-axis range for the BAF plot.
+                fig.update_yaxes(
+                    range = [-0.2, 1.2],
                     row = 2,
                     col = 1
                 )
