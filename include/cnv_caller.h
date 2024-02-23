@@ -106,8 +106,10 @@ class CNVCaller {
             {6, sv_types::DUP}
         };
 
-        // Function which takes in the chunk and the SNP info and updates the
-        // SVData object with CNV type and genotype
+        void updateSNPData(SNPData& snp_data, int64_t pos, double pfb, double baf, double log2_cov, bool is_snp);
+
+        SNPData querySNPRegion(std::string chr, int64_t start_pos, int64_t end_pos, SNPInfo& snp_info, std::unordered_map<uint64_t, int> pos_depth_map, double mean_chr_cov);
+
         void runCopyNumberPrediction(std::string chr, SVData& sv_calls, SNPInfo& snp_info, SNPData& snp_data, CHMM hmm, int window_size);
 
     public:

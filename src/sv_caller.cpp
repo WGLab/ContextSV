@@ -458,17 +458,9 @@ SVData SVCaller::detectSVsFromSplitReads()
         }
 
         // Combine the SV calls from each region
-        //std::cout << "Region complete. Combining SV calls..." << std::endl;
-        auto start2 = std::chrono::high_resolution_clock::now();
         for (auto it = sv_calls_vec.begin(); it != sv_calls_vec.end(); ++it) {
-            //std::cout << "SV size before: " << sv_calls.size() << std::endl;
-            //std::cout << "SV size to add: " << it->size() << std::endl;
             sv_calls.concatenate(*it);
-            //std::cout << "SV size after: " << sv_calls.size() << std::endl;
         }
-
-        auto end2 = std::chrono::high_resolution_clock::now();
-        //std::cout << "Combining SV calls finished. Elapsed time: " << getElapsedTime(start2, end2) << std::endl;
 
         // Increment the region count
         region_count++;
@@ -476,7 +468,6 @@ SVData SVCaller::detectSVsFromSplitReads()
     }
     auto end1 = std::chrono::high_resolution_clock::now();
     std::cout << "Finished detecting " << sv_calls.totalCalls() << " SVs from " << num_regions << " region(s). Elapsed time: " << getElapsedTime(start1, end1) << std::endl;
-    auto start3 = std::chrono::high_resolution_clock::now();
 
     // Return the SV calls
     return sv_calls;

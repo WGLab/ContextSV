@@ -60,7 +60,6 @@ int ContextSV::run()
 
         std::cout << "Running SV CNV labeling from SNP predictions..." << std::endl;
         auto start_label = std::chrono::high_resolution_clock::now();
-        //this->labelCNVs(cnv_calls, sv_calls);
         auto end_label = std::chrono::high_resolution_clock::now();
         elapsed_time = getElapsedTime(start_label, end_label);
         std::cout << "SV CNV labeling complete. Time taken (h:m:s) = " << elapsed_time << std::endl;
@@ -76,35 +75,4 @@ int ContextSV::run()
     std::cout << "SV calls written to file. Time taken (h:m:s) = " << elapsed_time << std::endl;
 
     return 0;
-}
-
-// Label SVs based on CNV calls
-void ContextSV::labelCNVs(CNVData& cnv_calls, SVData& sv_calls)
-{
-//    // Iterate over SV calls
-//    for (auto const& sv_call : sv_calls) {
-//
-//        SVCandidate candidate = sv_call.first;
-//
-//        // Get the SV coordinates
-//        std::string chr = std::get<0>(candidate);
-//        int start_pos = std::get<1>(candidate);
-//        int end_pos = std::get<2>(candidate);
-//
-//        // Get CNV calls within the SV coordinate range and identify the most
-//        // common call
-//        std::tuple<int, std::string> cnv_info = cnv_calls.getMostCommonCNV(chr, start_pos, end_pos);
-//
-//        // Get the CNV type and genotype
-//        int cnv_type = std::get<0>(cnv_info);
-//        std::string cnv_genotype = std::get<1>(cnv_info);
-//
-//        // Update the SV call's type if the CNV call is not unknown
-//        if (cnv_type != UNKNOWN) {
-//            sv_calls.updateSVType(candidate, cnv_type, "SNPCNV");
-//        }
-//
-//        // Update the SV call's genotype
-//        sv_calls.updateGenotype(candidate, cnv_genotype);
-//    }
 }

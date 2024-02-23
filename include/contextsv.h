@@ -15,9 +15,6 @@ class ContextSV {
 	private:
 		InputData* input_data;
 
-		// Label SVs based on CNV calls
-		void labelCNVs(CNVData& cnv_calls, SVData& sv_calls);
-
 	public:
 		ContextSV(InputData& input_data);
 
