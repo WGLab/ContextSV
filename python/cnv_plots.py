@@ -34,9 +34,6 @@ def run(vcf_file, cnv_data_file, output_path, region):
     # Set the maximum number of CNVs to plot.
     max_cnvs = 10
 
-    # Set the plot range for each CNV to 3 times its length on each side.
-    plot_range = 3
-
     # Parse the region.
     chromosome, start_position, end_position = parse_region(region)
 
@@ -129,9 +126,9 @@ def run(vcf_file, cnv_data_file, output_path, region):
                 # Get the read depth (DP) value.
                 read_depth = int(get_info_field_value(info_field, "DP"))
 
-                # # Skip the CNV if the read depth is less than 2.
-                # if read_depth < 2:
-                #     continue
+                # Skip the CNV if the read depth is less than 2.
+                if read_depth < 2:
+                    continue
 
                 # Get the start position.
                 start_position = int(sv_data[1])
@@ -150,12 +147,8 @@ def run(vcf_file, cnv_data_file, output_path, region):
                 chromosome = sv_data[0]
 
                 # Get the plot range as a multiple of the CNV length.
-                # plot_start_position = start_position - (plot_range * cnv_length)
-                # plot_end_position = end_position + (plot_range * cnv_length)
-
-                # [Test] Simply use the start and end positions of the CNV as the plot range.
-                plot_start_position = start_position
-                plot_end_position = end_position
+                plot_start_position = start_position - (cnv_length/2)
+                plot_end_position = end_position + (cnv_length/2)
 
                 # Get the CNV state, log2 ratio, and BAF values for all SNPs in the
                 # plot range.

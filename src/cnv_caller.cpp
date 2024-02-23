@@ -29,6 +29,19 @@
 
 using namespace sv_types;
 
+// Function to call the Viterbi algorithm for the CHMM
+std::vector<int> runViterbi(CHMM hmm, SNPData& snp_data)
+{
+    int data_count = (int) snp_data.pos.size();
+    double *lrr_ptr = snp_data.log2_cov.data();
+    double *baf_ptr = snp_data.baf.data();
+    double *pfb_ptr = snp_data.pfb.data();
+    int *snpdist = NULL;
+    double *logprob = NULL;
+    std::vector<int> state_sequence = testVit_CHMM(hmm, data_count, lrr_ptr, baf_ptr, pfb_ptr, snpdist, logprob);
+    return state_sequence;
+}
+
 // Function to obtain SNP information for a region
 SNPData CNVCaller::querySNPRegion(std::string chr, int64_t start_pos, int64_t end_pos, SNPInfo& snp_info, std::unordered_map<uint64_t, int> pos_depth_map, double mean_chr_cov)
 {
@@ -44,7 +57,7 @@ SNPData CNVCaller::querySNPRegion(std::string chr, int64_t start_pos, int64_t en
 
         // Get the SNP info for the window
         std::tuple<std::vector<int64_t>, std::vector<double>, std::vector<double>> window_snps = snp_info.querySNPs(chr, window_start, window_end);
-        std::cout << "Found " << std::get<0>(window_snps).size() << " SNPs in window " << chr << ":" << window_start << "-" << window_end << std::endl;
+        //std::cout << "Found " << std::get<0>(window_snps).size() << " SNPs in window " << chr << ":" << window_start << "-" << window_end << std::endl;
         std::vector<int64_t>& snp_window_pos = std::get<0>(window_snps);  // SNP positions
         std::vector<double>& snp_window_bafs = std::get<1>(window_snps);  // B-allele frequencies
         std::vector<double>& snp_window_pfbs = std::get<2>(window_snps);  // Population frequencies of the B allele
@@ -162,19 +175,11 @@ void CNVCaller::runCopyNumberPrediction(std::string chr, SVData& sv_calls, SNPIn
         SNPData sv_snps = this->querySNPRegion(chr, start_pos, end_pos, snp_info, pos_depth_map, mean_chr_cov);
 
         // Run the Viterbi algorithm
-        //int interval_count = (int) log2_cov.size();
-        int data_count = (int) sv_snps.pos.size();
-        double *lrr_ptr = sv_snps.log2_cov.data();
-        double *baf_ptr = sv_snps.baf.data();
-        double *pfb_ptr = sv_snps.pfb.data();
-        int *snpdist = NULL;
-        double *logprob = NULL;
-        std::vector<int> state_sequence = testVit_CHMM(hmm, data_count, lrr_ptr, baf_ptr, pfb_ptr, snpdist, logprob);
-
-        std::cout << "Found " << data_count << " data points" << std::endl;
+        std::vector<int> state_sequence = runViterbi(hmm, sv_snps);
         
         // Find the most common CNV state (1-6, 0-based index to 1-based index)
         std::vector<int> state_counts(6, 0);
+        int data_count = (int) state_sequence.size();
         for (int i = 0; i < data_count; i++)
         {
             int state = state_sequence[i];
@@ -189,9 +194,11 @@ void CNVCaller::runCopyNumberPrediction(std::string chr, SVData& sv_calls, SNPIn
         std::string genotype = cnv_genotype_map[max_state];
 
 
-        // Determine the SV calling method used to call the SV (SNPCNV=SNP-based, Log2CNV=coverage-based)
+        // Determine the SV calling method used to call the SV
+        // (SNPCNV=SNP-based, Log2CNV=coverage-based)
+        // It was coverage-based if there was only one position and it was not a SNP
         std::string data_type;
-        if (sv_snps.pos.size() == 0)
+        if (sv_snps.pos.size() == 1 && !sv_snps.is_snp[0])
         {
             data_type = "Log2CNV";
         } else {
@@ -203,28 +210,33 @@ void CNVCaller::runCopyNumberPrediction(std::string chr, SVData& sv_calls, SNPIn
         {
             //sv_info.sv_type = cnv_type;
             sv_calls.updateSVType(chr, candidate, cnv_type, data_type);
-            std::cout << "Updated SV type for " << chr << ":" << start_pos << "-" << end_pos << " to " << sv_types::SVTypeString[cnv_type] << std::endl;
+            //std::cout << "Updated SV type for " << chr << ":" << start_pos << "-" << end_pos << " to " << sv_types::SVTypeString[cnv_type] << std::endl;
         }
 
         // Update the SV genotype
         sv_calls.updateGenotype(chr, candidate, genotype);
+        std::cout << "Finished copy number predictions for SV " << current_sv << " of " << sv_count << std::endl;
 
         // Also process the SV's surrounding region (+/- SV length/2) and
         // include these SNP predictions in the data. These are used for
         // ensuring that the SV's surrounding region is not a CNV
-        
+        //std::cout << "Processing surrounding region for SV " << current_sv << " of " << sv_count << "..." << std::endl;
 
-        // Update the SNP data
-        snp_data.pos.insert(snp_data.pos.end(), sv_snps.pos.begin(), sv_snps.pos.end());
-        snp_data.baf.insert(snp_data.baf.end(), sv_snps.baf.begin(), sv_snps.baf.end());
-        snp_data.log2_cov.insert(snp_data.log2_cov.end(), sv_snps.log2_cov.begin(), sv_snps.log2_cov.end());
-        snp_data.pfb.insert(snp_data.pfb.end(), sv_snps.pfb.begin(), sv_snps.pfb.end());
-        snp_data.is_snp.insert(snp_data.is_snp.end(), sv_snps.is_snp.begin(), sv_snps.is_snp.end());
+        // Preceding SNPs:
+        int64_t sv_half_length = (end_pos - start_pos) / 2;
+        int64_t before_sv_start = start_pos - sv_half_length;
+        int64_t after_sv_end = end_pos + sv_half_length;
+        SNPData preceding_snps = this->querySNPRegion(chr, before_sv_start, start_pos-1, snp_info, pos_depth_map, mean_chr_cov);
+        std::vector<int> preceding_states = runViterbi(hmm, preceding_snps);
+        this->updateSNPVectors(snp_data, preceding_snps.pos, preceding_snps.pfb, preceding_snps.baf, preceding_snps.log2_cov, preceding_states, preceding_snps.is_snp);
 
-        // Update the SNP state sequence
-        snp_data.state_sequence.insert(snp_data.state_sequence.end(), state_sequence.begin(), state_sequence.end());
+        // Within SV SNPs:
+        this->updateSNPVectors(snp_data, sv_snps.pos, sv_snps.pfb, sv_snps.baf, sv_snps.log2_cov, state_sequence, sv_snps.is_snp);
 
-        std::cout << "Finished copy number predictions for SV " << current_sv << " of " << sv_count << std::endl;
+        // Following SNPs:
+        SNPData following_snps = this->querySNPRegion(chr, end_pos+1, after_sv_end, snp_info, pos_depth_map, mean_chr_cov);
+        std::vector<int> following_states = runViterbi(hmm, following_snps);
+        this->updateSNPVectors(snp_data, following_snps.pos, following_snps.pfb, following_snps.baf, following_snps.log2_cov, following_states, following_snps.is_snp);
     }
 
     // // Print the first three positions and BAFs
@@ -888,6 +900,17 @@ void CNVCaller::updateSNPData(SNPData& snp_data, int64_t pos, double pfb, double
     snp_data.baf.push_back(baf);
     snp_data.log2_cov.push_back(log2_cov);
     snp_data.is_snp.push_back(is_snp);
+}
+
+void CNVCaller::updateSNPVectors(SNPData &snp_data, std::vector<int64_t> &pos, std::vector<double> &pfb, std::vector<double> &baf, std::vector<double> &log2_cov, std::vector<int> &state_sequence, std::vector<bool> &is_snp)
+{
+    // Update the SNP data
+    snp_data.pos.insert(snp_data.pos.end(), pos.begin(), pos.end());
+    snp_data.pfb.insert(snp_data.pfb.end(), pfb.begin(), pfb.end());
+    snp_data.baf.insert(snp_data.baf.end(), baf.begin(), baf.end());
+    snp_data.log2_cov.insert(snp_data.log2_cov.end(), log2_cov.begin(), log2_cov.end());
+    snp_data.state_sequence.insert(snp_data.state_sequence.end(), state_sequence.begin(), state_sequence.end());
+    snp_data.is_snp.insert(snp_data.is_snp.end(), is_snp.begin(), is_snp.end());
 }
 
 void CNVCaller::saveToBED(SNPDataMap& snp_data_map, std::string filepath)
