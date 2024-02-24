@@ -82,33 +82,29 @@ SNPData CNVCaller::querySNPRegion(std::string chr, int64_t start_pos, int64_t en
         } else {
 
             // Loop through the SNPs and calculate the log2 ratios
+            int64_t bin_start = window_start;
+            int64_t bin_end = 0;
             for (int j = 0; j < snp_count; j++)
             {
                 // Get the SNP position
                 int64_t snp_pos = snp_window_pos[j];
 
-                // Calculate the log2 ratio for the window up to the SNP (with
-                // default B-allete frequency and population frequency values)
-                double window_log2_ratio = this->calculateLog2Ratio(window_start, snp_pos-1, pos_depth_map, mean_chr_cov);
+                // SNP bin starts at 1/2 the distance between the previous SNP
+                // and the current SNP, and ends at 1/2 the distance between
+                // the current SNP and the next SNP. For the first SNP, the
+                // bin starts at the window start and ends at 1/2 the distance
+                // between the first SNP and the next SNP, and for the last
+                // SNP, the bin starts at 1/2 the distance between the previous
+                // SNP and the last SNP and ends at the window end.
+                bin_end = snp_pos + (j == snp_count-1 ? (window_end - snp_pos) / 2 : (snp_window_pos[j+1] - snp_pos) / 2);
 
-                this->updateSNPData(snp_data, (window_start + snp_pos-1) / 2, MIN_PFB, 0.5, window_log2_ratio, false);
+                // Calculate the log2 ratio for the SNP bin
+                double bin_cov = calculateLog2Ratio(bin_start, bin_end, pos_depth_map, mean_chr_cov);
+                this->updateSNPData(snp_data, (bin_start + bin_end) / 2, snp_window_pfbs[j], snp_window_bafs[j], bin_cov, true);
 
-                // Calculate the log2 ratio for the SNP +/- window_size/2
-                double snp_log2_ratio = calculateLog2Ratio(snp_pos - window_size / 2, snp_pos + window_size / 2, pos_depth_map, mean_chr_cov);
-                this->updateSNPData(snp_data, snp_pos, snp_window_pfbs[j], snp_window_bafs[j], snp_log2_ratio, true);
-
-                // Calculate the log2 ratio for the window after the SNP
-                if (j < snp_count - 1)
-                {
-                    int64_t next_snp_pos = snp_window_pos[j + 1];
-                    double window_log2_ratio = calculateLog2Ratio(snp_pos+1, next_snp_pos-1, pos_depth_map, mean_chr_cov);
-                    this->updateSNPData(snp_data, (snp_pos + next_snp_pos) / 2, MIN_PFB, 0.5, window_log2_ratio, false);
-                }
+                // Update the previous bin start
+                bin_start = bin_end + 1;
             }
-
-            // Calculate the log2 ratio for the window after the last SNP
-            double window_log2_ratio = calculateLog2Ratio(snp_window_pos[snp_count-1]+1, window_end, pos_depth_map, mean_chr_cov);
-            this->updateSNPData(snp_data, (snp_window_pos[snp_count-1] + window_end) / 2, MIN_PFB, 0.5, window_log2_ratio, false);
         }
     }
 
@@ -192,7 +188,6 @@ void CNVCaller::runCopyNumberPrediction(std::string chr, SVData& sv_calls, SNPIn
         // Update the SV calls with the CNV type and genotype
         int cnv_type = cnv_type_map[max_state];
         std::string genotype = cnv_genotype_map[max_state];
-
 
         // Determine the SV calling method used to call the SV
         // (SNPCNV=SNP-based, Log2CNV=coverage-based)
