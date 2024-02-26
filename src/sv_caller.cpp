@@ -206,9 +206,9 @@ SVData SVCaller::detectSVsFromRegion(std::string region)
     // Destroy the index
     hts_idx_destroy(idx);
 
-    if (sv_calls.totalCalls() > 0) {
-        printMessage("Found " + std::to_string(sv_calls.totalCalls()) + " SVs from " + region);
-    }
+    // if (sv_calls.totalCalls() > 0) {
+    //     printMessage("Found " + std::to_string(sv_calls.totalCalls()) + " SVs from " + region);
+    // }
 
     // Return the SV calls
     return sv_calls;

@@ -80,20 +80,21 @@ class CNVCaller {
         std::unordered_map<std::string, double> chr_mean_cov;
 
         // Define a map of CNV genotypes by HMM predicted state.
+        // We only use the first 3 genotypes (0/0, 0/1, 1/1) for the VCF output.
         // Each of the 6 state predictions corresponds to a copy number state:
         // 1: 0/0 (Two copy loss: homozygous deletion, GT: 0/0)
         // 2: 1/0 (One copy loss: heterozygous deletion, GT: 0/1)
         // 3: 1/1 (Normal diploid: no copy number change, GT: 1/1)
         // 4: 1/1 (Copy neutral LOH: no copy number change, GT: 1/1)
-        // 5: 2/1 (One copy gain: heterozygous duplication, GT: 1/2)
-        // 6: 2/2 (Two copy gain: homozygous duplication, GT: 2/2)
+        // 5: 2/1 (One copy gain: heterozygous duplication, GT: 1/2->0/1)
+        // 6: 2/2 (Two copy gain: homozygous duplication, GT: 2/2->1/1)
         std ::map<int, std::string> cnv_genotype_map = {
             {1, "0/0"},
             {2, "0/1"},
             {3, "1/1"},
             {4, "1/1"},
-            {5, "1/2"},
-            {6, "2/2"}
+            {5, "0/1"},
+            {6, "1/1"}
         };
 
         // Define a map of CNV types by HMM predicted state.

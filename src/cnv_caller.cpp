@@ -157,7 +157,7 @@ void CNVCaller::runCopyNumberPrediction(std::string chr, SVData& sv_calls, SNPIn
     for (auto const& sv_call : sv_candidates)
     {
         current_sv++;
-        printMessage("Predicting SV " + std::to_string(current_sv) + " of " + std::to_string(sv_count) + "...");
+        //printMessage("Predicting SV " + std::to_string(current_sv) + " of " + std::to_string(sv_count) + "...");
         
         // Get the SV candidate
         const SVCandidate& candidate = sv_call.first;
@@ -210,7 +210,7 @@ void CNVCaller::runCopyNumberPrediction(std::string chr, SVData& sv_calls, SNPIn
 
         // Update the SV genotype
         sv_calls.updateGenotype(chr, candidate, genotype);
-        std::cout << "Finished copy number predictions for SV " << current_sv << " of " << sv_count << std::endl;
+        //std::cout << "Finished copy number predictions for SV " << current_sv << " of " << sv_count << std::endl;
 
         // Also process the SV's surrounding region (+/- SV length/2) and
         // include these SNP predictions in the data. These are used for
@@ -233,6 +233,7 @@ void CNVCaller::runCopyNumberPrediction(std::string chr, SVData& sv_calls, SNPIn
         std::vector<int> following_states = runViterbi(hmm, following_snps);
         this->updateSNPVectors(snp_data, following_snps.pos, following_snps.pfb, following_snps.baf, following_snps.log2_cov, following_states, following_snps.is_snp);
     }
+    std::cout << "Finished predicting copy number states for chromosome " << chr << std::endl;
 
     // // Print the first three positions and BAFs
     // std::cout << "First three positions and BAFs:" << std::endl;
@@ -783,10 +784,12 @@ void CNVCaller::getSNPPopulationFrequencies(SNPInfo& snp_info)
             auto get_pfb = [region_chunk, pfb_filepath]() -> std::unordered_map<int, double>
             {
                 // Run bcftools query to get the population frequencies for the
-                // chromosome within the SNP region, assumed to be sorted by
-                // position
+                // chromosome within the SNP region, filtering for SNPS only,
+                // and within the MIN-MAX range of frequencies.
+                std::string filter_criteria = "INFO/variant_type=\"snv\" && AF >= " + std::to_string(MIN_PFB) + " && AF <= " + std::to_string(MAX_PFB);
                 std::string cmd = \
-                    "bcftools query -r " + region_chunk + " -f '%POS\t%AF\n' -i 'INFO/variant_type=\"snv\"' " + pfb_filepath + " 2>/dev/null";
+                    "bcftools query -r " + region_chunk + " -f '%POS\t%AF\n' -i '" + filter_criteria + "' " + pfb_filepath + " 2>/dev/null";
+                    //"bcftools query -r " + region_chunk + " -f '%POS\t%AF\n' -i 'INFO/variant_type=\"snv\"' " + pfb_filepath + " 2>/dev/null";
 
                 //std::cout << "Command: " << cmd << std::endl;
 
