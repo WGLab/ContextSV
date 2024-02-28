@@ -257,7 +257,7 @@ def main():
         input_data.setDisableCIGAR(args.disable_cigar)
         input_data.setDisableSNPCNV(args.disable_snp_cnv)
         input_data.setCNVFilepath(args.cnv)
-        input_data.setExtendSNPCNV(args.extend_snp_cnv)
+        input_data.setExtendCNVRegions(args.extend_snp_cnv)
 
         # Run the analysis.
         contextsv.run(input_data)
