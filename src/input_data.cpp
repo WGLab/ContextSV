@@ -33,6 +33,7 @@ InputData::InputData()
     this->disable_cigar = false;
     this->disable_snp_cnv = false;
     this->verbose = false;
+    this->extend_cnv_regions = false;
 }
 
 std::string InputData::getShortReadBam()
@@ -505,4 +506,14 @@ void InputData::setVerbose(bool verbose)
 bool InputData::getVerbose()
 {
     return this->verbose;
+}
+
+void InputData::setExtendCNVRegions(bool extend_cnv_regions)
+{
+    this->extend_cnv_regions = extend_cnv_regions;
+}
+
+bool InputData::getExtendCNVRegions()
+{
+    return this->extend_cnv_regions;
 }

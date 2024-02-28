@@ -111,6 +111,12 @@ class InputData {
         // Set the verbose flag to true if verbose output is desired.
         void setVerbose(bool verbose);
         bool getVerbose();
+
+        // Set whether to extend the SNP CNV regions around the SV breakpoints
+        // (+/- 1/2 SV length). Set to false to speed up predictions. Set to
+        // true to generate plots with predictions for surrounding regions.
+        void setExtendCNVRegions(bool extend_cnv_regions);
+        bool getExtendCNVRegions();
         
     private:
         std::string short_read_bam;
@@ -137,6 +143,7 @@ class InputData {
         std::string cnv_filepath;
         bool whole_genome;  // True if the entire genome is being analyzed
         bool verbose;  // True if verbose output is enabled
+        bool extend_cnv_regions;  // True if SNP CNV regions should be extended around SV breakpoints
 };
 
 #endif // INPUT_DATA_H

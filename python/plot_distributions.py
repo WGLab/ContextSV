@@ -60,13 +60,33 @@ def generate_sv_size_plot(input_vcf, output_png, plot_title="SV Caller"):
     sv_type_count = len(sv_sizes)
     fig, axes = plt.subplots(sv_type_count, 1, figsize=(10, 5 * sv_type_count))
 
+    # Create a dictionary of SV types and their corresponding colors. Use light
+    # colors to make the plot more readable, such as 'skyblue' for deletions,
+    # 'lightgreen' for duplications, 'lightcoral' for inversions, and 'violet'
+    # for insertions
+    sv_colors = {'DEL': 'skyblue', 'DUP': 'lightgreen', 'INV': 'lightcoral', 'INS': 'violet'}
+
+    # Create a dictionary of SV types and their corresponding labels
+    sv_labels = {'DEL': 'Deletion', 'DUP': 'Duplication', 'INV': 'Inversion', 'INS': 'Insertion'}
+
+    # Get the list of SV types and sort them in the order of the labels
+    sv_types = sorted(sv_sizes.keys(), key=lambda x: sv_labels[x])
+
+    # Print the number of SVs for each type, starting with the label
+    print("SV Caller: ", plot_title)
+    print('Number of SVs for each type:')
+    for sv_type in sv_types:
+        print(f'{sv_labels[sv_type]}: {len(sv_sizes[sv_type])}')
+
+
     # Plot the SV size distributions
     size_scale = 1000 # Convert SV sizes from bp to kb. Use abs() to handle negative deletion sizes
-    for i, (sv_type, sizes) in enumerate(sv_sizes.items()):
-        axes[i].hist(np.abs(sizes) / size_scale, bins=100, color='skyblue', edgecolor='black')
+    for i, sv_type in enumerate(sv_types):
+        sizes = np.array(sv_sizes[sv_type])
+        axes[i].hist(np.abs(sizes) / size_scale, bins=100, color=sv_colors[sv_type], alpha=0.7, label=sv_labels[sv_type], edgecolor='black')
         axes[i].set_xlabel('SV size (kb)')
         axes[i].set_ylabel('Frequency')
-        axes[i].set_title(f'{plot_title}: {sv_type} SV size distribution')
+        axes[i].set_title(f'{plot_title}: {sv_labels[sv_type]}')
 
         # Use a log scale for the y-axis
         axes[i].set_yscale('log')

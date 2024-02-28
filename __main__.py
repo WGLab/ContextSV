@@ -84,6 +84,17 @@ def main():
         required=False
     )
 
+    # Extend SNP-based CNV predictions to
+    # regions surrounding SVs (+/- 1/2 SV length). This will be useful for
+    # plotting CNV data around SVs.
+    parser.add_argument(
+        "--extend-snp-cnv",
+        help="Extend SNP-based CNV predictions to regions surrounding SVs.",
+        required=False,
+        action="store_true",
+        default=False
+    )
+
     # Mode 1: SV detection mode.
     # Short read alignment file (BAM), reference genome, and short read SNPs file.
     parser.add_argument(
@@ -246,6 +257,7 @@ def main():
         input_data.setDisableCIGAR(args.disable_cigar)
         input_data.setDisableSNPCNV(args.disable_snp_cnv)
         input_data.setCNVFilepath(args.cnv)
+        input_data.setExtendSNPCNV(args.extend_snp_cnv)
 
         # Run the analysis.
         contextsv.run(input_data)
