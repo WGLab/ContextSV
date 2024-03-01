@@ -5,6 +5,7 @@
 #include <tuple>
 #include <mutex>
 #include <iostream>
+#include <utility>
 /// @endcond
 
 #define MIN_PFB 0.01
@@ -126,4 +127,16 @@ std::pair<int64_t, int64_t> SNPInfo::getSNPRange(std::string chr)
         end = std::get<0>(*baf_bst.rbegin());
     }
     return std::make_pair(start, end);
+}
+
+std::pair<const BST&, const std::unordered_map<int64_t, double>&> SNPInfo::getChromosomeSNPInfo(std::string chr)
+{
+    chr = removeChrPrefix(chr);
+
+    // Get chromosome SNP information (B-allele frequency and population
+    // frequency maps)
+    const BST& baf_bst = this->snp_baf_map[chr];
+    const std::unordered_map<int64_t, double>& pfb_map = this->snp_pfb_map[chr];
+
+    return std::make_pair(baf_bst, pfb_map);
 }

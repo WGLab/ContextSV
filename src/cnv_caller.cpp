@@ -124,11 +124,12 @@ SNPData CNVCaller::querySNPRegion(std::string chr, int64_t start_pos, int64_t en
 
     return snp_data;
 }
-
-void CNVCaller::runCopyNumberPrediction(std::string chr, SVData& sv_calls, SNPInfo& snp_info, SNPData& snp_data, CHMM hmm, int window_size)
+SNPData CNVCaller::runCopyNumberPrediction(std::string chr, std::map<SVCandidate, SVInfo>& sv_candidates, SNPInfo& snp_info, CHMM hmm, int window_size)
 {
+    SNPData snp_data;
+
     // Get the chromosome SV candidates
-    std::map<SVCandidate, SVInfo>& sv_candidates = sv_calls.getChromosomeSVs(chr);
+    //std::map<SVCandidate, SVInfo>& sv_candidates = sv_calls.getChromosomeSVs(chr);
     int sv_count = (int) sv_candidates.size();
     printMessage("Total SV count: " + std::to_string(sv_count));
 
@@ -138,15 +139,14 @@ void CNVCaller::runCopyNumberPrediction(std::string chr, SVData& sv_calls, SNPIn
 
     // Generate the read depth map for the entire SV region
     std::unordered_map<uint64_t, int> pos_depth_map;
-    std::cout << "Calculating read depths for SV region " << chr << ":" << first_pos << "-" << last_pos << "..." << std::endl;
+    printMessage("Calculating read depths for SV region " + chr + ":" + std::to_string(first_pos) + "-" + std::to_string(last_pos) + "...");
     calculateDepthsForSNPRegion(chr, first_pos, last_pos, pos_depth_map);
-    std::cout << "Finished calculating read depths for SV region " << chr << ":" << first_pos << "-" << last_pos << std::endl;
 
     // If there are no SV candidates, then return
     if (sv_count == 0)
     {
-        std::cout << "No SV candidates found for chromosome " << chr << std::endl;
-        return;
+        printMessage("No SV candidates found for chromosome " + chr);
+        return snp_data;
     }
 
     // Get the mean chromosome coverage
@@ -154,14 +154,14 @@ void CNVCaller::runCopyNumberPrediction(std::string chr, SVData& sv_calls, SNPIn
     try
     {
         mean_chr_cov = this->input_data->getMeanChromosomeCoverage(chr);
-        std::cout << "User-provided mean chromosome coverage for " << chr << ": " << mean_chr_cov << std::endl;
+        printMessage("User-provided mean chromosome coverage for " + chr + ": " + std::to_string(mean_chr_cov));
     }
     catch(const std::out_of_range& e)
     {
         // No user-provided mean chromosome coverage
-        std::cout << "Calculating mean chromosome coverage for " << chr << "..." << std::endl;
+        printMessage("Calculating mean chromosome coverage for " + chr + "...");
         mean_chr_cov = calculateMeanChromosomeCoverage(chr);
-        std::cout << "Mean chromosome coverage for " << chr << ": " << mean_chr_cov << std::endl;
+        printMessage("Mean chromosome coverage for " + chr + ": " + std::to_string(mean_chr_cov));
     }
 
     // Get whether to extend the SNP CNV regions around the SV breakpoints
@@ -228,19 +228,12 @@ void CNVCaller::runCopyNumberPrediction(std::string chr, SVData& sv_calls, SNPIn
         // Update the SV type if it is not unknown
         if (cnv_type != sv_types::UNKNOWN)
         {
-            //sv_info.sv_type = cnv_type;
-            sv_calls.updateSVType(chr, candidate, cnv_type, data_type);
-            //std::cout << "Updated SV type for " << chr << ":" << start_pos << "-" << end_pos << " to " << sv_types::SVTypeString[cnv_type] << std::endl;
+            sv_candidates[sv_call.first].sv_type = cnv_type;
         }
 
         // Update the SV genotype
-        sv_calls.updateGenotype(chr, candidate, genotype);
-        //std::cout << "Finished copy number predictions for SV " << current_sv << " of " << sv_count << std::endl;
-
-        // Also process the SV's surrounding region (+/- SV length/2) and
-        // include these SNP predictions in the data. These are used for
-        // ensuring that the SV's surrounding region is not a CNV
-        //std::cout << "Processing surrounding region for SV " << current_sv << " of " << sv_count << "..." << std::endl;
+        // sv_calls.updateGenotype(chr, candidate, genotype);
+        sv_candidates[sv_call.first].genotype = genotype;
 
         // Preceding SNPs:
         int64_t sv_half_length;
@@ -280,6 +273,8 @@ void CNVCaller::runCopyNumberPrediction(std::string chr, SVData& sv_calls, SNPIn
     // {
     //     std::cout << snp_data.pos[i] << "\t" << snp_data.baf[i] << std::endl;
     // }
+
+    return snp_data;
 }
 
 
@@ -322,15 +317,62 @@ void CNVCaller::run(SVData& sv_calls)
     // Loop over SV call chromosomes
     std::cout << "Predicting copy number states for SV candidates..." << std::endl;
     std::set<std::string> sv_chromosomes = sv_calls.getChromosomes();
+    // SNPData snp_data;
+    int chr_count = (int) sv_chromosomes.size();
+    int current_chr = 0;
+
+    // Get the number of threads
+    int num_threads = this->input_data->getThreadCount();
+
+    // Process each chromosome in parallel
+    int thread_count = 0;
+    std::vector<std::future<SNPData>> futures;
     SNPData snp_data;
     for (auto const& chr : sv_chromosomes)
     {
-        // Run the copy number prediction for the entire chromosome
+        // Get the SNP information for the chromosome
+        std::cout << "Getting SNP information for chromosome " << chr << "..." << std::endl;
+
+        // Get the SV candidates for the chromosome
+        std::map<SVCandidate, SVInfo>& chr_sv_calls = sv_calls.getChromosomeSVs(chr);
+
+        // Start a thread to run the copy number prediction for the entire chromosome
         std::cout << "Running copy number prediction for chromosome " << chr << "..." << std::endl;
-        runCopyNumberPrediction(chr, sv_calls, snp_info, snp_data, hmm, window_size);
+        // runCopyNumberPrediction(chr, sv_calls, snp_info, snp_data, hmm,
+        // window_size);
+        // Use futures to run the copy number prediction for the entire
+        // chromosome and get the SNP data later
+        std::future<SNPData> future = std::async(std::launch::async, &CNVCaller::runCopyNumberPrediction, this, chr, std::ref(chr_sv_calls), std::ref(snp_info), hmm, window_size);
+        futures.push_back(std::move(future));
+        thread_count++;
+
+        // If the number of threads is reached, then wait for the threads to
+        // finish and process the SNP data
+        if (thread_count == num_threads)
+        {
+            // Loop through the futures and get the SNP data
+            printMessage("Waiting for threads to finish...");
+            for (auto& future : futures)
+            {
+                // Wait for the future to finish
+                future.wait();
+
+                // Get the SNP data from the future
+                SNPData chr_snp_data = future.get();
+
+                // Add the SNP data to the SNP data map
+                printMessage("Updating SNP data...");
+                updateSNPVectors(snp_data, chr_snp_data.pos, chr_snp_data.pfb, chr_snp_data.baf, chr_snp_data.log2_cov, chr_snp_data.state_sequence, chr_snp_data.is_snp);
+            }
+
+            // Reset the thread count
+            thread_count = 0;
+            futures.clear();
+        }
 
         // Print progress
-        std::cout << "Finished predicting copy number states for chromosome " << chr << std::endl;
+        current_chr++;
+        std::cout << "Finished predicting copy number states for " << current_chr << " of " << chr_count << " chromosomes" << std::endl;
     }
 
     std::cout << "Finished predicting copy number states for all chromosomes" << std::endl;
@@ -578,7 +620,8 @@ double CNVCaller::calculateLog2Ratio(int start_pos, int end_pos, std::unordered_
         int depth = pos_depth_map[i];
 
         // Update the position count and cumulative depth
-        pos_count++;        cum_depth += depth;
+        pos_count++;
+        cum_depth += depth;
     }
 
     // Continue if there are no positions in the region
@@ -970,82 +1013,4 @@ void CNVCaller::updateSNPVectors(SNPData &snp_data, std::vector<int64_t> &pos, s
 
     snp_data.is_snp.reserve(snp_data.is_snp.size() + is_snp.size());
     snp_data.is_snp.insert(snp_data.is_snp.end(), std::make_move_iterator(is_snp.begin()), std::make_move_iterator(is_snp.end()));
-}
-
-void CNVCaller::saveToBED(SNPDataMap& snp_data_map, std::string filepath)
-{
-    // Save the CNV state sequence to a BED file.
-    // Each of the 6 copy number states corresponds to the following:
-    // 1: 0/0 (Two copy loss)
-    // 2: 1/0 (One copy loss)
-    // 3: 1/1 (Normal)
-    // 4: 1/1 (Copy neutral LOH)
-    // 5: 2/1 (One copy gain)
-    // 6: 2/2 (Two copy gain)
-
-    // Create a map of descriptions and RGB colors for each CNV state
-    // Descriptions:
-    std::map<int, std::string> description_map = {
-        {1, "DEL"},  // DEL
-        {2, "DEL"},  // DEL
-        {3, "NEUT"},  // NEUTRAL
-        {4, "NEUT"},  // NEUTRAL
-        {5, "DUP"},  // DUP
-        {6, "DUP"}  // DUP
-    };
-
-    // RGB colors:
-    std::map<int, std::string> color_map = {
-        {1, "255,0,0"},  // DEL
-        {2, "255,0,0"},  // DEL
-        {3, "0,0,0"},  // NEUTRAL
-        {4, "0,0,0"},  // NEUTRAL
-        {5, "0,0,255"},  // DUP
-        {6, "0,0,255"}  // DUP
-    };
-
-    // Open the BED file for writing
-    std::ofstream bed_file(filepath);
-
-    // Write the track line (track type, name, description)
-    bed_file << "track name=\"CNV States\" description=\"CNV state predictions from ContextSV\" itemRgb=\"On\" visibility=\"2\" useScore=\"0\"" << std::endl;
-
-    // Loop through each SNP and write the data
-    for (auto& pair : snp_data_map)
-    {
-        // Get the SNP data for the chromosome
-        const std::string chr = pair.first;
-        SNPData& snp_data = pair.second;
-
-        // Get the SNP count
-        int snp_count = (int) snp_data.pos.size();
-        for (int i = 0; i < snp_count; i++)
-        {
-            // Get the SNP data
-            int64_t pos        = snp_data.pos[i];
-            int     state   = snp_data.state_sequence[i];
-
-            // Get the state description
-            std::string state_str = description_map[state];
-
-            // Get the RGB color
-            std::string rgb_color = color_map[state];
-
-            // Write the BED line (chrom, start, end, name (state), score, strand, thickStart, thickEnd, itemRgb)
-            bed_file         << \
-                chr          << "\t" << \
-                pos          << "\t" << \
-                pos          << "\t" << \
-                state_str    << "\t" << \
-                "0"          << "\t" << \
-                "."          << "\t" << \
-                pos          << "\t" << \
-                pos          << "\t" << \
-                rgb_color    << \
-            std::endl;
-        }
-    }
-
-    // Close the file
-    bed_file.close();
 }
