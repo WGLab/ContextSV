@@ -43,45 +43,29 @@ struct SNPData {
         mean_chr_cov(0) {}
 };
 
-// // SNPValues is a struct for storing chromosome SNP information
-// struct SNPValues {
-//     int64_t pos;  // SNP location
-//     double pfb;  // Population frequency of the B allele
-//     double log2_ratio;
-//     double baf;  // B-allele frequency
-// };
-
-// // Define the comparison operator for SNPValues (by location)
-// struct SNPValuesCompare {
-//     bool operator()(const SNPValues& a, const SNPValues& b) const {
-//         return a.pos < b.pos;
-//     }
-// };
-
-// // Define the data structure for SNP values
-// using BST = std::set<SNPValues, SNPValuesCompare>;  // Binary search tree
-
-// // Define the map of chromosome to SNP BST
-// using ChrToSNPMap = std::unordered_map<std::string, BST>;
-
-// // Map of chromosome to SNP data
-// using SNPDataMap = std::unordered_map<std::string, SNPData>;
-
-// // Map of chromosome to SNP population frequency data (position -> pfb)
-// using PFBMap = std::unordered_map<std::string, std::map<int, double>>;
-
 // CNVCaller: Detect CNVs and return the state sequence by SNP position
 class CNVCaller {
     private:
         InputData* input_data;
         double chr_mean_coverage = 0;
 
+        // Mutex for locking the SV candidate map
+        mutable std::mutex sv_candidates_mtx;
+
+        // Mutex for locking the SNP info
+        mutable std::mutex snp_data_mtx;
+
+        // Mutex for locking the SNP data
+        mutable std::mutex snp_mtx;
+
         // Map of chromosome to mean coverage
         std::unordered_map<std::string, double> chr_mean_cov;
 
         // Define a map of CNV genotypes by HMM predicted state.
         // We only use the first 3 genotypes (0/0, 0/1, 1/1) for the VCF output.
-        // Each of the 6 state predictions corresponds to a copy number state:
+        // Each of the 6 state predictions corresponds to a copy number state
+        // (0=No predicted state)
+        // 0: 1/1 (Normal diploid: no copy number change, GT: 1/1)
         // 1: 0/0 (Two copy loss: homozygous deletion, GT: 0/0)
         // 2: 1/0 (One copy loss: heterozygous deletion, GT: 0/1)
         // 3: 1/1 (Normal diploid: no copy number change, GT: 1/1)
@@ -89,6 +73,7 @@ class CNVCaller {
         // 5: 2/1 (One copy gain: heterozygous duplication, GT: 1/2->0/1)
         // 6: 2/2 (Two copy gain: homozygous duplication, GT: 2/2->1/1)
         std ::map<int, std::string> cnv_genotype_map = {
+            {0, "1/1"},
             {1, "0/0"},
             {2, "0/1"},
             {3, "1/1"},
@@ -97,8 +82,9 @@ class CNVCaller {
             {6, "1/1"}
         };
 
-        // Define a map of CNV types by HMM predicted state.
+        // Define a map of CNV types by HMM predicted state (0=No predicted state)
         std ::map<int, int> cnv_type_map = {
+            {0, sv_types::UNKNOWN},
             {1, sv_types::DEL},
             {2, sv_types::DEL},
             {3, sv_types::UNKNOWN},
@@ -111,9 +97,13 @@ class CNVCaller {
 
         void updateSNPVectors(SNPData& snp_data, std::vector<int64_t>& pos, std::vector<double>& pfb, std::vector<double>& baf, std::vector<double>& log2_cov, std::vector<int>& state_sequence, std::vector<bool>& is_snp);
 
-        SNPData querySNPRegion(std::string chr, int64_t start_pos, int64_t end_pos, SNPInfo& snp_info, std::unordered_map<uint64_t, int>& pos_depth_map, double mean_chr_cov);
+        std::pair<SNPData, bool> querySNPRegion(std::string chr, int64_t start_pos, int64_t end_pos, SNPInfo& snp_info, std::unordered_map<uint64_t, int>& pos_depth_map, double mean_chr_cov);
 
         SNPData runCopyNumberPrediction(std::string chr, std::map<SVCandidate, SVInfo>& sv_candidates, SNPInfo& snp_info, CHMM hmm, int window_size);
+
+        void updateSVType(std::map<SVCandidate, SVInfo>& sv_candidates, SVCandidate key, int sv_type, std::string data_type);
+
+        void updateSVGenotype(std::map<SVCandidate, SVInfo>& sv_candidates, SVCandidate key, std::string genotype);
 
     public:
         CNVCaller(InputData& input_data);

@@ -52,7 +52,7 @@ void SNPInfo::insertSNPPopulationFrequency(std::string chr, int64_t pos, double 
 std::tuple<std::vector<int64_t>, std::vector<double>, std::vector<double>> SNPInfo::querySNPs(std::string chr, int64_t start, int64_t end)
 {
     // Lock the mutex for reading SNP information
-    // std::lock_guard<std::mutex> lock(this->snp_info_mtx);
+    std::lock_guard<std::mutex> lock(this->snp_info_mtx);
 
     chr = removeChrPrefix(chr);
 

@@ -159,6 +159,15 @@ def main():
         default=False
     )
 
+    # Plot CNV data.
+    parser.add_argument(
+        "--plot-cnv",
+        help="Plot CNV data.",
+        required=False,
+        action="store_true",
+        default=False
+    )
+
     # Mode 2: CNV plots mode. If only the VCF file is provided, then the program
     # will run in this mode.
     parser.add_argument(
@@ -273,7 +282,7 @@ def main():
             cnv_data_path = args.cnv
 
     # Generate python-based CNV plots if SNP-based CNV predictions are enabled.
-    if (not args.disable_snp_cnv):
+    if (args.plot_cnv and not args.disable_snp_cnv):
         log.info("Generating CNV plots...")
         cnv_plots.run(vcf_path, cnv_data_path, output_dir, region)
 

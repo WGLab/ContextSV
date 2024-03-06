@@ -55,7 +55,22 @@ std::vector<int> testVit_CHMM(CHMM hmm, int T, double *O1, double *O2, double *p
 	// Pop the first element of q, which is always 0 (Done this way for 1-based indexing)
 	q.erase(q.begin());
 
+	// Filter out low-confidence calls based on the probability
+	double logprob_threshold = -2000;  // Threshold for the log probability
+	for (int i = 0; i < (int) q.size(); i++)
+    {
+		// Print the probability of the most likely state
+		//std::cout << "State " << q[i] << " has probability " << exp(plogproba[q[i]]) << " (log prob: " << plogproba[q[i]] << ")\n";
+        if (plogproba[q[i]] < logprob_threshold)
+        {
+            q[i] = 3; // Set the state to 3 (neutral)
+        }
+    }
+
 	// Return the state sequence
+	// TODO: Return the delta matrix as well, which is used to calculate the
+	// probability of the most likely state. It is useful for filtering out
+	// low-confidence calls based on the probability.
 	return q;
 }
 
