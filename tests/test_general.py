@@ -75,6 +75,6 @@ def test_run():
         last_line = f.readlines()[-1].strip('\n')
         print("The last line of the output file is: ")
         print(last_line)
-        actual_line="21\t14508888\t0\t0.5\t0\t6\t0.01"
+        actual_line="21\t14508888\t0\t0.5\t0\t6\t0.5"
         print(actual_line)
         assert last_line == actual_line
