@@ -19,7 +19,9 @@ using AlignmentData   = std::tuple<std::string, int64_t, int64_t, std::string>;
 using AlignmentVector = std::vector<AlignmentData>;
 
 // Query map (query name, alignment vector)
-using QueryMap = std::unordered_map<std::string, AlignmentVector>;
+using PrimaryMap = std::unordered_map<std::string, AlignmentData>;
+using SuppMap = std::unordered_map<std::string, AlignmentVector>;
+using RegionData = std::tuple<SVData, PrimaryMap, SuppMap>;
 
 class SVCaller {
     private:
@@ -30,20 +32,20 @@ class SVCaller {
         std::mutex bam_mtx;  // Mutex for locking the BAM file
         std::mutex print_mtx;  // Mutex for locking printing to stdout
         std::mutex query_mtx;  // Mutex for locking the query map
+        std::mutex sv_mtx;  // Mutex for locking the SV data
 
         // Detect SVs from long read alignments in the CIGAR string
         void detectSVsFromCIGAR(bam_hdr_t* header, bam1_t* alignment, SVData& sv_calls);
 
-        // Detect SVs from split-read alignments (primary and supplementary)
-        SVData detectSVsFromSplitReads();
-
         // Detect SVs at a region from long read alignments. This is used for
         // whole genome analysis running in parallel.
-        SVData detectSVsFromRegion(std::string region);
+        RegionData detectSVsFromRegion(std::string region);
         // SVData detectSVsFromRegion(std::string region, samFile *fp_in, bam_hdr_t *bamHdr, hts_idx_t *idx);
-
+ 
         // Read the next alignment from the BAM file in a thread-safe manner
         int readNextAlignment(samFile *fp_in, hts_itr_t *itr, bam1_t *bam1);
+
+        void detectSVsFromSplitReads(SVData& sv_calls, PrimaryMap& primary_map, SuppMap& supp_map);
 
     public:
         SVCaller(InputData& input_data);

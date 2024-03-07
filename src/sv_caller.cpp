@@ -15,6 +15,7 @@
 #include <thread>
 #include <chrono>
 #include <future>
+#include <cmath>
 
 #include "utils.h"
 #include "sv_types.h"
@@ -34,8 +35,7 @@ int SVCaller::readNextAlignment(samFile *fp_in, hts_itr_t *itr, bam1_t *bam1)
     return ret;
 }
 
-// SVData SVCaller::detectSVsFromRegion(std::string region, samFile *fp_in, bam_hdr_t *bamHdr, hts_idx_t *idx)
-SVData SVCaller::detectSVsFromRegion(std::string region)
+RegionData SVCaller::detectSVsFromRegion(std::string region)
 {
     SVData sv_calls;
     std::string bam_filepath = this->input_data->getLongReadBam();
@@ -71,8 +71,8 @@ SVData SVCaller::detectSVsFromRegion(std::string region)
     // Loop through the alignments
     // Create a map of primary and supplementary alignments by QNAME (query template name)
     int num_alignments = 0;
-    QueryMap primary_alignments;  // TODO: Add depth to primary alignments
-    QueryMap supplementary_alignments;
+    PrimaryMap primary_alignments;
+    SuppMap supplementary_alignments;
     while (readNextAlignment(fp_in, itr, bam1) >= 0) {
 
         // Skip secondary and unmapped alignments
@@ -98,8 +98,9 @@ SVData SVCaller::detectSVsFromRegion(std::string region)
 
                 // Add the primary alignment to the map
                 AlignmentData alignment(chr, start, end, ".");
-                primary_alignments[qname].push_back(alignment);
-            
+                // primary_alignments[qname].push_back(alignment);
+                primary_alignments[qname] = alignment;
+
                 // Call SVs directly from the CIGAR string
                 if (disable_cigar == false) {
                     this->detectSVsFromCIGAR(bamHdr, bam1, sv_calls);
@@ -115,80 +116,18 @@ SVData SVCaller::detectSVsFromRegion(std::string region)
                 AlignmentData alignment(chr, start, end, ".");
 
                 // Add the supplementary alignment to the map
-                supplementary_alignments[qname].push_back(alignment);
+                //supplementary_alignments[qname].push_back(alignment);
+                auto it = supplementary_alignments.find(qname);
+                if (it == supplementary_alignments.end()) {
+                    supplementary_alignments[qname] = {alignment};
+                } else {
+                    supplementary_alignments[qname].push_back(alignment);
+                }
             }
         }
 
         // Increment the number of alignment records processed
         num_alignments++;
-    }
-
-    // Loop through the map of primary alignments by QNAME and find gaps and
-    // overlaps from supplementary alignments
-    for (const auto& entry : primary_alignments) {
-        // Get the QNAME
-        std::string qname = entry.first;
-
-        // Get the first primary alignment
-        AlignmentData primary_alignment = entry.second[0];
-
-        // Get the primary alignment chromosome
-        std::string primary_chr = std::get<0>(primary_alignment);
-
-        // Get the start and end positions of the primary alignment
-        int32_t primary_start = std::get<1>(primary_alignment);
-        int32_t primary_end = std::get<2>(primary_alignment);
-
-        // Loop through the supplementary alignments and find gaps and overlaps
-        AlignmentVector supp_alignments = supplementary_alignments[qname];
-        for (const auto& supp_alignment : supp_alignments) {
-
-            // Get the supplementary alignment chromosome
-            std::string supp_chr = std::get<0>(supp_alignment);
-
-            // Skip supplementary alignments that are on a different chromosome
-            // for now (TODO: Use for identifying trans-chromosomal SVs such as
-            // translocations)
-            if (primary_chr != supp_chr) {
-                //std::cout << "Supplementary alignment on different chromosome" << std::endl;
-                continue;
-            }
-
-            // Get the start and end positions of the supplementary alignment
-            int32_t supp_start = std::get<1>(supp_alignment);
-            int32_t supp_end = std::get<2>(supp_alignment);
-
-            // Gap analysis (deletion or duplication)
-            if (supp_start < primary_start && supp_end < primary_start) {
-                // Gap with supplementary before primary:
-                // [supp_start] [supp_end] -- [primary_start] [primary_end]
-
-                // Use the gap ends as the SV endpoints
-                if (primary_start - supp_end >= this->min_sv_size) {
-                    sv_calls.add(supp_chr, supp_end+1, primary_start+1, UNKNOWN, ".", "GAPINNER_A");
-                }
-
-                // Also use the alignment ends as the SV endpoints
-                if (primary_end - supp_start >= this->min_sv_size) {
-                    sv_calls.add(supp_chr, supp_start+1, primary_end+1, UNKNOWN, ".", "GAPOUTER_A");
-                }
-
-                
-            } else if (supp_start > primary_end && supp_end > primary_end) {
-                // Gap with supplementary after primary:
-                // [primary_start] [primary_end] -- [supp_start] [supp_end]
-
-                // Use the gap ends as the SV endpoints
-                if (supp_start - primary_end >= this->min_sv_size) {
-                    sv_calls.add(supp_chr, primary_end+1, supp_start+1, UNKNOWN, ".", "GAPINNER_B");
-                }
-
-                // Also use the alignment ends as the SV endpoints
-                if (supp_end - primary_start >= this->min_sv_size) {
-                    sv_calls.add(supp_chr, primary_start+1, supp_end+1, UNKNOWN, ".", "GAPOUTER_B");
-                }
-            }
-        }
     }
 
     // Destroy the iterator
@@ -206,27 +145,13 @@ SVData SVCaller::detectSVsFromRegion(std::string region)
     // Destroy the index
     hts_idx_destroy(idx);
 
-    // if (sv_calls.totalCalls() > 0) {
-    //     printMessage("Found " + std::to_string(sv_calls.totalCalls()) + " SVs from " + region);
-    // }
-
-    // Return the SV calls
-    return sv_calls;
+    // Return the SV calls and the primary and supplementary alignments
+    return std::make_tuple(sv_calls, primary_alignments, supplementary_alignments);
 }
 
 SVCaller::SVCaller(InputData &input_data)
 {
     this->input_data = &input_data;
-}
-
-// Main function for SV detection
-SVData SVCaller::run()
-{
-    // Get SV calls from split read alignments (primary and supplementary) and
-    // directly from the CIGAR string
-    SVData sv_calls = this->detectSVsFromSplitReads();
-
-    return sv_calls;
 }
 
 // Detect SVs from the CIGAR string of a read alignment.
@@ -375,7 +300,7 @@ void SVCaller::detectSVsFromCIGAR(bam_hdr_t* header, bam1_t* alignment, SVData& 
 
 // Detect SVs from split read alignments (primary and supplementary) and
 // directly from the CIGAR string
-SVData SVCaller::detectSVsFromSplitReads()
+SVData SVCaller::run()
 {
     // Open the BAM file
     std::string bam_filepath = this->input_data->getLongReadBam();
@@ -396,6 +321,8 @@ SVData SVCaller::detectSVsFromSplitReads()
     int region_count = 0;
     auto start1 = std::chrono::high_resolution_clock::now();
     SVData sv_calls;
+    PrimaryMap primary_alignments;
+    SuppMap supplementary_alignments;
     for (const auto& region : regions) {
         std::cout << "Starting region: " << region << std::endl;
 
@@ -431,17 +358,17 @@ SVData SVCaller::detectSVsFromSplitReads()
         }
 
         // Loop through the chunks and process each chunk in a separate thread
-        std::vector<SVData> sv_calls_vec;
+        std::vector<RegionData> sv_calls_vec;
         std::vector<std::thread> threads;
 
         // Vector of futures
-        std::vector<std::future<SVData>> futures;
+        std::vector<std::future<RegionData>> futures;
         for (const auto& sub_region : region_chunks) {
             //std::cout << "Sub-region: " << sub_region << std::endl;
 
             // Detect SVs from the sub-region in a separate thread using a
             // future
-            std::future<SVData> future = std::async(std::launch::async, &SVCaller::detectSVsFromRegion, this, sub_region);
+            std::future<RegionData> future = std::async(std::launch::async, &SVCaller::detectSVsFromRegion, this, sub_region);
 
             // Add the future to the list of futures
             futures.push_back(std::move(future));
@@ -452,23 +379,130 @@ SVData SVCaller::detectSVsFromSplitReads()
             // Wait for the future to be ready
             future.wait();
 
-            // Get the SV calls from the future
-            SVData sv_calls_region = future.get();
+            // Get the SV region data from the future
+            RegionData sv_calls_region = future.get();
             sv_calls_vec.push_back(sv_calls_region);
         }
 
-        // Combine the SV calls from each region
+        // Combine the SV calls, primary alignments, and supplementary
+        // alignments
         for (auto it = sv_calls_vec.begin(); it != sv_calls_vec.end(); ++it) {
-            sv_calls.concatenate(*it);
+            sv_calls.concatenate(std::get<0>(*it));
+
+            // Combine the primary alignments
+            for (auto it2 = std::get<1>(*it).begin(); it2 != std::get<1>(*it).end(); ++it2) {
+                primary_alignments[it2->first] = it2->second;
+            }
+
+            // Combine the supplementary alignments
+            for (auto it3 = std::get<2>(*it).begin(); it3 != std::get<2>(*it).end(); ++it3) {
+                auto it4 = supplementary_alignments.find(it3->first);
+                if (it4 == supplementary_alignments.end()) {
+                    supplementary_alignments[it3->first] = it3->second;
+                } else {
+                    supplementary_alignments[it3->first].insert(supplementary_alignments[it3->first].end(), it3->second.begin(), it3->second.end());
+                }
+            }
         }
+        
+        // for (auto it = sv_calls_vec.begin(); it != sv_calls_vec.end(); ++it) {
+        //     sv_calls.concatenate(*it);
+        // }
 
         // Increment the region count
         region_count++;
         std::cout << "Region " << region_count << " of " << num_regions << " complete" << std::endl;
     }
+
+    // Run split-read SV detection in a single thread
+    std::cout << "Detecting SVs from split-read alignments..." << std::endl;
+    this->detectSVsFromSplitReads(sv_calls, primary_alignments, supplementary_alignments);
+
     auto end1 = std::chrono::high_resolution_clock::now();
     std::cout << "Finished detecting " << sv_calls.totalCalls() << " SVs from " << num_regions << " region(s). Elapsed time: " << getElapsedTime(start1, end1) << std::endl;
 
     // Return the SV calls
     return sv_calls;
+}
+
+
+// Detect SVs from split read alignments
+void SVCaller::detectSVsFromSplitReads(SVData& sv_calls, PrimaryMap& primary_map, SuppMap& supp_map)
+{
+    // Loop through the map of primary alignments by QNAME and find gaps and
+    // overlaps from supplementary alignments
+    int sv_count = 0;
+    for (const auto& entry : primary_map) {
+        // Get the QNAME
+        std::string qname = entry.first;
+
+        // Get the first primary alignment
+        AlignmentData primary_alignment = entry.second;
+
+        // Get the primary alignment chromosome
+        std::string primary_chr = std::get<0>(primary_alignment);
+
+        // Get the start and end positions of the primary alignment
+        int32_t primary_start = std::get<1>(primary_alignment);
+        int32_t primary_end = std::get<2>(primary_alignment);
+
+        // Loop through the supplementary alignments and find gaps and overlaps
+        AlignmentVector supp_alignments = supp_map[qname];
+        for (const auto& supp_alignment : supp_alignments) {
+
+            // Get the supplementary alignment chromosome
+            std::string supp_chr = std::get<0>(supp_alignment);
+
+            // Skip supplementary alignments that are on a different chromosome
+            // for now (TODO: Use for identifying trans-chromosomal SVs such as
+            // translocations)
+            if (primary_chr != supp_chr) {
+                continue;
+            }
+
+            // Get the start and end positions of the supplementary alignment
+            int32_t supp_start = std::get<1>(supp_alignment);
+            int32_t supp_end = std::get<2>(supp_alignment);
+
+            // Gap analysis (deletion or duplication)
+            if (supp_start < primary_start && supp_end < primary_start) {
+                // Gap with supplementary before primary:
+                // [supp_start] [supp_end] -- [primary_start] [primary_end]
+
+                // Use the gap ends as the SV endpoints
+                if (primary_start - supp_end >= this->min_sv_size) {
+                    sv_calls.add(supp_chr, supp_end+1, primary_start+1, UNKNOWN, ".", "GAPINNER_A");
+                    sv_count++;
+                }
+
+                // Also use the alignment ends as the SV endpoints
+                if (primary_end - supp_start >= this->min_sv_size) {
+                    sv_calls.add(supp_chr, supp_start+1, primary_end+1, UNKNOWN, ".", "GAPOUTER_A");
+                    sv_count++;
+                }
+
+                
+            } else if (supp_start > primary_end && supp_end > primary_end) {
+                // Gap with supplementary after primary:
+                // [primary_start] [primary_end] -- [supp_start] [supp_end]
+
+                // Use the gap ends as the SV endpoints
+                if (supp_start - primary_end >= this->min_sv_size) {
+                    sv_calls.add(supp_chr, primary_end+1, supp_start+1, UNKNOWN, ".", "GAPINNER_B");
+                    sv_count++;
+                }
+
+                // Also use the alignment ends as the SV endpoints
+                if (supp_end - primary_start >= this->min_sv_size) {
+                    sv_calls.add(supp_chr, primary_start+1, supp_end+1, UNKNOWN, ".", "GAPOUTER_B");
+                    sv_count++;
+                }
+            }
+        }
+    }
+
+    // Print the number of SVs detected from split-read alignments
+    if (sv_count > 0) {
+        std::cout << "Found " << sv_count << " SVs from split-read alignments" << std::endl;
+    }
 }
