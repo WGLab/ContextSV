@@ -51,7 +51,7 @@ def test_run():
     input_data.setHMMFilepath("")
     input_data.setOutputDir(TEST_OUTDIR)
     input_data.setExtendCNVRegions(True)
-
+    
     # Run the analysis.
     contextsv.run(input_data)
 
@@ -63,11 +63,11 @@ def test_run():
     assert os.path.getsize(output_file) > 0
 
     # Check that the output file has the correct number of lines.
-    with open(output_file, 'r') as f:
+    with open(output_file, 'r', encoding='utf-8') as f:
         assert len(f.readlines()) == 55
 
     # Check that the output file has the correct header.
-    with open(output_file, 'r') as f:
+    with open(output_file, 'r', encoding='utf-8') as f:
         assert f.readline().strip() == "chromosome\tposition\tsnp\tb_allele_freq\tlog2_ratio\tcnv_state\tpopulation_freq"
 
     # Check that the output file has the correct SNP values in the last line
@@ -75,6 +75,6 @@ def test_run():
         last_line = f.readlines()[-1].strip('\n')
         print("The last line of the output file is: ")
         print(last_line)
-        actual_line="21\t14508888\t0\t0.5\t0\t6\t0.5"
+        actual_line="21\t14508888\t0\t0.5\t0.0522005\t6\t0.5"
         print(actual_line)
         assert last_line == actual_line

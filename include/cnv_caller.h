@@ -58,6 +58,12 @@ class CNVCaller {
         // Mutex for locking the SNP data
         mutable std::mutex snp_mtx;
 
+        // Mutex for locking the position-depth map
+        mutable std::mutex pos_depth_map_mtx;
+
+        // Mutex for locking the HMM prediction
+        mutable std::mutex hmm_mtx;
+
         // Map of chromosome to mean coverage
         std::unordered_map<std::string, double> chr_mean_cov;
 
@@ -97,13 +103,23 @@ class CNVCaller {
 
         void updateSNPVectors(SNPData& snp_data, std::vector<int64_t>& pos, std::vector<double>& pfb, std::vector<double>& baf, std::vector<double>& log2_cov, std::vector<int>& state_sequence, std::vector<bool>& is_snp);
 
-        std::pair<SNPData, bool> querySNPRegion(std::string chr, int64_t start_pos, int64_t end_pos, SNPInfo& snp_info, std::unordered_map<uint64_t, int>& pos_depth_map, double mean_chr_cov);
+        std::vector<int> runViterbi(CHMM hmm, SNPData &snp_data);
 
-        SNPData runCopyNumberPrediction(std::string chr, std::map<SVCandidate, SVInfo>& sv_candidates, SNPInfo& snp_info, CHMM hmm, int window_size);
+        std::pair<SNPData, bool> querySNPRegion(std::string chr, int64_t start_pos, int64_t end_pos, SNPInfo &snp_info, std::unordered_map<uint64_t, int> &pos_depth_map, double mean_chr_cov);
+
+        SNPData runCopyNumberPrediction(std::string chr, std::map<SVCandidate, SVInfo>& sv_candidates, SNPInfo& snp_info, CHMM hmm, int window_size, double mean_chr_cov);
+
+        SNPData runCopyNumberPredictionChunk(std::string chr, std::map<SVCandidate, SVInfo>& sv_candidates, std::vector<SVCandidate> sv_chunk, SNPInfo& snp_info, CHMM hmm, int window_size, double mean_chr_cov, std::unordered_map<uint64_t, int>& pos_depth_map);
 
         void updateSVType(std::map<SVCandidate, SVInfo>& sv_candidates, SVCandidate key, int sv_type, std::string data_type);
 
         void updateSVGenotype(std::map<SVCandidate, SVInfo>& sv_candidates, SVCandidate key, std::string genotype);
+
+        std::vector<std::string> splitRegionIntoChunks(std::string chr, int64_t start_pos, int64_t end_pos, int chunk_count);
+
+        std::vector<std::vector<SVCandidate>> splitSVCandidatesIntoChunks(std::map<SVCandidate, SVInfo>& sv_candidates, int chunk_count);
+
+        void mergePosDepthMaps(std::unordered_map<uint64_t, int>& pos_depth_map, std::unordered_map<uint64_t, int>& pos_depth_map_chunk);
 
     public:
         CNVCaller(InputData& input_data);
@@ -116,7 +132,7 @@ class CNVCaller {
         double calculateMeanChromosomeCoverage(std::string chr);
 
         // Calculate read depths for a region
-        void calculateDepthsForSNPRegion(std::string chr, int start_pos, int end_pos, std::unordered_map<uint64_t, int>& pos_depth_map);
+        void calculateDepthsForSNPRegion(std::string chr, int64_t start_pos, int64_t end_pos, std::unordered_map<uint64_t, int>& pos_depth_map);
 
         // Calculate the log2 ratio for a region given the read depths and mean
         // chromosome coverage

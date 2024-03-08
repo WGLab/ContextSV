@@ -126,9 +126,9 @@ def run(vcf_file, cnv_data_file, output_path, region):
                 # Get the read depth (DP) value.
                 read_depth = int(get_info_field_value(info_field, "DP"))
 
-                # Skip the CNV if the read depth is less than 2.
-                if read_depth < 2:
-                    continue
+                # # Skip the CNV if the read depth is less than 2.
+                # if read_depth < 2:
+                #     continue
 
                 # Get the start position.
                 start_position = int(sv_data[1])

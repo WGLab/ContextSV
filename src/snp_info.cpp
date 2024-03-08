@@ -82,8 +82,8 @@ std::tuple<std::vector<int64_t>, std::vector<double>, std::vector<double>> SNPIn
         //std::cout << "SNP at " << std::get<0>(*it) << " with BAF " << std::get<1>(*it) << std::endl;
     }
 
-    // Define a default PFB value for SNPs with no population frequency data
-    pfbs = std::vector<double>(bafs.size(), MIN_PFB);
+    // Define a default PFB value (0.5) for SNPs with no population frequency data
+    pfbs = std::vector<double>(bafs.size(), 0.5);
 
     // Check if the chromosome exists in the population frequency map
     if (this->snp_pfb_map.find(chr) == this->snp_pfb_map.end()) {
