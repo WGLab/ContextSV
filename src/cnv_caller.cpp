@@ -370,13 +370,15 @@ std::vector<std::string> CNVCaller::splitRegionIntoChunks(std::string chr, int64
     for (int i = 0; i < chunk_count; i++)
     {
         chunk_end = chunk_start + chunk_size - 1;
-        region_chunks.push_back(chr + ":" + std::to_string(chunk_start) + "-" + std::to_string(chunk_end));
+        // region_chunks.push_back(chr + ":" + std::to_string(chunk_start) + "-" + std::to_string(chunk_end));
 
         if (i == chunk_count - 1)
         {
             chunk_end = end_pos;
-            region_chunks.push_back(chr + ":" + std::to_string(chunk_start) + "-" + std::to_string(chunk_end));
         }
+
+        // Add the region chunk to the vector
+        region_chunks.push_back(chr + ":" + std::to_string(chunk_start) + "-" + std::to_string(chunk_end));
 
         // Print the region chunk
         printMessage("Region chunk " + std::to_string(i+1) + " of " + std::to_string(chunk_count) + ": " + chr + ":" + std::to_string(chunk_start) + "-" + std::to_string(chunk_end));
@@ -610,10 +612,7 @@ void CNVCaller::calculateDepthsForSNPRegion(std::string chr, int64_t start_pos, 
     std::string input_filepath = this->input_data->getShortReadBam();
 
     // Get the number of threads
-    //int num_threads = std::thread::hardware_concurrency();
     int num_threads = this->input_data->getThreadCount();
-
-    printMessage("[TEST] Calculating read depths for SNP region " + chr + ":" + std::to_string(start_pos) + "-" + std::to_string(end_pos) + "...");
 
     // Split the region into equal parts for each thread if the region is larger
     // than 10 kb
