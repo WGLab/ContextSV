@@ -139,7 +139,7 @@ class CNVCaller {
         double calculateLog2Ratio(int start_pos, int end_pos, std::unordered_map<uint64_t, int>& pos_depth_map, double mean_chr_cov);
 
         // Read SNP positions and BAF values from the VCF file of SNP calls
-        void readSNPAlleleFrequencies(std::string filepath, SNPInfo& snp_info, bool whole_genome);
+        void readSNPAlleleFrequencies(std::string chr, std::string filepath, SNPInfo& snp_info);
 
         // Read SNP positions and population frequencies from the VCF file for a
         // single chromosome
@@ -147,7 +147,7 @@ class CNVCaller {
 
         // Read SNP population frequencies from the PFB file and return a vector
         // of population frequencies for each SNP location
-        void getSNPPopulationFrequencies(SNPInfo& snp_info);
+        void getSNPPopulationFrequencies(std::string chr, SNPInfo& snp_info);
 
         // Save a TSV with B-allele frequencies, log 2 ratios, and copy number predictions
         void saveToTSV(SNPData& snp_data, std::string filepath);

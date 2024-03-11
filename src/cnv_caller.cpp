@@ -184,14 +184,18 @@ SNPData CNVCaller::runCopyNumberPrediction(std::string chr, std::map<SVCandidate
     for (auto& future : futures)
     {
         current_chunk++;
+        //printMessage("Waiting for SV chunk " + std::to_string(current_chunk) + " of " + std::to_string(chunk_count) + " to finish...");
+        // Wait for the future to finish and get the SNP data. Avoid copying by
+        // using std::move (ex. std::move(future.get()))
         printMessage("Waiting for SV chunk " + std::to_string(current_chunk) + " of " + std::to_string(chunk_count) + " to finish...");
-        // Wait for the future to finish and get the SNP data
-        SNPData chunk_snp_data = future.get();
+        SNPData chunk_snp_data = std::move(future.get());
 
         printMessage("Finished processing SV chunk " + std::to_string(current_chunk) + " of " + std::to_string(chunk_count) + "...");
 
         // Update the SNP data
+        printMessage("Updating SNP data for SV chunk " + std::to_string(current_chunk) + " of " + std::to_string(chunk_count) + "...");
         this->updateSNPVectors(snp_data, chunk_snp_data.pos, chunk_snp_data.pfb, chunk_snp_data.baf, chunk_snp_data.log2_cov, chunk_snp_data.state_sequence, chunk_snp_data.is_snp);
+        printMessage("Finished updating SNP data for SV chunk " + std::to_string(current_chunk) + " of " + std::to_string(chunk_count) + "...");
     }
 
     printMessage("Finished predicting copy number states for chromosome " + chr + "...");
@@ -381,7 +385,7 @@ std::vector<std::string> CNVCaller::splitRegionIntoChunks(std::string chr, int64
         region_chunks.push_back(chr + ":" + std::to_string(chunk_start) + "-" + std::to_string(chunk_end));
 
         // Print the region chunk
-        printMessage("Region chunk " + std::to_string(i+1) + " of " + std::to_string(chunk_count) + ": " + chr + ":" + std::to_string(chunk_start) + "-" + std::to_string(chunk_end));
+//        printMessage("Region chunk " + std::to_string(i+1) + " of " + std::to_string(chunk_count) + ": " + chr + ":" + std::to_string(chunk_start) + "-" + std::to_string(chunk_end));
 
         // Update the chunk start
         chunk_start = chunk_end + 1;
@@ -440,15 +444,15 @@ void CNVCaller::run(SVData& sv_calls)
         chromosomes.push_back(this->input_data->getRegionChr());
     }
 
-    // Read SNP positions and B-allele frequency values from the VCF file
-    SNPInfo snp_info;
-    std::cout << "Reading SNP allele frequencies from VCF file..." << std::endl;
-    std::string snp_filepath = this->input_data->getSNPFilepath();
-    readSNPAlleleFrequencies(snp_filepath, snp_info, whole_genome);
+//    // Read SNP positions and B-allele frequency values from the VCF file
+//    SNPInfo snp_info;
+//    std::cout << "Reading SNP allele frequencies from VCF file..." << std::endl;
+//    std::string snp_filepath = this->input_data->getSNPFilepath();
+//    readSNPAlleleFrequencies(snp_filepath, snp_info, whole_genome);
 
     // Get the population frequencies for each SNP
-    std::cout << "Obtaining SNP population frequencies..." << std::endl;
-    getSNPPopulationFrequencies(snp_info);
+//    std::cout << "Obtaining SNP population frequencies..." << std::endl;
+//    getSNPPopulationFrequencies(snp_info);
 
     // Read the HMM from file
     std::string hmm_filepath = this->input_data->getHMMFilepath();
@@ -465,6 +469,8 @@ void CNVCaller::run(SVData& sv_calls)
     // Process each chromosome
     std::vector<std::future<SNPData>> futures;
     SNPData snp_data;
+    int current_chr = 0;
+    int chr_count = (int) sv_chromosomes.size();
     for (auto const& chr : sv_chromosomes)
     {
         // Get the SV candidates for the chromosome
@@ -488,6 +494,16 @@ void CNVCaller::run(SVData& sv_calls)
             printMessage("Mean chromosome coverage for " + chr + ": " + std::to_string(mean_chr_cov));
         }
 
+        // Read the SNP positions and B-allele frequency values from the VCF file
+        SNPInfo snp_info;
+        std::cout << "Reading SNP allele frequencies for chromosome " << chr << " from VCF file..." << std::endl;
+        std::string snp_filepath = this->input_data->getSNPFilepath();
+        readSNPAlleleFrequencies(chr, snp_filepath, snp_info);
+
+        // Get the population frequencies for each SNP
+        std::cout << "Obtaining SNP population frequencies for chromosome " << chr << "..." << std::endl;
+        getSNPPopulationFrequencies(chr, snp_info);
+
         // Start a thread to run the copy number prediction for the entire chromosome
         printMessage("Running copy number prediction for chromosome " + chr + "...");
 
@@ -497,7 +513,8 @@ void CNVCaller::run(SVData& sv_calls)
         // Add the SNP data to the SNP data map
         printMessage("Updating SNP data...");
         updateSNPVectors(snp_data, chr_snp_data.pos, chr_snp_data.pfb, chr_snp_data.baf, chr_snp_data.log2_cov, chr_snp_data.state_sequence, chr_snp_data.is_snp);
-        printMessage("Finished predicting copy number states for chromosome " + chr + "...");
+        //printMessage("Finished predicting copy number states for chromosome " + chr + "...");
+        printMessage("Finished processing chromosome " + chr + " (" + std::to_string(++current_chr) + " of " + std::to_string(chr_count) + ")...");
     }
 
     std::cout << "Finished predicting copy number states for all chromosomes" << std::endl;
@@ -594,7 +611,7 @@ double CNVCaller::calculateMeanChromosomeCoverage(std::string chr)
         future.wait();
 
         // Get the result from the future
-        std::tuple<uint64_t, uint64_t> result = future.get();
+        std::tuple<uint64_t, uint64_t> result = std::move(future.get());
 
         // Update the position count and cumulative depth
         pos_count += std::get<0>(result);
@@ -695,7 +712,7 @@ void CNVCaller::calculateDepthsForSNPRegion(std::string chr, int64_t start_pos, 
         future.wait();
 
         // Get the result from the future
-        std::unordered_map<uint64_t, int> result = future.get();
+        std::unordered_map<uint64_t, int> result = std::move(future.get());
 
         // Merge the result into the map of positions and depths
         printMessage("Merging region chunk " + std::to_string(current_chunk) + " of " + std::to_string(region_chunks.size()) + "...");
@@ -769,15 +786,15 @@ double CNVCaller::calculateLog2Ratio(int start_pos, int end_pos, std::unordered_
     return window_log2_ratio;
 }
 
-void CNVCaller::readSNPAlleleFrequencies(std::string snp_filepath, SNPInfo &snp_info, bool whole_genome)
+void CNVCaller::readSNPAlleleFrequencies(std::string chr, std::string filepath, SNPInfo& snp_info)
 {
     // Create a VCF filepath of filtered SNPs
     std::string filtered_snp_vcf_filepath = this->input_data->getOutputDir() + "/filtered_snps.vcf";
-    std::cout << "Parsing SNPs from " << snp_filepath << std::endl;
+    std::cout << "Parsing SNPs from " << filepath << "..." << std::endl;
 
     // Check that the SNP file is sorted by running bcftools index and reading
     // the error output
-    std::string index_cmd = "bcftools index " + snp_filepath + " 2>&1 | grep -i error";
+    std::string index_cmd = "bcftools index " + filepath + " 2>&1 | grep -i error";
     if (this->input_data->getVerbose()) {
         std::cout << "Command: " << index_cmd << std::endl;
     }
@@ -802,18 +819,13 @@ void CNVCaller::readSNPAlleleFrequencies(std::string snp_filepath, SNPInfo &snp_
     // Close the pipe
     pclose(index_fp);
 
-    // Filter variants by depth and quality and SNPs only
-    std::string cmd;
-    if (whole_genome)
-    {
-        cmd = "bcftools view -v snps -i 'QUAL > 30 && DP > 10 && FILTER = \"PASS\"' " + snp_filepath + " > " + filtered_snp_vcf_filepath;
-    } else {
-        std::cout << "Filtering SNPs by depth, quality, and region..." << std::endl;
-        std::string region = this->input_data->getRegion();
+    // Filter variants by depth, quality, and region
 
-        // Update the command to sort by chromosome and position
-        cmd = "bcftools view -r " + region + " -v snps -i 'QUAL > 30 && DP > 10 && FILTER = \"PASS\"' " + snp_filepath + " > " + filtered_snp_vcf_filepath;
-    }
+    std::cout << "Filtering SNPs by depth, quality, and region..." << std::endl;
+//    std::string region = this->input_data->getRegion();
+
+    // Update the command to sort by chromosome and position
+    std::string cmd = "bcftools view -r " + chr + " -v snps -i 'QUAL > 30 && DP > 10 && FILTER = \"PASS\"' " + filepath + " > " + filtered_snp_vcf_filepath;
 
     if (this->input_data->getVerbose()) {
         std::cout << "Filtering SNPs by depth and quality..." << std::endl;
@@ -828,7 +840,7 @@ void CNVCaller::readSNPAlleleFrequencies(std::string snp_filepath, SNPInfo &snp_
     // Extract B-allele frequency data from the VCF file and sort by chromosome
     // and position
     std::cout << "Extracting allelic depth data from filtered SNPs..." << std::endl;
-    cmd = "bcftools query -f '%CHROM,%POS,[%AD]\n' " + filtered_snp_vcf_filepath + " 2>/dev/null";
+    cmd = "bcftools query -f '%POS,[%AD]\n' " + filtered_snp_vcf_filepath + " 2>/dev/null";
     FILE *fp = popen(cmd.c_str(), "r");
     if (fp == NULL)
     {
@@ -838,7 +850,7 @@ void CNVCaller::readSNPAlleleFrequencies(std::string snp_filepath, SNPInfo &snp_
 
     // Read the DP and AD values (AD for alternate allele depth) and store in a
     // map by chromosome and position
-    std::string chr = "";  // Current chromosome
+//    std::string chr = "";  // Current chromosome
     std::string alt_allele = "";  // Alternate allele
     uint64_t pos = 0;
     int ref_ad = 0;
@@ -855,26 +867,20 @@ void CNVCaller::readSNPAlleleFrequencies(std::string snp_filepath, SNPInfo &snp_
         int col = 0;  // Column index
         while (tok != NULL)
         {
-            // Get the chromosome from column 1
-            if (col == 0)
-            {
-                chr = tok;
-            }
-
             // Get the position from column 2
-            else if (col == 1)
+            if (col == 0)
             {
                 pos = atoi(tok);
             }
 
             // Get the AD for the reference allele from column 3
-            else if (col == 2)
+            else if (col == 1)
             {
                 ref_ad = atoi(tok);
             }
 
             // Get the AD for the non-reference allele from column 4
-            else if (col == 3)
+            else if (col == 2)
             {
                 alt_ad = atoi(tok);
             }
@@ -887,185 +893,164 @@ void CNVCaller::readSNPAlleleFrequencies(std::string snp_filepath, SNPInfo &snp_
         // Calculate the BAF
         double baf = (double) alt_ad / (double) (ref_ad + alt_ad);
 
-        // Remove the 'chr' prefix from the chromosome name for SNP data. All
-        // SNP data in this program does not use the 'chr' prefix
-        std::string chr_snp = chr;
-        if (chr_snp.find("chr") != std::string::npos)
-        {
-            chr_snp = chr_snp.substr(3);
-        }
+//        // Remove the 'chr' prefix from the chromosome name for SNP data. All
+//        // SNP data in this program does not use the 'chr' prefix
+//        std::string chr_snp = chr;
+//        if (chr_snp.find("chr") != std::string::npos)
+//        {
+//            chr_snp = chr_snp.substr(3);
+//        }
 
         // Add a new location and BAF value to the chromosome's SNP data
         // (population frequency and log2 ratio will be added later)
-        snp_info.insertSNPAlleleFrequency(chr_snp, pos, baf);
+        snp_info.insertSNPAlleleFrequency(chr, pos, baf);
     }
 
     // Close the pipe
     pclose(fp);
 }
 
-void CNVCaller::getSNPPopulationFrequencies(SNPInfo& snp_info)
+void CNVCaller::getSNPPopulationFrequencies(std::string chr, SNPInfo& snp_info)
 {
-    // Get the chromosome names
-    std::vector<std::string> chr_names = snp_info.getChromosomes();
+    // Get the population frequency file for the chromosome
+    std::string pfb_filepath = this->input_data->getAlleleFreqFilepath(chr);
 
-    // // Get the number of chromosomes
-    int num_chromosomes = (int) chr_names.size();
-    int chr_count = 0;
-
-    // Loop through each chromosome in list
-    for (const auto& chr : chr_names)
+    // Check if the filepath uses the 'chr' prefix notations based on the
+    // chromosome name (e.g., *.chr1.vcf.gz vs *.1.vcf.gz)
+    std::string chr_gnomad = chr;  // gnomAD data may or may not have the 'chr' prefix
+    std::string chr_prefix = "chr";
+    if (pfb_filepath.find(chr_prefix) == std::string::npos)
     {
-        // std::string chr = pair.first;
-        // SNPData& snp_data = pair.second;
-
-        // Get the population frequency file for the chromosome
-        std::string pfb_filepath = this->input_data->getAlleleFreqFilepath(chr);
-
-        // Check if the filepath uses the 'chr' prefix notations based on the
-        // chromosome name (e.g., *.chr1.vcf.gz vs *.1.vcf.gz)
-        std::string chr_gnomad = chr;  // gnomAD data may or may not have the 'chr' prefix
-        std::string chr_prefix = "chr";
-        if (pfb_filepath.find(chr_prefix) == std::string::npos)
+        // gnomaAD does not use the 'chr' prefix
+        // Remove the 'chr' prefix from the chromosome name
+        if (chr_gnomad.find(chr_prefix) != std::string::npos)
         {
-            // gnomaAD does not use the 'chr' prefix
-            // Remove the 'chr' prefix from the chromosome name
-            if (chr_gnomad.find(chr_prefix) != std::string::npos)
+            chr_gnomad = chr_gnomad.substr(chr_prefix.length());
+        }
+    } else {
+        // Add the 'chr' prefix to the chromosome name
+        if (chr_gnomad.find(chr_prefix) == std::string::npos)
+        {
+            chr_gnomad = chr_prefix + chr;
+        }
+    }
+
+    // Remove the 'chr' prefix from the chromosome name for SNP data. All
+    // SNP data in this program does not use the 'chr' prefix
+    std::string chr_snp = chr;
+    if (chr_snp.find(chr_prefix) != std::string::npos)
+    {
+        chr_snp = chr_snp.substr(chr_prefix.length());
+    }
+
+    // If no population frequency file is provided, use 0.5 as the
+    // population frequency for all SNPs
+    if (pfb_filepath == "")
+    {
+        std::cout << "No population frequency file provided for chromosome " << chr << std::endl;
+        return;
+    }
+
+    std::cout << "Reading population frequencies for chromosome " << chr << " from " << pfb_filepath << std::endl;
+
+    // Get the start and end SNP positions for the chromosome (1-based
+    // index)
+    std::pair<int64_t, int64_t> snp_range = snp_info.getSNPRange(chr);
+    int64_t snp_start = snp_range.first;
+    int64_t snp_end = snp_range.second;
+    std::cout << "SNP range for chromosome " << chr << ": " << snp_start << "-" << snp_end << std::endl;
+
+    // Get the number of avaiable threads
+    int num_threads = this->input_data->getThreadCount();
+
+    // Get the region chunks
+    std::vector<std::string> region_chunks = splitRegionIntoChunks(chr_gnomad, snp_start, snp_end, num_threads);
+
+    // Loop through each region chunk and get the population frequencies in
+    // parallel
+    std::unordered_map<int, double> pos_pfb_map;
+    std::vector<std::thread> threads;
+
+    // Vector of futures
+    std::vector<std::future<std::unordered_map<int, double>>> futures;
+    for (const auto& region_chunk : region_chunks)
+    {
+        // Create a lambda function to get the population frequencies for the
+        // region chunk
+        auto get_pfb = [region_chunk, pfb_filepath]() -> std::unordered_map<int, double>
+        {
+            // Run bcftools query to get the population frequencies for the
+            // chromosome within the SNP region, filtering for SNPS only,
+            // and within the MIN-MAX range of frequencies.
+            std::string filter_criteria = "INFO/variant_type=\"snv\" && AF >= " + std::to_string(MIN_PFB) + " && AF <= " + std::to_string(MAX_PFB);
+            std::string cmd = \
+                "bcftools query -r " + region_chunk + " -f '%POS\t%AF\n' -i '" + filter_criteria + "' " + pfb_filepath + " 2>/dev/null";
+                //"bcftools query -r " + region_chunk + " -f '%POS\t%AF\n' -i 'INFO/variant_type=\"snv\"' " + pfb_filepath + " 2>/dev/null";
+
+            printMessage("Command: " + cmd);
+            //std::cout << "Command: " << cmd << std::endl;
+
+            // Open a pipe to read the output of the command
+            FILE *fp = popen(cmd.c_str(), "r");
+            if (fp == NULL)
             {
-                chr_gnomad = chr_gnomad.substr(chr_prefix.length());
+                std::cerr << "ERROR: Could not open pipe for command: " << cmd << std::endl;
+                exit(1);
             }
-        } else {
-            // Add the 'chr' prefix to the chromosome name
-            if (chr_gnomad.find(chr_prefix) == std::string::npos)
+
+            // Loop through the BCFTOOLS output and populate the map of population
+            // frequencies
+            std::unordered_map<int, double> pos_pfb_map;
+            const int line_size = 256;
+            char line[line_size];
+            while (fgets(line, line_size, fp) != NULL)
             {
-                chr_gnomad = chr_prefix + chr;
-            }
-        }
-
-        // Remove the 'chr' prefix from the chromosome name for SNP data. All
-        // SNP data in this program does not use the 'chr' prefix
-        std::string chr_snp = chr;
-        if (chr_snp.find(chr_prefix) != std::string::npos)
-        {
-            chr_snp = chr_snp.substr(chr_prefix.length());
-        }
-
-        // If no population frequency file is provided, use 0.5 as the
-        // population frequency for all SNPs
-        if (pfb_filepath == "")
-        {
-            std::cout << "No population frequency file provided for chromosome " << chr << std::endl;
-            continue;
-        }
-
-        std::cout << "Reading population frequencies for chromosome " << chr << " from " << pfb_filepath << std::endl;
-
-        // Get the start and end SNP positions for the chromosome (1-based
-        // index)
-        std::pair<int64_t, int64_t> snp_range = snp_info.getSNPRange(chr);
-        int64_t snp_start = snp_range.first;
-        int64_t snp_end = snp_range.second;
-        // int snp_count = (int) snp_data.locations.size();
-        // int snp_start = snp_data.locations[0];
-        // int snp_end = snp_data.locations[snp_count - 1];
-
-        // Get the number of avaiable threads
-        //int num_threads = std::thread::hardware_concurrency();
-        int num_threads = this->input_data->getThreadCount();
-
-        // Get the region size
-        int64_t region_size = snp_end - snp_start;
-
-        // Split the region into equal parts for each thread
-        int region_size_per_thread = region_size / num_threads;
-        std::vector<std::string> region_chunks;
-        for (int i = 0; i < num_threads; i++)
-        {
-            int64_t start = snp_start + i * region_size_per_thread;
-            int64_t end = start + region_size_per_thread;
-            region_chunks.push_back(chr_gnomad + ":" + std::to_string(start) + "-" + std::to_string(end));
-        }
-
-        // Loop through each region chunk and get the population frequencies in
-        // parallel
-        std::unordered_map<int, double> pos_pfb_map;
-        std::vector<std::thread> threads;
-        
-        // Vector of futures
-        std::vector<std::future<std::unordered_map<int, double>>> futures;
-        for (const auto& region_chunk : region_chunks)
-        {
-            // Create a lambda function to get the population frequencies for the
-            // region chunk
-            auto get_pfb = [region_chunk, pfb_filepath]() -> std::unordered_map<int, double>
-            {
-                // Run bcftools query to get the population frequencies for the
-                // chromosome within the SNP region, filtering for SNPS only,
-                // and within the MIN-MAX range of frequencies.
-                std::string filter_criteria = "INFO/variant_type=\"snv\" && AF >= " + std::to_string(MIN_PFB) + " && AF <= " + std::to_string(MAX_PFB);
-                std::string cmd = \
-                    "bcftools query -r " + region_chunk + " -f '%POS\t%AF\n' -i '" + filter_criteria + "' " + pfb_filepath + " 2>/dev/null";
-                    //"bcftools query -r " + region_chunk + " -f '%POS\t%AF\n' -i 'INFO/variant_type=\"snv\"' " + pfb_filepath + " 2>/dev/null";
-
-                //std::cout << "Command: " << cmd << std::endl;
-
-                // Open a pipe to read the output of the command
-                FILE *fp = popen(cmd.c_str(), "r");
-                if (fp == NULL)
+                // Parse the line
+                int pos;
+                double pfb;
+                if (sscanf(line, "%d%lf", &pos, &pfb) == 2)
                 {
-                    std::cerr << "ERROR: Could not open pipe for command: " << cmd << std::endl;
-                    exit(1);
+                    // Add the position and population frequency to the map
+                    pos_pfb_map[pos] = pfb;
                 }
+            }
 
-                // Loop through the BCFTOOLS output and populate the map of population
-                // frequencies
-                std::unordered_map<int, double> pos_pfb_map;
-                const int line_size = 256;
-                char line[line_size];
-                while (fgets(line, line_size, fp) != NULL)
-                {
-                    // Parse the line
-                    int pos;
-                    double pfb;
-                    if (sscanf(line, "%d%lf", &pos, &pfb) == 2)
-                    {
-                        // Add the position and population frequency to the map
-                        pos_pfb_map[pos] = pfb;
-                    }
-                }
+            // Close the pipe
+            pclose(fp);
 
-                // Close the pipe
-                pclose(fp);
+            return pos_pfb_map;
+        };
 
-                return pos_pfb_map;
-            };
+        // Create a future for the thread
+        std::future<std::unordered_map<int, double>> future = std::async(std::launch::async, get_pfb);
+        futures.push_back(std::move(future));
+    }
 
-            // Create a future for the thread
-            std::future<std::unordered_map<int, double>> future = std::async(std::launch::async, get_pfb);
-            futures.push_back(std::move(future));
-        }
+    // Loop through the futures and get the results
+    int pfb_count = 0;
+    for (auto& future : futures)
+    {
+        // Wait for the future to finish
+        future.wait();
 
-        // Loop through the futures and get the results
-        for (auto& future : futures)
+        // Get the result from the future
+        std::unordered_map<int, double> result = std::move(future.get());
+
+        // Loop through the result and add to SNPInfo
+        for (auto& pair : result)
         {
-            // Wait for the future to finish
-            future.wait();
+            int pos = pair.first;
+            double pfb = pair.second;
+            snp_info.insertSNPPopulationFrequency(chr_snp, pos, pfb);
 
-            // Get the result from the future
-            std::unordered_map<int, double> result = future.get();
-
-            // Loop through the result and add to SNPInfo
-            for (auto& pair : result)
+            // Increment the population frequency count
+            pfb_count++;
+            // Print if less than 15
+            if (pfb_count < 15)
             {
-                int pos = pair.first;
-                double pfb = pair.second;
-                snp_info.insertSNPPopulationFrequency(chr_snp, pos, pfb);
+                printMessage("Population frequency for " + chr + ":" + std::to_string(pos) + " = " + std::to_string(pfb));
             }
         }
-
-        // Update the progress (number of chromosomes processed)
-        chr_count++;
-        std::cout << std::to_string(chr_count) + "/" + std::to_string(num_chromosomes) + " chromosomes processed" << std::endl;
     }
 }
 

@@ -380,7 +380,7 @@ SVData SVCaller::run()
             future.wait();
 
             // Get the SV region data from the future
-            RegionData sv_calls_region = future.get();
+            RegionData sv_calls_region = std::move(future.get());
             sv_calls_vec.push_back(sv_calls_region);
         }
 
