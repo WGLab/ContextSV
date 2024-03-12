@@ -84,12 +84,12 @@ def main():
         required=False
     )
 
-    # Extend SNP-based CNV predictions to
-    # regions surrounding SVs (+/- 1/2 SV length). This will be useful for
-    # plotting CNV data around SVs.
+    # Extend SNP-based CNV predictions to regions surrounding SVs (+/- 1/2 SV
+    # length) and save CNV data to TSV. This will be useful for plotting CNV
+    # data around SVs, but takes longer to run.
     parser.add_argument(
-        "--extend-snp-cnv",
-        help="Extend SNP-based CNV predictions to regions surrounding SVs.",
+        "--save-cnv",
+        help="Save CNV data to TSV and plot CNV data around SVs.",
         required=False,
         action="store_true",
         default=False
@@ -154,15 +154,6 @@ def main():
     parser.add_argument(
         "--disable-snp-cnv",
         help="Turn off SNP-based CNV predictions.",
-        required=False,
-        action="store_true",
-        default=False
-    )
-
-    # Plot CNV data.
-    parser.add_argument(
-        "--plot-cnv",
-        help="Plot CNV data.",
         required=False,
         action="store_true",
         default=False
@@ -266,7 +257,7 @@ def main():
         input_data.setDisableCIGAR(args.disable_cigar)
         input_data.setDisableSNPCNV(args.disable_snp_cnv)
         input_data.setCNVFilepath(args.cnv)
-        input_data.setExtendCNVRegions(args.extend_snp_cnv)
+        input_data.saveCNVData(args.save_cnv)
 
         # Run the analysis.
         contextsv.run(input_data)
@@ -282,7 +273,7 @@ def main():
             cnv_data_path = args.cnv
 
     # Generate python-based CNV plots if SNP-based CNV predictions are enabled.
-    if (args.plot_cnv and not args.disable_snp_cnv):
+    if (args.save_cnv and not args.disable_snp_cnv):
         log.info("Generating CNV plots...")
         cnv_plots.run(vcf_path, cnv_data_path, output_dir, region)
 

@@ -315,7 +315,6 @@ SVData SVCaller::run()
     }
     int num_regions = regions.size();
 
-    // ----- Non-threading -----
     // Loop through each region and detect SVs
     std::cout << "Detecting SVs from " << num_regions << " region(s)..." << std::endl;
     int region_count = 0;
@@ -328,7 +327,7 @@ SVData SVCaller::run()
 
         // Split the region into chunks and process each chunk in a separate
         // thread
-        int num_threads = 1;
+        int num_threads = this->input_data->getThreadCount();
 
         // If a region range is specified (e.g., chr1:1-1000), use a single
         // thread
@@ -337,10 +336,6 @@ SVData SVCaller::run()
             num_threads = 1;
             region_chunks.push_back(region);
         } else {
-            // Get the number of available threads
-            //num_threads = std::thread::hardware_concurrency();
-            num_threads = this->input_data->getThreadCount();
-
             // Get the chromosome length
             int chr_len = this->input_data->getRefGenomeChromosomeLength(region);
 
@@ -404,10 +399,6 @@ SVData SVCaller::run()
                 }
             }
         }
-        
-        // for (auto it = sv_calls_vec.begin(); it != sv_calls_vec.end(); ++it) {
-        //     sv_calls.concatenate(*it);
-        // }
 
         // Increment the region count
         region_count++;

@@ -50,7 +50,7 @@ def test_run():
     input_data.setAlleleFreqFilepaths("")
     input_data.setHMMFilepath("")
     input_data.setOutputDir(TEST_OUTDIR)
-    input_data.setExtendCNVRegions(True)
+    input_data.saveCNVData(True)
     
     # Run the analysis.
     contextsv.run(input_data)

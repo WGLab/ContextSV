@@ -33,7 +33,7 @@ InputData::InputData()
     this->disable_cigar = false;
     this->disable_snp_cnv = false;
     this->verbose = false;
-    this->extend_cnv_regions = false;
+    this->save_cnv_data = false;
 }
 
 std::string InputData::getShortReadBam()
@@ -411,16 +411,6 @@ std::string InputData::getAlleleFreqFilepath(std::string chr)
     return this->pfb_filepaths[chr];
 }
 
-// std::string InputData::getAlleleFreqFilepaths()
-// {
-//     return this->pfb_filepath;
-// }
-
-// PFBMap InputData::getPFBMap()
-// {
-//     return this->pfb_map;
-// }
-
 void InputData::setThreadCount(int thread_count)
 {
     this->thread_count = thread_count;
@@ -508,12 +498,12 @@ bool InputData::getVerbose()
     return this->verbose;
 }
 
-void InputData::setExtendCNVRegions(bool extend_cnv_regions)
+void InputData::saveCNVData(bool save_cnv_data)
 {
-    this->extend_cnv_regions = extend_cnv_regions;
+    this->save_cnv_data = save_cnv_data;
 }
 
-bool InputData::getExtendCNVRegions()
+bool InputData::getSaveCNVData()
 {
-    return this->extend_cnv_regions;
+    return this->save_cnv_data;
 }

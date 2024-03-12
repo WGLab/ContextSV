@@ -143,7 +143,7 @@ SNPData CNVCaller::runCopyNumberPrediction(std::string chr, std::map<SVCandidate
     // If extending the CNV regions, then extend the SV region by window size *
     // N. Otherwise, log2 ratios will be zero due to missing read depth data
     // before/after the first/last SV positions
-    if (this->input_data->getExtendCNVRegions())
+    if (this->input_data->getSaveCNVData())
     {
         int extend_factor = 100;
         first_pos = std::max((int64_t) 1, first_pos - window_size * extend_factor);
@@ -193,9 +193,12 @@ SNPData CNVCaller::runCopyNumberPrediction(std::string chr, std::map<SVCandidate
         printMessage("Finished processing SV chunk " + std::to_string(current_chunk) + " of " + std::to_string(chunk_count) + "...");
 
         // Update the SNP data
-        printMessage("Updating SNP data for SV chunk " + std::to_string(current_chunk) + " of " + std::to_string(chunk_count) + "...");
-        this->updateSNPVectors(snp_data, chunk_snp_data.pos, chunk_snp_data.pfb, chunk_snp_data.baf, chunk_snp_data.log2_cov, chunk_snp_data.state_sequence, chunk_snp_data.is_snp);
-        printMessage("Finished updating SNP data for SV chunk " + std::to_string(current_chunk) + " of " + std::to_string(chunk_count) + "...");
+        if (this->input_data->getSaveCNVData())
+        {
+            printMessage("Updating SNP data for SV chunk " + std::to_string(current_chunk) + " of " + std::to_string(chunk_count) + "...");
+            this->updateSNPVectors(snp_data, chunk_snp_data.pos, chunk_snp_data.pfb, chunk_snp_data.baf, chunk_snp_data.log2_cov, chunk_snp_data.state_sequence, chunk_snp_data.is_snp);
+            printMessage("Finished updating SNP data for SV chunk " + std::to_string(current_chunk) + " of " + std::to_string(chunk_count) + "...");
+        }
     }
 
     printMessage("Finished predicting copy number states for chromosome " + chr + "...");
@@ -296,35 +299,32 @@ SNPData CNVCaller::runCopyNumberPredictionChunk(std::string chr, std::map<SVCand
         // Update the SV genotype
         this->updateSVGenotype(sv_candidates, sv_call, genotype);
 
-        // Preceding SNPs:
-        int64_t sv_half_length = (end_pos - start_pos) / 2;
-        if (this->input_data->getExtendCNVRegions())
+        if (this->input_data->getSaveCNVData())
         {
-            int64_t before_sv_start = start_pos - sv_half_length;
-            std::pair<SNPData, bool> preceding_snps = this->querySNPRegion(chr, before_sv_start, start_pos-1, snp_info, pos_depth_map, mean_chr_cov);
-            //printMessage("Running Viterbi algorithm for preceding SNPs...");
-            std::vector<int> preceding_states = runViterbi(hmm, preceding_snps.first);
-            //printMessage("Updating SNP data for preceding SNPs...");
-            SNPData& pre_snp = preceding_snps.first;
-            this->updateSNPVectors(snp_data, pre_snp.pos, pre_snp.pfb, pre_snp.baf, pre_snp.log2_cov, preceding_states, pre_snp.is_snp);
-        }
+             // Preceding SNPs:
+             int64_t sv_half_length = (end_pos - start_pos) / 2;
+             int64_t before_sv_start = start_pos - sv_half_length;
+             std::pair<SNPData, bool> preceding_snps = this->querySNPRegion(chr, before_sv_start, start_pos-1, snp_info, pos_depth_map, mean_chr_cov);
+             //printMessage("Running Viterbi algorithm for preceding SNPs...");
+             std::vector<int> preceding_states = runViterbi(hmm, preceding_snps.first);
+             printMessage("Updating SNP data for preceding SNPs...");
+             SNPData& pre_snp = preceding_snps.first;
+             this->updateSNPVectors(snp_data, pre_snp.pos, pre_snp.pfb, pre_snp.baf, pre_snp.log2_cov, preceding_states, pre_snp.is_snp);
 
-        // Within SV SNPs:
-        //printMessage("Updating SNP data for SV SNPs...");
-        this->updateSNPVectors(snp_data, sv_snps.pos, sv_snps.pfb, sv_snps.baf, sv_snps.log2_cov, state_sequence, sv_snps.is_snp);
+             // Within SV SNPs:
+             printMessage("Updating SNP data for SV SNPs...");
+             this->updateSNPVectors(snp_data, sv_snps.pos, sv_snps.pfb, sv_snps.baf, sv_snps.log2_cov, state_sequence, sv_snps.is_snp);
 
-        // Following SNPs:
-        if (this->input_data->getExtendCNVRegions())
-        {
-            //printMessage("Querying following SNPs...");
-            int64_t after_sv_end = end_pos + sv_half_length;
-            std::pair<SNPData, bool> following_snps = this->querySNPRegion(chr, end_pos+1, after_sv_end, snp_info, pos_depth_map, mean_chr_cov);
-            //printMessage("Running Viterbi algorithm for following SNPs...");
-            std::vector<int> following_states = runViterbi(hmm, following_snps.first);
-            //printMessage("Updating SNP data for following SNPs...");
-            SNPData& post_snp = following_snps.first;
-            this->updateSNPVectors(snp_data, post_snp.pos, post_snp.pfb, post_snp.baf, post_snp.log2_cov, following_states, post_snp.is_snp);
-            //printMessage("Finished processing surrounding region for SV " + std::to_string(current_sv) + " of " + std::to_string(sv_count) + "...");
+             // Following SNPs:
+             //printMessage("Querying following SNPs...");
+             int64_t after_sv_end = end_pos + sv_half_length;
+             std::pair<SNPData, bool> following_snps = this->querySNPRegion(chr, end_pos+1, after_sv_end, snp_info, pos_depth_map, mean_chr_cov);
+             printMessage("Running Viterbi algorithm for following SNPs...");
+             std::vector<int> following_states = runViterbi(hmm, following_snps.first);
+             //printMessage("Updating SNP data for following SNPs...");
+             SNPData& post_snp = following_snps.first;
+             this->updateSNPVectors(snp_data, post_snp.pos, post_snp.pfb, post_snp.baf, post_snp.log2_cov, following_states, post_snp.is_snp);
+             //printMessage("Finished processing surrounding region for SV " + std::to_string(current_sv) + " of " + std::to_string(sv_count) + "...");
         }
     }
 
@@ -467,7 +467,6 @@ void CNVCaller::run(SVData& sv_calls)
     std::set<std::string> sv_chromosomes = sv_calls.getChromosomes();
 
     // Process each chromosome
-    std::vector<std::future<SNPData>> futures;
     SNPData snp_data;
     int current_chr = 0;
     int chr_count = (int) sv_chromosomes.size();
@@ -511,9 +510,13 @@ void CNVCaller::run(SVData& sv_calls)
         SNPData chr_snp_data = runCopyNumberPrediction(chr, chr_sv_calls, snp_info, hmm, window_size, mean_chr_cov);
 
         // Add the SNP data to the SNP data map
-        printMessage("Updating SNP data...");
-        updateSNPVectors(snp_data, chr_snp_data.pos, chr_snp_data.pfb, chr_snp_data.baf, chr_snp_data.log2_cov, chr_snp_data.state_sequence, chr_snp_data.is_snp);
-        //printMessage("Finished predicting copy number states for chromosome " + chr + "...");
+        if (this->input_data->getSaveCNVData())
+        {
+            printMessage("Updating SNP data...");
+            updateSNPVectors(snp_data, chr_snp_data.pos, chr_snp_data.pfb, chr_snp_data.baf, chr_snp_data.log2_cov, chr_snp_data.state_sequence, chr_snp_data.is_snp);
+            //printMessage("Finished predicting copy number states for
+            //chromosome " + chr + "...");
+        }
         printMessage("Finished processing chromosome " + chr + " (" + std::to_string(++current_chr) + " of " + std::to_string(chr_count) + ")...");
     }
 
@@ -521,13 +524,16 @@ void CNVCaller::run(SVData& sv_calls)
     std::cout << "Found a total of " << sv_calls.totalCalls() << " SV candidates" << std::endl;
 
     // Save the SNP data to a TSV file
-    std::string snp_output_tsv = this->input_data->getOutputDir() + "/cnv_data.tsv";
-    std::cout << "Saving SNP data to " << snp_output_tsv << "..." << std::endl;
-    saveToTSV(snp_data, snp_output_tsv);
-    std::cout << "Saved SNP data to " << snp_output_tsv << std::endl;
+    if (this->input_data->getSaveCNVData())
+    {
+        std::string snp_output_tsv = this->input_data->getOutputDir() + "/cnv_data.tsv";
+        std::cout << "Saving SNP data to " << snp_output_tsv << "..." << std::endl;
+        saveToTSV(snp_data, snp_output_tsv);
+        std::cout << "Saved SNP data to " << snp_output_tsv << std::endl;
+    }
 }
 
-/// Calculate the mean chromosome coverage
+// Calculate the mean chromosome coverage
 double CNVCaller::calculateMeanChromosomeCoverage(std::string chr)
 {
     std::string input_filepath = this->input_data->getShortReadBam();

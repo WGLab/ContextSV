@@ -12,6 +12,7 @@
 /// @cond
 #include <mutex>
 #include <unordered_map>
+#include <future>
 /// @endcond
 
 // SV candidate alignment data (chr, start, end, sequence)

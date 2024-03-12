@@ -115,8 +115,9 @@ class InputData {
         // Set whether to extend the SNP CNV regions around the SV breakpoints
         // (+/- 1/2 SV length). Set to false to speed up predictions. Set to
         // true to generate plots with predictions for surrounding regions.
-        void setExtendCNVRegions(bool extend_cnv_regions);
-        bool getExtendCNVRegions();
+        // This is a large performance hit (Will also save the CNV data to a TSV file).
+        void saveCNVData(bool save_cnv_data);
+        bool getSaveCNVData();
         
     private:
         std::string short_read_bam;
@@ -143,7 +144,7 @@ class InputData {
         std::string cnv_filepath;
         bool whole_genome;  // True if the entire genome is being analyzed
         bool verbose;  // True if verbose output is enabled
-        bool extend_cnv_regions;  // True if SNP CNV regions should be extended around SV breakpoints
+        bool save_cnv_data;  // True if SNP CNV regions should be extended around SV breakpoints, and saved to a TSV file (Large performance hit)
 };
 
 #endif // INPUT_DATA_H

@@ -16,6 +16,7 @@
 #include <unordered_map>
 #include <set>
 #include <mutex>
+#include <future>
 
 #include "snp_info.h"
 /// @endcond
@@ -140,10 +141,6 @@ class CNVCaller {
 
         // Read SNP positions and BAF values from the VCF file of SNP calls
         void readSNPAlleleFrequencies(std::string chr, std::string filepath, SNPInfo& snp_info);
-
-        // Read SNP positions and population frequencies from the VCF file for a
-        // single chromosome
-        // void readSNPPopAlleleFrequencies(std::string filepath, SNPDataMap& snp_data_map);
 
         // Read SNP population frequencies from the PFB file and return a vector
         // of population frequencies for each SNP location
