@@ -35,6 +35,10 @@ int ContextSV::run()
     std::string elapsed_time = getElapsedTime(start_sv, end_sv);
     std::cout << "Alignment-based SV calling complete. Found " << sv_calls.totalCalls() << " total SVs. Time taken (h:m:s) = " << elapsed_time << std::endl;
 
+    // Print the total number of SVs called
+    std::cout << "[contextsv pre-cnv] Total SVs called: " << sv_calls.totalCalls() << std::endl;
+    std::cout << "[contextsv pre-cnv] Total DELs: " << sv_calls.totalDeletions() << std::endl;
+
     // Classify SVs based on SNP CNV predictions if enabled
     if (this->input_data->getDisableSNPCNV() == false) {
 
@@ -50,8 +54,13 @@ int ContextSV::run()
             // Call CNVs at SNP positions
             auto start_cnv = std::chrono::high_resolution_clock::now();
             CNVCaller cnv_caller(*this->input_data);
+            std::cout << "[contextsv pre-run-cnv] Total DELs: " << sv_calls.totalDeletions() << std::endl;
             cnv_caller.run(sv_calls);
             auto end_cnv = std::chrono::high_resolution_clock::now();
+
+            // Print the total number of SVs
+            std::cout << "[contextsv post-cnv] Total SVs called: " << sv_calls.totalCalls() << std::endl;
+            std::cout << "[contextsv post-cnv] Total DELs: " << sv_calls.totalDeletions() << std::endl;
 
             // Format and print the time taken to call CNVs
             elapsed_time = getElapsedTime(start_cnv, end_cnv);
@@ -64,6 +73,10 @@ int ContextSV::run()
         elapsed_time = getElapsedTime(start_label, end_label);
         std::cout << "SV CNV labeling complete. Time taken (h:m:s) = " << elapsed_time << std::endl;
     }
+
+    // Print the total number of SVs called
+    std::cout << "[contextsv run] Total SVs called: " << sv_calls.totalCalls() << std::endl;
+    std::cout << "[contextsv run] Total DELs: " << sv_calls.totalDeletions() << std::endl;
 
     // Write SV calls to file
     std::string output_dir = this->input_data->getOutputDir();

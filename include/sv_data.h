@@ -41,7 +41,7 @@ class SVData {
         SVData() {};
 
         // Add a new SV candidate to the map
-        void add(std::string chr, int64_t start, int64_t end, int sv_type, std::string alt_allele, std::string data_type);
+        int add(std::string chr, int64_t start, int64_t end, int sv_type, std::string alt_allele, std::string data_type);
 
         // Concatenates two SVData objects
         void concatenate(const SVData& sv_data);
@@ -73,6 +73,10 @@ class SVData {
 
         // Define the size of the SV candidate map
         int totalCalls();
+
+        int totalDeletions();
+
+        int totalDeletions(std::string chr);
 
         // Add copy number information to the SV data
         void addCopyNumberInfo(std::string chr, SVCopyNumberMap& cnv_calls);

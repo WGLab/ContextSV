@@ -73,6 +73,7 @@ RegionData SVCaller::detectSVsFromRegion(std::string region)
     int num_alignments = 0;
     PrimaryMap primary_alignments;
     SuppMap supplementary_alignments;
+    int del_count = 0;
     while (readNextAlignment(fp_in, itr, bam1) >= 0) {
 
         // Skip secondary and unmapped alignments
@@ -103,7 +104,15 @@ RegionData SVCaller::detectSVsFromRegion(std::string region)
 
                 // Call SVs directly from the CIGAR string
                 if (disable_cigar == false) {
+                    int prev_del_count = sv_calls.totalDeletions();
                     this->detectSVsFromCIGAR(bamHdr, bam1, sv_calls);
+                    int curr_del_count = sv_calls.totalDeletions();
+
+                    // // Print the number of SVs detected from the CIGAR string
+                    // if (curr_del_count > prev_del_count) {
+                    //     std::lock_guard<std::mutex> lock(this->print_mtx);
+                    //     printMessage("[CIGARTEST] Found " + std::to_string(curr_del_count - prev_del_count) + " deletions from the CIGAR string");
+                    // }
                 }
 
             // Process supplementary alignments
@@ -183,6 +192,7 @@ void SVCaller::detectSVsFromCIGAR(bam_hdr_t* header, bam1_t* alignment, SVData& 
     // Loop through the CIGAR string and process operations
     int32_t ref_pos;
     int32_t ref_end;
+    int cigar_del_count = 0;
     for (int i = 0; i < cigar_len; i++) {
 
         // Get the CIGAR operation
@@ -248,11 +258,18 @@ void SVCaller::detectSVsFromCIGAR(bam_hdr_t* header, bam1_t* alignment, SVData& 
                 // Add to SV calls (1-based) with the appropriate SV type
                 ref_pos = pos+1;
                 ref_end = ref_pos + op_len -1;
+
+                // Lock the SV calls object and add the insertion
+                std::lock_guard<std::mutex> lock(this->sv_mtx);
                 if (is_duplication) {
                     sv_calls.add(chr, ref_pos, ref_end, DUP, ins_seq_str, "CIGARDUP");
                 } else {
                     sv_calls.add(chr, ref_pos, ref_end, INS, ins_seq_str, "CIGARINS");
                 }
+
+                // Lock the mutex and increment the insertion count
+                // std::lock_guard<std::mutex> lock(this->ins_mtx);
+                this->ins_count++;
             }
 
         // Check if the CIGAR operation is a deletion
@@ -264,14 +281,25 @@ void SVCaller::detectSVsFromCIGAR(bam_hdr_t* header, bam1_t* alignment, SVData& 
                 // Add the deletion to the SV calls (1-based)
                 ref_pos = pos+1;
                 ref_end = ref_pos + op_len -1;
-                sv_calls.add(chr, ref_pos, ref_end, DEL, ".", "CIGARDEL");
+
+                // Lock the SV calls object and add the deletion
+                std::lock_guard<std::mutex> lock(this->sv_mtx);
+                int result = sv_calls.add(chr, ref_pos, ref_end, DEL, ".", "CIGARDEL");
                 //std::cout << "ADDED CIGAR SV" << std::endl;
+
+                // Lock the mutex and increment the deletion count
+                // std::lock_guard<std::mutex> lock(this->del_mtx);
+                if (result == 1) {
+                    this->del_count++;
+                    cigar_del_count++;
+                }
             }
 
         // Check if the CIGAR operation is a soft clip
         } else if (op == BAM_CSOFT_CLIP) {
 
             // Update the clipped base support
+            std::lock_guard<std::mutex> lock(this->sv_mtx);
             sv_calls.updateClippedBaseSupport(chr, pos);
         }
 
@@ -296,6 +324,11 @@ void SVCaller::detectSVsFromCIGAR(bam_hdr_t* header, bam1_t* alignment, SVData& 
             exit(1);
         }
     }
+
+    // // Print the number of deletions detected from the CIGAR string
+    // if (cigar_del_count > 0) {
+    //     printMessage("[CIGARRecord] Found " + std::to_string(cigar_del_count) + " deletions from the CIGAR string");
+    // }
 }
 
 // Detect SVs from split read alignments (primary and supplementary) and
@@ -322,6 +355,7 @@ SVData SVCaller::run()
     SVData sv_calls;
     PrimaryMap primary_alignments;
     SuppMap supplementary_alignments;
+    int all_region_sv_count = 0;
     for (const auto& region : regions) {
         std::cout << "Starting region: " << region << std::endl;
 
@@ -370,6 +404,7 @@ SVData SVCaller::run()
         }
 
         // Get the SV calls from the futures
+        int region_sv_count = 0;
         for (auto& future : futures) {
             // Wait for the future to be ready
             future.wait();
@@ -377,12 +412,23 @@ SVData SVCaller::run()
             // Get the SV region data from the future
             RegionData sv_calls_region = std::move(future.get());
             sv_calls_vec.push_back(sv_calls_region);
+
+            // Update the SV count
+            region_sv_count += std::get<0>(sv_calls_region).totalCalls();
+            all_region_sv_count += std::get<0>(sv_calls_region).totalCalls();
         }
+
+        // Print the number of SVs detected from the region
+        std::cout << "Region " << region_count + 1 << " of " << num_regions << " Found " << region_sv_count << " SVs" << std::endl;
 
         // Combine the SV calls, primary alignments, and supplementary
         // alignments
         for (auto it = sv_calls_vec.begin(); it != sv_calls_vec.end(); ++it) {
+            // Print the number of SVs before combining
+            std::cout << "[PRE] Region " << region_count + 1 << " of " << num_regions << " Found dels: " << std::get<0>(*it).totalDeletions() << std::endl;
+            std::cout << "[PRE] Region " << region_count + 1 << " of " << num_regions << " Previous dels: " << sv_calls.totalDeletions() << std::endl;
             sv_calls.concatenate(std::get<0>(*it));
+            std::cout << "[POST] Region " << region_count + 1 << " of " << num_regions << " Updated dels: " << sv_calls.totalDeletions() << std::endl;
 
             // Combine the primary alignments
             for (auto it2 = std::get<1>(*it).begin(); it2 != std::get<1>(*it).end(); ++it2) {
@@ -405,12 +451,24 @@ SVData SVCaller::run()
         std::cout << "Region " << region_count << " of " << num_regions << " complete" << std::endl;
     }
 
+    // Print the number of SVs detected from the CIGAR string
+    if (this->ins_count > 0 || this->del_count > 0) {
+        std::cout << "Found " << this->ins_count << " insertions and " << this->del_count << " deletions from the CIGAR string" << std::endl;
+    }
+
+    // [TEST] Print the number of SVs from the SV calls object
+    std::cout << "[TEST] Total Deletions: " << sv_calls.totalDeletions() << std::endl;
+
     // Run split-read SV detection in a single thread
     std::cout << "Detecting SVs from split-read alignments..." << std::endl;
     this->detectSVsFromSplitReads(sv_calls, primary_alignments, supplementary_alignments);
 
+    std::cout << "[TEST2] Total Deletions: " << sv_calls.totalDeletions() << std::endl;
+
     auto end1 = std::chrono::high_resolution_clock::now();
     std::cout << "Finished detecting " << sv_calls.totalCalls() << " SVs from " << num_regions << " region(s). Elapsed time: " << getElapsedTime(start1, end1) << std::endl;
+
+    std::cout << "[TEST] Total counted SVs: " << all_region_sv_count << std::endl;
 
     // Return the SV calls
     return sv_calls;

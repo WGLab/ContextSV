@@ -21,6 +21,7 @@
 // std::max
 #include <algorithm>
 
+
 #include "utils.h"
 #include "sv_data.h"
 #include "sv_types.h"
@@ -238,7 +239,7 @@ SNPData CNVCaller::runCopyNumberPredictionChunk(std::string chr, std::map<SVCand
         //printMessage("Running Viterbi algorithm...");
         std::vector<int> state_sequence = runViterbi(hmm, sv_snps);
 
-        // Determine if there is a majority state and if it is greater than 50%
+        // Determine if there is a majority state and if it is greater than 75%
         int max_state = 0;
         int max_count = 0;
         for (int i = 0; i < 6; i++)
@@ -251,9 +252,16 @@ SNPData CNVCaller::runCopyNumberPredictionChunk(std::string chr, std::map<SVCand
             }
         }
 
-        // If there is no majority state, then set the state to unknown
+        // // If there is no majority state, then set the state to unknown
+        // int state_count = (int) state_sequence.size();
+        // if (max_count < state_count / 2)
+        // {
+        //     max_state = 0;
+        // }
+
+        // If there is no majority state (> 75%), then set the state to unknown
         int state_count = (int) state_sequence.size();
-        if (max_count < state_count / 2)
+        if ((double) max_count / (double) state_count < 0.75)
         {
             max_state = 0;
         }
@@ -275,6 +283,7 @@ SNPData CNVCaller::runCopyNumberPredictionChunk(std::string chr, std::map<SVCand
         // Update the SV type if it is not unknown
         if (cnv_type != sv_types::UNKNOWN)
         {
+            // [TESTDEPR]
             this->updateSVType(sv_candidates, sv_call, cnv_type, data_type);
 
             // // If deletion or duplication, print the state sequence
@@ -297,6 +306,7 @@ SNPData CNVCaller::runCopyNumberPredictionChunk(std::string chr, std::map<SVCand
         }
 
         // Update the SV genotype
+        // [TESTDEPR]
         this->updateSVGenotype(sv_candidates, sv_call, genotype);
 
         if (this->input_data->getSaveCNVData())
@@ -349,7 +359,13 @@ void CNVCaller::updateSVType(std::map<SVCandidate, SVInfo> &sv_candidates, SVCan
     // Update the SV type if it is not unknown
     if (sv_type != sv_types::UNKNOWN)
     {
-        sv_candidates[key].sv_type = sv_type;
+        // Update the SV type if it is not unknown
+        if (sv_candidates[key].sv_type == sv_types::UNKNOWN)
+        {
+            sv_candidates[key].sv_type = sv_type;
+        }
+
+        // sv_candidates[key].sv_type = sv_type;
         sv_candidates[key].data_type.insert(data_type);
     }
 }
@@ -470,6 +486,7 @@ void CNVCaller::run(SVData& sv_calls)
     SNPData snp_data;
     int current_chr = 0;
     int chr_count = (int) sv_chromosomes.size();
+    std::cout << "[CNVRun1] Total DELs: " << sv_calls.totalDeletions() << std::endl;
     for (auto const& chr : sv_chromosomes)
     {
         // Get the SV candidates for the chromosome
@@ -506,6 +523,9 @@ void CNVCaller::run(SVData& sv_calls)
         // Start a thread to run the copy number prediction for the entire chromosome
         printMessage("Running copy number prediction for chromosome " + chr + "...");
 
+        // Print the SV deletions count for the chromosome
+        printMessage("[CNVRun3-PRE] Chromosome " + chr + " DELs: " + std::to_string(sv_calls.totalDeletions(chr)));
+
         // Run copy number prediction for the chromosome
         SNPData chr_snp_data = runCopyNumberPrediction(chr, chr_sv_calls, snp_info, hmm, window_size, mean_chr_cov);
 
@@ -522,6 +542,8 @@ void CNVCaller::run(SVData& sv_calls)
 
     std::cout << "Finished predicting copy number states for all chromosomes" << std::endl;
     std::cout << "Found a total of " << sv_calls.totalCalls() << " SV candidates" << std::endl;
+
+    std::cout << "[CNVRun2] Total DELs: " << sv_calls.totalDeletions() << std::endl;
 
     // Save the SNP data to a TSV file
     if (this->input_data->getSaveCNVData())
@@ -1037,17 +1059,25 @@ void CNVCaller::getSNPPopulationFrequencies(std::string chr, SNPInfo& snp_info)
     for (auto& future : futures)
     {
         // Wait for the future to finish
+        // printMessage("Waiting for future to finish...");
         future.wait();
 
+        // [TEST] Core dump
         // Get the result from the future
+        // printMessage("Getting future result...");
         std::unordered_map<int, double> result = std::move(future.get());
 
         // Loop through the result and add to SNPInfo
+        // printMessage("Adding population frequencies to SNPInfo...");
         for (auto& pair : result)
         {
             int pos = pair.first;
             double pfb = pair.second;
+
+            // Lock the SNPInfo mutex
+            this->snp_data_mtx.lock();
             snp_info.insertSNPPopulationFrequency(chr_snp, pos, pfb);
+            this->snp_data_mtx.unlock();
 
             // Increment the population frequency count
             pfb_count++;
@@ -1057,6 +1087,8 @@ void CNVCaller::getSNPPopulationFrequencies(std::string chr, SNPInfo& snp_info)
                 printMessage("Population frequency for " + chr + ":" + std::to_string(pos) + " = " + std::to_string(pfb));
             }
         }
+        // printMessage("Finished adding population frequencies to SNPInfo...");
+        // [END TEST]
     }
 }
 

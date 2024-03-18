@@ -6,7 +6,7 @@
 #include <fstream>
 /// @endcond
 
-void SVData::add(std::string chr, int64_t start, int64_t end, int sv_type, std::string alt_allele, std::string data_type)
+int SVData::add(std::string chr, int64_t start, int64_t end, int sv_type, std::string alt_allele, std::string data_type)
 {
     // Lock the mutex for thread safety
     // std::lock_guard<std::mutex> lock(mtx);
@@ -29,6 +29,8 @@ void SVData::add(std::string chr, int64_t start, int64_t end, int sv_type, std::
         // Update the alignment type used to call the SV
         sv_info.data_type.insert(data_type);
 
+        return 0;  // SV call already exists
+
     } else {
         // Determine the SV length
         int sv_length = end - start + 1;
@@ -38,6 +40,8 @@ void SVData::add(std::string chr, int64_t start, int64_t end, int sv_type, std::
 
         // Add the SV candidate to the map
         this->sv_calls[chr][candidate] = sv_info;
+
+        return 1;  // SV call added
     }
 }
 
@@ -68,7 +72,11 @@ void SVData::updateSVType(std::string chr, SVCandidate candidate, int sv_type, s
 {
     // Update the SV type
     SVInfo& sv_info = this->sv_calls[chr][candidate];
-    sv_info.sv_type = sv_type;
+
+    // Only update the SV type if it is unknown
+    if (sv_info.sv_type == UNKNOWN) {
+        sv_info.sv_type = sv_type;
+    }
 
     // Update the alignment type used to call the SV
     sv_info.data_type.insert(data_type);
@@ -133,6 +141,10 @@ int SVData::getClippedBaseSupport(std::string chr, int64_t pos, int64_t end)
 
 void SVData::saveToVCF(FASTAQuery& ref_genome, std::string output_dir)
 {
+    // Print the total number of SV calls
+    std::cout << "[saveToVCF] Total SV calls: " << this->totalCalls() << std::endl;
+    std::cout << "[saveToVCF] Total DELs: " << this->totalDeletions() << std::endl;
+
     // Create a VCF writer
     std::string output_vcf = output_dir + "/sv_calls.vcf";
     VcfWriter vcf_writer(output_vcf);
@@ -169,11 +181,16 @@ void SVData::saveToVCF(FASTAQuery& ref_genome, std::string output_dir)
 
     // Iterate over the chromosomes
     std::set<std::string> chrs = this->getChromosomes();
+    int del_count = 0;
+    int ins_dup_count = 0;
     for (auto const& chr : chrs) {
         // Skip the chromosome if there are no SV calls
         if (this->sv_calls.find(chr) == this->sv_calls.end()) {
             continue;
         }
+
+        // Print the chromosome and number of SV calls
+        std::cout << "Saving SV calls for " << chr << " (" << this->sv_calls[chr].size() << " SV calls)..." << std::endl;
 
         // Iterate over the SV calls
         for (auto const& sv_call : this->sv_calls[chr]) {
@@ -217,8 +234,12 @@ void SVData::saveToVCF(FASTAQuery& ref_genome, std::string output_dir)
                 int64_t preceding_pos = (int64_t) std::max(1, (int) pos-1);  // Make sure the position is not negative
                 ref_allele = ref_genome.query(chr, preceding_pos, end);
 
-                // Use the previous base as the alternate allele
-                alt_allele = ref_allele.substr(0, 1);
+                // Use the previous base as the alternate allele 
+                if (ref_allele != "") {
+                    alt_allele = ref_genome.query(chr, preceding_pos, preceding_pos);
+                } else {
+                    alt_allele = ".";  // No alternate allele
+                }
 
                 // Make the SV length negative
                 sv_length = -1 * sv_length;
@@ -226,7 +247,10 @@ void SVData::saveToVCF(FASTAQuery& ref_genome, std::string output_dir)
                 // Update the position
                 pos = preceding_pos;
 
-                repeat_type = "CONTRAC";  //
+                del_count += 1;
+
+                // Set the repeat type
+                repeat_type = "CONTRAC";  // Contraction
 
             // Duplications and insertions
             } else if (sv_type == INS || sv_type == DUP) {
@@ -239,6 +263,10 @@ void SVData::saveToVCF(FASTAQuery& ref_genome, std::string output_dir)
 
                 // Insert the reference base into the alternate allele
                 alt_allele.insert(0, ref_allele);
+                // // Check if there is an alternate allele (not '.')
+                // if (alt_allele != ".") {
+                //     alt_allele.insert(0, ref_allele);
+                // }
 
                 // Update the position
                 pos = preceding_pos;
@@ -275,6 +303,9 @@ void SVData::saveToVCF(FASTAQuery& ref_genome, std::string output_dir)
         }
     }
 
+    // Print the number of DEL calls
+    std::cout << "Found " << del_count << " DEL calls" << std::endl;
+
     // Print the number of SV calls skipped
     std::cout << "Skipped " << skip_count << " of " << num_sv_calls << " SV calls because the SV type is unknown" << std::endl;
 
@@ -306,6 +337,32 @@ int SVData::totalCalls()
     }
 
     return sv_calls;
+}
+
+int SVData::totalDeletions()
+{
+    int del_calls = 0;
+    for (auto const& sv_call : this->sv_calls) {
+        for (auto const& sv_info : sv_call.second) {
+            if (sv_info.second.sv_type == DEL) {
+                del_calls += 1;
+            }
+        }
+    }
+
+    return del_calls;
+}
+
+int SVData::totalDeletions(std::string chr)
+{
+    int del_calls = 0;
+    for (auto const& sv_info : this->sv_calls[chr]) {
+        if (sv_info.second.sv_type == DEL) {
+            del_calls += 1;
+        }
+    }
+
+    return del_calls;
 }
 
 void SVData::addCopyNumberInfo(std::string chr, SVCopyNumberMap& cnv_calls)

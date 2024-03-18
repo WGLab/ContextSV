@@ -128,10 +128,10 @@ std::string FASTAQuery::query(std::string chr, int64_t pos_start, int64_t pos_en
     // Get the substring
     std::string subsequence = sequence.substr(pos_start, length);
 
-    // If the subsequence is empty, return VCF missing data character
+    // If the subsequence is empty, return empty string
     if (subsequence == "")
     {
-        return ".";
+        return "";
     }
 
     return subsequence;

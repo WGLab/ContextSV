@@ -44,6 +44,10 @@ namespace sv_types {
 
     // Define a map for storing copy number calls by SV candidate
     using SVCopyNumberMap = std::map<SVCandidate, std::tuple<int, std::string, std::string>>;
+
+    // Create a type for storing SV update information from copy number caller
+    // (SVCandidate, SV type, genotype, data type)
+    using SVUpdate = std::tuple<SVCandidate, int, std::string, std::string>;
 }
 
 #endif // SV_TYPES_H

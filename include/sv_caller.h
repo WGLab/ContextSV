@@ -34,6 +34,10 @@ class SVCaller {
         std::mutex print_mtx;  // Mutex for locking printing to stdout
         std::mutex query_mtx;  // Mutex for locking the query map
         std::mutex sv_mtx;  // Mutex for locking the SV data
+        std::mutex del_mtx;  // Mutex for locking the deletion count
+        std::mutex ins_mtx;  // Mutex for locking the insertion count
+        int del_count = 0;
+        int ins_count = 0;
 
         // Detect SVs from long read alignments in the CIGAR string
         void detectSVsFromCIGAR(bam_hdr_t* header, bam1_t* alignment, SVData& sv_calls);
