@@ -1062,7 +1062,7 @@ void CNVCaller::getSNPPopulationFrequencies(std::string chr, SNPInfo& snp_info)
         // printMessage("Waiting for future to finish...");
         future.wait();
 
-        // [TEST] Core dump
+        // [TEST] Possible core dump
         // Get the result from the future
         // printMessage("Getting future result...");
         std::unordered_map<int, double> result = std::move(future.get());

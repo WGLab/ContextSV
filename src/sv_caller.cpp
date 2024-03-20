@@ -425,10 +425,7 @@ SVData SVCaller::run()
         // alignments
         for (auto it = sv_calls_vec.begin(); it != sv_calls_vec.end(); ++it) {
             // Print the number of SVs before combining
-            std::cout << "[PRE] Region " << region_count + 1 << " of " << num_regions << " Found dels: " << std::get<0>(*it).totalDeletions() << std::endl;
-            std::cout << "[PRE] Region " << region_count + 1 << " of " << num_regions << " Previous dels: " << sv_calls.totalDeletions() << std::endl;
             sv_calls.concatenate(std::get<0>(*it));
-            std::cout << "[POST] Region " << region_count + 1 << " of " << num_regions << " Updated dels: " << sv_calls.totalDeletions() << std::endl;
 
             // Combine the primary alignments
             for (auto it2 = std::get<1>(*it).begin(); it2 != std::get<1>(*it).end(); ++it2) {
@@ -456,19 +453,13 @@ SVData SVCaller::run()
         std::cout << "Found " << this->ins_count << " insertions and " << this->del_count << " deletions from the CIGAR string" << std::endl;
     }
 
-    // [TEST] Print the number of SVs from the SV calls object
-    std::cout << "[TEST] Total Deletions: " << sv_calls.totalDeletions() << std::endl;
-
     // Run split-read SV detection in a single thread
     std::cout << "Detecting SVs from split-read alignments..." << std::endl;
     this->detectSVsFromSplitReads(sv_calls, primary_alignments, supplementary_alignments);
 
-    std::cout << "[TEST2] Total Deletions: " << sv_calls.totalDeletions() << std::endl;
-
     auto end1 = std::chrono::high_resolution_clock::now();
     std::cout << "Finished detecting " << sv_calls.totalCalls() << " SVs from " << num_regions << " region(s). Elapsed time: " << getElapsedTime(start1, end1) << std::endl;
 
-    std::cout << "[TEST] Total counted SVs: " << all_region_sv_count << std::endl;
 
     // Return the SV calls
     return sv_calls;
