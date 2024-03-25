@@ -27,9 +27,6 @@ class FASTAQuery {
         // Get the list of chromosomes, used for whole genome analysis
         std::vector<std::string> getChromosomes();
 
-        // Check if a chromosome is in the FASTA file and return the chromosome name
-        std::string hasChromosome(std::string chr);
-
         // Get the length of a chromosome
         int64_t getChromosomeLength(std::string chr);
 };

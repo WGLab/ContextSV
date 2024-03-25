@@ -67,7 +67,6 @@ std::tuple<std::vector<int64_t>, std::vector<double>, std::vector<double>> SNPIn
     
     // Check if the chromosome exists in the B-allele frequency map
     if (this->snp_baf_map.find(chr) == this->snp_baf_map.end()) {
-        //std::cerr << "Chromosome " << chr << " not found in SNP BAF map" << std::endl;
         return std::make_tuple(pos, bafs, pfbs);
     }
 
@@ -79,7 +78,6 @@ std::tuple<std::vector<int64_t>, std::vector<double>, std::vector<double>> SNPIn
     for (auto it = baf_start; it != baf_end; it++) {
         bafs.push_back(std::get<1>(*it));
         pos.push_back(std::get<0>(*it));
-        //std::cout << "SNP at " << std::get<0>(*it) << " with BAF " << std::get<1>(*it) << std::endl;
     }
 
     // Define a default PFB value (0.5) for SNPs with no population frequency data
@@ -87,7 +85,6 @@ std::tuple<std::vector<int64_t>, std::vector<double>, std::vector<double>> SNPIn
 
     // Check if the chromosome exists in the population frequency map
     if (this->snp_pfb_map.find(chr) == this->snp_pfb_map.end()) {
-        //std::cerr << "Chromosome " << chr << " not found in SNP PFB map" << std::endl;
         return std::make_tuple(pos, bafs, pfbs);
     }
 
@@ -97,21 +94,10 @@ std::tuple<std::vector<int64_t>, std::vector<double>, std::vector<double>> SNPIn
         int64_t snp_pos = pos[i];
         if (pfb_map.find(snp_pos) != pfb_map.end()) {
             pfbs[i] = pfb_map[snp_pos];
-            //std::cout << "SNP at " << snp_pos << " with PFB " << pfb_map[snp_pos] << std::endl;
         }
     }
     
     return std::make_tuple(pos, bafs, pfbs);
-}
-
-std::vector<std::string> SNPInfo::getChromosomes()
-{
-    // Get a list of chromosomes with SNP information
-    std::vector<std::string> chromosomes;
-    for (auto it = this->snp_baf_map.begin(); it != this->snp_baf_map.end(); it++) {
-        chromosomes.push_back(it->first);
-    }
-    return chromosomes;
 }
 
 std::pair<int64_t, int64_t> SNPInfo::getSNPRange(std::string chr)
@@ -127,16 +113,4 @@ std::pair<int64_t, int64_t> SNPInfo::getSNPRange(std::string chr)
         end = std::get<0>(*baf_bst.rbegin());
     }
     return std::make_pair(start, end);
-}
-
-std::pair<const BST&, const std::unordered_map<int64_t, double>&> SNPInfo::getChromosomeSNPInfo(std::string chr)
-{
-    chr = removeChrPrefix(chr);
-
-    // Get chromosome SNP information (B-allele frequency and population
-    // frequency maps)
-    const BST& baf_bst = this->snp_baf_map[chr];
-    const std::unordered_map<int64_t, double>& pfb_map = this->snp_pfb_map[chr];
-
-    return std::make_pair(baf_bst, pfb_map);
 }

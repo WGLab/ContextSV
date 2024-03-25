@@ -8,10 +8,6 @@
 
 int SVData::add(std::string chr, int64_t start, int64_t end, int sv_type, std::string alt_allele, std::string data_type)
 {
-    // Lock the mutex for thread safety
-    // std::lock_guard<std::mutex> lock(mtx);
-    // std::lock_guard<std::mutex> lock(this->sv_calls_mtx);
-
     // Add the SV call to the map of candidate locations
     SVCandidate candidate(start, end, alt_allele);
 
@@ -47,10 +43,6 @@ int SVData::add(std::string chr, int64_t start, int64_t end, int sv_type, std::s
 
 void SVData::concatenate(const SVData &sv_data)
 {
-    // Lock the mutex for thread safety
-    // std::lock_guard<std::mutex> lock(mtx);
-    // std::lock_guard<std::mutex> lock(this->sv_calls_mtx);
-
     // Iterate over the chromosomes in the other SVData object
     for (auto const& chr_sv_calls : sv_data.sv_calls) {
         std::string chr = chr_sv_calls.first;
@@ -181,8 +173,6 @@ void SVData::saveToVCF(FASTAQuery& ref_genome, std::string output_dir)
 
     // Iterate over the chromosomes
     std::set<std::string> chrs = this->getChromosomes();
-    int del_count = 0;
-    int ins_dup_count = 0;
     for (auto const& chr : chrs) {
         // Skip the chromosome if there are no SV calls
         if (this->sv_calls.find(chr) == this->sv_calls.end()) {
@@ -247,8 +237,6 @@ void SVData::saveToVCF(FASTAQuery& ref_genome, std::string output_dir)
                 // Update the position
                 pos = preceding_pos;
 
-                del_count += 1;
-
                 // Set the repeat type
                 repeat_type = "CONTRAC";  // Contraction
 
@@ -263,10 +251,6 @@ void SVData::saveToVCF(FASTAQuery& ref_genome, std::string output_dir)
 
                 // Insert the reference base into the alternate allele
                 alt_allele.insert(0, ref_allele);
-                // // Check if there is an alternate allele (not '.')
-                // if (alt_allele != ".") {
-                //     alt_allele.insert(0, ref_allele);
-                // }
 
                 // Update the position
                 pos = preceding_pos;
@@ -288,7 +272,6 @@ void SVData::saveToVCF(FASTAQuery& ref_genome, std::string output_dir)
 
             // Create the INFO string
             std::string info_str = "END=" + std::to_string(end) + ";SVTYPE=" + sv_type_str + ";SVLEN=" + std::to_string(sv_length) + ";DP=" + std::to_string(depth) + ";SVMETHOD=" + sv_method + ";ALN=" + data_type_str + ";REPTYPE=" + repeat_type + ";CLIPDP=" + std::to_string(clipped_base_support);
-            //std::string info_str = "END=" + std::to_string(end) + ";SVTYPE=" + sv_type_str + ";SVLEN=" + std::to_string(sv_length) + ";DP=" + std::to_string(depth) + ";SVMETHOD=" + sv_method + ";ALN=" + data_type_str + ";REPTYPE=" + repeat_type;
 
             // Create the FORMAT string
             std::string format_str = "GT:DP";
@@ -299,20 +282,14 @@ void SVData::saveToVCF(FASTAQuery& ref_genome, std::string output_dir)
 
             // Write the SV call to the file
             vcf_writer.writeRecord(chr, pos, ".", ref_allele, alt_allele, ".", ".", info_str, format_str, samples);
-            //output_stream << chr << "\t" << pos << "\t" << "." << "\t" << ref_allele << "\t" << alt_allele << "\t" << "." << "\t" << "." << "\t" << info_str << "\t" << format_str << "\t" << sample_str << std::endl;
         }
     }
-
-    // Print the number of DEL calls
-    std::cout << "Found " << del_count << " DEL calls" << std::endl;
 
     // Print the number of SV calls skipped
     std::cout << "Skipped " << skip_count << " of " << num_sv_calls << " SV calls because the SV type is unknown" << std::endl;
 
     // Close the output stream
     vcf_writer.close();
-    // output_stream.close();
-    //std::cout << "Saved SV calls to " << output_vcf << std::endl;
 }
 
 std::map<SVCandidate, SVInfo>& SVData::getChromosomeSVs(std::string chr)
@@ -363,29 +340,4 @@ int SVData::totalDeletions(std::string chr)
     }
 
     return del_calls;
-}
-
-void SVData::addCopyNumberInfo(std::string chr, SVCopyNumberMap& cnv_calls)
-{
-    // Loop through the SV calls and add the copy number information
-    for (auto const& sv_call : this->sv_calls[chr]) {
-        SVCandidate candidate = sv_call.first;
-        SVInfo& sv_info = this->sv_calls[chr][candidate];
-
-        // Get the copy number information
-        int cnv_type = std::get<0>(cnv_calls[candidate]);
-        std::string genotype = std::get<1>(cnv_calls[candidate]);
-        std::string data_type = std::get<2>(cnv_calls[candidate]);
-
-        // Update the SV type
-        if (cnv_type != UNKNOWN) {
-            sv_info.sv_type = cnv_type;
-        }
-
-        // Update the alignment type used to call the SV
-        sv_info.data_type.insert(data_type);
-
-        // Update the SV genotype
-        sv_info.genotype = genotype;
-    }
 }

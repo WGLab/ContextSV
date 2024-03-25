@@ -83,8 +83,6 @@ def sv_merger(vcf_file_path, mode='dbscan', eps=100, min_samples=2, suffix='.mer
     # Print total number of records
     logging.info(f"Total number of records: {vcf_df.shape[0]}")
 
-    # Store a list of record indices that will form the merged VCF file
-    # merge_records = []
     # Store a dataframe of records that will form the merged VCF file
     merged_records = pd.DataFrame(columns=['CHROM', 'POS', 'INFO'])
     
@@ -213,10 +211,6 @@ def sv_merger(vcf_file_path, mode='dbscan', eps=100, min_samples=2, suffix='.mer
                     if num_plots == max_plots:
                         return
 
-            # Append the chosen record to the list of records that will form the
-            # merged VCF file
-            # merge_records.append(chr_del_df.iloc[idx, :].iloc[max_depth_score_idx, :])
-
             # Append the chosen record to the dataframe of records that will
             # form the merged VCF file
             merged_records.loc[merged_records.shape[0]] = max_del_record
@@ -241,10 +235,6 @@ def sv_merger(vcf_file_path, mode='dbscan', eps=100, min_samples=2, suffix='.mer
             # Get the VCF record with the highest depth score
             max_ins_dup_record = chr_ins_dup_df.iloc[idx, :].iloc[max_depth_score_idx, :]
 
-            # Append the chosen record to the list of records that will form the
-            # merged VCF file
-            # merge_records.append(chr_ins_dup_df.iloc[idx, :].iloc[max_depth_score_idx, :])
-
             # Append the chosen record to the dataframe of records that will
             # form the merged VCF file
             merged_records.loc[merged_records.shape[0]] = max_ins_dup_record
@@ -255,11 +245,7 @@ def sv_merger(vcf_file_path, mode='dbscan', eps=100, min_samples=2, suffix='.mer
         logging.info(f"Processed {current_chromosome} of {chromosome_count} chromosomes.")
 
         records_processed += chr_del_breakpoints.shape[0] + chr_ins_dup_breakpoints.shape[0]
-
-        # logging.info(f"Chromosome {chromosome} - {del_count} deletions,
-        # {ins_count} insertions, and {dup_count} duplications merged.")
         
-    # logging.info("Saved merged VCF file to " + merged_vcf)
     logging.info(f"Processed {records_processed} records of {vcf_df.shape[0]} total records.")
 
     # Free up memory

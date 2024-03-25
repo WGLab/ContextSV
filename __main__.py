@@ -77,13 +77,6 @@ def main():
         type=int
     )
 
-    # CNV data path.
-    parser.add_argument(
-        "--cnv",
-        help="The path to the CNV data in TSV format.",
-        required=False
-    )
-
     # Extend SNP-based CNV predictions to regions surrounding SVs (+/- 1/2 SV
     # length) and save CNV data to TSV. This will be useful for plotting CNV
     # data around SVs, but takes longer to run.
@@ -167,110 +160,81 @@ def main():
         required=False
     )
     
+    # ----------------------------------------------------------------------- #
+
+    # Run the program.
+
     # Get the command line arguments.
     args = parser.parse_args()
 
-    # Determine the selected program mode (SV detection or CNV plots).
-    if (args.vcf is not None):
-        # Run SV analysis mode.
-        
-        # Ensure that the CNV data path is provided.
-        arg_error = False
-        if (args.cnv is None):
-            log.error("Please provide the CNV data path.")
-            arg_error = True
+    # Ensure BAM, reference, and SNPs files are provided.
+    arg_error = False
+    if (args.long_read is None):
+        log.error("Please provide the long read alignment file (BAM).")
+        arg_error = True
 
-        # Exit if there are any errors.
-        if (arg_error):
-            sys.exit(1)
+    if (args.reference is None):
+        log.error("Please provide the reference genome.")
+        arg_error = True
 
-        # Create the output directory if it doesn't exist.
-        if (not os.path.exists(args.output)):
-            os.makedirs(args.output)
+    # Short read alignment file is optional. Use the long read alignment
+    # file if it is not provided.
+    if (args.short_read is None):
+        log.warning("Short read alignment file not provided. Using long read alignment file in its place.")
+        args.short_read = args.long_read
 
-        # Set the data paths from user input for downstream analysis.
-        vcf_path = args.vcf
-        cnv_data_path = args.cnv
-        output_dir = args.output
+    # SNPs file is required unless SNP-based CNV predictions are disabled.
+    if (args.snps is None and not args.disable_snp_cnv):
+        log.error("Please provide the SNPs file.")
+        arg_error = True
 
-        log.info("Analyzing SV calls in VCF file %s...", args.vcf)
+    # Exit if there are any errors.
+    if (arg_error):
+        # Exit with error code 1.
+        sys.exit(1)
 
-    else:
-        # Run SV detection mode.
-
-        # Ensure BAM, reference, and SNPs files are provided.
-        arg_error = False
-        if (args.long_read is None):
-            log.error("Please provide the long read alignment file (BAM).")
-            arg_error = True
-
-        if (args.reference is None):
-            log.error("Please provide the reference genome.")
-            arg_error = True
-
-        # Short read alignment file is optional. Use the long read alignment
-        # file if it is not provided.
-        if (args.short_read is None):
-            log.warning("Short read alignment file not provided. Using long read alignment file in its place.")
-            args.short_read = args.long_read
-
-        # SNPs file is required unless SNP-based CNV predictions are disabled.
-        if (args.snps is None and not args.disable_snp_cnv):
-            log.error("Please provide the SNPs file.")
-            arg_error = True
-
-        # # PFB file is required unless SNP-based CNV predictions are disabled.
-        # if (args.pfb is None and not args.disable_snp_cnv):
-        #     log.error("Please provide the PFB file.")
-        #     arg_error = True
-
-        # Exit if there are any errors.
-        if (arg_error):
-            # Exit with error code 1.
-            sys.exit(1)
-
-        # Set all None values to empty strings.
-        for key, value in vars(args).items():
-            if value is None:
-                setattr(args, key, "")
-            else:
-                log.info("Setting %s to %s", key, value)
-        
-        # Loop and set all None values to empty strings.
-        for key, value in vars(args).items():
-            if value is None:
-                setattr(args, key, "")
-
-        # Set input parameters.
-        input_data = contextsv.InputData()
-        input_data.setVerbose(args.debug)
-        input_data.setShortReadBam(args.short_read)
-        input_data.setLongReadBam(args.long_read)
-        input_data.setRefGenome(args.reference)
-        input_data.setSNPFilepath(args.snps)
-        input_data.setRegion(args.region)
-        input_data.setThreadCount(args.threads)
-        input_data.setMeanChromosomeCoverage(args.chr_cov)
-        input_data.setAlleleFreqFilepaths(args.pfb)
-        input_data.setHMMFilepath(args.hmm)
-        input_data.setOutputDir(args.output)
-        input_data.setDisableCIGAR(args.disable_cigar)
-        input_data.setDisableSNPCNV(args.disable_snp_cnv)
-        input_data.setCNVFilepath(args.cnv)
-        input_data.saveCNVData(args.save_cnv)
-
-        # Run the analysis.
-        contextsv.run(input_data)
-
-        # Determine the data paths for downstream analysis.
-        vcf_path = os.path.join(args.output, "sv_calls.vcf")
-        output_dir = args.output
-        region = args.region
-
-        if (args.cnv == ""):
-            cnv_data_path = os.path.join(args.output, "cnv_data.tsv")
+    # Set all None values to empty strings.
+    for key, value in vars(args).items():
+        if value is None:
+            setattr(args, key, "")
         else:
-            cnv_data_path = args.cnv
+            log.info("Setting %s to %s", key, value)
+    
+    # Loop and set all None values to empty strings.
+    for key, value in vars(args).items():
+        if value is None:
+            setattr(args, key, "")
+
+    # Set input parameters.
+    input_data = contextsv.InputData()
+    input_data.setVerbose(args.debug)
+    input_data.setShortReadBam(args.short_read)
+    input_data.setLongReadBam(args.long_read)
+    input_data.setRefGenome(args.reference)
+    input_data.setSNPFilepath(args.snps)
+    input_data.setRegion(args.region)
+    input_data.setThreadCount(args.threads)
+    input_data.setMeanChromosomeCoverage(args.chr_cov)
+    input_data.setAlleleFreqFilepaths(args.pfb)
+    input_data.setHMMFilepath(args.hmm)
+    input_data.setOutputDir(args.output)
+    input_data.setDisableCIGAR(args.disable_cigar)
+    input_data.setDisableSNPCNV(args.disable_snp_cnv)
+    input_data.setCNVFilepath(args.cnv)
+    input_data.saveCNVData(args.save_cnv)
+
+    # Run the analysis.
+    contextsv.run(input_data)
+
+    # Determine the data paths for downstream analysis.
+    vcf_path = os.path.join(args.output, "sv_calls.vcf")
+    output_dir = args.output
+    region = args.region
+
+    if (args.cnv == ""):
+        cnv_data_path = os.path.join(args.output, "cnv_data.tsv")
+    else:
+        cnv_data_path = args.cnv
 
     # Generate python-based CNV plots if SNP-based CNV predictions are enabled.
     if (args.save_cnv and not args.disable_snp_cnv):

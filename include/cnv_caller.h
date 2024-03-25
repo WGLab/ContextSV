@@ -48,7 +48,6 @@ struct SNPData {
 class CNVCaller {
     private:
         InputData* input_data;
-        double chr_mean_coverage = 0;
 
         // Mutex for locking the SV candidate map
         mutable std::mutex sv_candidates_mtx;
@@ -56,17 +55,8 @@ class CNVCaller {
         // Mutex for locking the SNP info
         mutable std::mutex snp_data_mtx;
 
-        // Mutex for locking the SNP data
-        mutable std::mutex snp_mtx;
-
-        // Mutex for locking the position-depth map
-        mutable std::mutex pos_depth_map_mtx;
-
         // Mutex for locking the HMM prediction
         mutable std::mutex hmm_mtx;
-
-        // Map of chromosome to mean coverage
-        std::unordered_map<std::string, double> chr_mean_cov;
 
         // Define a map of CNV genotypes by HMM predicted state.
         // We only use the first 3 genotypes (0/0, 0/1, 1/1) for the VCF output.
@@ -106,20 +96,26 @@ class CNVCaller {
 
         std::vector<int> runViterbi(CHMM hmm, SNPData &snp_data);
 
+        // Query a region for SNPs and return the SNP data
         std::pair<SNPData, bool> querySNPRegion(std::string chr, int64_t start_pos, int64_t end_pos, SNPInfo &snp_info, std::unordered_map<uint64_t, int> &pos_depth_map, double mean_chr_cov);
 
+        // Run copy number prediction for a region
         SNPData runCopyNumberPrediction(std::string chr, std::map<SVCandidate, SVInfo>& sv_candidates, SNPInfo& snp_info, CHMM hmm, int window_size, double mean_chr_cov);
 
+        // Run copy number prediction for a chunk of SV candidates
         SNPData runCopyNumberPredictionChunk(std::string chr, std::map<SVCandidate, SVInfo>& sv_candidates, std::vector<SVCandidate> sv_chunk, SNPInfo& snp_info, CHMM hmm, int window_size, double mean_chr_cov, std::unordered_map<uint64_t, int>& pos_depth_map);
 
         void updateSVType(std::map<SVCandidate, SVInfo>& sv_candidates, SVCandidate key, int sv_type, std::string data_type);
 
         void updateSVGenotype(std::map<SVCandidate, SVInfo>& sv_candidates, SVCandidate key, std::string genotype);
 
+        // Split a region into chunks for parallel processing
         std::vector<std::string> splitRegionIntoChunks(std::string chr, int64_t start_pos, int64_t end_pos, int chunk_count);
 
+        // Split SV candidates into chunks for parallel processing
         std::vector<std::vector<SVCandidate>> splitSVCandidatesIntoChunks(std::map<SVCandidate, SVInfo>& sv_candidates, int chunk_count);
 
+        // Merge the read depths from a chunk into the main read depth map
         void mergePosDepthMaps(std::unordered_map<uint64_t, int>& pos_depth_map, std::unordered_map<uint64_t, int>& pos_depth_map_chunk);
 
     public:

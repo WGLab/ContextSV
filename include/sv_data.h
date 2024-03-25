@@ -21,13 +21,11 @@ using namespace sv_types;
 class SVData {
     private:
         SVDepthMap sv_calls;
-        // mutable std::mutex sv_calls_mtx;  // Mutex for locking the SV candidate map
 
         // Map of clipped base support by position (chr, pos) : depth
         std::map<std::pair<std::string, int64_t>, int> clipped_base_support;
 
-        // SV type to string map (DEL, INS, INV, DUP, BND)
-        // DUPs [1] are INS with INFO/REPTYPE=DUP
+        // SV type to string map for VCF output
         std::map<int, std::string> sv_type_map = {
             {0, "DEL"},
             {1, "DUP"},
@@ -71,15 +69,14 @@ class SVData {
         SVDepthMap::iterator begin() { return this->sv_calls.begin(); }
         SVDepthMap::iterator end() { return this->sv_calls.end(); }
 
-        // Define the size of the SV candidate map
+        // Get the total number of calls (For summary purposes)
         int totalCalls();
 
+        // Get the total number of deletions (For testing purposes)
         int totalDeletions();
 
+        // Get the total number of deletions for a chromosome (For testing purposes)
         int totalDeletions(std::string chr);
-
-        // Add copy number information to the SV data
-        void addCopyNumberInfo(std::string chr, SVCopyNumberMap& cnv_calls);
 };
 
 #endif // SV_DATA_H

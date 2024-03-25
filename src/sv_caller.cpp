@@ -25,9 +25,6 @@
 
 int SVCaller::readNextAlignment(samFile *fp_in, hts_itr_t *itr, bam1_t *bam1)
 {
-    // Lock the mutex while reading the next alignment
-//    std::lock_guard<std::mutex> lock(this->bam_mtx);
-
     // Read the next alignment
     int ret = sam_itr_next(fp_in, itr, bam1);
 
@@ -73,7 +70,6 @@ RegionData SVCaller::detectSVsFromRegion(std::string region)
     int num_alignments = 0;
     PrimaryMap primary_alignments;
     SuppMap supplementary_alignments;
-    int del_count = 0;
     while (readNextAlignment(fp_in, itr, bam1) >= 0) {
 
         // Skip secondary and unmapped alignments
@@ -104,15 +100,7 @@ RegionData SVCaller::detectSVsFromRegion(std::string region)
 
                 // Call SVs directly from the CIGAR string
                 if (disable_cigar == false) {
-                    int prev_del_count = sv_calls.totalDeletions();
                     this->detectSVsFromCIGAR(bamHdr, bam1, sv_calls);
-                    int curr_del_count = sv_calls.totalDeletions();
-
-                    // // Print the number of SVs detected from the CIGAR string
-                    // if (curr_del_count > prev_del_count) {
-                    //     std::lock_guard<std::mutex> lock(this->print_mtx);
-                    //     printMessage("[CIGARTEST] Found " + std::to_string(curr_del_count - prev_del_count) + " deletions from the CIGAR string");
-                    // }
                 }
 
             // Process supplementary alignments
@@ -185,14 +173,12 @@ void SVCaller::detectSVsFromCIGAR(bam_hdr_t* header, bam1_t* alignment, SVData& 
     // reference coordinates (1-based)
     // POS is the leftmost position of where the alignment maps to the reference:
     // https://genome.sph.umich.edu/wiki/SAM
-
     std::vector<std::thread> threads;
     std::vector<SVData> sv_calls_vec;
 
     // Loop through the CIGAR string and process operations
     int32_t ref_pos;
     int32_t ref_end;
-    int cigar_del_count = 0;
     for (int i = 0; i < cigar_len; i++) {
 
         // Get the CIGAR operation
@@ -222,11 +208,11 @@ void SVCaller::detectSVsFromCIGAR(bam_hdr_t* header, bam1_t* alignment, SVData& 
                 // to the rightmost position of the insertion (pos+op_len-1) and
                 // calculate the sequence identity at each window of the
                 // insertion length to identify potential duplications.
-                bool is_duplication = false;
 
                 // Loop through the reference sequence and calculate the
                 // sequence identity +/- insertion length from the insertion
                 // position.
+                bool is_duplication = false;
                 int ins_ref_pos;
                 for (int j = pos - op_len; j <= pos; j++) {
 
@@ -266,10 +252,6 @@ void SVCaller::detectSVsFromCIGAR(bam_hdr_t* header, bam1_t* alignment, SVData& 
                 } else {
                     sv_calls.add(chr, ref_pos, ref_end, INS, ins_seq_str, "CIGARINS");
                 }
-
-                // Lock the mutex and increment the insertion count
-                // std::lock_guard<std::mutex> lock(this->ins_mtx);
-                this->ins_count++;
             }
 
         // Check if the CIGAR operation is a deletion
@@ -284,15 +266,7 @@ void SVCaller::detectSVsFromCIGAR(bam_hdr_t* header, bam1_t* alignment, SVData& 
 
                 // Lock the SV calls object and add the deletion
                 std::lock_guard<std::mutex> lock(this->sv_mtx);
-                int result = sv_calls.add(chr, ref_pos, ref_end, DEL, ".", "CIGARDEL");
-                //std::cout << "ADDED CIGAR SV" << std::endl;
-
-                // Lock the mutex and increment the deletion count
-                // std::lock_guard<std::mutex> lock(this->del_mtx);
-                if (result == 1) {
-                    this->del_count++;
-                    cigar_del_count++;
-                }
+                sv_calls.add(chr, ref_pos, ref_end, DEL, ".", "CIGARDEL");
             }
 
         // Check if the CIGAR operation is a soft clip
@@ -324,11 +298,6 @@ void SVCaller::detectSVsFromCIGAR(bam_hdr_t* header, bam1_t* alignment, SVData& 
             exit(1);
         }
     }
-
-    // // Print the number of deletions detected from the CIGAR string
-    // if (cigar_del_count > 0) {
-    //     printMessage("[CIGARRecord] Found " + std::to_string(cigar_del_count) + " deletions from the CIGAR string");
-    // }
 }
 
 // Detect SVs from split read alignments (primary and supplementary) and
@@ -393,8 +362,6 @@ SVData SVCaller::run()
         // Vector of futures
         std::vector<std::future<RegionData>> futures;
         for (const auto& sub_region : region_chunks) {
-            //std::cout << "Sub-region: " << sub_region << std::endl;
-
             // Detect SVs from the sub-region in a separate thread using a
             // future
             std::future<RegionData> future = std::async(std::launch::async, &SVCaller::detectSVsFromRegion, this, sub_region);
@@ -446,11 +413,6 @@ SVData SVCaller::run()
         // Increment the region count
         region_count++;
         std::cout << "Region " << region_count << " of " << num_regions << " complete" << std::endl;
-    }
-
-    // Print the number of SVs detected from the CIGAR string
-    if (this->ins_count > 0 || this->del_count > 0) {
-        std::cout << "Found " << this->ins_count << " insertions and " << this->del_count << " deletions from the CIGAR string" << std::endl;
     }
 
     // Run split-read SV detection in a single thread

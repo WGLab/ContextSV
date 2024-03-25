@@ -48,7 +48,6 @@ int FASTAQuery::setFilepath(std::string fasta_filepath)
                 chromosomes.push_back(current_chr);  // Add the chromosome to the list
                 chr_to_seq[current_chr] = sequence;  // Add the sequence to the map
                 sequence = "";  // Reset the sequence
-                //std::cout << "Read chromosome " << current_chr << std::endl;
             }
 
             // Get the new chromosome
@@ -100,9 +99,7 @@ std::string FASTAQuery::getFilepath()
 
 // Function to get the reference sequence at a given position range
 std::string FASTAQuery::query(std::string chr, int64_t pos_start, int64_t pos_end)
-{
-    //std::cout << "Querying " << chr << ":" << pos_start << "-" << pos_end << std::endl;
-    
+{    
     // Convert positions from 1-indexed (reference) to 0-indexed (string indexing)
     pos_start--;
     pos_end--;
@@ -111,12 +108,10 @@ std::string FASTAQuery::query(std::string chr, int64_t pos_start, int64_t pos_en
     // not larger than the chromosome length
     if (pos_start < 0)
     {
-        //std::cout << "Start position " << pos_start << " is negative" << std::endl;
         return "";
     }
     if (pos_end >= (int64_t)this->chr_to_seq[chr].length())
     {
-        //std::cout << "End position " << pos_end << " is larger than chromosome length " << this->chr_to_seq[chr].length() << std::endl;
         return "";
     }
 
@@ -166,24 +161,6 @@ std::string FASTAQuery::getContigHeader()
 std::vector<std::string> FASTAQuery::getChromosomes()
 {
     return this->chromosomes;
-}
-
-// Function to check if a chromosome is in the FASTA file, and return the
-// chromosome with the same notation as in the FASTA file (with or without
-// "chr" prefix)
-std::string FASTAQuery::hasChromosome(std::string chr)
-{
-    // Check if the chromosome is in the map with both notations (with and
-    // without "chr" prefix)
-    std::string chr_found = "";
-    if (this->chr_to_seq.find(chr) != this->chr_to_seq.end())
-    {
-        chr_found = chr;
-    } else if (this->chr_to_seq.find("chr" + chr) != this->chr_to_seq.end())
-    {
-        chr_found = "chr" + chr;
-    }
-    return chr_found;
 }
 
 int64_t FASTAQuery::getChromosomeLength(std::string chr)

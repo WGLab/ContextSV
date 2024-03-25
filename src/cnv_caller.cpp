@@ -252,13 +252,6 @@ SNPData CNVCaller::runCopyNumberPredictionChunk(std::string chr, std::map<SVCand
             }
         }
 
-        // // If there is no majority state, then set the state to unknown
-        // int state_count = (int) state_sequence.size();
-        // if (max_count < state_count / 2)
-        // {
-        //     max_state = 0;
-        // }
-
         // If there is no majority state (> 75%), then set the state to unknown
         double pct_threshold = 0.75;
         int state_count = (int) state_sequence.size();
@@ -284,23 +277,7 @@ SNPData CNVCaller::runCopyNumberPredictionChunk(std::string chr, std::map<SVCand
         // Update the SV type if it is not unknown
         if (cnv_type != sv_types::UNKNOWN)
         {
-            // [TESTDEPR]
             this->updateSVType(sv_candidates, sv_call, cnv_type, data_type);
-
-            // // If deletion or duplication, print the state sequence
-            // if (cnv_type == sv_types::DEL || cnv_type == sv_types::DUP)
-            // {
-            //     current_sv++;
-            //     if (current_sv < 10)
-            //     {
-            //         std::string state_seq_str = "";
-            //         for (int state : state_sequence)
-            //         {
-            //             state_seq_str += std::to_string(state) + " ";
-            //         }
-            //         printMessage(sv_types::SVTypeString[cnv_type] + " state sequence: " + state_seq_str);
-            //     }
-            // }
 
             // Update the SV type counts
             cnv_type_counts[cnv_type]++;
@@ -316,7 +293,6 @@ SNPData CNVCaller::runCopyNumberPredictionChunk(std::string chr, std::map<SVCand
              int64_t sv_half_length = (end_pos - start_pos) / 2;
              int64_t before_sv_start = start_pos - sv_half_length;
              std::pair<SNPData, bool> preceding_snps = this->querySNPRegion(chr, before_sv_start, start_pos-1, snp_info, pos_depth_map, mean_chr_cov);
-             //printMessage("Running Viterbi algorithm for preceding SNPs...");
              std::vector<int> preceding_states = runViterbi(hmm, preceding_snps.first);
              printMessage("Updating SNP data for preceding SNPs...");
              SNPData& pre_snp = preceding_snps.first;
@@ -327,15 +303,12 @@ SNPData CNVCaller::runCopyNumberPredictionChunk(std::string chr, std::map<SVCand
              this->updateSNPVectors(snp_data, sv_snps.pos, sv_snps.pfb, sv_snps.baf, sv_snps.log2_cov, state_sequence, sv_snps.is_snp);
 
              // Following SNPs:
-             //printMessage("Querying following SNPs...");
              int64_t after_sv_end = end_pos + sv_half_length;
              std::pair<SNPData, bool> following_snps = this->querySNPRegion(chr, end_pos+1, after_sv_end, snp_info, pos_depth_map, mean_chr_cov);
              printMessage("Running Viterbi algorithm for following SNPs...");
              std::vector<int> following_states = runViterbi(hmm, following_snps.first);
-             //printMessage("Updating SNP data for following SNPs...");
              SNPData& post_snp = following_snps.first;
              this->updateSNPVectors(snp_data, post_snp.pos, post_snp.pfb, post_snp.baf, post_snp.log2_cov, following_states, post_snp.is_snp);
-             //printMessage("Finished processing surrounding region for SV " + std::to_string(current_sv) + " of " + std::to_string(sv_count) + "...");
         }
     }
 
@@ -391,7 +364,6 @@ std::vector<std::string> CNVCaller::splitRegionIntoChunks(std::string chr, int64
     for (int i = 0; i < chunk_count; i++)
     {
         chunk_end = chunk_start + chunk_size - 1;
-        // region_chunks.push_back(chr + ":" + std::to_string(chunk_start) + "-" + std::to_string(chunk_end));
 
         if (i == chunk_count - 1)
         {
@@ -400,9 +372,6 @@ std::vector<std::string> CNVCaller::splitRegionIntoChunks(std::string chr, int64
 
         // Add the region chunk to the vector
         region_chunks.push_back(chr + ":" + std::to_string(chunk_start) + "-" + std::to_string(chunk_end));
-
-        // Print the region chunk
-//        printMessage("Region chunk " + std::to_string(i+1) + " of " + std::to_string(chunk_count) + ": " + chr + ":" + std::to_string(chunk_start) + "-" + std::to_string(chunk_end));
 
         // Update the chunk start
         chunk_start = chunk_end + 1;
@@ -461,16 +430,6 @@ void CNVCaller::run(SVData& sv_calls)
         chromosomes.push_back(this->input_data->getRegionChr());
     }
 
-//    // Read SNP positions and B-allele frequency values from the VCF file
-//    SNPInfo snp_info;
-//    std::cout << "Reading SNP allele frequencies from VCF file..." << std::endl;
-//    std::string snp_filepath = this->input_data->getSNPFilepath();
-//    readSNPAlleleFrequencies(snp_filepath, snp_info, whole_genome);
-
-    // Get the population frequencies for each SNP
-//    std::cout << "Obtaining SNP population frequencies..." << std::endl;
-//    getSNPPopulationFrequencies(snp_info);
-
     // Read the HMM from file
     std::string hmm_filepath = this->input_data->getHMMFilepath();
     std::cout << "Reading HMM from file: " << hmm_filepath << std::endl;
@@ -487,14 +446,10 @@ void CNVCaller::run(SVData& sv_calls)
     SNPData snp_data;
     int current_chr = 0;
     int chr_count = (int) sv_chromosomes.size();
-    std::cout << "[CNVRun1] Total DELs: " << sv_calls.totalDeletions() << std::endl;
     for (auto const& chr : sv_chromosomes)
     {
         // Get the SV candidates for the chromosome
         std::map<SVCandidate, SVInfo>& chr_sv_calls = sv_calls.getChromosomeSVs(chr);
-
-        // Get the mean chromosome coverage for the chromosome
-        // double mean_chr_cov = mean_chr_cov_map[chr];
 
         // First, calculate the mean chromosome coverage
         double mean_chr_cov = 0;
@@ -524,9 +479,6 @@ void CNVCaller::run(SVData& sv_calls)
         // Start a thread to run the copy number prediction for the entire chromosome
         printMessage("Running copy number prediction for chromosome " + chr + "...");
 
-        // Print the SV deletions count for the chromosome
-        printMessage("[CNVRun3-PRE] Chromosome " + chr + " DELs: " + std::to_string(sv_calls.totalDeletions(chr)));
-
         // Run copy number prediction for the chromosome
         SNPData chr_snp_data = runCopyNumberPrediction(chr, chr_sv_calls, snp_info, hmm, window_size, mean_chr_cov);
 
@@ -535,8 +487,6 @@ void CNVCaller::run(SVData& sv_calls)
         {
             printMessage("Updating SNP data...");
             updateSNPVectors(snp_data, chr_snp_data.pos, chr_snp_data.pfb, chr_snp_data.baf, chr_snp_data.log2_cov, chr_snp_data.state_sequence, chr_snp_data.is_snp);
-            //printMessage("Finished predicting copy number states for
-            //chromosome " + chr + "...");
         }
         printMessage("Finished processing chromosome " + chr + " (" + std::to_string(++current_chr) + " of " + std::to_string(chr_count) + ")...");
     }
@@ -561,19 +511,11 @@ double CNVCaller::calculateMeanChromosomeCoverage(std::string chr)
 {
     std::string input_filepath = this->input_data->getShortReadBam();
 
-    // Open a SAMtools process to calculate cumulative read depth and position
-    // counts (non-zero depths only) for a single chromosome
-
-    // Run the entire chromosome, printing the number of positions and the
-    // cumulative read depth
-
     // Get the number of threads
-    //int num_threads = std::thread::hardware_concurrency();
     int num_threads = this->input_data->getThreadCount();
 
     // Split the chromosome into equal parts for each thread
     int chr_len = this->input_data->getRefGenomeChromosomeLength(chr);
-    //std::cout << "Chr " << chr << " length: " << chr_len << std::endl;
 
     // Split the chromosome into equal parts for each thread
     std::vector<std::string> region_chunks = splitRegionIntoChunks(chr, 1, chr_len, num_threads);
@@ -675,7 +617,6 @@ void CNVCaller::calculateDepthsForSNPRegion(std::string chr, int64_t start_pos, 
 
     // Loop through each region chunk and get the mean chromosome coverage in
     // parallel
-    //std::cout << "Calculating read depths for SNP region " << chr << ":" << start_pos << "-" << end_pos << "..." << std::endl;
     std::vector<std::future<std::unordered_map<uint64_t, int>>> futures;
     for (const auto& region_chunk : region_chunks)
     {
@@ -746,17 +687,11 @@ void CNVCaller::calculateDepthsForSNPRegion(std::string chr, int64_t start_pos, 
         // Merge the result into the map of positions and depths
         printMessage("Merging region chunk " + std::to_string(current_chunk) + " of " + std::to_string(region_chunks.size()) + "...");
         this->mergePosDepthMaps(pos_depth_map, result);
-        // pos_depth_map.insert(result.begin(), result.end());
     }
-    //std::cout << "Finished calculating read depths for SNP region " << chr << ":" << start_pos << "-" << end_pos << std::endl;
-
-    // return pos_depth_map;
 }
 
 void CNVCaller::mergePosDepthMaps(std::unordered_map<uint64_t, int>& pos_depth_map, std::unordered_map<uint64_t, int>& result)
-{
-    // this->pos_depth_map_mtx.lock();
-    
+{ 
     // Reserve space for the new map
     pos_depth_map.reserve(pos_depth_map.size() + result.size());
 
@@ -767,8 +702,6 @@ void CNVCaller::mergePosDepthMaps(std::unordered_map<uint64_t, int>& pos_depth_m
         // map to the existing map
         pos_depth_map[elem.first] = std::move(elem.second);
     }
-    // Batch insert the new map into the existing map
-    // pos_depth_map.insert(result.begin(), result.end());
 }
 
 double CNVCaller::calculateLog2Ratio(int start_pos, int end_pos, std::unordered_map<uint64_t, int> &pos_depth_map, double mean_chr_cov)
@@ -782,7 +715,6 @@ double CNVCaller::calculateLog2Ratio(int start_pos, int end_pos, std::unordered_
         auto it = pos_depth_map.find(i);
         if (it == pos_depth_map.end())
         {
-            //std::cout << "Position " << i << " not found in depth map" << std::endl;
             continue;
         }
 
@@ -797,7 +729,6 @@ double CNVCaller::calculateLog2Ratio(int start_pos, int end_pos, std::unordered_
     // Continue if there are no positions in the region
     if (pos_count == 0)
     {
-        //std::cout << "No positions found in region " << start_pos << "-" << end_pos << std::endl;
         return 0;
     }
 
@@ -806,11 +737,6 @@ double CNVCaller::calculateLog2Ratio(int start_pos, int end_pos, std::unordered_
 
     // Calculate the log2 ratio for the window
     double window_log2_ratio = log2(window_mean_cov / mean_chr_cov);
-
-    // if (region_size > size_threshold)
-    // {
-    //     std::cout << "Finished calculating large log2 ratio, length (kb): " << region_size / 1000 << std::endl;
-    // }
 
     return window_log2_ratio;
 }
@@ -849,13 +775,8 @@ void CNVCaller::readSNPAlleleFrequencies(std::string chr, std::string filepath, 
     pclose(index_fp);
 
     // Filter variants by depth, quality, and region
-
     std::cout << "Filtering SNPs by depth, quality, and region..." << std::endl;
-//    std::string region = this->input_data->getRegion();
-
-    // Update the command to sort by chromosome and position
     std::string cmd = "bcftools view -r " + chr + " -v snps -i 'QUAL > 30 && DP > 10 && FILTER = \"PASS\"' " + filepath + " > " + filtered_snp_vcf_filepath;
-
     if (this->input_data->getVerbose()) {
         std::cout << "Filtering SNPs by depth and quality..." << std::endl;
         std::cout << "Command: " << cmd << std::endl;
@@ -879,14 +800,12 @@ void CNVCaller::readSNPAlleleFrequencies(std::string chr, std::string filepath, 
 
     // Read the DP and AD values (AD for alternate allele depth) and store in a
     // map by chromosome and position
-//    std::string chr = "";  // Current chromosome
     std::string alt_allele = "";  // Alternate allele
     uint64_t pos = 0;
     int ref_ad = 0;
     int alt_ad = 0;
     const int line_size = 256;
     char line[line_size];  // Line buffer
-    // SNPData *snp_data;   // Pointer to the SNP data for the current chromosome
     std::vector<int64_t> locations;
     std::vector<double> bafs;
     while (fgets(line, line_size, fp) != NULL)
@@ -919,16 +838,9 @@ void CNVCaller::readSNPAlleleFrequencies(std::string chr, std::string filepath, 
             col++;
         }
 
-        // Calculate the BAF
+        // Calculate the B-allele frequency (BAF) as the ratio of the alternate
+        // allele depth to the total depth (reference + alternate)
         double baf = (double) alt_ad / (double) (ref_ad + alt_ad);
-
-//        // Remove the 'chr' prefix from the chromosome name for SNP data. All
-//        // SNP data in this program does not use the 'chr' prefix
-//        std::string chr_snp = chr;
-//        if (chr_snp.find("chr") != std::string::npos)
-//        {
-//            chr_snp = chr_snp.substr(3);
-//        }
 
         // Add a new location and BAF value to the chromosome's SNP data
         // (population frequency and log2 ratio will be added later)
@@ -1017,7 +929,6 @@ void CNVCaller::getSNPPopulationFrequencies(std::string chr, SNPInfo& snp_info)
                 //"bcftools query -r " + region_chunk + " -f '%POS\t%AF\n' -i 'INFO/variant_type=\"snv\"' " + pfb_filepath + " 2>/dev/null";
 
             printMessage("Command: " + cmd);
-            //std::cout << "Command: " << cmd << std::endl;
 
             // Open a pipe to read the output of the command
             FILE *fp = popen(cmd.c_str(), "r");
@@ -1060,12 +971,9 @@ void CNVCaller::getSNPPopulationFrequencies(std::string chr, SNPInfo& snp_info)
     for (auto& future : futures)
     {
         // Wait for the future to finish
-        // printMessage("Waiting for future to finish...");
         future.wait();
 
-        // [TEST] Possible core dump
         // Get the result from the future
-        // printMessage("Getting future result...");
         std::unordered_map<int, double> result = std::move(future.get());
 
         // Loop through the result and add to SNPInfo
@@ -1088,8 +996,6 @@ void CNVCaller::getSNPPopulationFrequencies(std::string chr, SNPInfo& snp_info)
                 printMessage("Population frequency for " + chr + ":" + std::to_string(pos) + " = " + std::to_string(pfb));
             }
         }
-        // printMessage("Finished adding population frequencies to SNPInfo...");
-        // [END TEST]
     }
 }
 

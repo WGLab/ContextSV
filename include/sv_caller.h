@@ -26,18 +26,10 @@ using RegionData = std::tuple<SVData, PrimaryMap, SuppMap>;
 
 class SVCaller {
     private:
-        int max_indel_dist = 10;  // Maximum distance between two indels to be considered as a single SV
         int min_sv_size = 50;       // Minimum SV size to be considered
         int min_mapq = 20;          // Minimum mapping quality to be considered
         InputData* input_data;
-        std::mutex bam_mtx;  // Mutex for locking the BAM file
-        std::mutex print_mtx;  // Mutex for locking printing to stdout
-        std::mutex query_mtx;  // Mutex for locking the query map
         std::mutex sv_mtx;  // Mutex for locking the SV data
-        std::mutex del_mtx;  // Mutex for locking the deletion count
-        std::mutex ins_mtx;  // Mutex for locking the insertion count
-        int del_count = 0;
-        int ins_count = 0;
 
         // Detect SVs from long read alignments in the CIGAR string
         void detectSVsFromCIGAR(bam_hdr_t* header, bam1_t* alignment, SVData& sv_calls);
@@ -45,11 +37,11 @@ class SVCaller {
         // Detect SVs at a region from long read alignments. This is used for
         // whole genome analysis running in parallel.
         RegionData detectSVsFromRegion(std::string region);
-        // SVData detectSVsFromRegion(std::string region, samFile *fp_in, bam_hdr_t *bamHdr, hts_idx_t *idx);
  
         // Read the next alignment from the BAM file in a thread-safe manner
         int readNextAlignment(samFile *fp_in, hts_itr_t *itr, bam1_t *bam1);
 
+        // Detect SVs from split alignments
         void detectSVsFromSplitReads(SVData& sv_calls, PrimaryMap& primary_map, SuppMap& supp_map);
 
     public:

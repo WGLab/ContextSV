@@ -32,14 +32,8 @@ public:
     // Query SNPs within a range (start, end) and return their BAF and PFB values
     std::tuple<std::vector<int64_t>, std::vector<double>, std::vector<double>> querySNPs(std::string chr, int64_t start, int64_t end);
 
-    // Get a list of chromosomes with SNP information
-    std::vector<std::string> getChromosomes();
-
     // Get the range of SNP positions for a given chromosome
     std::pair<int64_t, int64_t> getSNPRange(std::string chr);
-
-    // Get chromosome SNP information (B-allele frequency and population frequency maps)
-    std::pair<const BST&, const std::unordered_map<int64_t, double>&> getChromosomeSNPInfo(std::string chr);
 
 private:
     // Mutex for reading SNP information
