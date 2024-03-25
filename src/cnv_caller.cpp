@@ -260,8 +260,9 @@ SNPData CNVCaller::runCopyNumberPredictionChunk(std::string chr, std::map<SVCand
         // }
 
         // If there is no majority state (> 75%), then set the state to unknown
+        double pct_threshold = 0.75;
         int state_count = (int) state_sequence.size();
-        if ((double) max_count / (double) state_count < 0.75)
+        if ((double) max_count / (double) state_count < pct_threshold)
         {
             max_state = 0;
         }

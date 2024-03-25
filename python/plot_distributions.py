@@ -42,6 +42,12 @@ def generate_sv_size_plot(input_vcf, output_png, plot_title="SV Caller"):
         # Get the SV type
         sv_type = record['INFO'].split('SVTYPE=')[1].split(';')[0]
 
+        # If the plot title is GIAB, then we need to convert INS to DUP if
+        # INFO/SVTYPE is INS and INFO/REPTYPE is DUP
+        if plot_title == "GIAB" and sv_type == "INS":
+            if 'REPTYPE=DUP' in record['INFO']:
+                sv_type = "DUP"
+
         # Get the SV size
         sv_size = int(record['INFO'].split('SVLEN=')[1].split(';')[0])
 
@@ -78,6 +84,10 @@ def generate_sv_size_plot(input_vcf, output_png, plot_title="SV Caller"):
     for sv_type in sv_types:
         print(f'{sv_labels[sv_type]}: {len(sv_sizes[sv_type])}')
 
+    # Print the number of SVs for each type with size > 50kb
+    print('Number of SVs for each type with size > 50kb:')
+    for sv_type in sv_types:
+        print(f'{sv_labels[sv_type]}: {len([x for x in sv_sizes[sv_type] if abs(x) > 50000])}')
 
     # Plot the SV size distributions
     size_scale = 1000 # Convert SV sizes from bp to kb. Use abs() to handle negative deletion sizes
@@ -85,7 +95,7 @@ def generate_sv_size_plot(input_vcf, output_png, plot_title="SV Caller"):
         sizes = np.array(sv_sizes[sv_type])
         axes[i].hist(np.abs(sizes) / size_scale, bins=100, color=sv_colors[sv_type], alpha=0.7, label=sv_labels[sv_type], edgecolor='black')
         axes[i].set_xlabel('SV size (kb)')
-        axes[i].set_ylabel('Frequency')
+        axes[i].set_ylabel('Frequency (log scale)')
         axes[i].set_title(f'{plot_title}: {sv_labels[sv_type]}')
 
         # Use a log scale for the y-axis
@@ -94,6 +104,31 @@ def generate_sv_size_plot(input_vcf, output_png, plot_title="SV Caller"):
     # Save the plot as a PNG file
     plt.tight_layout()
     plt.savefig(output_png)
+
+    # Plot an additional plot with suffix _full.png that includes all SV types
+    fig, ax = plt.subplots(figsize=(10, 5))
+    # Sort the SV types in order DEL, DUP, INS
+    sv_types_rearrange = ['DEL', 'DUP', 'INS']
+    for sv_type in sv_types_rearrange:
+        sizes = np.array(sv_sizes[sv_type])
+        ax.hist(np.abs(sizes) / size_scale, bins=100, color=sv_colors[sv_type], alpha=1.0, label=sv_labels[sv_type],
+                edgecolor='black')
+
+    # # In the same axis, plot several landmarks of SV sizes from a list
+    # # of known SVs (CNV1, CNV2, CNV3, CNV4, CNV5) from Gracia-Diaz et al. 2024 if within the range of the plot
+    # akizu_5_cnv_sizes = [143033, 776238, 247758, 131964, 157440]
+    # x_min, x_max = ax.get_xlim()
+    # for cnv_size in akizu_5_cnv_sizes:
+    #     if cnv_size / size_scale > x_min and cnv_size / size_scale < x_max:
+    #         ax.axvline(x=cnv_size / size_scale, color='black', linestyle='--')
+        
+    ax.set_xlabel('SV size (kb)')
+    ax.set_ylabel('Frequency (log scale)')
+    ax.set_title(f'{plot_title}: All SV types')
+    ax.set_yscale('log')
+    plt.legend()
+    plt.tight_layout()
+    plt.savefig(output_png.replace('.png', '_full.png'))
 
 
 if __name__ == '__main__':

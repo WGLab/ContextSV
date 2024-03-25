@@ -11,7 +11,6 @@ Output: <VCF file path>.merged.vcf
 import os
 import numpy as np
 import pandas as pd
-# import dask.dataframe as pd  # https://dask.pydata.org/en/latest/
 
 import logging
 logging.basicConfig(level=logging.INFO)
@@ -79,15 +78,15 @@ def sv_merger(vcf_file_path, mode='dbscan', eps=100, min_samples=2, suffix='.mer
     vcf_df = pd.read_csv(vcf_file_path, sep='\t', comment='#', header=None, usecols=[0, 1, 7], \
                             names=['CHROM', 'POS', 'INFO'], \
                                 dtype={'CHROM': str, 'POS': np.int64, 'INFO': str})
-    
     logging.info("VCF file read into a pandas DataFrame.")
 
     # Print total number of records
     logging.info(f"Total number of records: {vcf_df.shape[0]}")
 
     # Store a list of record indices that will form the merged VCF file
-    merged_indices = []
-    merge_records = []
+    # merge_records = []
+    # Store a dataframe of records that will form the merged VCF file
+    merged_records = pd.DataFrame(columns=['CHROM', 'POS', 'INFO'])
     
     # Create a set with each chromosome in the VCF file
     chromosomes = set(vcf_df['CHROM'].values)
@@ -98,6 +97,8 @@ def sv_merger(vcf_file_path, mode='dbscan', eps=100, min_samples=2, suffix='.mer
 
     # Iterate over each chromosome
     records_processed = 0
+    current_chromosome = 0
+    chromosome_count = len(chromosomes)
     for chromosome in chromosomes:
         logging.info(f"Clustering SVs on chromosome {chromosome}...")
 
@@ -192,6 +193,9 @@ def sv_merger(vcf_file_path, mode='dbscan', eps=100, min_samples=2, suffix='.mer
             # Get the index of the SV with the highest depth score
             max_depth_score_idx = np.argmax(depth_scores)
 
+            # Get the VCF record with the highest depth score
+            max_del_record = chr_del_df.iloc[idx, :].iloc[max_depth_score_idx, :]
+
             # Plot the DBSCAN clustering behavior if there are 10 < X < 20 SVs with the same label
             plot_enabled = False
             if plot_enabled:
@@ -209,15 +213,15 @@ def sv_merger(vcf_file_path, mode='dbscan', eps=100, min_samples=2, suffix='.mer
                     if num_plots == max_plots:
                         return
 
-            # Get the matching index in the original VCF file
-            chosen_record = chr_del_df.iloc[idx, :].iloc[max_depth_score_idx, :]
-            matching_record = vcf_df[(vcf_df['CHROM'] == chosen_record['CHROM']) & (vcf_df['POS'] == chosen_record['POS']) & (vcf_df['INFO'] == chosen_record['INFO'])]
-            matching_index = matching_record.index[0]
-            merged_indices.append(matching_index)
+            # Append the chosen record to the list of records that will form the
+            # merged VCF file
+            # merge_records.append(chr_del_df.iloc[idx, :].iloc[max_depth_score_idx, :])
+
+            # Append the chosen record to the dataframe of records that will
+            # form the merged VCF file
+            merged_records.loc[merged_records.shape[0]] = max_del_record
 
         # Merge insertions and duplications with the same label
-        ins_count = 0
-        dup_count = 0
         ins_dup_count = 0
         for label in unique_ins_dup_labels:
 
@@ -234,21 +238,28 @@ def sv_merger(vcf_file_path, mode='dbscan', eps=100, min_samples=2, suffix='.mer
             # Get the index of the SV with the highest depth score
             max_depth_score_idx = np.argmax(depth_scores)
 
-            # # Get the VCF record with the highest depth score (This also determines if the SV is an insertion or duplication)
-            # vcf_record = chr_ins_dup_df.iloc[idx, :].iloc[max_depth_score_idx, :]
-
             # Get the VCF record with the highest depth score
-            chosen_record = chr_ins_dup_df.iloc[idx, :].iloc[max_depth_score_idx, :]
+            max_ins_dup_record = chr_ins_dup_df.iloc[idx, :].iloc[max_depth_score_idx, :]
 
-            # Get the matching index in the original VCF file
-            matching_record = vcf_df[(vcf_df['CHROM'] == chosen_record['CHROM']) & (vcf_df['POS'] == chosen_record['POS']) & (vcf_df['INFO'] == chosen_record['INFO'])]
-            matching_index = matching_record.index[0]
-            merged_indices.append(matching_index)
+            # Append the chosen record to the list of records that will form the
+            # merged VCF file
+            # merge_records.append(chr_ins_dup_df.iloc[idx, :].iloc[max_depth_score_idx, :])
+
+            # Append the chosen record to the dataframe of records that will
+            # form the merged VCF file
+            merged_records.loc[merged_records.shape[0]] = max_ins_dup_record
 
         logging.info(f"Chromosome {chromosome} - {del_count} deletions, {ins_dup_count} insertions, and duplications merged.")
+        
+        current_chromosome += 1
+        logging.info(f"Processed {current_chromosome} of {chromosome_count} chromosomes.")
 
         records_processed += chr_del_breakpoints.shape[0] + chr_ins_dup_breakpoints.shape[0]
+
+        # logging.info(f"Chromosome {chromosome} - {del_count} deletions,
+        # {ins_count} insertions, and {dup_count} duplications merged.")
         
+    # logging.info("Saved merged VCF file to " + merged_vcf)
     logging.info(f"Processed {records_processed} records of {vcf_df.shape[0]} total records.")
 
     # Free up memory
@@ -269,21 +280,13 @@ def sv_merger(vcf_file_path, mode='dbscan', eps=100, min_samples=2, suffix='.mer
     del unique_del_labels
     del unique_ins_dup_labels
 
-    # logging.info("Saved merged VCF file to " + merged_vcf)
-
     # Open a new VCF file for writing
     logging.info("Writing merged VCF file...")
     merged_vcf = os.path.splitext(vcf_file_path)[0] + suffix + '.vcf'
 
-    logging.info(f"Writing {len(merged_indices)} records to merged VCF file...")
+    logging.info(f"Writing {merged_records.shape[0]} records to merged VCF file...")
 
-    # Read the specific rows from the original VCF file
-    vcf_df = pd.read_csv(vcf_file_path, sep='\t', comment='#', header=None, \
-                         names=['CHROM', 'POS', 'ID', 'REF', 'ALT', 'QUAL', 'FILTER', 'INFO', 'FORMAT', 'SAMPLE'], \
-                            dtype={'CHROM': str, 'POS': np.int64, 'ID': str, 'REF': str, 'ALT': str, 'QUAL': str, \
-                                   'FILTER': str, 'INFO': str, 'FORMAT': str, 'SAMPLE': str}, \
-                            skiprows=lambda x: x not in merged_indices)
-
+    merge_count = 0
     with open(merged_vcf, 'w', encoding='utf-8') as merged_vcf_file:
 
         # Write the VCF header to the merged VCF file
@@ -294,13 +297,31 @@ def sv_merger(vcf_file_path, mode='dbscan', eps=100, min_samples=2, suffix='.mer
                 else:
                     break
 
-        # Write the merged VCF records to the merged VCF file
-        printed_first_del_record = False
-        printed_first_ins_dup_record = False
-        for i in range(vcf_df.shape[0]):
-            vcf_record = vcf_df.iloc[i, :]
+        # Read the next 1000 records from the original VCF file
+        logging.info("Reading a chunk of 1000 records from the original VCF file...")
+        for chunk in pd.read_csv(vcf_file_path, sep='\t', comment='#', header=None, \
+                                    names=['CHROM', 'POS', 'ID', 'REF', 'ALT', 'QUAL', 'FILTER', 'INFO', 'FORMAT', 'SAMPLE'], \
+                                    dtype={'CHROM': str, 'POS': np.int64, 'ID': str, 'REF': str, 'ALT': str, 'QUAL': str, \
+                                             'FILTER': str, 'INFO': str, 'FORMAT': str, 'SAMPLE': str}, \
+                                             chunksize=1000):
+            
+            # Get the matching records from the chunk by merging on CHROM, POS,
+            # and INFO, but only keep the records from the chunk since they
+            # contain the full VCF record
+            matching_records = pd.merge(chunk, merged_records, on=['CHROM', 'POS', 'INFO'], how='inner')
+            matching_records = matching_records.drop_duplicates(subset=['CHROM', 'POS', 'INFO'])  # Drop duplicate records
 
-            merged_vcf_file.write(f"{vcf_record['CHROM']}\t{vcf_record['POS']}\t{vcf_record['ID']}\t{vcf_record['REF']}\t{vcf_record['ALT']}\t{vcf_record['QUAL']}\t{vcf_record['FILTER']}\t{vcf_record['INFO']}\t{vcf_record['FORMAT']}\t{vcf_record['SAMPLE']}\n")
+            # Remove the matching records from the merged records dataframe
+            merged_records = merged_records[~merged_records.isin(matching_records)].dropna()
+
+            # Write the matching records to the merged VCF file
+            for _, matching_record in matching_records.iterrows():
+                merge_count += 1
+                merged_vcf_file.write(f"{matching_record['CHROM']}\t{matching_record['POS']}\t{matching_record['ID']}\t{matching_record['REF']}\t{matching_record['ALT']}\t{matching_record['QUAL']}\t{matching_record['FILTER']}\t{matching_record['INFO']}\t{matching_record['FORMAT']}\t{matching_record['SAMPLE']}\n")
+
+            logging.info(f"Wrote {merge_count} of {merged_records.shape[0]} records to merged VCF file...")
+
+    logging.info(f"Processed {merge_count} records of {merged_records.shape[0]} total records.")
 
     logging.info("Merged VCF file written to " + merged_vcf)
 
@@ -321,5 +342,11 @@ if __name__ == '__main__':
     else:
         eps = 30
 
+    # Get the suffix from the command line
+    suffix = '.merged_eps' + str(eps)
+    if len(sys.argv) > 3:
+        suffix += sys.argv[3]
+
     # DBSCAN 
-    sv_merger(sys.argv[1], mode='dbscan', eps=eps, suffix='.merged_eps' + str(eps))
+    sv_merger(sys.argv[1], mode='dbscan', eps=eps, suffix=suffix)
+    
