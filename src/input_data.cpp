@@ -468,16 +468,6 @@ bool InputData::getDisableSNPCNV()
     return this->disable_snp_cnv;
 }
 
-void InputData::setCNVFilepath(std::string filepath)
-{
-    this->cnv_filepath = filepath;
-}
-
-std::string InputData::getCNVFilepath()
-{
-    return this->cnv_filepath;
-}
-
 void InputData::setWholeGenome(bool whole_genome)
 {
     this->whole_genome = whole_genome;

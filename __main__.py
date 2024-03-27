@@ -43,19 +43,19 @@ def main():
     # Add common arguments.
     parser.add_argument(
         "-r", "--region",
-        help="The region to analyze. If not provided, the entire genome will be analyzed.",
+        help="region to analyze (e.g. chr1, chr1:1000-2000). If not provided, the entire genome will be analyzed",
         required=False,
     )
 
     parser.add_argument(
         "-o", "--output",
-        help="The path to the output directory.",
+        help="path to the output directory",
         required=True
     )
 
     parser.add_argument(
         "-v", "--version",
-        help="Print the version number and exit.",
+        help="print the version number and exit",
         action="version",
         version=f"contextSV version {__version__}"
     )
@@ -63,7 +63,7 @@ def main():
     # Verbose mode.
     parser.add_argument(
         "-d", "--debug",
-        help="Enable debug mode (verbose logging).",
+        help="debug mode (verbose logging)",
         action="store_true",
         default=False
     )
@@ -71,7 +71,7 @@ def main():
     # Thread count.
     parser.add_argument(
         "-t", "--threads",
-        help="The number of threads to use.",
+        help="number of threads to use",
         required=False,
         default=1,
         type=int
@@ -82,33 +82,33 @@ def main():
     # data around SVs, but takes longer to run.
     parser.add_argument(
         "--save-cnv",
-        help="Save CNV data to TSV and plot CNV data around SVs.",
         required=False,
         action="store_true",
-        default=False
+        default=False,
+        help=argparse.SUPPRESS
     )
 
     # Mode 1: SV detection mode.
     # Short read alignment file (BAM), reference genome, and short read SNPs file.
     parser.add_argument(
         "-sr", "--short-read",
-        help="The path to the short read alignment file (BAM).",
+        help="path to the short read alignment BAM file (optional)",
         required=False
     )
     parser.add_argument(
         "-lr", "--long-read",
-        help="The path to the long read alignment file (BAM).",
-        required=False
+        help="path to the long read alignment BAM file",
+        required=True
     )
 
     parser.add_argument(
         "-g", "--reference",
-        help="The path to the reference genome.",
+        help="path to the reference genome FASTA file",
         required=False
     )
     parser.add_argument(
         "-s", "--snps",
-        help="The path to the SNPs file.",
+        help="path to the SNPs VCF file",
         required=False
     )
 
@@ -116,48 +116,40 @@ def main():
     # chromosome from a database such as gnomAD (e.g. 1=chr1.vcf.gz\n2=chr2.vcf.gz\n...).
     parser.add_argument(
         "--pfb",
-        help="Path to the text file listing VCF population allele frequency filepaths for each chromosome.",
+        help="path to the file with SNP population frequency VCF filepaths (see docs for format)",
         required=False
     )
 
     # HMM file path.
     parser.add_argument(
         "--hmm",
-        help="The path to the HMM file.",
+        help="path to the PennCNV HMM file",
         required=False
     )
 
-    # Pass in chromosome mean coverage data for speediness.
+    # Chromosome mean coverage values passed in as a comma-separated list (e.g. chr1:100,chr2:200,chr3:300)
     parser.add_argument(
         "--chr-cov",
-        help="Chromosome mean coverage values passed in as a comma-separated list (e.g. chr1:100,chr2:200,chr3:300).",
-        required=False
+        required=False,
+        help=argparse.SUPPRESS
     )
 
     # Turn off CIGAR string SV detection (split-read only)
     parser.add_argument(
         "--disable-cigar",
-        help="Turn off CIGAR string SV detection.",
         required=False,
         action="store_true",
-        default=False
+        default=False,
+        help=argparse.SUPPRESS
     )
 
     # Turn off SNP-based CNV predictions for SV classification.
     parser.add_argument(
         "--disable-snp-cnv",
-        help="Turn off SNP-based CNV predictions.",
         required=False,
         action="store_true",
-        default=False
-    )
-
-    # Mode 2: CNV plots mode. If only the VCF file is provided, then the program
-    # will run in this mode.
-    parser.add_argument(
-        "--vcf",
-        help="The path to the VCF file of SV calls.",
-        required=False
+        default=False,
+        help=argparse.SUPPRESS
     )
     
     # ----------------------------------------------------------------------- #
@@ -220,7 +212,6 @@ def main():
     input_data.setOutputDir(args.output)
     input_data.setDisableCIGAR(args.disable_cigar)
     input_data.setDisableSNPCNV(args.disable_snp_cnv)
-    input_data.setCNVFilepath(args.cnv)
     input_data.saveCNVData(args.save_cnv)
 
     # Run the analysis.
@@ -230,11 +221,7 @@ def main():
     vcf_path = os.path.join(args.output, "sv_calls.vcf")
     output_dir = args.output
     region = args.region
-
-    if (args.cnv == ""):
-        cnv_data_path = os.path.join(args.output, "cnv_data.tsv")
-    else:
-        cnv_data_path = args.cnv
+    cnv_data_path = os.path.join(args.output, "cnv_data.tsv")
 
     # Generate python-based CNV plots if SNP-based CNV predictions are enabled.
     if (args.save_cnv and not args.disable_snp_cnv):

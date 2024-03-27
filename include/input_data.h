@@ -99,10 +99,6 @@ class InputData {
         void setDisableSNPCNV(bool disable_snp_cnv);
         bool getDisableSNPCNV();
 
-        // Set the filepath to the TSV file with the CNV predictions.
-        void setCNVFilepath(std::string filepath);
-        std::string getCNVFilepath();
-
         // Set the whole genome flag to true if the entire genome is being
         // analyzed.
         void setWholeGenome(bool whole_genome);

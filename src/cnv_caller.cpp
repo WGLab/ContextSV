@@ -990,11 +990,11 @@ void CNVCaller::getSNPPopulationFrequencies(std::string chr, SNPInfo& snp_info)
 
             // Increment the population frequency count
             pfb_count++;
-            // Print if less than 15
-            if (pfb_count < 15)
-            {
-                printMessage("Population frequency for " + chr + ":" + std::to_string(pos) + " = " + std::to_string(pfb));
-            }
+            // // Print if less than 15 (for testing purposes)
+            // if (pfb_count < 15)
+            // {
+            //     printMessage("Population frequency for " + chr + ":" + std::to_string(pos) + " = " + std::to_string(pfb));
+            // }
         }
     }
 }

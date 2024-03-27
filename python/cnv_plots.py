@@ -31,6 +31,8 @@ def run(vcf_file, cnv_data_file, output_path, region):
     Returns:
         None
     """
+    snp_cnvs_only = False
+
     # Set the maximum number of CNVs to plot.
     max_cnvs = 10
 
@@ -112,13 +114,11 @@ def run(vcf_file, cnv_data_file, output_path, region):
             # Get the ALN field value (alignment type used to call the SV).
             aln = get_info_field_value(info_field, "ALN")
 
-            # Skip the SV if SNP CNV data was not used to call it.
-            # Check if ALN contains "SNPCNV"
-            if "SNPCNV" in aln:
-                #log.info(aln)
-                log.info("Found CNV %s %s:%d-%d.", svtype, sv_data[0], sv_data[1], sv_data[1] + int(get_info_field_value(info_field, "SVLEN")) - 1)
-            else:
+            # # Skip the SV if SNP CNV data was not used to call it.
+            if snp_cnvs_only and "SNPCNV" not in aln:
                 continue
+
+            log.info("Found CNV %s %s:%d-%d.", svtype, sv_data[0], sv_data[1], sv_data[1] + int(get_info_field_value(info_field, "SVLEN")) - 1)
 
             # Analyze the CNV if it is a DEL or DUP (=INS with INFO/REPTYE=DUP)
             if svtype in ("DEL", "DUP"):
