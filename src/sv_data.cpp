@@ -62,16 +62,14 @@ void SVData::concatenate(const SVData &sv_data)
 
 void SVData::updateSVType(std::string chr, SVCandidate candidate, int sv_type, std::string data_type)
 {
-    // Update the SV type
+    // Update the SV type if it is unknown
     SVInfo& sv_info = this->sv_calls[chr][candidate];
-
-    // Only update the SV type if it is unknown
     if (sv_info.sv_type == UNKNOWN) {
         sv_info.sv_type = sv_type;
-    }
 
-    // Update the alignment type used to call the SV
-    sv_info.data_type.insert(data_type);
+        // Update the alignment type used to call the SV
+        sv_info.data_type.insert(data_type);
+    }
 }
 
 void SVData::updateGenotype(std::string chr, SVCandidate candidate, std::string genotype)

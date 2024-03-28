@@ -42,11 +42,6 @@ std::vector<int> testVit_CHMM(CHMM hmm, int T, std::vector<double>& O1, std::vec
 	
 	// Set initial log probability for each state
 	std::vector<double>	plogproba(hmm.N + 1, -VITHUGE);
-	// std::vector<double>(hmm.N + 1);
-	// for (int i = 1; i <= hmm.N; i++)
-	// {
-	// 	plogproba[i] = -VITHUGE;
-	// }
 
 	// Run the HMM
 	std::vector<int> q;  // State sequence
@@ -55,6 +50,16 @@ std::vector<int> testVit_CHMM(CHMM hmm, int T, std::vector<double>& O1, std::vec
 	// Free the variables
 	free_imatrix(psi, 1, T, 1, hmm.N);
 	free_dmatrix(delta, 1, T, 1, hmm.N);
+
+	// Set all low confidence states to neutral (state 3) based on a threshold
+	// of -10.0 (log probability)
+	// for (int i = 0; i < (int)q.size(); i++)
+	// {
+	// 	if (plogproba[q[i]] < -500.0)
+	// 	{
+	// 		q[i] = 3;
+	// 	}
+	// }
 
 	// Pop the first element of q, which is always 0 (Done this way for 1-based indexing)
 	q.erase(q.begin());

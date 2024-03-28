@@ -157,7 +157,10 @@ def run(vcf_file, cnv_data_file, output_path, region):
                 # Get the CNV state, log2 ratio, and BAF values for all SNPs in the
                 # plot range.
                 log.info("Getting SNPs in CNV %s %s:%d-%d.", svtype, chromosome, plot_start_position, plot_end_position)
-                sv_data = cnv_data[(cnv_data["position"] >= plot_start_position) & (cnv_data["position"] <= plot_end_position)]
+                # sv_data = cnv_data[(cnv_data["position"] >=
+                # plot_start_position) & (cnv_data["position"] <=
+                # plot_end_position)]
+                sv_data = cnv_data[(cnv_data["position"] >= start_position) & (cnv_data["position"] <= end_position)]
                 
                 # If there are no SNPs in the plot range, skip the CNV.
                 if len(sv_data) == 0:
@@ -175,6 +178,22 @@ def run(vcf_file, cnv_data_file, output_path, region):
                         marker_colors.append("black")
                     elif state in [5, 6]:
                         marker_colors.append("blue")
+
+                # Now get the values before and after the CNV.
+                sv_data_before = cnv_data[(cnv_data["position"] >= plot_start_position) & (cnv_data["position"] < start_position)]
+                sv_data_after = cnv_data[(cnv_data["position"] > end_position) & (cnv_data["position"] <= plot_end_position)]
+
+                # Set the marker colors for the SNPs before and after the CNV to
+                # gray.
+                marker_colors_before = ["gray"] * len(sv_data_before)
+                marker_colors_after = ["gray"] * len(sv_data_after)
+
+                # Concatenate the SNP data before, during, and after the CNV.
+                sv_data = pd.concat([sv_data_before, sv_data, sv_data_after])
+
+                # Concatenate the marker colors before, during, and after the
+                # CNV.
+                marker_colors = marker_colors_before + marker_colors + marker_colors_after
 
                 # Get the hover text for the state sequence markers.
                 hover_text = []

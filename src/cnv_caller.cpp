@@ -280,23 +280,23 @@ SNPData CNVCaller::runCopyNumberPredictionChunk(std::string chr, std::map<SVCand
 
         if (this->input_data->getSaveCNVData())
         {
-             // Preceding SNPs:
-             int64_t sv_half_length = (end_pos - start_pos) / 2;
-             int64_t before_sv_start = start_pos - sv_half_length;
-             std::pair<SNPData, bool> preceding_snps = this->querySNPRegion(chr, before_sv_start, start_pos-1, snp_info, pos_depth_map, mean_chr_cov);
-             std::vector<int> preceding_states = runViterbi(hmm, preceding_snps.first);
-             SNPData& pre_snp = preceding_snps.first;
-             this->updateSNPVectors(snp_data, pre_snp.pos, pre_snp.pfb, pre_snp.baf, pre_snp.log2_cov, preceding_states, pre_snp.is_snp);
+            // Preceding SNPs:
+            int64_t sv_half_length = (end_pos - start_pos) / 2;
+            int64_t before_sv_start = start_pos - sv_half_length;
+            std::pair<SNPData, bool> preceding_snps = this->querySNPRegion(chr, before_sv_start, start_pos-1, snp_info, pos_depth_map, mean_chr_cov);
+            std::vector<int> preceding_states = runViterbi(hmm, preceding_snps.first);
+            SNPData& pre_snp = preceding_snps.first;
+            this->updateSNPVectors(snp_data, pre_snp.pos, pre_snp.pfb, pre_snp.baf, pre_snp.log2_cov, preceding_states, pre_snp.is_snp);
 
-             // Within SV SNPs:
-             this->updateSNPVectors(snp_data, sv_snps.pos, sv_snps.pfb, sv_snps.baf, sv_snps.log2_cov, state_sequence, sv_snps.is_snp);
+            // Within SV SNPs:
+            this->updateSNPVectors(snp_data, sv_snps.pos, sv_snps.pfb, sv_snps.baf, sv_snps.log2_cov, state_sequence, sv_snps.is_snp);
 
-             // Following SNPs:
-             int64_t after_sv_end = end_pos + sv_half_length;
-             std::pair<SNPData, bool> following_snps = this->querySNPRegion(chr, end_pos+1, after_sv_end, snp_info, pos_depth_map, mean_chr_cov);
-             std::vector<int> following_states = runViterbi(hmm, following_snps.first);
-             SNPData& post_snp = following_snps.first;
-             this->updateSNPVectors(snp_data, post_snp.pos, post_snp.pfb, post_snp.baf, post_snp.log2_cov, following_states, post_snp.is_snp);
+            // Following SNPs:
+            int64_t after_sv_end = end_pos + sv_half_length;
+            std::pair<SNPData, bool> following_snps = this->querySNPRegion(chr, end_pos+1, after_sv_end, snp_info, pos_depth_map, mean_chr_cov);
+            std::vector<int> following_states = runViterbi(hmm, following_snps.first);
+            SNPData& post_snp = following_snps.first;
+            this->updateSNPVectors(snp_data, post_snp.pos, post_snp.pfb, post_snp.baf, post_snp.log2_cov, following_states, post_snp.is_snp);
         }
     }
 
