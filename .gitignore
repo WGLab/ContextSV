@@ -61,3 +61,26 @@ docs/html/
 
 # Singularity images
 *.sif
+
+# Test directories
+python/dbscan_tests
+python/agglo_tests
+linktoscripts
+tests/data
+
+# Population allele frequency filepaths
+data/gnomadv2_filepaths.txt
+data/gnomadv3_filepaths.txt
+data/gnomadv4_filepaths.txt
+data/gnomadv4_hg19_filepaths.txt
+
+# Training data
+data/sv_scoring_dataset/
+
+# Chain files
+data/hg38ToHg19.over.chain.gz
+data/hg19ToHg38.over.chain.gz
+
+# Test images
+python/dbscan_clustering*.png
+python/dist_plots

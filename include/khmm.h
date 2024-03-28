@@ -41,14 +41,14 @@ typedef struct {
 /// Read an HMM from a file
 CHMM ReadCHMM (const char *filename);
 
-/// Free the memory allocated for an HMM
-void FreeCHMM(CHMM *phmm);
+// /// Free the memory allocated for an HMM
+// void FreeCHMM(CHMM *phmm);
 
 /// Run the main HMM algorithm
-std::vector<int> testVit_CHMM (CHMM hmm, int T, double *O1, double *O2, double *pfb, int *snpdist, double *plogproba);
+std::vector<int> testVit_CHMM(CHMM hmm, int T, std::vector<double>& O1, std::vector<double>& O2, std::vector<double>& pfb);
 
 /// Viterbi algorithm
-std::vector<int> ViterbiLogNP_CHMM(CHMM *phmm, int T, double *O1, double *O2, double *pfb, int *snpdist, double **delta, int **psi, double *pprob);
+std::vector<int> ViterbiLogNP_CHMM(CHMM phmm, int T, std::vector<double>& O1, std::vector<double>& O2, std::vector<double>& pfb, double **delta, int **psi, std::vector<double>& pprob);
 
 /// O1 emission probability
 double b1iot (int state, double *mean, double *sd, double uf, double o);

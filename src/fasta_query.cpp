@@ -3,7 +3,7 @@
 /// @cond
 #include <string.h>
 #include <iostream>
-#include <map>
+#include <unordered_map>
 #include <string>
 #include <fstream>
 #include <sstream>
@@ -22,8 +22,6 @@ int FASTAQuery::setFilepath(std::string fasta_filepath)
 
     this->fasta_filepath = fasta_filepath;
 
-    std::cout << "Reading FASTA file " << fasta_filepath << std::endl;
-
     // Parse the FASTA file
     std::ifstream fasta_file(fasta_filepath);
     if (!fasta_file.is_open())
@@ -32,12 +30,12 @@ int FASTAQuery::setFilepath(std::string fasta_filepath)
         exit(1);
     }
 
-    // Get the sequence
-    std::map<std::string, std::string> chr_to_seq;
+    // Get the chromosomes and sequences
+    std::vector<std::string> chromosomes;
+    std::unordered_map<std::string, std::string> chr_to_seq;
     std::string current_chr = "";
     std::string sequence = "";
     std::string line_str = "";
-
     while (std::getline(fasta_file, line_str))
     {
         // Check if the line is a header
@@ -47,8 +45,8 @@ int FASTAQuery::setFilepath(std::string fasta_filepath)
             // Store the previous chromosome and sequence
             if (current_chr != "")
             {
-                chr_to_seq[current_chr] = sequence;
-                //std::cout << "Read chromosome " << current_chr << " with length " << sequence.length() << std::endl;
+                chromosomes.push_back(current_chr);  // Add the chromosome to the list
+                chr_to_seq[current_chr] = sequence;  // Add the sequence to the map
                 sequence = "";  // Reset the sequence
             }
 
@@ -65,7 +63,7 @@ int FASTAQuery::setFilepath(std::string fasta_filepath)
             // Check if the chromosome is already in the map
             if (chr_to_seq.find(current_chr) != chr_to_seq.end())
             {
-                std::cout << "Duplicate chromosome " << current_chr << std::endl;
+                std::cerr << "Duplicate chromosome " << current_chr << std::endl;
                 exit(1);
             }
         } else {
@@ -77,17 +75,19 @@ int FASTAQuery::setFilepath(std::string fasta_filepath)
     // Add the last chromosome at the end of the file
     if (current_chr != "")
     {
-        chr_to_seq[current_chr] = sequence;
+        chromosomes.push_back(current_chr);  // Add the chromosome to the list
+        chr_to_seq[current_chr] = sequence;  // Add the sequence to the map
     }
 
     // Close the file
-    std::cout << "Closing FASTA file..." << std::endl;
     fasta_file.close();
 
-    // Set the map
-    this->chr_to_seq = chr_to_seq;
+    // Sort the chromosomes
+    std::sort(chromosomes.begin(), chromosomes.end());
 
-    std::cout << "Done." << std::endl;
+    // Set the chromosomes and sequences
+    this->chromosomes = chromosomes;
+    this->chr_to_seq = chr_to_seq;
 
     return 0;
 }
@@ -99,39 +99,34 @@ std::string FASTAQuery::getFilepath()
 
 // Function to get the reference sequence at a given position range
 std::string FASTAQuery::query(std::string chr, int64_t pos_start, int64_t pos_end)
-{
-    //std::cout << "Querying " << chr << ":" << pos_start << "-" << pos_end << std::endl;
+{    
+    // Convert positions from 1-indexed (reference) to 0-indexed (string indexing)
+    pos_start--;
+    pos_end--;
 
-    // Check if a FASTA file has been set
-    if (this->fasta_filepath == "")
+    // Ensure that the start position is not negative, and the end position is
+    // not larger than the chromosome length
+    if (pos_start < 0)
     {
-        std::cout << "No FASTA file set" << std::endl;
+        return "";
+    }
+    if (pos_end >= (int64_t)this->chr_to_seq[chr].length())
+    {
         return "";
     }
 
-    // Check if the chromosome is in the map
-    if (this->chr_to_seq.find(chr) == this->chr_to_seq.end())
-    {
-        std::cout << "Chromosome " << chr << " not found in FASTA file" << std::endl;
-        return "";
-    }
+    int64_t length = pos_end - pos_start + 1;
     
-    //std::cout << "Querying " << chr << ":" << pos_start << "-" << pos_end << std::endl;
-
     // Get the sequence
-    std::string sequence = this->chr_to_seq[chr];
-
-    //std::cout << "Sequence length: " << sequence.length() << std::endl;
+    const std::string& sequence = this->chr_to_seq[chr];
 
     // Get the substring
-    std::string subsequence = sequence.substr(pos_start, pos_end - pos_start);  // (start, length)
+    std::string subsequence = sequence.substr(pos_start, length);
 
-    //std::cout << "Subsequence length: " << subsequence.length() << std::endl;
-
-    // If the subsequence is empty, return VCF missing data character
+    // If the subsequence is empty, return empty string
     if (subsequence == "")
     {
-        return ".";
+        return "";
     }
 
     return subsequence;
@@ -156,13 +151,19 @@ std::string FASTAQuery::getContigHeader()
         // Add the contig header line
         contig_header += "##contig=<ID=" + chr + ",length=" + std::to_string(this->chr_to_seq[chr].length()) + ">\n";
     }
-    // {
-    //     std::string chr = chr_seq.first;
-    //     std::string seq = chr_seq.second;
 
-    //     // Add the contig header line
-    //     contig_header += "##contig=<ID=" + chr + ",length=" + std::to_string(seq.length()) + ">\n";
-    // }
+    // Remove the last newline character
+    contig_header.pop_back();
 
     return contig_header;
+}
+
+std::vector<std::string> FASTAQuery::getChromosomes()
+{
+    return this->chromosomes;
+}
+
+int64_t FASTAQuery::getChromosomeLength(std::string chr)
+{
+    return this->chr_to_seq[chr].length();
 }

@@ -8,24 +8,18 @@
 VcfWriter::VcfWriter(const std::string &filename)
 {
     // Remove the file if it already exists
-    std::cout << "Removing previous VCF..." << std::endl;
     std::remove(filename.c_str());
 
     // Open the VCF file
-    std::cout << "Opening VCF file..." << std::endl;
     this->file_stream.open(filename);
     if (!this->file_stream.is_open()) {
         std::cerr << "Error: Unable to open " << filename << std::endl;
         exit(1);
-    } else {
-        std::cout << "Done." << std::endl;
     }
 }
 
 void VcfWriter::writeHeader(const std::vector<std::string> &headerLines)
 {
-    std::cout << "Writing VCF header..." << std::endl;
-
     // Add the file format
     std::string file_format = "##fileformat=VCFv4.2";
     this->file_stream << file_format << std::endl;
@@ -54,8 +48,6 @@ void VcfWriter::writeHeader(const std::vector<std::string> &headerLines)
 
     // Flush the stream to ensure that the header is written
     this->file_stream.flush();
-
-    std::cout << "Done." << std::endl;
 }
 
 void VcfWriter::writeRecord(const std::string &chrom, int pos, const std::string &id, const std::string &ref, const std::string &alt, const std::string &qual, const std::string &filter, const std::string &info, const std::string &format, const std::vector<std::string> &samples)
@@ -67,7 +59,5 @@ void VcfWriter::writeRecord(const std::string &chrom, int pos, const std::string
 void VcfWriter::close()
 {
     // Close the VCF file
-    std::cout << "Closing VCF file..." << std::endl;
     this->file_stream.close();
-    std::cout << "Done." << std::endl;
 }
