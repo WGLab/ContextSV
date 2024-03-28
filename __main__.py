@@ -127,6 +127,15 @@ def main():
         required=False
     )
 
+    # Window size for calculating log2 ratios for CNV predictions.
+    parser.add_argument(
+        "--window-size",
+        help="window size for calculating log2 ratios for CNV predictions (default: 10 kb)",
+        required=False,
+        type=int,
+        default=10000
+    )
+
     # Chromosome mean coverage values passed in as a comma-separated list (e.g. chr1:100,chr2:200,chr3:300)
     parser.add_argument(
         "--chr-cov",
@@ -213,6 +222,7 @@ def main():
     input_data.setDisableCIGAR(args.disable_cigar)
     input_data.setDisableSNPCNV(args.disable_snp_cnv)
     input_data.saveCNVData(args.save_cnv)
+    input_data.setWindowSize(args.window_size)
 
     # Run the analysis.
     contextsv.run(input_data)

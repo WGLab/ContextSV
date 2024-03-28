@@ -118,7 +118,7 @@ def run(vcf_file, cnv_data_file, output_path, region):
             if snp_cnvs_only and "SNPCNV" not in aln:
                 continue
 
-            log.info("Found CNV %s %s:%d-%d.", svtype, sv_data[0], sv_data[1], sv_data[1] + int(get_info_field_value(info_field, "SVLEN")) - 1)
+            log.info("Found CNV %s %s:%d-%d, LEN=%d", svtype, sv_data[0], sv_data[1], sv_data[1] + int(get_info_field_value(info_field, "SVLEN")) - 1, int(get_info_field_value(info_field, "SVLEN")))
 
             # Analyze the CNV if it is a DEL or DUP (=INS with INFO/REPTYE=DUP)
             if svtype in ("DEL", "DUP"):
@@ -136,6 +136,10 @@ def run(vcf_file, cnv_data_file, output_path, region):
                 # Get the SV length.
                 cnv_length = int(get_info_field_value(info_field, "SVLEN"))
                 log.info("CNV length: %d", cnv_length)
+
+                # Continue if the CNV length is < 100kb.
+                if abs(cnv_length) < 100000:
+                    continue
 
                 # Use absolute value of CNV length (deletions are negative).
                 cnv_length = abs(cnv_length)

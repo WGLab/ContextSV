@@ -385,9 +385,6 @@ SVData SVCaller::run()
             all_region_sv_count += std::get<0>(sv_calls_region).totalCalls();
         }
 
-        // Print the number of SVs detected from the region
-        std::cout << "Region " << region_count + 1 << " of " << num_regions << " Found " << region_sv_count << " SVs" << std::endl;
-
         // Combine the SV calls, primary alignments, and supplementary
         // alignments
         for (auto it = sv_calls_vec.begin(); it != sv_calls_vec.end(); ++it) {
