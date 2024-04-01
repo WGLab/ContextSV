@@ -151,7 +151,6 @@ void SVData::saveToVCF(FASTAQuery& ref_genome, std::string output_dir)
         "##INFO=<ID=SVLEN,Number=1,Type=Integer,Description=\"Difference in length between REF and ALT alleles\">",
         "##INFO=<ID=SVMETHOD,Number=1,Type=String,Description=\"Method used to call the structural variant\">",
         "##INFO=<ID=ALN,Number=1,Type=String,Description=\"Alignment type used to call the structural variant\">",
-        "##INFO=<ID=REPTYPE,Number=1,Type=String,Description=\"Repeat type of the structural variant\">",
         "##INFO=<ID=CLIPSUP,Number=1,Type=Integer,Description=\"Clipped base support at the start and end positions\">",
         "##INFO=<ID=SUPPORT,Number=1,Type=Integer,Description=\"Number of reads supporting the variant\">",
         "##FILTER=<ID=PASS,Description=\"All filters passed\">",
@@ -213,7 +212,6 @@ void SVData::saveToVCF(FASTAQuery& ref_genome, std::string output_dir)
             // Process by SV type
             std::string ref_allele = ".";
             std::string alt_allele = ".";
-            std::string repeat_type = "NA";
 
             // Deletion
             if (sv_type == DEL) {
@@ -235,9 +233,6 @@ void SVData::saveToVCF(FASTAQuery& ref_genome, std::string output_dir)
                 // Update the position
                 pos = preceding_pos;
 
-                // Set the repeat type
-                repeat_type = "CONTRAC";  // Contraction
-
             // Duplications and insertions
             } else if (sv_type == INS || sv_type == DUP) {
                 // Use the preceding base as the reference allele
@@ -256,10 +251,6 @@ void SVData::saveToVCF(FASTAQuery& ref_genome, std::string output_dir)
                 // Update the end position to the start position to change from
                 // query to reference coordinates
                 end = pos;
-
-                if (sv_type == DUP) {
-                    repeat_type = "DUP";  // Duplication
-                }
             }
 
             // Get the clipped base support
@@ -270,7 +261,7 @@ void SVData::saveToVCF(FASTAQuery& ref_genome, std::string output_dir)
 
             // Create the INFO string (TODO: Read depth is currently set to 1,
             // needs implementation to get the actual read depth from the BAM file)
-            std::string info_str = "END=" + std::to_string(end) + ";SVTYPE=" + sv_type_str + ";SVLEN=" + std::to_string(sv_length) + ";SUPPORT=" + std::to_string(read_support) + ";SVMETHOD=" + sv_method + ";ALN=" + data_type_str + ";REPTYPE=" + repeat_type + ";CLIPSUP=" + std::to_string(clipped_base_support);
+            std::string info_str = "END=" + std::to_string(end) + ";SVTYPE=" + sv_type_str + ";SVLEN=" + std::to_string(sv_length) + ";SUPPORT=" + std::to_string(read_support) + ";SVMETHOD=" + sv_method + ";ALN=" + data_type_str + ";CLIPSUP=" + std::to_string(clipped_base_support);
 
             // Create the FORMAT string
             std::string format_str = "GT:DP";
