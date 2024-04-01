@@ -31,15 +31,15 @@ def extract_features(input_vcf):
     # Read in the VCF file.
     vcf_df = read_vcf(input_vcf)
 
-    # Extract the read depth and clipped bases from the INFO column.
-    read_depth = vcf_df['INFO'].str.extract(r'DP=(\d+)', expand=False).astype(np.int32)
+    # Extract the read and clipped base support from the INFO column.
+    read_support = vcf_df['INFO'].str.extract(r'SUPPORT=(\d+)', expand=False).astype(np.int32)
 
     # Check if any read depths are missing.
-    if read_depth.isnull().values.any():
-        logging.error('Read depth is missing.')
+    if read_support.isnull().values.any():
+        logging.error('Read support is missing.')
         sys.exit(1)
 
-    clipped_bases = vcf_df['INFO'].str.extract(r'CLIPDP=(\d+)', expand=False).astype(np.int32)
+    clipped_bases = vcf_df['INFO'].str.extract(r'CLIPSUP=(\d+)', expand=False).astype(np.int32)
 
     # Check if any clipped bases are missing.
     if clipped_bases.isnull().values.any():
@@ -116,7 +116,7 @@ def extract_features(input_vcf):
 
     # Loop through the columns and check if any values are missing for all of
     # the feature arrays.
-    for col in [chrom, start, end, sv_length, sv_type, read_depth, clipped_bases]:
+    for col in [chrom, start, end, sv_length, sv_type, read_support, clipped_bases]:
         if col.isnull().values.all():
             logging.error('All values are missing for a feature.')
             logging.error(col)
@@ -124,7 +124,7 @@ def extract_features(input_vcf):
 
     # Create a dataframe of the features.
     features = pd.DataFrame({'chrom': chrom, 'start': start, 'end': end, 'sv_length': sv_length, 'sv_type': sv_type, \
-                             'read_depth': read_depth, 'clipped_bases': clipped_bases})
+                             'read_support': read_support, 'clipped_bases': clipped_bases})
 
     # Check if any features are missing.
     if features.isnull().values.any():

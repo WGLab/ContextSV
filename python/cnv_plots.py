@@ -123,11 +123,11 @@ def run(vcf_file, cnv_data_file, output_path, region):
             # Analyze the CNV if it is a DEL or DUP (=INS with INFO/REPTYE=DUP)
             if svtype in ("DEL", "DUP"):
 
-                # Get the read depth (DP) value.
-                read_depth = int(get_info_field_value(info_field, "DP"))
+                # Get the read support for the CNV.
+                read_support = int(get_info_field_value(info_field, "SUPPORT"))
 
-                # # Skip the CNV if the read depth is less than 2.
-                # if read_depth < 2:
+                # # Skip the CNV if the support is < 2.
+                # if read_support < 2:
                 #     continue
 
                 # Get the start position.
@@ -287,7 +287,7 @@ def run(vcf_file, cnv_data_file, output_path, region):
 
                 # Set the figure title.
                 fig.update_layout(
-                    title_text = f"{svtype} (DP={read_depth}, LEN={cnv_length}bp) at {chromosome}:{start_position}-{end_position} [ALN={aln}]",
+                    title_text = f"{svtype} (SUPPORT={read_support}, LEN={cnv_length}bp) at {chromosome}:{start_position}-{end_position} [ALN={aln}]",
                 )
 
                 # Create a shaded rectangle for the CNV, layering it below the CNV

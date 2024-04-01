@@ -122,15 +122,20 @@ def sv_merger(vcf_file_path, mode='dbscan', eps=100, min_samples=2, suffix='.mer
         logging.info("Number of insertion and duplication breakpoints: " + str(len(chr_ins_dup_breakpoints)))
 
         # Get the SV depth and clipped base evidence scores for deletions
-        chr_del_depth_scores = chr_del_df['INFO'].str.extract(r'DP=(\d+)', expand=False).astype(np.int32)
-        chr_del_clipped_bases = chr_del_df['INFO'].str.extract(r'CLIPDP=(\d+)', expand=False).astype(np.int32)
-        chr_del_depth_scores = chr_del_depth_scores + chr_del_clipped_bases
+        # chr_del_depth_scores = chr_del_df['INFO'].str.extract(r'DP=(\d+)',
+        # expand=False).astype(np.int32)
+        chr_del_support = chr_del_df['INFO'].str.extract(r'SUPPORT=(\d+)', expand=False).astype(np.int32)
+        chr_del_clipped_bases = chr_del_df['INFO'].str.extract(r'CLIPSUP=(\d+)', expand=False).astype(np.int32)
+        chr_del_depth_scores = chr_del_support + chr_del_clipped_bases
 
         # Get the SV depth and clipped base evidence scores for insertions
         # and duplications
-        chr_ins_dup_depth_scores = chr_ins_dup_df['INFO'].str.extract(r'DP=(\d+)', expand=False).astype(np.int32)
-        chr_ins_dup_clipped_bases = chr_ins_dup_df['INFO'].str.extract(r'CLIPDP=(\d+)', expand=False).astype(np.int32)
-        chr_ins_dup_depth_scores = chr_ins_dup_depth_scores + chr_ins_dup_clipped_bases
+        # chr_ins_dup_depth_scores =
+        # chr_ins_dup_df['INFO'].str.extract(r'DP=(\d+)',
+        # expand=False).astype(np.int32)
+        chr_ins_dup_support = chr_ins_dup_df['INFO'].str.extract(r'SUPPORT=(\d+)', expand=False).astype(np.int32)
+        chr_ins_dup_clipped_bases = chr_ins_dup_df['INFO'].str.extract(r'CLIPSUP=(\d+)', expand=False).astype(np.int32)
+        chr_ins_dup_depth_scores = chr_ins_dup_support + chr_ins_dup_clipped_bases
 
         # Cluster SV breakpoints using the specified mode
         if mode == 'dbscan':

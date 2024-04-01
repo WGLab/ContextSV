@@ -15,7 +15,7 @@ int SVData::add(std::string chr, int64_t start, int64_t end, int sv_type, std::s
 
         // Update the read depth
         SVInfo& sv_info = this->sv_calls[chr][candidate];
-        sv_info.read_depth += 1;
+        sv_info.read_support += 1;
 
         // Update the SV type if it is unknown
         if (sv_info.sv_type == UNKNOWN) {
@@ -54,7 +54,7 @@ void SVData::concatenate(const SVData &sv_data)
             // is unique (per chromosome), there is no need to check if the SV
             // candidate already exists in the map.
             SVCandidate candidate = sv_call.first;  // (start, end, alt_allele)
-            SVInfo info = sv_call.second;  // (sv_type, read_depth, data_type, sv_length)
+            SVInfo info = sv_call.second;  // (sv_type, read_support, data_type, sv_length)
             this->sv_calls[chr][candidate] = info;
         }
     }
@@ -149,11 +149,11 @@ void SVData::saveToVCF(FASTAQuery& ref_genome, std::string output_dir)
         "##INFO=<ID=END,Number=1,Type=Integer,Description=\"End position of the variant described in this record\">",
         "##INFO=<ID=SVTYPE,Number=1,Type=String,Description=\"Type of structural variant\">",
         "##INFO=<ID=SVLEN,Number=1,Type=Integer,Description=\"Difference in length between REF and ALT alleles\">",
-        "##INFO=<ID=DP,Number=1,Type=Integer,Description=\"Total read depth at the locus\">",
         "##INFO=<ID=SVMETHOD,Number=1,Type=String,Description=\"Method used to call the structural variant\">",
         "##INFO=<ID=ALN,Number=1,Type=String,Description=\"Alignment type used to call the structural variant\">",
         "##INFO=<ID=REPTYPE,Number=1,Type=String,Description=\"Repeat type of the structural variant\">",
-        "##INFO=<ID=CLIPDP,Number=1,Type=Integer,Description=\"Clipped base support at the start and end positions\">",
+        "##INFO=<ID=CLIPSUP,Number=1,Type=Integer,Description=\"Clipped base support at the start and end positions\">",
+        "##INFO=<ID=SUPPORT,Number=1,Type=Integer,Description=\"Number of reads supporting the variant\">",
         "##FILTER=<ID=PASS,Description=\"All filters passed\">",
         "##FILTER=<ID=LowQual,Description=\"Low quality\">",
         "##FORMAT=<ID=GT,Number=1,Type=String,Description=\"Genotype\">",
@@ -187,7 +187,7 @@ void SVData::saveToVCF(FASTAQuery& ref_genome, std::string output_dir)
             SVCandidate candidate = sv_call.first;
             SVInfo info = sv_call.second;
             int sv_type = info.sv_type;
-            int depth = info.read_depth;
+            int read_support = info.read_support;
             int sv_length = info.sv_length;
             std::set<std::string> data_type = info.data_type;
             std::string genotype = info.genotype;
@@ -268,14 +268,15 @@ void SVData::saveToVCF(FASTAQuery& ref_genome, std::string output_dir)
             // Get the SV type string
             std::string sv_type_str = this->sv_type_map[sv_type];
 
-            // Create the INFO string
-            std::string info_str = "END=" + std::to_string(end) + ";SVTYPE=" + sv_type_str + ";SVLEN=" + std::to_string(sv_length) + ";DP=" + std::to_string(depth) + ";SVMETHOD=" + sv_method + ";ALN=" + data_type_str + ";REPTYPE=" + repeat_type + ";CLIPDP=" + std::to_string(clipped_base_support);
+            // Create the INFO string (TODO: Read depth is currently set to 1,
+            // needs implementation to get the actual read depth from the BAM file)
+            std::string info_str = "END=" + std::to_string(end) + ";SVTYPE=" + sv_type_str + ";SVLEN=" + std::to_string(sv_length) + ";SUPPORT=" + std::to_string(read_support) + ";SVMETHOD=" + sv_method + ";ALN=" + data_type_str + ";REPTYPE=" + repeat_type + ";CLIPSUP=" + std::to_string(clipped_base_support);
 
             // Create the FORMAT string
             std::string format_str = "GT:DP";
 
-            // Create the sample string
-            std::string sample_str = genotype + ":" + std::to_string(depth);
+            // Create the sample string (TODO: DP is currently set to 1, needs implementation)
+            std::string sample_str = genotype + ":" + std::to_string(1);
             std::vector<std::string> samples = {sample_str};
 
             // Write the SV call to the file

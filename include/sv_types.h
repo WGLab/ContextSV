@@ -24,16 +24,16 @@ namespace sv_types {
     // Create a struct for storing SV information
     struct SVInfo {
         int sv_type;
-        int read_depth;
+        int read_support;
         std::set<std::string> data_type;  // Alignment type used to call the SV
         int sv_length;
         std::string genotype = "./.";  // Default genotype (no call)
 
         SVInfo() :
-            sv_type(-1), read_depth(0), data_type({}), sv_length(0), genotype("./.") {}
+            sv_type(-1), read_support(0), data_type({}), sv_length(0), genotype("./.") {}
             
-        SVInfo(int sv_type, int read_depth, std::string data_type, int sv_length, std::string genotype) :
-            sv_type(sv_type), read_depth(read_depth), data_type({data_type}), sv_length(sv_length), genotype(genotype) {}
+        SVInfo(int sv_type, int read_support, std::string data_type, int sv_length, std::string genotype) :
+            sv_type(sv_type), read_support(read_support), data_type({data_type}), sv_length(sv_length), genotype(genotype) {}
     };
 
     // SV (start, end, alt_allele)

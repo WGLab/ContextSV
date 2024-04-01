@@ -102,7 +102,7 @@ def train(true_positives_filepath, false_positives_filepath):
     data = pd.concat([tp_data, fp_data])
 
     # Get the features and labels.
-    features = data[["chrom", "start", "end", "sv_length", "sv_type", "read_depth", "clipped_bases"]]
+    features = data[["chrom", "start", "end", "sv_length", "sv_type", "read_support", "clipped_bases"]]
     labels = data["label"]
 
     # Check if any features are missing.

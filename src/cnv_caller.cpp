@@ -792,8 +792,7 @@ void CNVCaller::readSNPAlleleFrequencies(std::string chr, std::string filepath, 
         exit(1);
     }
 
-    // Read the DP and AD values (AD for alternate allele depth) and store in a
-    // map by chromosome and position
+    // Read the reference and alternate allele depths from the VCF file
     std::string alt_allele = "";  // Alternate allele
     uint64_t pos = 0;
     int ref_ad = 0;
