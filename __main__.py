@@ -42,9 +42,29 @@ def main():
 
     # Add common arguments.
     parser.add_argument(
-        "-r", "--region",
-        help="region to analyze (e.g. chr1, chr1:1000-2000). If not provided, the entire genome will be analyzed",
-        required=False,
+        "-lr", "--long-read",
+        help="path to the long read alignment BAM file",
+        required=True
+    )
+
+    parser.add_argument(
+        "-g", "--reference",
+        help="path to the reference genome FASTA file",
+        required=False
+    )
+
+    parser.add_argument(
+        "-s", "--snps",
+        help="path to the SNPs VCF file",
+        required=False
+    )
+
+    # Text file with VCF filepaths of SNP population allele frequencies for each
+    # chromosome from a database such as gnomAD (e.g. 1=chr1.vcf.gz\n2=chr2.vcf.gz\n...).
+    parser.add_argument(
+        "--pfb",
+        help="path to the file with SNP population frequency VCF filepaths (see docs for format)",
+        required=False
     )
 
     parser.add_argument(
@@ -54,10 +74,34 @@ def main():
     )
 
     parser.add_argument(
-        "-v", "--version",
-        help="print the version number and exit",
-        action="version",
-        version=f"contextSV version {__version__}"
+        "-r", "--region",
+        help="region to analyze (e.g. chr1, chr1:1000-2000). If not provided, the entire genome will be analyzed",
+        required=False,
+    )
+
+    # Thread count.
+    parser.add_argument(
+        "-t", "--threads",
+        help="number of threads to use",
+        required=False,
+        default=1,
+        type=int
+    )
+
+    # HMM file path.
+    parser.add_argument(
+        "--hmm",
+        help="path to the PennCNV HMM file",
+        required=False
+    )
+
+    # Window size for calculating log2 ratios for CNV predictions.
+    parser.add_argument(
+        "--window-size",
+        help="window size for calculating log2 ratios for CNV predictions (default: 10 kb)",
+        required=False,
+        type=int,
+        default=10000
     )
 
     # Verbose mode.
@@ -68,13 +112,11 @@ def main():
         default=False
     )
 
-    # Thread count.
     parser.add_argument(
-        "-t", "--threads",
-        help="number of threads to use",
-        required=False,
-        default=1,
-        type=int
+        "-v", "--version",
+        help="print the version number and exit",
+        action="version",
+        version=f"contextSV version {__version__}"
     )
 
     # Extend SNP-based CNV predictions to regions surrounding SVs (+/- 1/2 SV
@@ -92,48 +134,8 @@ def main():
     # Short read alignment file (BAM), reference genome, and short read SNPs file.
     parser.add_argument(
         "-sr", "--short-read",
-        help="path to the short read alignment BAM file (optional)",
-        required=False
-    )
-    parser.add_argument(
-        "-lr", "--long-read",
-        help="path to the long read alignment BAM file",
-        required=True
-    )
-
-    parser.add_argument(
-        "-g", "--reference",
-        help="path to the reference genome FASTA file",
-        required=False
-    )
-    parser.add_argument(
-        "-s", "--snps",
-        help="path to the SNPs VCF file",
-        required=False
-    )
-
-    # Text file with VCF filepaths of SNP population allele frequencies for each
-    # chromosome from a database such as gnomAD (e.g. 1=chr1.vcf.gz\n2=chr2.vcf.gz\n...).
-    parser.add_argument(
-        "--pfb",
-        help="path to the file with SNP population frequency VCF filepaths (see docs for format)",
-        required=False
-    )
-
-    # HMM file path.
-    parser.add_argument(
-        "--hmm",
-        help="path to the PennCNV HMM file",
-        required=False
-    )
-
-    # Window size for calculating log2 ratios for CNV predictions.
-    parser.add_argument(
-        "--window-size",
-        help="window size for calculating log2 ratios for CNV predictions (default: 10 kb)",
         required=False,
-        type=int,
-        default=10000
+        help=argparse.SUPPRESS
     )
 
     # Chromosome mean coverage values passed in as a comma-separated list (e.g. chr1:100,chr2:200,chr3:300)
@@ -241,6 +243,29 @@ def main():
     log.info("Complete. Thank you for using contextSV!")
 
 if __name__ == '__main__':
+
+    # Check if the user specified the --merge flag.
+    if "--merge" in sys.argv:
+        # Ensure the user provided the correct number of arguments (last 2 are
+        # optional).
+        if len(sys.argv) < 2:
+            log.error("Usage: python __main__.py --merge <input_vcf> (optional: <epsilon> <suffix>)")
+            sys.exit(1)
+
+        # The second argument is the input VCF file.
+        input_vcf = sys.argv[2]
+
+        # The third argument is the epsilon value for the DBSCAN clustering. If
+        # empty, set to 34.
+        epsilon = sys.argv[3] if len(sys.argv) >= 4 else 34
+
+        # The fourth argument is the suffix for the output file. If empty, set
+        # to ".merged"
+        suffix = sys.argv[4] if len(sys.argv) >= 5 else ".merged"
+
+        # Run the SV merger.
+        from python import sv_merger
+        sv_merger.sv_merger(input_vcf, mode='dbscan', eps=int(epsilon), suffix=suffix)
 
     # Run the program.
     main()
