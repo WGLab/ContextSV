@@ -1,4 +1,8 @@
+
+<img src="https://github.com/WGLab/ContextSV/assets/14855676/2749b420-90ac-46ef-9311-0dbd0d086e72" width=15% height=15%>
+
 # ContextSV
+
 An alignment-based, generalized structural variant caller for long-read
 sequencing/mapping data 
 
