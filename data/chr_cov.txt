@@ -1,3 +1,0 @@
-# This text file includes chromosome coverage values for speeding up runtime
-chr3=39.561
-chr6=39.4096

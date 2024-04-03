@@ -6,12 +6,15 @@
 /// @cond
 #include <string>
 #include <map>
+#include <unordered_map>
+#include <vector>
 /// @endcond
 
 class FASTAQuery {
     private:
         std::string fasta_filepath;
-        std::map<std::string, std::string> chr_to_seq;
+        std::vector<std::string> chromosomes;
+        std::unordered_map<std::string, std::string> chr_to_seq;
 
     public:
         int setFilepath(std::string fasta_filepath);
@@ -20,6 +23,12 @@ class FASTAQuery {
 
         // Get the chromosome contig lengths in VCF header format
         std::string getContigHeader();
+
+        // Get the list of chromosomes, used for whole genome analysis
+        std::vector<std::string> getChromosomes();
+
+        // Get the length of a chromosome
+        int64_t getChromosomeLength(std::string chr);
 };
 
 #endif // FASTA_QUERY_H

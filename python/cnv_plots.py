@@ -31,11 +31,10 @@ def run(vcf_file, cnv_data_file, output_path, region):
     Returns:
         None
     """
+    snp_cnvs_only = False
+
     # Set the maximum number of CNVs to plot.
     max_cnvs = 10
-
-    # Set the plot range for each CNV to 3 times its length on each side.
-    plot_range = 3
 
     # Parse the region.
     chromosome, start_position, end_position = parse_region(region)
@@ -50,7 +49,13 @@ def run(vcf_file, cnv_data_file, output_path, region):
 
     # Filter the VCF file to the region using pandas, and make the chromosome
     # column a string.
-    vcf_data = pd.read_csv(vcf_file, sep="\t", comment="#", header=None, dtype={0: str})
+    log.info("Loading VCF data from %s", vcf_file)
+    try:
+        vcf_data = pd.read_csv(vcf_file, sep="\t", comment="#", header=None, dtype={0: str})
+    except pd.errors.EmptyDataError:
+        log.info("No variants found in %s.", vcf_file)
+        return
+    
     if start_position is not None and end_position is not None:
         vcf_data = vcf_data[(vcf_data[0] == chromosome) & (vcf_data[1] >= start_position) & (vcf_data[1] <= end_position)]
     else:
@@ -67,7 +72,10 @@ def run(vcf_file, cnv_data_file, output_path, region):
     else:
         cnv_data = cnv_data[(cnv_data["chromosome"] == chromosome)]
 
-    log.info("Loaded %d CNVs.", len(cnv_data))
+    # Filter the CNV data to only include SNPs.
+    cnv_data = cnv_data[cnv_data["snp"] == 1]
+
+    log.info("Loaded %d SNPs from %s", len(cnv_data), cnv_data_file)
 
     # Create an output html file where we will append the CNV plots.
     if start_position is not None and end_position is not None:
@@ -103,17 +111,38 @@ def run(vcf_file, cnv_data_file, output_path, region):
             if svtype == "INS" and get_info_field_value(info_field, "REPTYPE") == "DUP":
                 svtype = "DUP"
 
+            # Get the ALN field value (alignment type used to call the SV).
+            aln = get_info_field_value(info_field, "ALN")
+
+            # # Skip the SV if SNP CNV data was not used to call it.
+            if snp_cnvs_only and "SNPCNV" not in aln:
+                continue
+
+            log.info("Found CNV %s %s:%d-%d, LEN=%d", svtype, sv_data[0], sv_data[1], sv_data[1] + int(get_info_field_value(info_field, "SVLEN")) - 1, int(get_info_field_value(info_field, "SVLEN")))
+
             # Analyze the CNV if it is a DEL or DUP (=INS with INFO/REPTYE=DUP)
             if svtype in ("DEL", "DUP"):
 
-                # Get the read depth (DP) value.
-                read_depth = int(get_info_field_value(info_field, "DP"))
+                # Get the read support for the CNV.
+                read_support = int(get_info_field_value(info_field, "SUPPORT"))
+
+                # # Skip the CNV if the support is < 2.
+                # if read_support < 2:
+                #     continue
 
                 # Get the start position.
                 start_position = int(sv_data[1])
 
                 # Get the SV length.
                 cnv_length = int(get_info_field_value(info_field, "SVLEN"))
+                log.info("CNV length: %d", cnv_length)
+
+                # Continue if the CNV length is < 100kb.
+                if abs(cnv_length) < 100000:
+                    continue
+
+                # Use absolute value of CNV length (deletions are negative).
+                cnv_length = abs(cnv_length)
 
                 # Get the end position using the start position and SV length.
                 end_position = start_position + cnv_length - 1
@@ -121,14 +150,25 @@ def run(vcf_file, cnv_data_file, output_path, region):
                 # Get the chromosome.
                 chromosome = sv_data[0]
 
-                # Get the plot range.
-                plot_start_position = start_position - (plot_range * cnv_length)
-                plot_end_position = end_position + (plot_range * cnv_length)
+                # Get the plot range as a multiple of the CNV length.
+                plot_start_position = start_position - (cnv_length/2)
+                plot_end_position = end_position + (cnv_length/2)
 
                 # Get the CNV state, log2 ratio, and BAF values for all SNPs in the
                 # plot range.
-                sv_data = cnv_data[(cnv_data["position"] >= plot_start_position) & (cnv_data["position"] <= plot_end_position)]
+                log.info("Getting SNPs in CNV %s %s:%d-%d.", svtype, chromosome, plot_start_position, plot_end_position)
+                # sv_data = cnv_data[(cnv_data["position"] >=
+                # plot_start_position) & (cnv_data["position"] <=
+                # plot_end_position)]
+                sv_data = cnv_data[(cnv_data["position"] >= start_position) & (cnv_data["position"] <= end_position)]
                 
+                # If there are no SNPs in the plot range, skip the CNV.
+                if len(sv_data) == 0:
+                    log.info("No SNPs found in CNV %s %s:%d-%d.", svtype, chromosome, start_position, end_position)
+                    continue
+                else:
+                    log.info("Found %d SNPs in CNV %s %s:%d-%d.", len(sv_data), svtype, chromosome, start_position, end_position)
+
                 # Get the marker colors for the state sequence.
                 marker_colors = []
                 for state in sv_data["cnv_state"]:
@@ -139,10 +179,27 @@ def run(vcf_file, cnv_data_file, output_path, region):
                     elif state in [5, 6]:
                         marker_colors.append("blue")
 
+                # Now get the values before and after the CNV.
+                sv_data_before = cnv_data[(cnv_data["position"] >= plot_start_position) & (cnv_data["position"] < start_position)]
+                sv_data_after = cnv_data[(cnv_data["position"] > end_position) & (cnv_data["position"] <= plot_end_position)]
+
+                # Set the marker colors for the SNPs before and after the CNV to
+                # gray.
+                marker_colors_before = ["gray"] * len(sv_data_before)
+                marker_colors_after = ["gray"] * len(sv_data_after)
+
+                # Concatenate the SNP data before, during, and after the CNV.
+                sv_data = pd.concat([sv_data_before, sv_data, sv_data_after])
+
+                # Concatenate the marker colors before, during, and after the
+                # CNV.
+                marker_colors = marker_colors_before + marker_colors + marker_colors_after
+
                 # Get the hover text for the state sequence markers.
                 hover_text = []
                 for _, row in sv_data.iterrows():
-                    hover_text.append(f"TYPE: {cnv_types[row['cnv_state']]}<br>CHR: {row['chromosome']}<br>POS: {row['position']}<br>L2R: {row['log2_ratio']}<br>BAF: {row['b_allele_freq']}<br>PFB: {row['population_freq']}")
+                    hover_text.append(f"SNP: {row['snp']}<br>TYPE: {cnv_types[row['cnv_state']]}<br>CHR: {row['chromosome']}<br>POS: {row['position']}<br>L2R: {row['log2_ratio']}<br>BAF: {row['b_allele_freq']}<br>PFB: {row['population_freq']}")
+                    # hover_text.append(f"TYPE: {cnv_types[row['cnv_state']]}<br>CHR: {row['chromosome']}<br>POS: {row['position']}<br>L2R: {row['log2_ratio']}<br>BAF: {row['b_allele_freq']}<br>PFB: {row['population_freq']}")
 
                 # Create the log2 ratio trace.
                 log2_ratio_trace = plotly.graph_objs.Scatter(
@@ -214,9 +271,23 @@ def run(vcf_file, cnv_data_file, output_path, region):
                     col = 1
                 )
 
+                # Set the Y-axis range for the log2 ratio plot.
+                fig.update_yaxes(
+                    range = [-1.2, 1.2],
+                    row = 1,
+                    col = 1
+                )
+
+                # Set the Y-axis range for the BAF plot.
+                fig.update_yaxes(
+                    range = [-0.2, 1.2],
+                    row = 2,
+                    col = 1
+                )
+
                 # Set the figure title.
                 fig.update_layout(
-                    title_text = f"{svtype} (DP={read_depth}, LEN={cnv_length}bp) at {chromosome}:{start_position}-{end_position}",
+                    title_text = f"{svtype} (SUPPORT={read_support}, LEN={cnv_length}bp) at {chromosome}:{start_position}-{end_position} [ALN={aln}]",
                 )
 
                 # Create a shaded rectangle for the CNV, layering it below the CNV

@@ -8,10 +8,11 @@
 #include <map>
 /// @endcond
 
-#define BUFFER_SIZE 1024
 #define STATE_CHANGE 100000.0 /*this is the expected changes (D value) in the transition matrix*/
 #define VITHUGE 100000000000.0
 #define FLOAT_MINIMUM 1.175494351e-38; /*this is indeed machine dependent*/
+// #define VITHUGE 1e10
+// #define FLOAT_MINIMUM 1e-10; /*this is indeed machine dependent*/
 #define DELTA 1
 
 /*	This file was re-written from several subroutines from the UMDHMM package by Tapas Kanungo (Date: 15 December 1997), which has excellent framework of the implementation of Forward-Backward, Viterbi, and Baum-Welch algorithms.
@@ -20,7 +21,8 @@
 */
 
 // Entry point
-std::vector<int> testVit_CHMM(CHMM hmm, int T, double *O1, double *O2, double *pfb, int *snpdist, double *plogproba)
+// std::vector<int> testVit_CHMM(CHMM hmm, int T, double *O1, double *O2, double *pfb, int *snpdist, double *plogproba)
+std::vector<int> testVit_CHMM(CHMM hmm, int T, std::vector<double>& O1, std::vector<double>& O2, std::vector<double>& pfb)
 {
 	// T= probe, marker count (= Length of LRR array - 1)
 	// O1 = LRR (Log R Ratio)
@@ -39,24 +41,29 @@ std::vector<int> testVit_CHMM(CHMM hmm, int T, double *O1, double *O2, double *p
 	psi = imatrix(1, T, 1, hmm.N);	 // Allocate a TxN  int matrix (N=6 states)
 	
 	// Set initial log probability for each state
-	plogproba = dvector(1, hmm.N);
-	for (int i = 1; i <= hmm.N; i++)
-	{
-		plogproba[i] = -VITHUGE;
-	}
+	std::vector<double>	plogproba(hmm.N + 1, -VITHUGE);
 
 	// Run the HMM
 	std::vector<int> q;  // State sequence
-	q = ViterbiLogNP_CHMM(&hmm, T, O1, O2, pfb, snpdist, delta, psi, plogproba);
+	q = ViterbiLogNP_CHMM(hmm, T, O1, O2, pfb, delta, psi, plogproba);
 
 	// Free the variables
 	free_imatrix(psi, 1, T, 1, hmm.N);
 	free_dmatrix(delta, 1, T, 1, hmm.N);
 
+	// Set all low confidence states to neutral (state 3) based on a threshold
+	// of -10.0 (log probability)
+	// for (int i = 0; i < (int)q.size(); i++)
+	// {
+	// 	if (plogproba[q[i]] < -500.0)
+	// 	{
+	// 		q[i] = 3;
+	// 	}
+	// }
+
 	// Pop the first element of q, which is always 0 (Done this way for 1-based indexing)
 	q.erase(q.begin());
 
-	// Return the state sequence
 	return q;
 }
 
@@ -214,7 +221,8 @@ double b2iot(int state, double *mean, double *sd, double uf, double pfb, double 
 }
 
 // SV calling with the HMM via the Viterbi algorithm
-std::vector<int> ViterbiLogNP_CHMM(CHMM *phmm, int T, double *O1, double *O2, double *pfb, int *snpdist, double **delta, int **psi, double *pprob)
+// std::vector<int> ViterbiLogNP_CHMM(CHMM *hmm, int T, double *O1, double *O2, double *pfb, int *snpdist, double **delta, int **psi, double *pprob)
+std::vector<int> ViterbiLogNP_CHMM(CHMM hmm, int T, std::vector<double>& O1, std::vector<double>& O2, std::vector<double>& pfb, double **delta, int **psi, std::vector<double>& pprob)
 {
 	int i, j; /* state indices */
 	int t;	  /* time index */
@@ -230,12 +238,12 @@ std::vector<int> ViterbiLogNP_CHMM(CHMM *phmm, int T, double *O1, double *O2, do
 
 	// A1 is the NxN transition probability matrix from state i to j.
 	// Initialize with initial values from the provided HMM file
-	A1 = dmatrix(1, phmm->N, 1, phmm->N); /*initialize A1 matrix*/
-	for (i = 1; i <= phmm->N; i++)
+	A1 = dmatrix(1, hmm.N, 1, hmm.N);
+	for (i = 1; i <= hmm.N; i++)
 	{
-		for (j = 1; j <= phmm->N; j++)
+		for (j = 1; j <= hmm.N; j++)
 		{
-			A1[i][j] = phmm->A[i][j];
+			A1[i][j] = hmm.A[i][j];
 		}
 	}
 
@@ -243,11 +251,11 @@ std::vector<int> ViterbiLogNP_CHMM(CHMM *phmm, int T, double *O1, double *O2, do
 
 	// Pi is the initial probability distribution over states (The probability that the Markov chain will start in state i).
 	// Threshold any zero values to avoid calculation issues.
-	for (i = 1; i <= phmm->N; i++)
+	for (i = 1; i <= hmm.N; i++)
 	{
-		if (phmm->pi[i] == 0)
-			phmm->pi[i] = 1e-9; /*eliminate problems with zero probability*/
-		phmm->pi[i] = log(phmm->pi[i]);  // Convert to log probability due to underflow
+		if (hmm.pi[i] == 0)
+			hmm.pi[i] = 1e-9; /*eliminate problems with zero probability*/
+		hmm.pi[i] = log(hmm.pi[i]);  // Convert to log probability due to underflow
 	}
 
 	// Bi(Ot) is an NxT matrix of emission probabilities (observation likelihoods)
@@ -256,13 +264,13 @@ std::vector<int> ViterbiLogNP_CHMM(CHMM *phmm, int T, double *O1, double *O2, do
 	// and BAF values).
 
 	// Initialize the emission probability matrix
-	biot = dmatrix(1, phmm->N, 1, T);  // Allocate a NxT double matrix
+	biot = dmatrix(1, hmm.N, 1, T);  // Allocate a NxT double matrix (N=6 states)
 
-	std::cout << "[HMM] Running Viterbi algorithm with " << phmm->N << " states and " << T << " probes\n";
+	//std::cout << "[HMM] Running Viterbi algorithm with " << hmm.N << " states and " << T << " probes\n";
 
 	// Loop through each state N
 	// Start at 1 because states are 1-based (1-6)
-	for (i = 1; i <= phmm->N; i++)
+	for (i = 1; i <= hmm.N; i++)
 	{
 
 		// Loop through each probe T (0-based)
@@ -276,11 +284,11 @@ std::vector<int> ViterbiLogNP_CHMM(CHMM *phmm, int T, double *O1, double *O2, do
 			// symbol O_t given the current state j
 			// B1_uf is the previous alpha (transition probability)
 			double O1_val = O1[t];
-			double O1_logprob = b1iot(i, phmm->B1_mean, phmm->B1_sd, phmm->B1_uf, O1_val);
+			double O1_logprob = b1iot(i, hmm.B1_mean, hmm.B1_sd, hmm.B1_uf, O1_val);
 
 			double O2_val = O2[t];
-			double O2_logprob = b2iot(i, phmm->B2_mean, phmm->B2_sd, phmm->B2_uf, pfb[t], O2_val);
-			// double O2_logprob = b1iot(i, phmm->B2_mean, phmm->B2_sd, phmm->B2_uf, O2_val);
+			double O2_logprob = b2iot(i, hmm.B2_mean, hmm.B2_sd, hmm.B2_uf, pfb[t], O2_val);
+			// double O2_logprob = b1iot(i, hmm.B2_mean, hmm.B2_sd, hmm.B2_uf, O2_val);
 
 			// Update the emission probability matrix with the joint probability
 			// of the marker being in state i at time t (log probability) based
@@ -296,11 +304,11 @@ std::vector<int> ViterbiLogNP_CHMM(CHMM *phmm, int T, double *O1, double *O2, do
 
 	/* 1. Initialization  */
 
-	for (i = 1; i <= phmm->N; i++)
+	for (i = 1; i <= hmm.N; i++)
 	{
-		delta[1][i] = phmm->pi[i] + biot[i][1];  // Initialize the delta matrix (log probability)
+		delta[1][i] = hmm.pi[i] + biot[i][1];  // Initialize the delta matrix (log probability)
 		psi[1][i] = 0;  // Initialize the psi matrix (state sequence) to 0 (no state)
-		pprob[1] = -VITHUGE;  // Initialize log probabilities for each state to -inf
+		pprob[i] = -VITHUGE;  // Initialize log probabilities for each state to -inf
 	}
 
 	/* 2. Recursion */
@@ -309,14 +317,14 @@ std::vector<int> ViterbiLogNP_CHMM(CHMM *phmm, int T, double *O1, double *O2, do
 
 		// Based on the SNP distance, update the transition matrix
 		// Not used in this implementation (snpdist is always 1)
-		// if (phmm->dist != 1)
-		// 	convertHMMTransition(phmm, A1, snpdist[t - 1]); /*t-1 is used because the current val is calculated from previous values*/
+		// if (hmm.dist != 1)
+		// 	convertHMMTransition(hmm, A1, snpdist[t - 1]); /*t-1 is used because the current val is calculated from previous values*/
 
-		for (j = 1; j <= phmm->N; j++)
+		for (j = 1; j <= hmm.N; j++)
 		{
 			maxval = -VITHUGE;
 			maxvalind = 1;
-			for (i = 1; i <= phmm->N; i++)
+			for (i = 1; i <= hmm.N; i++)
 			{
 				val = delta[t - 1][i] + log(A1[i][j]);  // Update the delta matrix (log probability)
 				if (val > maxval)  // Update the max value
@@ -335,7 +343,7 @@ std::vector<int> ViterbiLogNP_CHMM(CHMM *phmm, int T, double *O1, double *O2, do
 
 	// *pprob = -VITHUGE;
 	q[T] = 1;
-	for (i = 1; i <= phmm->N; i++)
+	for (i = 1; i <= hmm.N; i++)
 	{
 		// Get the log probability of state i at time T
 		double current_prob = delta[T][i];
@@ -357,12 +365,12 @@ std::vector<int> ViterbiLogNP_CHMM(CHMM *phmm, int T, double *O1, double *O2, do
 	for (t = T - 1; t >= 1; t--)
 		q[t] = psi[t + 1][q[t + 1]];
 
-	for (i = 1; i <= phmm->N; i++)
+	for (i = 1; i <= hmm.N; i++)
 	{ /*recover the HMM model as original*/
-		phmm->pi[i] = exp(phmm->pi[i]);
+		hmm.pi[i] = exp(hmm.pi[i]);
 	}
-	free_dmatrix(biot, 1, phmm->N, 1, T);
-	free_dmatrix(A1, 1, phmm->N, 1, phmm->N);
+	free_dmatrix(biot, 1, hmm.N, 1, T);
+	free_dmatrix(A1, 1, hmm.N, 1, hmm.N);
 
 	// Return the state sequence
 	return q;
@@ -372,27 +380,25 @@ CHMM ReadCHMM(const char *filename)
 {
 	FILE *fp;
 	CHMM hmm;
-	CHMM *phmm;
 	int i, j, k;
 
-	phmm = &hmm;
 	fp = fopen(filename, "r");
 	if (!fp)
 		fprintf(stderr, "Error: cannot read from HMM file %s\n", filename);
 
-	if (fscanf(fp, "M=%d\n", &(phmm->M)) == EOF)
+	if (fscanf(fp, "M=%d\n", &(hmm.M)) == EOF)
 		fprintf(stderr, "khmm::ReadCHMM: cannot read M annotation from HMM file");
-	if (fscanf(fp, "N=%d\n", &(phmm->N)) == EOF)
+	if (fscanf(fp, "N=%d\n", &(hmm.N)) == EOF)
 		fprintf(stderr, "khmm::ReadCHMM: cannot read N annotation from HMM file");
 
 	if (fscanf(fp, "A:\n") == EOF)
 		fprintf(stderr, "khmm::ReadCHMM: cannot read A annotation from HMM file");
-	phmm->A = (double **)dmatrix(1, phmm->N, 1, phmm->N);
-	for (i = 1; i <= phmm->N; i++)
+	hmm.A = (double **)dmatrix(1, hmm.N, 1, hmm.N);
+	for (i = 1; i <= hmm.N; i++)
 	{
-		for (j = 1; j <= phmm->N; j++)
+		for (j = 1; j <= hmm.N; j++)
 		{
-			if (fscanf(fp, "%lf", &(phmm->A[i][j])) == EOF)
+			if (fscanf(fp, "%lf", &(hmm.A[i][j])) == EOF)
 				fprintf(stderr, "khmm::ReadCHMM: cannot read A matrix from HMM file");
 		}
 		if (fscanf(fp, "\n") == EOF)
@@ -401,12 +407,12 @@ CHMM ReadCHMM(const char *filename)
 
 	if (fscanf(fp, "B:\n") == EOF)
 		fprintf(stderr, "khmm::ReadCHMM: cannot read B annotation from HMM file");
-	phmm->B = (double **)dmatrix(1, phmm->N, 1, phmm->M);
-	for (j = 1; j <= phmm->N; j++)
+	hmm.B = (double **)dmatrix(1, hmm.N, 1, hmm.M);
+	for (j = 1; j <= hmm.N; j++)
 	{
-		for (k = 1; k <= phmm->M; k++)
+		for (k = 1; k <= hmm.M; k++)
 		{
-			if (fscanf(fp, "%lf", &(phmm->B[j][k])) == EOF)
+			if (fscanf(fp, "%lf", &(hmm.B[j][k])) == EOF)
 				fprintf(stderr, "khmm::ReadCHMM: cannot read B matrix from HMM file");
 		}
 		if (fscanf(fp, "\n") == EOF)
@@ -415,127 +421,127 @@ CHMM ReadCHMM(const char *filename)
 
 	if (fscanf(fp, "pi:\n") == EOF)
 		fprintf(stderr, "khmm::ReadCHMM: cannot read PI annotation from HMM file");
-	phmm->pi = (double *)dvector(1, phmm->N);
-	for (i = 1; i <= phmm->N; i++)
+	hmm.pi = (double *)dvector(1, hmm.N);
+	for (i = 1; i <= hmm.N; i++)
 	{
-		if (fscanf(fp, "%lf", &(phmm->pi[i])) == EOF)
+		if (fscanf(fp, "%lf", &(hmm.pi[i])) == EOF)
 			fprintf(stderr, "khmm::ReadCHMM: cannot read PI vector from HMM file");
-		if (phmm->pi[i] < 1e-6)
-			phmm->pi[i] = 1e-6;
+		if (hmm.pi[i] < 1e-6)
+			hmm.pi[i] = 1e-6;
 	}
 	if (fscanf(fp, "\n") == EOF)
 		fprintf(stderr, "khmm::ReadCHMM: cannot read return character from HMM file");
 
 	if (fscanf(fp, "B1_mean:\n") == EOF)
 		fprintf(stderr, "khmm::ReadCHMM: cannot read B1_mean annotation from HMM file");
-	phmm->B1_mean = (double *)dvector(1, phmm->N);
-	for (i = 1; i <= phmm->N; i++)
-		if (fscanf(fp, "%lf", &(phmm->B1_mean[i])) == EOF)
+	hmm.B1_mean = (double *)dvector(1, hmm.N);
+	for (i = 1; i <= hmm.N; i++)
+		if (fscanf(fp, "%lf", &(hmm.B1_mean[i])) == EOF)
 			fprintf(stderr, "khmm::ReadCHMM: cannot read B1_mean vector from HMM file");
 	if (fscanf(fp, "\n") == EOF)
 		fprintf(stderr, "khmm::ReadCHMM: cannot read return character from HMM file");
 
 	if (fscanf(fp, "B1_sd:\n") == EOF)
 		fprintf(stderr, "khmm::ReadCHMM: cannot read B1_sd annotation from HMM file");
-	phmm->B1_sd = (double *)dvector(1, phmm->N);
-	for (i = 1; i <= phmm->N; i++)
-		if (fscanf(fp, "%lf", &(phmm->B1_sd[i])) == EOF)
+	hmm.B1_sd = (double *)dvector(1, hmm.N);
+	for (i = 1; i <= hmm.N; i++)
+		if (fscanf(fp, "%lf", &(hmm.B1_sd[i])) == EOF)
 			fprintf(stderr, "khmm::ReadCHMM: cannot read B1_sd from HMM file");
 	if (fscanf(fp, "\n") == EOF)
 		fprintf(stderr, "khmm::ReadCHMM: cannot read return character from HMM file");
 
 	if (fscanf(fp, "B1_uf:\n") == EOF)
 		fprintf(stderr, "khmm::ReadCHMM: cannot read B1_uf annotation from HMM file");
-	if (fscanf(fp, "%lf", &(phmm->B1_uf)) == EOF)
+	if (fscanf(fp, "%lf", &(hmm.B1_uf)) == EOF)
 		fprintf(stderr, "khmm::ReadCHMM: cannot read B1_uf from HMM file");
 	if (fscanf(fp, "\n") == EOF)
 		fprintf(stderr, "khmm::ReadCHMM: cannot read return character from HMM file");
 
 	if (fscanf(fp, "B2_mean:\n") == EOF)
 		fprintf(stderr, "khmm::ReadCHMM: cannot read B2_mean annotation from HMM file");
-	phmm->B2_mean = (double *)dvector(1, 5);
+	hmm.B2_mean = (double *)dvector(1, 5);
 	for (i = 1; i <= 5; i++)
-		if (fscanf(fp, "%lf", &(phmm->B2_mean[i])) == EOF)
+		if (fscanf(fp, "%lf", &(hmm.B2_mean[i])) == EOF)
 			fprintf(stderr, "khmm::ReadCHMM: cannot read B2_mean from HMM file");
 	if (fscanf(fp, "\n") == EOF)
 		fprintf(stderr, "khmm::ReadCHMM: cannot read return character from HMM file");
 
 	if (fscanf(fp, "B2_sd:\n") == EOF)
 		fprintf(stderr, "khmm::ReadCHMM: cannot read B2_sd annotation from HMM file");
-	phmm->B2_sd = (double *)dvector(1, 5);
+	hmm.B2_sd = (double *)dvector(1, 5);
 	for (i = 1; i <= 5; i++)
-		if (fscanf(fp, "%lf", &(phmm->B2_sd[i])) == EOF)
+		if (fscanf(fp, "%lf", &(hmm.B2_sd[i])) == EOF)
 			fprintf(stderr, "khmm::ReadCHMM: cannot read B2_sd from HMM file");
 	if (fscanf(fp, "\n") == EOF)
 		fprintf(stderr, "khmm::ReadCHMM: cannot read return character from HMM file");
 
 	if (fscanf(fp, "B2_uf:\n") == EOF)
 		fprintf(stderr, "khmm::ReadCHMM: cannot read B2_uf annotation from HMM file");
-	if (fscanf(fp, "%lf", &(phmm->B2_uf)) == EOF)
+	if (fscanf(fp, "%lf", &(hmm.B2_uf)) == EOF)
 		fprintf(stderr, "khmm::ReadCHMM: cannot read B2_uf from HMM file");
 	if (fscanf(fp, "\n") == EOF)
 		fprintf(stderr, "khmm::ReadCHMM: cannot read return character from HMM file");
 
 	if (fscanf(fp, "B3_mean:\n") != EOF)
 	{
-		phmm->NP_flag = 1;
-		phmm->B3_mean = (double *)dvector(1, phmm->N);
-		for (i = 1; i <= phmm->N; i++)
-			if (fscanf(fp, "%lf", &(phmm->B3_mean[i])) == EOF)
+		hmm.NP_flag = 1;
+		hmm.B3_mean = (double *)dvector(1, hmm.N);
+		for (i = 1; i <= hmm.N; i++)
+			if (fscanf(fp, "%lf", &(hmm.B3_mean[i])) == EOF)
 				fprintf(stderr, "khmm::ReadCHMM: cannot read B3_mean from HMM file");
 		if (fscanf(fp, "\n") == EOF)
 			fprintf(stderr, "khmm::ReadCHMM: cannot read return character from HMM file");
 		if (fscanf(fp, "B3_sd:\n") == EOF)
 			fprintf(stderr, "khmm::ReadCHMM: cannot read B3_sd annotation from HMM file");
-		phmm->B3_sd = (double *)dvector(1, phmm->N);
-		for (i = 1; i <= phmm->N; i++)
-			if (fscanf(fp, "%lf", &(phmm->B3_sd[i])) == EOF)
+		hmm.B3_sd = (double *)dvector(1, hmm.N);
+		for (i = 1; i <= hmm.N; i++)
+			if (fscanf(fp, "%lf", &(hmm.B3_sd[i])) == EOF)
 				fprintf(stderr, "khmm::ReadCHMM: cannot read B3_sd from HMM file");
 		if (fscanf(fp, "\n") == EOF)
 			fprintf(stderr, "khmm::ReadCHMM: cannot read return character from HMM file");
 		if (fscanf(fp, "B3_uf:\n") == EOF)
 			fprintf(stderr, "khmm::ReadCHMM: cannot read B3_uf annotation from HMM file");
-		if (fscanf(fp, "%lf", &(phmm->B3_uf)) == EOF)
+		if (fscanf(fp, "%lf", &(hmm.B3_uf)) == EOF)
 			fprintf(stderr, "khmm::ReadCHMM: cannot read B3_uf from HMM file");
 		if (fscanf(fp, "\n") == EOF)
 			fprintf(stderr, "khmm::ReadCHMM: cannot read return character from HMM file");
 	}
 	else
 	{
-		phmm->NP_flag = 0;
+		hmm.NP_flag = 0;
 	}
 
 	if (fscanf(fp, "DIST:\n") != EOF)
 	{
-		if (fscanf(fp, "%d", &(phmm->dist)) == EOF)
+		if (fscanf(fp, "%d", &(hmm.dist)) == EOF)
 			fprintf(stderr, "khmm:ReadCHMM: cannot read DIST from HMM file");
 	}
 	else
 	{
-		// phmm->dist = STATE_CHANGE;
+		// hmm.dist = STATE_CHANGE;
 		//  snp_dist is the default distance between two SNPs in the same state
 		//  (not used in this implementation)
 		//  Set it to 1 to disable the distance model
-		phmm->dist = 1;
+		hmm.dist = 1;
 	}
 
 	fclose(fp);
 	return hmm;
 }
 
-void FreeCHMM(CHMM *phmm)
-{
-	free_dmatrix(phmm->A, 1, phmm->N, 1, phmm->N);
-	free_dmatrix(phmm->B, 1, phmm->N, 1, phmm->M);
-	free_dvector(phmm->pi, 1, phmm->N);
-	free_dvector(phmm->B1_mean, 1, phmm->N);
-	free_dvector(phmm->B1_sd, 1, phmm->N);
-	free_dvector(phmm->B2_mean, 1, 5);
-	free_dvector(phmm->B2_sd, 1, 5);
+// void FreeCHMM(CHMM *hmm)
+// {
+// 	free_dmatrix(hmm.A, 1, hmm.N, 1, hmm.N);
+// 	free_dmatrix(hmm.B, 1, hmm.N, 1, hmm.M);
+// 	free_dvector(hmm.pi, 1, hmm.N);
+// 	free_dvector(hmm.B1_mean, 1, hmm.N);
+// 	free_dvector(hmm.B1_sd, 1, hmm.N);
+// 	free_dvector(hmm.B2_mean, 1, 5);
+// 	free_dvector(hmm.B2_sd, 1, 5);
 
-	if (phmm->NP_flag)
-	{
-		free_dvector(phmm->B3_mean, 1, phmm->N);
-		free_dvector(phmm->B3_sd, 1, phmm->N);
-	}
-}
+// 	if (hmm.NP_flag)
+// 	{
+// 		free_dvector(hmm.B3_mean, 1, hmm.N);
+// 		free_dvector(hmm.B3_sd, 1, hmm.N);
+// 	}
+// }

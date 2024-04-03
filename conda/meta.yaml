@@ -1,0 +1,46 @@
+{% set version = "1.0.0" %}
+{% set sha256 = "" %}
+
+package:
+  name: longreadsum
+  version: {{ version }}
+
+source:
+  url: https://github.com/WGLab/LongReadSum/archive/refs/tags/v{{ version }}.tar.gz
+  sha256: '{{ sha256 }}'
+
+build:
+  number: 0
+  skip: true  # [py2k]
+  entry_points:
+    - contextsv = entry_point:main
+
+requirements:
+  build:
+    - {{ compiler('cxx') }}
+    - make
+  host:
+    - python
+    - swig
+    - htslib
+  run:
+    - python
+    - numpy
+    - htslib
+    - swig
+    - plotly
+    - pandas
+    - scikit-learn
+    - joblib
+
+test:
+    commands:
+        - contextsv --help
+about:
+  home: https://github.com/WGLab/ContextSV
+  license: MIT
+  summary: 'Long read structural variant calling tool'
+  description: |
+    An alignment-based, generalized structural variant caller for long-read sequencing/mapping data.
+  dev_url: https://github.com/WGLab/ContextSV
+  doc_url: https://github.com/WGLab/ContextSV#readme
