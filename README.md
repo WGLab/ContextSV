@@ -11,34 +11,29 @@ tests](https://github.com/WGLab/ContextSV/actions/workflows/build-tests.yml/badg
 
 Class documentation available at [https://wglab.openbioinformatics.org/ContextSV](https://wglab.openbioinformatics.org/ContextSV)
 
-contextSV takes as input a long read alignments file (BAM), a 
+ContextSV takes as input a long read alignments file (BAM), a 
 reference genome file (FASTA), a VCF file with high-quality SNPs 
- (e.g. via GATK, Deepvariant, Nanocaller), and (optionally) database
- VCF files for each chromosomes with SNP population frequencies (specifics
- provided [below](link)).
+ (e.g. via GATK, Deepvariant, Nanocaller), and (optionally) [gnomAD](https://gnomad.broadinstitute.org/downloads) database
+ VCF files with SNP population frequencies for each chromosome.
 
-## Software requirements
-Please refer to the conda
-[environment.yml](link)
-file for all required packages.
-
-# Installation using Anaconda (Linux)
+## Installation (Linux)
+### Using Anaconda (tecommended)
 First, install [Anaconda](https://www.anaconda.com/).
 
 Next, create a new environment. This installation has been tested with Python 3.11:
 
 ```
-conda create -n contextsv
+conda create -n contextsv python=3.11
 conda activate contextsv
 ```
 
-contextSV can then be installed using the following command:
+ContextSV can then be installed using the following command:
 
 ```
 conda install -c bioconda -c wglab contextsv=1.0.0
 ```
 
-# Building from source
+### Building from source (for testing/development)
 First install [Anaconda](https://www.anaconda.com/). Then follow the instructions below to install LongReadSum and its dependencies:
 
 ```
@@ -46,12 +41,45 @@ git clone https://github.com/WGLab/ContextSV
 cd ContextSV
 conda env create -f environment.yml
 make
-
 ```
 
+### Downloading gnomAD data with SNP population frequencies
+Population allele frequency
+information is used for SNP copy number predictions in this tool (see
+[PennCNV](http://www.genome.org/cgi/doi/10.1101/gr.6861907) for specifics). We
+recommend downloading this data from the Genome Aggregation Database (gnomAD).
+
+Download links for genome VCF files are located here (last updated April 3,
+2024):
+
+**gnomAD v4.0.0 (GRCh38)**: https://gnomad.broadinstitute.org/downloads#4
+
+**gnomAD v2.1.1 (GRCh37)**: https://gnomad.broadinstitute.org/downloads#2
 
 
-## Running
+Example download:
+```
+download_dir="~/data/gnomad/v4.0.0/"
+
+chr_list=("1" "2" "3" "4" "5" "6" "7" "8" "9" "10" "11" "12" "13" "14" "15" "16" "17" "18" "19" "20" "21" "22" "X" "Y")
+
+for chr in "${chr_list[@]}"; do
+    echo "Downloading chromosome ${chr}..."
+    
+    # V4 (hg38)
+    wget "https://storage.googleapis.com/gcp-public-data--gnomad/release/4.0/vcf/genomes/gnomad.genomes.v4.0.sites.chr${chr}.vcf.bgz" -P "${download_dir}"
+    echo "Done"
+done
+```
+
+Finally, create a text file that specifies the chromosome and its corresponding
+gnomAD filepath:
+
+
+
+
+
+# Running
 Activate the conda environment and then run with arguments:
 ```
 conda activate contextsv
