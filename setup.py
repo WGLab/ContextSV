@@ -12,7 +12,7 @@ print("Running setup.py...")
 
 # Set the project metadata
 NAME = "contextsv"
-VERSION = "0.0.1"
+VERSION = "1.0.0"
 AUTHOR = "WGLab"
 DESCRIPTION = "ContextSV: A tool for integrative structural variant detection."
 
