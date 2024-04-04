@@ -7,6 +7,7 @@ tests](https://github.com/WGLab/ContextSV/actions/workflows/build-tests.yml/badg
 </picture>
 
 # ContextSV
+_This is a work in progress, software is under development and not ready for official release._
 
 An alignment-based, generalized structural variant caller for long-read
 sequencing/mapping data.
