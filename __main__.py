@@ -240,7 +240,7 @@ def main():
         log.info("Generating CNV plots...")
         cnv_plots.run(vcf_path, cnv_data_path, output_dir, region)
 
-    log.info("Complete. Thank you for using contextSV!")
+    log.info("Complete. File saved to %s\nThank you for using ContextSV!", vcf_path)
 
 if __name__ == '__main__':
 

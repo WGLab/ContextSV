@@ -1,5 +1,5 @@
 """
-train_model.py: Train the binary classification model.
+train_model.py - Train the binary classification model.
 
 This script trains the binary classification model using the true positive and
 false positive data. The true positive data is obtained from a benchmarking
@@ -49,8 +49,9 @@ import sys
 import logging
 import numpy as np
 import joblib
-from sklearn.linear_model import LogisticRegression
 import pandas as pd
+from sklearn.linear_model import LogisticRegression
+import matplotlib.pyplot as plt
 
 from extract_features import extract_features
 
@@ -102,7 +103,7 @@ def train(true_positives_filepath, false_positives_filepath):
     data = pd.concat([tp_data, fp_data])
 
     # Get the features and labels.
-    features = data[["chrom", "start", "end", "sv_length", "sv_type", "read_support", "clipped_bases"]]
+    features = data[["chrom", "start", "sv_length", "sv_type", "read_support", "clipped_bases"]]
     labels = data["label"]
 
     # Check if any features are missing.
@@ -134,6 +135,10 @@ def run(true_positives_filepath, false_positives_filepath, output_directory):
     # Train the model.
     model = train(true_positives_filepath, false_positives_filepath)
 
+    # Create the output directory if it does not exist.
+    if not os.path.exists(output_directory):
+        os.makedirs(output_directory)
+
     # Save the model
     model_path = os.path.join(output_directory, "model.pkl")
     joblib.dump(model, model_path)
@@ -142,22 +147,14 @@ def run(true_positives_filepath, false_positives_filepath, output_directory):
     print(model)
 
     # Return the model.
-    return model
-
-def score(model, cnv_data):
-    """Score the structural variants."""
-    # Get the features.
-    features = cnv_data[["lrr", "baf"]]
-
-    # Score the structural variants.
-    scores = model.predict_proba(features)
-
-    # Return the scores.
-    return scores
+    # return model
 
 
 if __name__ == '__main__':
     # Get the command line arguments.
+    if len(sys.argv) != 4:
+        logging.error('Usage: python train_model.py <true_positives_filepath> <false_positives_filepath> <output_directory>\n')
+        sys.exit(1)
 
     # Input VCF of true positive SV calls obtained from a benchmarking dataset.
     tp_filepath = sys.argv[1]

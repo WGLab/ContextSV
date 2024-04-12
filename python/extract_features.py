@@ -78,13 +78,23 @@ def extract_features(input_vcf):
     if start.isnull().values.any():
         logging.error('Start position is missing.')
         sys.exit(1)
+        
+    # Print the first INFO row.
+    # logging.info("First INFO row:")
+    # logging.info(vcf_df['INFO'].iloc[0])
+    # end = vcf_df['END']
+    # end = vcf_df['INFO'].str.extract(r'END=(\d+)',
+    # expand=False).astype(np.int32)
+    
+    # Calculate the end positions. If the SV type is an insertion, then the end
+    # position is the same as the start position. Otherwise, the end position is
+    # the start position plus the SV length (absolute value).
+    # end = vcf_df['POS'] + vcf_df['INFO'].str.extract(r'SVLEN=(-?\d+)', expand=False).astype(np.int32).abs()
 
-    end = vcf_df['INFO'].str.extract(r'END=(\d+)', expand=False).astype(np.int32)
-
-    # Check if any end positions are missing.
-    if end.isnull().values.any():
-        logging.error('End position is missing.')
-        sys.exit(1)
+    # # Check if any end positions are missing.
+    # if end.isnull().values.any():
+    #     logging.error('End position is missing.')
+    #     sys.exit(1)
 
     # Get the SV length from the INFO column.
     sv_length = vcf_df['INFO'].str.extract(r'SVLEN=(-?\d+)', expand=False).astype(np.int32)
@@ -106,7 +116,6 @@ def extract_features(input_vcf):
     sv_type = sv_type.replace('INV', '2')
     sv_type = sv_type.replace('INS', '3')
     sv_type = sv_type.replace('BND', '4')
-    sv_type = sv_type.replace('CNV', '5')
     sv_type = sv_type.astype(np.int32)
 
     # Check if any SV types are missing.
@@ -116,14 +125,14 @@ def extract_features(input_vcf):
 
     # Loop through the columns and check if any values are missing for all of
     # the feature arrays.
-    for col in [chrom, start, end, sv_length, sv_type, read_support, clipped_bases]:
+    for col in [chrom, start, sv_length, sv_type, read_support, clipped_bases]:
         if col.isnull().values.all():
             logging.error('All values are missing for a feature.')
             logging.error(col)
             sys.exit(1)
 
     # Create a dataframe of the features.
-    features = pd.DataFrame({'chrom': chrom, 'start': start, 'end': end, 'sv_length': sv_length, 'sv_type': sv_type, \
+    features = pd.DataFrame({'chrom': chrom, 'start': start, 'sv_length': sv_length, 'sv_type': sv_type, \
                              'read_support': read_support, 'clipped_bases': clipped_bases})
 
     # Check if any features are missing.
