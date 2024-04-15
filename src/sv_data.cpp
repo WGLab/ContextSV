@@ -136,7 +136,7 @@ void SVData::saveToVCF(FASTAQuery& ref_genome, std::string output_dir)
     std::cout << "[saveToVCF] Total DELs: " << this->totalDeletions() << std::endl;
 
     // Create a VCF writer
-    std::string output_vcf = output_dir + "/sv_calls.vcf";
+    std::string output_vcf = output_dir + "/output.vcf";
     VcfWriter vcf_writer(output_vcf);
 
     // Set the sample name

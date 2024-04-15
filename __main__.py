@@ -230,7 +230,7 @@ def main():
     contextsv.run(input_data)
 
     # Determine the data paths for downstream analysis.
-    vcf_path = os.path.join(args.output, "sv_calls.vcf")
+    vcf_path = os.path.join(args.output, "output.vcf")
     output_dir = args.output
     region = args.region
     cnv_data_path = os.path.join(args.output, "cnv_data.tsv")

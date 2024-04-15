@@ -113,13 +113,13 @@ thread_count=40
 python contextsv --threads $thread_count -o $output_dir -lr $long_read_bam --snps $snps_file --reference $ref_file --pfb $pfb_file
 
 # The output VCF filepath is located here:
-output_vcf=$output_dir/sv_calls.vcf
+output_vcf=$output_dir/output.vcf
 
 # Merge SVs (~3-4 hours for whole-genome, 40 cores)
 python contextsv --merge $output_vcf
 
 # The final merged VCF filepath is located here:
-merged_vcf=$output_dir/sv_calls.merged.vcf
+merged_vcf=$output_dir/output.merged.vcf
 ```
 
 ## Input arguments
