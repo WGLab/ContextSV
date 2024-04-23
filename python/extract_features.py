@@ -20,10 +20,9 @@ import pandas as pd
 
 def read_vcf(filepath):
     """Read in the VCF file."""
-    vcf_df = pd.read_csv(filepath, sep='\t', comment='#', header=None, \
-                         names=['CHROM', 'POS', 'ID', 'REF', 'ALT', 'QUAL', 'FILTER', 'INFO', 'FORMAT', 'SAMPLE'], \
-                            dtype={'CHROM': str, 'POS': np.int64, 'ID': str, 'REF': str, 'ALT': str, 'QUAL': str, \
-                                   'FILTER': str, 'INFO': str, 'FORMAT': str, 'SAMPLE': str})
+    vcf_df = pd.read_csv(filepath, sep='\t', comment='#', header=None, usecols=[0, 1, 7], \
+                         names=['CHROM', 'POS', 'INFO'], \
+                            dtype={'CHROM': str, 'POS': np.int64, 'INFO': str})
     return vcf_df
 
 def extract_features(input_vcf):
@@ -64,12 +63,15 @@ def extract_features(input_vcf):
     chrom = chrom.replace('X', '23')
     chrom = chrom.replace('Y', '24')
     chrom = chrom.replace('MT', '25')
-    chrom = chrom.astype(np.int32)
+    chrom = chrom.astype(int)
 
     # Check if any chromosome names are missing.
     if chrom.isnull().values.any():
         logging.error('Chromosome name is missing.')
         sys.exit(1)
+    else:
+        # Print space-separated chromosome names.
+        logging.info('Chromosomes: ' + ' '.join(chrom.unique().astype(str)))
 
     # Get the start and end positions.
     start = vcf_df['POS']
@@ -78,23 +80,6 @@ def extract_features(input_vcf):
     if start.isnull().values.any():
         logging.error('Start position is missing.')
         sys.exit(1)
-        
-    # Print the first INFO row.
-    # logging.info("First INFO row:")
-    # logging.info(vcf_df['INFO'].iloc[0])
-    # end = vcf_df['END']
-    # end = vcf_df['INFO'].str.extract(r'END=(\d+)',
-    # expand=False).astype(np.int32)
-    
-    # Calculate the end positions. If the SV type is an insertion, then the end
-    # position is the same as the start position. Otherwise, the end position is
-    # the start position plus the SV length (absolute value).
-    # end = vcf_df['POS'] + vcf_df['INFO'].str.extract(r'SVLEN=(-?\d+)', expand=False).astype(np.int32).abs()
-
-    # # Check if any end positions are missing.
-    # if end.isnull().values.any():
-    #     logging.error('End position is missing.')
-    #     sys.exit(1)
 
     # Get the SV length from the INFO column.
     sv_length = vcf_df['INFO'].str.extract(r'SVLEN=(-?\d+)', expand=False).astype(np.int32)
@@ -130,6 +115,26 @@ def extract_features(input_vcf):
             logging.error('All values are missing for a feature.')
             logging.error(col)
             sys.exit(1)
+
+    # Print the first 4 rows of the features.
+    logging.info('Features:')
+    logging.info(pd.DataFrame({'chrom': chrom.head(4), 'start': start.head(4), 'sv_length': sv_length.head(4), \
+                               'sv_type': sv_type.head(4), 'read_support': read_support.head(4), \
+                               'clipped_bases': clipped_bases.head(4)}))
+    
+    # Check that all features have the same length.
+    if not all(len(col) == len(chrom) for col in [start, sv_length, sv_type, read_support, clipped_bases]):
+        logging.error('Features do not have the same length.')
+
+        # Print the length of each feature.
+        logging.error('Chromosomes: ' + str(len(chrom)))
+        logging.error('Start positions: ' + str(len(start)))
+        logging.error('SV lengths: ' + str(len(sv_length)))
+        logging.error('SV types: ' + str(len(sv_type)))
+        logging.error('Read support: ' + str(len(read_support)))
+        logging.error('Clipped bases: ' + str(len(clipped_bases)))
+        
+        sys.exit(1)
 
     # Create a dataframe of the features.
     features = pd.DataFrame({'chrom': chrom, 'start': start, 'sv_length': sv_length, 'sv_type': sv_type, \

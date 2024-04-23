@@ -222,6 +222,11 @@ SNPData CNVCaller::runCopyNumberPredictionChunk(std::string chr, std::map<SVCand
         int64_t start_pos = std::get<0>(candidate);
         int64_t end_pos = std::get<1>(candidate);
 
+        // Get the depth at the start position. This is used as the FORMAT/DP
+        // value in the VCF file
+        int dp_value = pos_depth_map[start_pos];
+        this->updateDPValue(sv_candidates, sv_call, dp_value);
+
         // Loop through the SV region, calculate the log2 ratios, and run the
         // Viterbi algorithm to predict the copy number states
         std::pair<SNPData, bool> snp_call = this->querySNPRegion(chr, start_pos, end_pos, snp_info, pos_depth_map, mean_chr_cov);
@@ -342,6 +347,15 @@ void CNVCaller::updateSVGenotype(std::map<SVCandidate,SVInfo>& sv_candidates, SV
 
     // Update the SV genotype
     sv_candidates[key].genotype = genotype;
+}
+
+void CNVCaller::updateDPValue(std::map<SVCandidate,SVInfo>& sv_candidates, SVCandidate key, int dp_value)
+{
+    // Lock the SV candidate map
+    std::lock_guard<std::mutex> lock(this->sv_candidates_mtx);
+
+    // Update the DP value
+    sv_candidates[key].read_depth = dp_value;
 }
 
 std::vector<std::string> CNVCaller::splitRegionIntoChunks(std::string chr, int64_t start_pos, int64_t end_pos, int chunk_count)
@@ -908,8 +922,6 @@ void CNVCaller::getSNPPopulationFrequencies(std::string chr, SNPInfo& snp_info)
     // parallel
     std::unordered_map<int, double> pos_pfb_map;
     std::vector<std::thread> threads;
-
-    // Vector of futures
     std::vector<std::future<std::unordered_map<int, double>>> futures;
     for (const auto& region_chunk : region_chunks)
     {
@@ -920,9 +932,17 @@ void CNVCaller::getSNPPopulationFrequencies(std::string chr, SNPInfo& snp_info)
             // Run bcftools query to get the population frequencies for the
             // chromosome within the SNP region, filtering for SNPS only,
             // and within the MIN-MAX range of frequencies.
-            std::string filter_criteria = "INFO/variant_type=\"snv\" && AF >= " + std::to_string(MIN_PFB) + " && AF <= " + std::to_string(MAX_PFB);
+            // TODO: Update to use ethnicity-specific population frequencies
+            // Example from gnomAD:
+            // ##INFO=<ID=AF_asj,Number=A,Type=Float,Description="Alternate
+            // allele frequency in samples of Ashkenazi Jewish ancestry">
+            std::string ethnicity_suffix = "_asj";  // Ashkenazi Jewish (leave empty for all populations)
+            std::string filter_criteria = "INFO/variant_type=\"snv\" && AF" + ethnicity_suffix + " >= " + std::to_string(MIN_PFB) + " && AF" + ethnicity_suffix + " <= " + std::to_string(MAX_PFB);
             std::string cmd = \
-                "bcftools query -r " + region_chunk + " -f '%POS\t%AF\n' -i '" + filter_criteria + "' " + pfb_filepath + " 2>/dev/null";
+                "bcftools query -r " + region_chunk + " -f '%POS\t%AF" + ethnicity_suffix + "\n' -i 'AF" + ethnicity_suffix + "' " + pfb_filepath + " 2>/dev/null";
+
+            // [TEST] Print the command
+            std::cout << "Command: " << cmd << std::endl;
 
             // Open a pipe to read the output of the command
             FILE *fp = popen(cmd.c_str(), "r");

@@ -31,8 +31,8 @@ int SVData::add(std::string chr, int64_t start, int64_t end, int sv_type, std::s
         // Determine the SV length
         int sv_length = end - start + 1;
 
-        // Create a new SVInfo object
-        SVInfo sv_info(sv_type, 1, data_type, sv_length, "./.");
+        // Create a new SVInfo object (sv_type, read_support, read_depth, data_type, sv_length, genotype)
+        SVInfo sv_info(sv_type, 1, 0, data_type, sv_length, "./.");
 
         // Add the SV candidate to the map
         this->sv_calls[chr][candidate] = sv_info;
@@ -187,6 +187,7 @@ void SVData::saveToVCF(FASTAQuery& ref_genome, std::string output_dir)
             SVInfo info = sv_call.second;
             int sv_type = info.sv_type;
             int read_support = info.read_support;
+            int read_depth = info.read_depth;
             int sv_length = info.sv_length;
             std::set<std::string> data_type = info.data_type;
             std::string genotype = info.genotype;
@@ -263,11 +264,11 @@ void SVData::saveToVCF(FASTAQuery& ref_genome, std::string output_dir)
             // needs implementation to get the actual read depth from the BAM file)
             std::string info_str = "END=" + std::to_string(end) + ";SVTYPE=" + sv_type_str + ";SVLEN=" + std::to_string(sv_length) + ";SUPPORT=" + std::to_string(read_support) + ";SVMETHOD=" + sv_method + ";ALN=" + data_type_str + ";CLIPSUP=" + std::to_string(clipped_base_support);
 
-            // Create the FORMAT string
+            // Create the FORMAT string for the sample (GT:DP)
             std::string format_str = "GT:DP";
 
-            // Create the sample string (TODO: DP is currently set to 1, needs implementation)
-            std::string sample_str = genotype + ":" + std::to_string(1);
+            // Create the sample string (genotype and read depth)
+            std::string sample_str = genotype + ":" + std::to_string(read_depth);
             std::vector<std::string> samples = {sample_str};
 
             // Write the SV call to the file

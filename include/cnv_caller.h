@@ -109,6 +109,8 @@ class CNVCaller {
 
         void updateSVGenotype(std::map<SVCandidate, SVInfo>& sv_candidates, SVCandidate key, std::string genotype);
 
+        void updateDPValue(std::map<SVCandidate, SVInfo>& sv_candidates, SVCandidate key, int dp_value);
+
         // Split a region into chunks for parallel processing
         std::vector<std::string> splitRegionIntoChunks(std::string chr, int64_t start_pos, int64_t end_pos, int chunk_count);
 
