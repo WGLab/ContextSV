@@ -236,6 +236,16 @@ void InputData::setSNPFilepath(std::string filepath)
     this->snp_vcf_filepath = filepath;
 }
 
+std::string InputData::getEthnicity()
+{
+    return this->ethnicity;
+}
+
+void InputData::setEthnicity(std::string ethnicity)
+{
+    this->ethnicity = ethnicity;
+}
+
 std::string InputData::getRegionChr()
 {
     return this->region_chr;

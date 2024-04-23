@@ -48,22 +48,17 @@ def extract_features(input_vcf):
     # Get the array of chromosome names.
     chrom = vcf_df['CHROM']
 
-    # Keep only chromosomes 1-22, X, Y, and MT.
-    chrom = chrom[chrom.isin(['chr' + str(i) for i in range(1, 23)] + ['chrX', 'chrY', 'chrMT'])]
+    # Create a key to map the chromosome names to a unique integer.
 
-    # If empty, try without the 'chr' prefix.
-    if chrom.empty:
-        chrom = vcf_df['CHROM']
-        chrom = chrom[chrom.isin([str(i) for i in range(1, 23)] + ['X', 'Y', 'MT'])]
+    # First, get all unique chromosome names.
+    chrom_unique = chrom.unique()
 
-    # Remove the 'chr' prefix.
-    chrom = chrom.str.replace('chr', '')
+    # Next, create a dictionary to map the chromosome names to integers.
+    chrom_dict = {chrom: i for i, chrom in enumerate(chrom_unique)}
 
-    # Convert the chromosome names to integers.
-    chrom = chrom.replace('X', '23')
-    chrom = chrom.replace('Y', '24')
-    chrom = chrom.replace('MT', '25')
-    chrom = chrom.astype(int)
+    # Finally, map the chromosome names to integers.
+    chrom = chrom.map(chrom_dict)
+
 
     # Check if any chromosome names are missing.
     if chrom.isnull().values.any():
@@ -133,7 +128,7 @@ def extract_features(input_vcf):
         logging.error('SV types: ' + str(len(sv_type)))
         logging.error('Read support: ' + str(len(read_support)))
         logging.error('Clipped bases: ' + str(len(clipped_bases)))
-        
+
         sys.exit(1)
 
     # Create a dataframe of the features.

@@ -867,6 +867,13 @@ void CNVCaller::getSNPPopulationFrequencies(std::string chr, SNPInfo& snp_info)
     // Get the population frequency file for the chromosome
     std::string pfb_filepath = this->input_data->getAlleleFreqFilepath(chr);
 
+    // Determine the ethnicity-specific allele frequency key
+    std::string AF_key = "AF";
+    if (this->input_data->getEthnicity() != "")
+    {
+        AF_key += "_" + this->input_data->getEthnicity();
+    }
+
     // Check if the filepath uses the 'chr' prefix notations based on the
     // chromosome name (e.g., *.chr1.vcf.gz vs *.1.vcf.gz)
     std::string chr_gnomad = chr;  // gnomAD data may or may not have the 'chr' prefix
@@ -927,7 +934,7 @@ void CNVCaller::getSNPPopulationFrequencies(std::string chr, SNPInfo& snp_info)
     {
         // Create a lambda function to get the population frequencies for the
         // region chunk
-        auto get_pfb = [region_chunk, pfb_filepath]() -> std::unordered_map<int, double>
+        auto get_pfb = [region_chunk, pfb_filepath, AF_key]() -> std::unordered_map<int, double>
         {
             // Run bcftools query to get the population frequencies for the
             // chromosome within the SNP region, filtering for SNPS only,
@@ -936,10 +943,11 @@ void CNVCaller::getSNPPopulationFrequencies(std::string chr, SNPInfo& snp_info)
             // Example from gnomAD:
             // ##INFO=<ID=AF_asj,Number=A,Type=Float,Description="Alternate
             // allele frequency in samples of Ashkenazi Jewish ancestry">
-            std::string ethnicity_suffix = "_asj";  // Ashkenazi Jewish (leave empty for all populations)
-            std::string filter_criteria = "INFO/variant_type=\"snv\" && AF" + ethnicity_suffix + " >= " + std::to_string(MIN_PFB) + " && AF" + ethnicity_suffix + " <= " + std::to_string(MAX_PFB);
+            // std::string ethnicity_suffix = "_asj";  // Ashkenazi Jewish
+            // (leave empty for all populations)
+            std::string filter_criteria = "INFO/variant_type=\"snv\" && " + AF_key + " >= " + std::to_string(MIN_PFB) + " && " + AF_key + " <= " + std::to_string(MAX_PFB);
             std::string cmd = \
-                "bcftools query -r " + region_chunk + " -f '%POS\t%AF" + ethnicity_suffix + "\n' -i 'AF" + ethnicity_suffix + "' " + pfb_filepath + " 2>/dev/null";
+                "bcftools query -r " + region_chunk + " -f '%POS\t%" + AF_key + "\n' -i '" + AF_key + "' " + pfb_filepath + " 2>/dev/null";
 
             // [TEST] Print the command
             std::cout << "Command: " << cmd << std::endl;
@@ -1004,11 +1012,12 @@ void CNVCaller::getSNPPopulationFrequencies(std::string chr, SNPInfo& snp_info)
 
             // Increment the population frequency count
             pfb_count++;
-            // // Print if less than 15 (for testing purposes)
-            // if (pfb_count < 15)
-            // {
-            //     printMessage("Population frequency for " + chr + ":" + std::to_string(pos) + " = " + std::to_string(pfb));
-            // }
+
+            // [TEST] Print 15 values
+            if (pfb_count < 15)
+            {
+                printMessage("Population frequency for " + chr + ":" + std::to_string(pos) + " = " + std::to_string(pfb));
+            }
         }
     }
 }
