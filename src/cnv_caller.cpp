@@ -250,7 +250,7 @@ SNPData CNVCaller::runCopyNumberPredictionChunk(std::string chr, std::map<SVCand
         }
 
         // If there is no majority state, then set the state to unknown
-        double pct_threshold = 0.5;
+        double pct_threshold = 0.75;
         int state_count = (int) state_sequence.size();
         if ((double) max_count / (double) state_count < pct_threshold)
         {
@@ -947,7 +947,7 @@ void CNVCaller::getSNPPopulationFrequencies(std::string chr, SNPInfo& snp_info)
             // (leave empty for all populations)
             std::string filter_criteria = "INFO/variant_type=\"snv\" && " + AF_key + " >= " + std::to_string(MIN_PFB) + " && " + AF_key + " <= " + std::to_string(MAX_PFB);
             std::string cmd = \
-                "bcftools query -r " + region_chunk + " -f '%POS\t%" + AF_key + "\n' -i '" + AF_key + "' " + pfb_filepath + " 2>/dev/null";
+                "bcftools query -r " + region_chunk + " -f '%POS\t%" + AF_key + "\n' -i '" + filter_criteria + "' " + pfb_filepath + " 2>/dev/null";
 
             // [TEST] Print the command
             std::cout << "Command: " << cmd << std::endl;
