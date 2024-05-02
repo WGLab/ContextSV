@@ -250,8 +250,11 @@ void SVData::saveToVCF(FASTAQuery& ref_genome, std::string output_dir)
                 pos = preceding_pos;
 
                 // Update the end position to the start position to change from
-                // query to reference coordinates
-                end = pos;
+                // query to reference coordinates if the SV type is a novel
+                // insertion (not for duplications)
+                if (sv_type == INS) {
+                    end = pos;
+                }
             }
 
             // Get the clipped base support
