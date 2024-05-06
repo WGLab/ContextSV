@@ -274,6 +274,13 @@ SNPData CNVCaller::runCopyNumberPredictionChunk(std::string chr, std::map<SVCand
         // Update the SV type if it is not unknown
         if (cnv_type != sv_types::UNKNOWN)
         {
+            // In this prediction approach, all duplications can be assumed to
+            // be tandem duplications. A separate approach is needed to
+            // identify interspersed duplications
+            if (cnv_type == sv_types::DUP)
+            {
+                cnv_type = sv_types::TANDUP;
+            }
             this->updateSVType(sv_candidates, sv_call, cnv_type, data_type);
 
             // Update the SV type counts
@@ -334,8 +341,6 @@ void CNVCaller::updateSVType(std::map<SVCandidate, SVInfo> &sv_candidates, SVCan
         {
             sv_candidates[key].sv_type = sv_type;
         }
-
-        // sv_candidates[key].sv_type = sv_type;
         sv_candidates[key].data_type.insert(data_type);
     }
 }

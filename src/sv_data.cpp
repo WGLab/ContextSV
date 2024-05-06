@@ -153,6 +153,7 @@ void SVData::saveToVCF(FASTAQuery& ref_genome, std::string output_dir)
         "##INFO=<ID=ALN,Number=1,Type=String,Description=\"Alignment type used to call the structural variant\">",
         "##INFO=<ID=CLIPSUP,Number=1,Type=Integer,Description=\"Clipped base support at the start and end positions\">",
         "##INFO=<ID=SUPPORT,Number=1,Type=Integer,Description=\"Number of reads supporting the variant\">",
+        "##INFO=<ID=REPTYPE,Number=1,Type=String,Description=\"Repeat type\">",
         "##FILTER=<ID=PASS,Description=\"All filters passed\">",
         "##FILTER=<ID=LowQual,Description=\"Low quality\">",
         "##FORMAT=<ID=GT,Number=1,Type=String,Description=\"Genotype\">",
@@ -213,19 +214,20 @@ void SVData::saveToVCF(FASTAQuery& ref_genome, std::string output_dir)
             // Process by SV type
             std::string ref_allele = ".";
             std::string alt_allele = ".";
+            std::string repeat_type = "NA";
 
             // Deletion
             if (sv_type == DEL) {
-                // Get the reference allele from the reference genome as well as the
-                // previous base preceding the SV
+                // Get the deleted sequence from the reference genome, also including the preceding base
                 int64_t preceding_pos = (int64_t) std::max(1, (int) pos-1);  // Make sure the position is not negative
                 ref_allele = ref_genome.query(chr, preceding_pos, end);
 
-                // Use the previous base as the alternate allele 
+                // Use the preceding base as the alternate allele 
                 if (ref_allele != "") {
-                    alt_allele = ref_genome.query(chr, preceding_pos, preceding_pos);
+                    alt_allele = ref_allele.at(0);
                 } else {
-                    alt_allele = ".";  // No alternate allele
+                    alt_allele = "<DEL>";  // Use symbolic allele for imprecise deletions
+                    std::cerr << "Warning: Reference allele is empty for deletion at " << chr << ":" << pos << "-" << end << std::endl;
                 }
 
                 // Make the SV length negative
@@ -235,25 +237,37 @@ void SVData::saveToVCF(FASTAQuery& ref_genome, std::string output_dir)
                 pos = preceding_pos;
 
             // Duplications and insertions
-            } else if (sv_type == INS || sv_type == DUP) {
+            } else if (sv_type == INS || sv_type == DUP || sv_type == TANDUP) {
                 // Use the preceding base as the reference allele
                 int64_t preceding_pos = (int64_t) std::max(1, (int) pos-1);  // Make sure the position is not negative
                 ref_allele = ref_genome.query(chr, preceding_pos, preceding_pos);
 
-                // Use the insertion sequence as the alternate allele
-                alt_allele = std::get<2>(candidate);
-
-                // Insert the reference base into the alternate allele
-                alt_allele.insert(0, ref_allele);
-
-                // Update the position
-                pos = preceding_pos;
-
-                // Update the end position to the start position to change from
-                // query to reference coordinates if the SV type is a novel
-                // insertion (not for duplications)
+                // Format novel insertions
                 if (sv_type == INS) {
+                    // Use the insertion sequence as the alternate allele
+                    alt_allele = std::get<2>(candidate);
+
+                    // Insert the reference base into the alternate allele
+                    alt_allele.insert(0, ref_allele);
+
+                    // Update the position
+                    pos = preceding_pos;
+
+                    // Update the end position to the start position to change from
+                    // query to reference coordinates for insertions
                     end = pos;
+                } else if (sv_type == DUP) {
+                    // Use a symbolic allele for duplications
+                    alt_allele = "<DUP>";
+
+                    // Set the repeat type as an interspersed duplication
+                    repeat_type = "INTERSPERSED";
+                } else if (sv_type == TANDUP) {
+                    // Use a symbolic allele for tandem duplications
+                    alt_allele = "<DUP>";
+
+                    // Set the repeat type
+                    repeat_type = "TANDEM";
                 }
             }
 
@@ -264,8 +278,14 @@ void SVData::saveToVCF(FASTAQuery& ref_genome, std::string output_dir)
             std::string sv_type_str = this->sv_type_map[sv_type];
 
             // Create the INFO string (TODO: Read depth is currently set to 1,
-            // needs implementation to get the actual read depth from the BAM file)
-            std::string info_str = "END=" + std::to_string(end) + ";SVTYPE=" + sv_type_str + ";SVLEN=" + std::to_string(sv_length) + ";SUPPORT=" + std::to_string(read_support) + ";SVMETHOD=" + sv_method + ";ALN=" + data_type_str + ";CLIPSUP=" + std::to_string(clipped_base_support);
+            // needs implementation to get the actual read depth from the BAM
+            // file)
+            std::string info_str = "END=" + std::to_string(end) + ";SVTYPE=" + sv_type_str + \
+                ";SVLEN=" + std::to_string(sv_length) + ";SUPPORT=" + std::to_string(read_support) + \
+                ";SVMETHOD=" + sv_method + ";ALN=" + data_type_str + ";CLIPSUP=" + std::to_string(clipped_base_support) + \
+                ";REPTYPE=" + repeat_type;
+                
+            // std::string info_str = "END=" + std::to_string(end) + ";SVTYPE=" + sv_type_str + ";SVLEN=" + std::to_string(sv_length) + ";SUPPORT=" + std::to_string(read_support) + ";SVMETHOD=" + sv_method + ";ALN=" + data_type_str + ";CLIPSUP=" + std::to_string(clipped_base_support);
 
             // Create the FORMAT string for the sample (GT:DP)
             std::string format_str = "GT:DP";
@@ -274,8 +294,8 @@ void SVData::saveToVCF(FASTAQuery& ref_genome, std::string output_dir)
             std::string sample_str = genotype + ":" + std::to_string(read_depth);
             std::vector<std::string> samples = {sample_str};
 
-            // Write the SV call to the file
-            vcf_writer.writeRecord(chr, pos, ".", ref_allele, alt_allele, ".", ".", info_str, format_str, samples);
+            // Write the SV call to the file (CHROM, POS, ID, REF, ALT, QUAL, FILTER, INFO, FORMAT, SAMPLES)
+            vcf_writer.writeRecord(chr, pos, ".", ref_allele, alt_allele, ".", "PASS", info_str, format_str, samples);
         }
     }
 

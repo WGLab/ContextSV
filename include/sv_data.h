@@ -31,7 +31,8 @@ class SVData {
             {1, "DUP"},
             {2, "INV"},
             {3, "INS"},
-            {4, "BND"}
+            {4, "BND"},
+            {5, "DUP"}
         };
         
     public:
