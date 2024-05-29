@@ -8,12 +8,10 @@
 
 int SVData::add(std::string chr, int64_t start, int64_t end, int sv_type, std::string alt_allele, std::string data_type)
 {
-    // Add the SV call to the map of candidate locations
+    // Check if the SV candidate already exists in the map
     SVCandidate candidate(start, end, alt_allele);
-
     if (this->sv_calls[chr].find(candidate) != this->sv_calls[chr].end()) {
-
-        // Update the read depth
+        // Update the alignment-based support count (+1)
         SVInfo& sv_info = this->sv_calls[chr][candidate];
         sv_info.read_support += 1;
 
@@ -22,16 +20,24 @@ int SVData::add(std::string chr, int64_t start, int64_t end, int sv_type, std::s
             sv_info.sv_type = sv_type;
         }
 
-        // Update the alignment type used to call the SV
+        // Add the alignment type used to call the SV
         sv_info.data_type.insert(data_type);
 
         return 0;  // SV call already exists
 
+    // Otherwise, add the SV candidate to the map
     } else {
-        // Determine the SV length
-        int sv_length = end - start + 1;
+        // For insertions and duplications, the SV length is the length of the
+        // inserted sequence, not including the insertion position
+        int sv_length = 0;
+        if (sv_type == INS || sv_type == DUP || sv_type == TANDUP) {
+            sv_length = end - start;
+        } else {
+            // For deletions, the SV length is the length of the deletion
+            sv_length = end - start + 1;
+        }
 
-        // Create a new SVInfo object (sv_type, read_support, read_depth, data_type, sv_length, genotype)
+        // Create a new SVInfo object (SV type, alignment support, read depth, data type, SV length, genotype)
         SVInfo sv_info(sv_type, 1, 0, data_type, sv_length, "./.");
 
         // Add the SV candidate to the map

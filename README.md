@@ -3,7 +3,7 @@
 tests](https://github.com/WGLab/ContextSV/actions/workflows/build-tests.yml/badge.svg)](https://github.com/WGLab/ContextSV/actions/workflows/build-tests.yml)
 
 <picture>
-<img src="https://github.com/WGLab/ContextSV/assets/14855676/2749b420-90ac-46ef-9311-0dbd0d086e72" width=15% height=15%>
+  <img src="https://github.com/WGLab/ContextSV/assets/14855676/2749b420-90ac-46ef-9311-0dbd0d086e72?raw=true" width=15% height=15%>
 </picture>
 
 # ContextSV
