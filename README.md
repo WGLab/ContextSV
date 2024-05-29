@@ -2,9 +2,7 @@
 [![build
 tests](https://github.com/WGLab/ContextSV/actions/workflows/build-tests.yml/badge.svg)](https://github.com/WGLab/ContextSV/actions/workflows/build-tests.yml)
 
-<picture>
-  <img src="https://github.com/WGLab/ContextSV/assets/14855676/2749b420-90ac-46ef-9311-0dbd0d086e72?raw=true" width=15% height=15%>
-</picture>
+![contextsv_small_15p](https://github.com/WGLab/ContextSV/assets/14855676/79d70c76-a34a-472e-a14c-e49489ae0f09)
 
 # ContextSV
 _This is a work in progress, software is under development and not ready for official release._
