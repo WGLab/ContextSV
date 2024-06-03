@@ -30,12 +30,13 @@ namespace sv_types {
         std::set<std::string> data_type;  // Alignment type used to call the SV
         int sv_length;
         std::string genotype = "./.";  // Default genotype (no call)
+        double hmm_likelihood = 0.0;  // HMM likelihood for the SV
 
         SVInfo() :
-            sv_type(-1), read_support(0), read_depth(0), data_type({}), sv_length(0), genotype("./.") {}
+            sv_type(-1), read_support(0), read_depth(0), data_type({}), sv_length(0), genotype("./."), hmm_likelihood(0.0) {}
             
-        SVInfo(int sv_type, int read_support, int read_depth, std::string data_type, int sv_length, std::string genotype) :
-            sv_type(sv_type), read_support(read_support), read_depth(read_depth), data_type({data_type}), sv_length(sv_length), genotype(genotype) {}
+        SVInfo(int sv_type, int read_support, int read_depth, std::string data_type, int sv_length, std::string genotype, double hmm_likelihood) :
+            sv_type(sv_type), read_support(read_support), read_depth(read_depth), data_type({data_type}), sv_length(sv_length), genotype(genotype), hmm_likelihood(hmm_likelihood) {}
     };
 
     // SV (start, end, alt_allele)

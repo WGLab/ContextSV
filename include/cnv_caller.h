@@ -94,7 +94,7 @@ class CNVCaller {
 
         void updateSNPVectors(SNPData& snp_data, std::vector<int64_t>& pos, std::vector<double>& pfb, std::vector<double>& baf, std::vector<double>& log2_cov, std::vector<int>& state_sequence, std::vector<bool>& is_snp);
 
-        std::vector<int> runViterbi(CHMM hmm, SNPData &snp_data);
+        std::pair<std::vector<int>, double> runViterbi(CHMM hmm, SNPData &snp_data);
 
         // Query a region for SNPs and return the SNP data
         std::pair<SNPData, bool> querySNPRegion(std::string chr, int64_t start_pos, int64_t end_pos, SNPInfo &snp_info, std::unordered_map<uint64_t, int> &pos_depth_map, double mean_chr_cov);
@@ -105,9 +105,11 @@ class CNVCaller {
         // Run copy number prediction for a chunk of SV candidates
         SNPData runCopyNumberPredictionChunk(std::string chr, std::map<SVCandidate, SVInfo>& sv_candidates, std::vector<SVCandidate> sv_chunk, SNPInfo& snp_info, CHMM hmm, int window_size, double mean_chr_cov, std::unordered_map<uint64_t, int>& pos_depth_map);
 
-        void updateSVType(std::map<SVCandidate, SVInfo>& sv_candidates, SVCandidate key, int sv_type, std::string data_type);
+        void updateSVCopyNumber(std::map<SVCandidate, SVInfo>& sv_candidates, SVCandidate key, int sv_type_update, std::string data_type, std::string genotype, double hmm_likelihood);
 
-        void updateSVGenotype(std::map<SVCandidate, SVInfo>& sv_candidates, SVCandidate key, std::string genotype);
+        // void updateSVType(std::map<SVCandidate, SVInfo>& sv_candidates, SVCandidate key, int sv_type, std::string data_type);
+
+        // void updateSVGenotype(std::map<SVCandidate, SVInfo>& sv_candidates, SVCandidate key, std::string genotype);
 
         void updateDPValue(std::map<SVCandidate, SVInfo>& sv_candidates, SVCandidate key, int dp_value);
 

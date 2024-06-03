@@ -33,11 +33,11 @@
 using namespace sv_types;
 
 // Function to call the Viterbi algorithm for the CHMM
-std::vector<int> CNVCaller::runViterbi(CHMM hmm, SNPData& snp_data)
+std::pair<std::vector<int>, double> CNVCaller::runViterbi(CHMM hmm, SNPData& snp_data)
 {
     int data_count = (int) snp_data.pos.size();
     std::lock_guard<std::mutex> lock(this->hmm_mtx);  // Lock the mutex for the HMM
-    std::vector<int> state_sequence = testVit_CHMM(hmm, data_count, snp_data.log2_cov, snp_data.baf, snp_data.pfb);
+    std::pair<std::vector<int>, double> state_sequence = testVit_CHMM(hmm, data_count, snp_data.log2_cov, snp_data.baf, snp_data.pfb);
     return state_sequence;
 }
 
@@ -234,7 +234,9 @@ SNPData CNVCaller::runCopyNumberPredictionChunk(std::string chr, std::map<SVCand
         bool snps_found = snp_call.second;
 
         // Run the Viterbi algorithm
-        std::vector<int> state_sequence = runViterbi(hmm, sv_snps);
+        std::pair<std::vector<int>, double> prediction = runViterbi(hmm, sv_snps);
+        std::vector<int>& state_sequence = prediction.first;
+        double likelihood = prediction.second;
 
         // Determine if there is a majority state and if it is greater than 75%
         int max_state = 0;
@@ -271,24 +273,29 @@ SNPData CNVCaller::runCopyNumberPredictionChunk(std::string chr, std::map<SVCand
             data_type = "Log2CNV";
         }
 
-        // Update the SV type if it is not unknown
-        if (cnv_type != sv_types::UNKNOWN)
-        {
-            // In this prediction approach, all duplications can be assumed to
-            // be tandem duplications. A separate approach is needed to
-            // identify interspersed duplications
-            if (cnv_type == sv_types::DUP)
-            {
-                cnv_type = sv_types::TANDUP;
-            }
-            this->updateSVType(sv_candidates, sv_call, cnv_type, data_type);
+        // Update the SV copy number data
+        this->updateSVCopyNumber(sv_candidates, sv_call, cnv_type, data_type, genotype, likelihood);
+        // this->updateSVCopyNumber(sv_candidates, sv_call, cnv_type, genotype, likelihood, data_type);
 
-            // Update the SV type counts
-            cnv_type_counts[cnv_type]++;
-        }
+        // // Update the SV type if it is not unknown
+        // if (cnv_type != sv_types::UNKNOWN)
+        // {
+        //     // In this prediction approach, all duplications can be assumed to
+        //     // be tandem duplications. A separate approach is needed to
+        //     // identify interspersed duplications
+        //     if (cnv_type == sv_types::DUP)
+        //     {
+        //         cnv_type = sv_types::TANDUP;
+        //     }
+        //     this->updateSVType(sv_candidates, sv_call, cnv_type, data_type);
 
-        // Update the SV genotype
-        this->updateSVGenotype(sv_candidates, sv_call, genotype);
+        //     // Update the SV type counts
+        //     cnv_type_counts[cnv_type]++;
+        // }
+
+        // // Update the SV genotype and HMM state sequence probability
+        // this->updateSVGenotype(sv_candidates, sv_call, genotype);
+        // this->updateSVLikelihood(sv_candidates, sv_call, likelihood);
 
         if (this->input_data->getSaveCNVData())
         {
@@ -296,9 +303,9 @@ SNPData CNVCaller::runCopyNumberPredictionChunk(std::string chr, std::map<SVCand
             int64_t sv_half_length = (end_pos - start_pos) / 2;
             int64_t before_sv_start = start_pos - sv_half_length;
             std::pair<SNPData, bool> preceding_snps = this->querySNPRegion(chr, before_sv_start, start_pos-1, snp_info, pos_depth_map, mean_chr_cov);
-            std::vector<int> preceding_states = runViterbi(hmm, preceding_snps.first);
+            std::pair<std::vector<int>, double> preceding_states = runViterbi(hmm, preceding_snps.first);
             SNPData& pre_snp = preceding_snps.first;
-            this->updateSNPVectors(snp_data, pre_snp.pos, pre_snp.pfb, pre_snp.baf, pre_snp.log2_cov, preceding_states, pre_snp.is_snp);
+            this->updateSNPVectors(snp_data, pre_snp.pos, pre_snp.pfb, pre_snp.baf, pre_snp.log2_cov, preceding_states.first, pre_snp.is_snp);
 
             // Within SV SNPs:
             this->updateSNPVectors(snp_data, sv_snps.pos, sv_snps.pfb, sv_snps.baf, sv_snps.log2_cov, state_sequence, sv_snps.is_snp);
@@ -306,9 +313,9 @@ SNPData CNVCaller::runCopyNumberPredictionChunk(std::string chr, std::map<SVCand
             // Following SNPs:
             int64_t after_sv_end = end_pos + sv_half_length;
             std::pair<SNPData, bool> following_snps = this->querySNPRegion(chr, end_pos+1, after_sv_end, snp_info, pos_depth_map, mean_chr_cov);
-            std::vector<int> following_states = runViterbi(hmm, following_snps.first);
+            std::pair<std::vector<int>, double> following_states = runViterbi(hmm, following_snps.first);
             SNPData& post_snp = following_snps.first;
-            this->updateSNPVectors(snp_data, post_snp.pos, post_snp.pfb, post_snp.baf, post_snp.log2_cov, following_states, post_snp.is_snp);
+            this->updateSNPVectors(snp_data, post_snp.pos, post_snp.pfb, post_snp.baf, post_snp.log2_cov, following_states.first, post_snp.is_snp);
         }
     }
 
@@ -328,31 +335,57 @@ SNPData CNVCaller::runCopyNumberPredictionChunk(std::string chr, std::map<SVCand
     return snp_data;
 }
 
-void CNVCaller::updateSVType(std::map<SVCandidate, SVInfo> &sv_candidates, SVCandidate key, int sv_type, std::string data_type)
+void CNVCaller::updateSVCopyNumber(std::map<SVCandidate, SVInfo> &sv_candidates, SVCandidate key, int sv_type_update, std::string data_type, std::string genotype, double hmm_likelihood)
 {
+    // Update SV data from the HMM copy number prediction
     // Lock the SV candidate map
     std::lock_guard<std::mutex> lock(this->sv_candidates_mtx);
 
-    // Update the SV type if the update is not unknown
-    if (sv_type != sv_types::UNKNOWN)
+    // Update the SV type if the update is not unknown, and if the types don't
+    // conflict (To avoid overwriting CIGAR-based SV calls with SNP-based calls)
+    int current_sv_type = sv_candidates[key].sv_type;
+    if ((sv_type_update != sv_types::UNKNOWN) && ((current_sv_type == sv_type_update) || (current_sv_type == sv_types::UNKNOWN)))
     {
-        // Update the SV type if the existing type is unknown
-        if (sv_candidates[key].sv_type == sv_types::UNKNOWN)
+        sv_candidates[key].sv_type = sv_type_update;  // Update the SV type
+        sv_candidates[key].data_type.insert(data_type);  // Update the data type
+
+        // Update the likelihood if the new likelihood is greater than the existing
+        // likelihood
+        if (hmm_likelihood > sv_candidates[key].hmm_likelihood)
         {
-            sv_candidates[key].sv_type = sv_type;
+            sv_candidates[key].hmm_likelihood = hmm_likelihood;
         }
-        sv_candidates[key].data_type.insert(data_type);
+
+        // Update the genotype
+        sv_candidates[key].genotype = genotype;
     }
 }
 
-void CNVCaller::updateSVGenotype(std::map<SVCandidate,SVInfo>& sv_candidates, SVCandidate key, std::string genotype)
-{
-    // Lock the SV candidate map
-    std::lock_guard<std::mutex> lock(this->sv_candidates_mtx);
+// void CNVCaller::updateSVType(std::map<SVCandidate, SVInfo> &sv_candidates, SVCandidate key, int sv_type, std::string data_type)
+// {
+//     // Lock the SV candidate map
+//     std::lock_guard<std::mutex> lock(this->sv_candidates_mtx);
 
-    // Update the SV genotype
-    sv_candidates[key].genotype = genotype;
-}
+//     // Update the SV type if the update is not unknown
+//     if (sv_type != sv_types::UNKNOWN)
+//     {
+//         // Update the SV type if the existing type is unknown
+//         if (sv_candidates[key].sv_type == sv_types::UNKNOWN)
+//         {
+//             sv_candidates[key].sv_type = sv_type;
+//         }
+//         sv_candidates[key].data_type.insert(data_type);
+//     }
+// }
+
+// void CNVCaller::updateSVGenotype(std::map<SVCandidate,SVInfo>& sv_candidates, SVCandidate key, std::string genotype)
+// {
+//     // Lock the SV candidate map
+//     std::lock_guard<std::mutex> lock(this->sv_candidates_mtx);
+
+//     // Update the SV genotype
+//     sv_candidates[key].genotype = genotype;
+// }
 
 void CNVCaller::updateDPValue(std::map<SVCandidate,SVInfo>& sv_candidates, SVCandidate key, int dp_value)
 {

@@ -152,4 +152,7 @@ options:
 For release history, please visit [here](https://github.com/WGLab/ContextSV/releases). 
 
 ## Getting help
-Please refer to the [contextSV issue pages](https://github.com/WGLab/ContextSV/issues) for posting your issues. We will also respond your questions quickly. Your comments are critical to improve our tool and will benefit other users.
+Please refer to the [contextSV issue
+pages](https://github.com/WGLab/ContextSV/issues) for posting your issues, we
+will respond quickly. Your comments will
+benefit other users, and are crucial to improving this tool.

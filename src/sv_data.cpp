@@ -38,7 +38,7 @@ int SVData::add(std::string chr, int64_t start, int64_t end, int sv_type, std::s
         }
 
         // Create a new SVInfo object (SV type, alignment support, read depth, data type, SV length, genotype)
-        SVInfo sv_info(sv_type, 1, 0, data_type, sv_length, "./.");
+        SVInfo sv_info(sv_type, 1, 0, data_type, sv_length, "./.", 0.0);
 
         // Add the SV candidate to the map
         this->sv_calls[chr][candidate] = sv_info;
@@ -160,6 +160,7 @@ void SVData::saveToVCF(FASTAQuery& ref_genome, std::string output_dir)
         "##INFO=<ID=CLIPSUP,Number=1,Type=Integer,Description=\"Clipped base support at the start and end positions\">",
         "##INFO=<ID=SUPPORT,Number=1,Type=Integer,Description=\"Number of reads supporting the variant\">",
         "##INFO=<ID=REPTYPE,Number=1,Type=String,Description=\"Repeat type\">",
+        "##INFO=<ID=HMM,Number=1,Type=Float,Description=\"HMM likelihood\">",
         "##FILTER=<ID=PASS,Description=\"All filters passed\">",
         "##FILTER=<ID=LowQual,Description=\"Low quality\">",
         "##FORMAT=<ID=GT,Number=1,Type=String,Description=\"Genotype\">",
@@ -198,6 +199,7 @@ void SVData::saveToVCF(FASTAQuery& ref_genome, std::string output_dir)
             int sv_length = info.sv_length;
             std::set<std::string> data_type = info.data_type;
             std::string genotype = info.genotype;
+            double hmm_likelihood = info.hmm_likelihood;
 
             // Convert the data type set to a string
             std::string data_type_str = "";
@@ -289,7 +291,7 @@ void SVData::saveToVCF(FASTAQuery& ref_genome, std::string output_dir)
             std::string info_str = "END=" + std::to_string(end) + ";SVTYPE=" + sv_type_str + \
                 ";SVLEN=" + std::to_string(sv_length) + ";SUPPORT=" + std::to_string(read_support) + \
                 ";SVMETHOD=" + sv_method + ";ALN=" + data_type_str + ";CLIPSUP=" + std::to_string(clipped_base_support) + \
-                ";REPTYPE=" + repeat_type;
+                ";REPTYPE=" + repeat_type + ";HMM=" + std::to_string(hmm_likelihood);
                 
             // std::string info_str = "END=" + std::to_string(end) + ";SVTYPE=" + sv_type_str + ";SVLEN=" + std::to_string(sv_length) + ";SUPPORT=" + std::to_string(read_support) + ";SVMETHOD=" + sv_method + ";ALN=" + data_type_str + ";CLIPSUP=" + std::to_string(clipped_base_support);
 
