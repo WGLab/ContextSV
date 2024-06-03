@@ -56,4 +56,7 @@ double b1iot (int state, double *mean, double *sd, double uf, double o);
 /// O2 emission probability
 double b2iot (int state, double *mean, double *sd, double uf, double pfb, double b);
 
+/// Return the probability of observing a value in a normal distribution, normalized to a range of [min_pdf, max_pdf]
+double pdf_normalization(double obs, double mean, double sd);
+
 #endif // _HMM_H_

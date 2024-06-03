@@ -137,10 +137,6 @@ int SVData::getClippedBaseSupport(std::string chr, int64_t pos, int64_t end)
 
 void SVData::saveToVCF(FASTAQuery& ref_genome, std::string output_dir)
 {
-    // Print the total number of SV calls
-    std::cout << "[saveToVCF] Total SV calls: " << this->totalCalls() << std::endl;
-    std::cout << "[saveToVCF] Total DELs: " << this->totalDeletions() << std::endl;
-
     // Create a VCF writer
     std::string output_vcf = output_dir + "/output.vcf";
     VcfWriter vcf_writer(output_vcf);
