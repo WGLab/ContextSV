@@ -349,9 +349,9 @@ void CNVCaller::updateSVCopyNumber(std::map<SVCandidate, SVInfo> &sv_candidates,
         sv_candidates[key].sv_type = sv_type_update;  // Update the SV type
         sv_candidates[key].data_type.insert(data_type);  // Update the data type
 
-        // Update the likelihood if the new likelihood is greater than the existing
-        // likelihood
-        if (hmm_likelihood > sv_candidates[key].hmm_likelihood)
+        // Update the likelihood if the new likelihood is less than the existing
+        // likelihood (log scale)
+        if (hmm_likelihood < sv_candidates[key].hmm_likelihood)
         {
             sv_candidates[key].hmm_likelihood = hmm_likelihood;
         }
