@@ -17,12 +17,6 @@ logging.basicConfig(level=logging.INFO)
 
 import matplotlib.pyplot as plt  # For plotting merge behavior
 
-# DBSCAN clustering algorithm
-# from sklearn.cluster import DBSCAN
-
-# OPTICS clustering algorithm
-# from sklearn.cluster import OPTICS
-
 # HDBSCAN clustering algorithm
 from sklearn.cluster import HDBSCAN
 
@@ -90,7 +84,7 @@ def update_support(record, cluster_size):
 
     return record
 
-def cluster_breakpoints(vcf_df, sv_type, min_samples=2):
+def cluster_breakpoints(vcf_df, sv_type, cluster_size_min=2):
     """
     Cluster SV breakpoints using HDBSCAN.
     """
@@ -114,7 +108,7 @@ def cluster_breakpoints(vcf_df, sv_type, min_samples=2):
         # Format the insertion and duplication breakpoints
         breakpoints = np.column_stack((sv_start, sv_end))
     else:
-        logging.error(f"Invalid SV type: {sv_type}")
+        logging.error("Invalid SV type: %s", sv_type)
         return
     
     # Get the combined SV read and clipped base support
@@ -127,12 +121,12 @@ def cluster_breakpoints(vcf_df, sv_type, min_samples=2):
 
     # Cluster SV breakpoints using HDBSCAN
     cluster_labels = []
-    dbscan = HDBSCAN(min_cluster_size=min_samples)
+    dbscan = HDBSCAN(min_cluster_size=cluster_size_min)
     if len(breakpoints) > 0:
-        logging.info(f"Clustering deletion breakpoints using HDSCAN with minimum cluster size={min_samples}...")
+        logging.info("Clustering %d SV breakpoints...", len(breakpoints))
         cluster_labels = dbscan.fit_predict(breakpoints)
 
-        logging.info(f"Label counts: {len(np.unique(cluster_labels))}")
+        logging.info("Label counts: %d", len(np.unique(cluster_labels)))
 
     # Merge SVs with the same label
     unique_labels = np.unique(cluster_labels)
@@ -201,14 +195,14 @@ def cluster_breakpoints(vcf_df, sv_type, min_samples=2):
     return merged_records
 
 
-def sv_merger(vcf_file_path, mode='dbscan', eps=100, min_samples=2, suffix='.merged'):
+def sv_merger(vcf_file_path, cluster_size_min=2, suffix='.merged'):
     """
     Use DBSCAN to merge SVs with the same breakpoint.
     Mode can be 'dbscan', 'gmm', or 'agglomerative'.
     https://scikit-learn.org/stable/modules/generated/sklearn.cluster.DBSCAN.html
     """
 
-    logging.info(f"Merging SVs in {vcf_file_path} using {mode} with eps={eps} and min_samples={min_samples}...")
+    logging.info("Merging SVs in %s using HDBSCAN with minimum cluster size=%d...", vcf_file_path, cluster_size_min)
     
     # Read VCF file into a pandas DataFrame, using only CHROM, POS, and INFO
     # columns
@@ -219,10 +213,10 @@ def sv_merger(vcf_file_path, mode='dbscan', eps=100, min_samples=2, suffix='.mer
 
     # Add a column at the beginning with the index
     vcf_df.insert(0, 'INDEX', range(0, len(vcf_df)))
-    logging.info("VCF file read into a pandas DataFrame.")
+    logging.info("Reading complete.")
 
     # Print total number of records
-    logging.info(f"Total number of records: {vcf_df.shape[0]}")
+    logging.info("Total number of records: %d", vcf_df.shape[0])
 
     # Store a dataframe of records that will form the merged VCF file
     merged_records = pd.DataFrame(columns=['INDEX', 'CHROM', 'POS', 'INFO'])
@@ -230,32 +224,27 @@ def sv_merger(vcf_file_path, mode='dbscan', eps=100, min_samples=2, suffix='.mer
     # Create a set with each chromosome in the VCF file
     chromosomes = set(vcf_df['CHROM'].values)
 
-    # Number of clustering plots to generate
-    max_plots = 10
-    num_plots = 0
-
     # Iterate over each chromosome
     records_processed = 0
     current_chromosome = 0
     chromosome_count = len(chromosomes)
     for chromosome in chromosomes:
-        logging.info(f"Clustering SVs on chromosome {chromosome}...")
 
         # Cluster deletions
-        logging.info(f"Clustering deletions on chromosome {chromosome}...")
+        logging.info("Clustering deletions on chromosome %s...", chromosome)
         chr_del_df = vcf_df[(vcf_df['CHROM'] == chromosome) & (vcf_df['INFO'].str.contains('SVTYPE=DEL'))]
-        del_records = cluster_breakpoints(chr_del_df, 'DEL', min_samples=min_samples)
+        del_records = cluster_breakpoints(chr_del_df, 'DEL', cluster_size_min=cluster_size_min)
 
         # Cluster insertions and duplications
-        logging.info(f"Clustering insertions and duplications on chromosome {chromosome}...")
+        logging.info("Clustering insertions and duplications on chromosome %s...", chromosome)
         chr_ins_dup_df = vcf_df[(vcf_df['CHROM'] == chromosome) & ((vcf_df['INFO'].str.contains('SVTYPE=INS')) | (vcf_df['INFO'].str.contains('SVTYPE=DUP')))]
-        ins_dup_records = cluster_breakpoints(chr_ins_dup_df, 'INS', min_samples=min_samples)
+        ins_dup_records = cluster_breakpoints(chr_ins_dup_df, 'INS', cluster_size_min=cluster_size_min)
 
         # Summarize the number of deletions and insertions/duplications
         del_count = del_records.shape[0]
         ins_dup_count = ins_dup_records.shape[0]
         records_processed += del_count + ins_dup_count
-        logging.info(f"Chromosome {chromosome} - {del_count} deletions, {ins_dup_count} insertions, and duplications merged.")
+        logging.info("Chromosome %s - %d deletions, %d insertions, and duplications merged.", chromosome, del_count, ins_dup_count)
 
         # Append the deletion and insertion/duplication records to the merged
         # records DataFrame
@@ -264,9 +253,9 @@ def sv_merger(vcf_file_path, mode='dbscan', eps=100, min_samples=2, suffix='.mer
         # logging.info(f"Chromosome {chromosome} - {del_count} deletions, {ins_dup_count} insertions, and duplications merged.")
        
         current_chromosome += 1
-        logging.info(f"Processed {current_chromosome} of {chromosome_count} chromosomes.")
+        logging.info("Processed %d of %d chromosomes.", current_chromosome, chromosome_count)
         
-    logging.info(f"Processed {records_processed} records of {vcf_df.shape[0]} total records.")
+    logging.info("Processed %d records of %d total records.", records_processed, vcf_df.shape[0])
 
 
     # Free up memory
@@ -278,7 +267,7 @@ def sv_merger(vcf_file_path, mode='dbscan', eps=100, min_samples=2, suffix='.mer
     logging.info("Writing merged VCF file...")
     merged_vcf = os.path.splitext(vcf_file_path)[0] + suffix + '.vcf'
 
-    logging.info(f"Writing {merged_records.shape[0]} records to merged VCF file...")
+    logging.info("Writing %d records to merged VCF file...", merged_records.shape[0])
 
     merge_count = 0
     index_start = 0
@@ -320,18 +309,16 @@ def sv_merger(vcf_file_path, mode='dbscan', eps=100, min_samples=2, suffix='.mer
                 merge_count += 1
                 merged_vcf_file.write(f"{matching_record['CHROM']}\t{matching_record['POS']}\t{matching_record['ID']}\t{matching_record['REF']}\t{matching_record['ALT']}\t{matching_record['QUAL']}\t{matching_record['FILTER']}\t{matching_record['INFO']}\t{matching_record['FORMAT']}\t{matching_record['SAMPLE']}\n")
 
-            logging.info(f"Wrote {merge_count} of {merged_records.shape[0]} records to merged VCF file...")
+            logging.info("Wrote %d of %d records to merged VCF file...", merge_count, merged_records.shape[0])
 
-    logging.info(f"Processed {merge_count} records of {merged_records.shape[0]} total records.")
-
-    logging.info("Merged VCF file written to " + merged_vcf)
+    logging.info("Merged VCF file written to %s", merged_vcf)
 
     return merged_vcf
 
 if __name__ == '__main__':
     import sys
     if len(sys.argv) < 2:
-        logging.info(f"Usage: {sys.argv[0]} <VCF file path>")
+        logging.info("Usage: %s <VCF file path>", sys.argv[0])
         sys.exit(1)
 
     # Get the VCF file path from the command line
@@ -339,20 +326,20 @@ if __name__ == '__main__':
 
     # Check if the file exists
     if not os.path.exists(vcf_file_path):
-        logging.error(f"Error: {vcf_file_path} not found.")
+        logging.error("Error: %s not found.", vcf_file_path)
         sys.exit(1)
 
-    # Get the epsilon value from the command line
+    # Get the minimum cluster size from the command line
     if len(sys.argv) > 2:
-        eps = int(sys.argv[2])
+        cluster_size_min = int(sys.argv[2])
     else:
-        eps = 30
+        cluster_size_min = 2
 
     # Get the suffix from the command line
-    suffix = '.merged_eps' + str(eps)
+    suffix = '.merged'
     if len(sys.argv) > 3:
         suffix += sys.argv[3]
 
     # DBSCAN 
-    sv_merger(sys.argv[1], mode='dbscan', eps=eps, suffix=suffix)
+    sv_merger(vcf_file_path, cluster_size_min=cluster_size_min, suffix=suffix)
     
