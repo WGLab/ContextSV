@@ -135,6 +135,9 @@ def cluster_breakpoints(vcf_df, sv_type, cluster_size_min):
 
         logging.info("Label counts: %d", len(np.unique(cluster_labels)))
 
+    # Set all 0 values to NaN
+    hmm_scores[hmm_scores == 0] = np.nan
+
     # Merge SVs with the same label
     unique_labels = np.unique(cluster_labels)
     for label in unique_labels:
@@ -162,19 +165,15 @@ def cluster_breakpoints(vcf_df, sv_type, cluster_size_min):
         max_score_idx = None
         cluster_hmm_scores = hmm_scores[idx]
         cluster_depth_scores = sv_support[idx]
-        max_hmm_score = None
-        max_support = None
         if len(np.unique(cluster_hmm_scores)) > 1:
             # Find the index of the maximum score, excluding NaN values
             max_score_idx = np.nanargmax(cluster_hmm_scores)
             # max_score_idx = np.argmax(cluster_hmm_scores)
-            max_hmm_score = cluster_hmm_scores[max_score_idx]
 
         # Use the SV with the highest read support if the log likelihood
         # scores are all the same
         elif len(np.unique(cluster_depth_scores)) > 1:
             max_score_idx = np.argmax(cluster_depth_scores)
-            max_support = cluster_depth_scores[max_score_idx]
 
         # Use the first SV in the cluster if the depth scores are all the
         # same
