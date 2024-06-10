@@ -123,6 +123,9 @@ def cluster_breakpoints(vcf_df, sv_type, cluster_size_min):
     # Get the HMM likelihood scores
     hmm_scores = vcf_df['INFO'].str.extract(r'HMM=(\d+)', expand=False).astype(np.float32)
 
+    # Set all 0 values to NaN
+    hmm_scores[hmm_scores == 0] = np.nan
+
     # Cluster SV breakpoints using HDBSCAN
     cluster_labels = []
     dbscan = HDBSCAN(min_cluster_size=cluster_size_min, min_samples=3)
@@ -159,13 +162,19 @@ def cluster_breakpoints(vcf_df, sv_type, cluster_size_min):
         max_score_idx = None
         cluster_hmm_scores = hmm_scores[idx]
         cluster_depth_scores = sv_support[idx]
+        max_hmm_score = None
+        max_support = None
         if len(np.unique(cluster_hmm_scores)) > 1:
-            max_score_idx = np.argmin(cluster_hmm_scores)
+            # Find the index of the maximum score, excluding NaN values
+            max_score_idx = np.nanargmax(cluster_hmm_scores)
+            # max_score_idx = np.argmax(cluster_hmm_scores)
+            max_hmm_score = cluster_hmm_scores[max_score_idx]
 
         # Use the SV with the highest read support if the log likelihood
         # scores are all the same
         elif len(np.unique(cluster_depth_scores)) > 1:
             max_score_idx = np.argmax(cluster_depth_scores)
+            max_support = cluster_depth_scores[max_score_idx]
 
         # Use the first SV in the cluster if the depth scores are all the
         # same
