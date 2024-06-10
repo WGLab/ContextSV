@@ -84,7 +84,7 @@ def update_support(record, cluster_size):
 
     return record
 
-def cluster_breakpoints(vcf_df, sv_type, cluster_size_min=2):
+def cluster_breakpoints(vcf_df, sv_type, cluster_size_min):
     """
     Cluster SV breakpoints using HDBSCAN.
     """
@@ -100,7 +100,7 @@ def cluster_breakpoints(vcf_df, sv_type, cluster_size_min=2):
         # Format the deletion breakpoints
         breakpoints = np.column_stack((sv_start, sv_end))
 
-    elif sv_type == 'INS' or sv_type == 'DUP':
+    elif sv_type == 'INS/DUP':
         sv_start = vcf_df['POS'].values
         sv_len = vcf_df['INFO'].str.extract(r'SVLEN=(-?\d+)', expand=False).astype(np.int32)
         sv_end = sv_start + sv_len - 1
@@ -121,7 +121,7 @@ def cluster_breakpoints(vcf_df, sv_type, cluster_size_min=2):
 
     # Cluster SV breakpoints using HDBSCAN
     cluster_labels = []
-    dbscan = HDBSCAN(min_cluster_size=cluster_size_min)
+    dbscan = HDBSCAN(min_cluster_size=cluster_size_min, min_samples=2)
     if len(breakpoints) > 0:
         logging.info("Clustering %d SV breakpoints...", len(breakpoints))
         cluster_labels = dbscan.fit_predict(breakpoints)
@@ -169,14 +169,14 @@ def cluster_breakpoints(vcf_df, sv_type, cluster_size_min=2):
             max_score_idx = 0
 
         # Get the VCF record with the highest depth score
-        max_del_record = vcf_df.iloc[idx, :].iloc[max_score_idx, :]
+        max_record = vcf_df.iloc[idx, :].iloc[max_score_idx, :]
 
         # Get the number of SVs in this cluster
         cluster_size = np.sum(idx)
         # logging.info("DEL Cluster size: %s", cluster_size)
 
         # Update the SUPPORT field in the INFO column
-        max_del_record = update_support(max_del_record, cluster_size)
+        max_record = update_support(max_record, cluster_size)
 
         # Get all position values in the cluster
         pos_values = breakpoints[idx][:, 0]
@@ -190,12 +190,11 @@ def cluster_breakpoints(vcf_df, sv_type, cluster_size_min=2):
 
         # Append the chosen record to the dataframe of records that will
         # form the merged VCF file
-        merged_records.loc[merged_records.shape[0]] = max_del_record
+        merged_records.loc[merged_records.shape[0]] = max_record
 
     return merged_records
 
-
-def sv_merger(vcf_file_path, cluster_size_min=2, suffix='.merged'):
+def sv_merger(vcf_file_path, cluster_size_min=3, suffix='.merged'):
     """
     Use DBSCAN to merge SVs with the same breakpoint.
     Mode can be 'dbscan', 'gmm', or 'agglomerative'.
@@ -233,12 +232,12 @@ def sv_merger(vcf_file_path, cluster_size_min=2, suffix='.merged'):
         # Cluster deletions
         logging.info("Clustering deletions on chromosome %s...", chromosome)
         chr_del_df = vcf_df[(vcf_df['CHROM'] == chromosome) & (vcf_df['INFO'].str.contains('SVTYPE=DEL'))]
-        del_records = cluster_breakpoints(chr_del_df, 'DEL', cluster_size_min=cluster_size_min)
+        del_records = cluster_breakpoints(chr_del_df, 'DEL', cluster_size_min)
 
         # Cluster insertions and duplications
         logging.info("Clustering insertions and duplications on chromosome %s...", chromosome)
         chr_ins_dup_df = vcf_df[(vcf_df['CHROM'] == chromosome) & ((vcf_df['INFO'].str.contains('SVTYPE=INS')) | (vcf_df['INFO'].str.contains('SVTYPE=DUP')))]
-        ins_dup_records = cluster_breakpoints(chr_ins_dup_df, 'INS', cluster_size_min=cluster_size_min)
+        ins_dup_records = cluster_breakpoints(chr_ins_dup_df, 'INS/DUP', cluster_size_min)
 
         # Summarize the number of deletions and insertions/duplications
         del_count = del_records.shape[0]
@@ -250,8 +249,6 @@ def sv_merger(vcf_file_path, cluster_size_min=2, suffix='.merged'):
         # records DataFrame
         merged_records = pd.concat([merged_records, del_records, ins_dup_records], ignore_index=True)
 
-        # logging.info(f"Chromosome {chromosome} - {del_count} deletions, {ins_dup_count} insertions, and duplications merged.")
-       
         current_chromosome += 1
         logging.info("Processed %d of %d chromosomes.", current_chromosome, chromosome_count)
         

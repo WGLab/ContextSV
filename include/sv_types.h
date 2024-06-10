@@ -30,7 +30,7 @@ namespace sv_types {
         std::set<std::string> data_type;  // Alignment type used to call the SV
         int sv_length;
         std::string genotype = "./.";  // Default genotype (no call)
-        double hmm_likelihood = 0.0;  // HMM likelihood for the SV
+        double hmm_likelihood = 0.0;  // HMM likelihood score for the state sequence
 
         SVInfo() :
             sv_type(-1), read_support(0), read_depth(0), data_type({}), sv_length(0), genotype("./."), hmm_likelihood(0.0) {}

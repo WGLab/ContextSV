@@ -9,6 +9,8 @@ import pandas as pd
 
 from .utils import parse_region, get_info_field_column, get_info_field_value
 
+MIN_CNV_LENGTH = 50000
+
 # Set up logging.
 log.basicConfig(
     level=log.INFO,
@@ -137,8 +139,8 @@ def run(vcf_file, cnv_data_file, output_path, region):
                 cnv_length = int(get_info_field_value(info_field, "SVLEN"))
                 log.info("CNV length: %d", cnv_length)
 
-                # Continue if the CNV length is < 100kb.
-                if abs(cnv_length) < 100000:
+                # Continue if the CNV length is < MIN_CNV_LENGTH
+                if abs(cnv_length) < MIN_CNV_LENGTH:
                     continue
 
                 # Use absolute value of CNV length (deletions are negative).
@@ -332,3 +334,12 @@ def run(vcf_file, cnv_data_file, output_path, region):
                     break
     
     log.info("Saved CNV plots to %s.", output_html_filepath)
+
+if __name__ == "__main__":
+    # Get the input and output file paths from the command line arguments.
+    vcf_file = sys.argv[1]
+    cnv_data_file = sys.argv[2]
+    output_path = sys.argv[3]
+    region = sys.argv[4]
+
+    run(vcf_file, cnv_data_file, output_path, region)

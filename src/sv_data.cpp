@@ -8,6 +8,16 @@
 
 int SVData::add(std::string chr, int64_t start, int64_t end, int sv_type, std::string alt_allele, std::string data_type)
 {
+    // The alternate allele may have IUPAC ambiguity codes. For now, set these
+    // to N (unknown base) to simplify the VCF output
+    // IUPAC ambiguity codes: https://www.bioinformatics.org/sms/iupac.html
+    for (auto& base : alt_allele) {
+        if (base == 'R' || base == 'Y' || base == 'S' || base == 'W' || base == 'K' || base == 'M' \
+            || base == 'B' || base == 'D' || base == 'H' || base == 'V') {
+            base = 'N';
+        }
+    }
+
     // Check if the SV candidate already exists in the map
     SVCandidate candidate(start, end, alt_allele);
     if (this->sv_calls[chr].find(candidate) != this->sv_calls[chr].end()) {
@@ -209,8 +219,6 @@ void SVData::saveToVCF(FASTAQuery& ref_genome, std::string output_dir)
 
             // If the SV type is unknown, skip it
             if (sv_type == UNKNOWN) {
-                //std::cerr << "Skipping SV call at " << chr << ":" << pos << "-" <<
-                //end << " because the SV type is unknown" << std::endl;
                 skip_count += 1;
                 continue;
             }
