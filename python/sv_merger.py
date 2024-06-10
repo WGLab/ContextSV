@@ -74,8 +74,12 @@ def update_support(record, cluster_size):
     updated_info = ''
     for field in info_fields:
         if field.startswith('SUPPORT='):
-            # Set the SUPPORT field to the cluster size
-            updated_info += f'SUPPORT={cluster_size};'
+            # Get the current SUPPORT field
+            previous_support = int(field.split('=')[1])
+
+            # Add the cluster size to the SUPPORT field
+            updated_info += f'SUPPORT={previous_support + cluster_size};'
+            # updated_info += f'SUPPORT={cluster_size};'
         else:
             updated_info += field + ';'  # Append the field to the updated INFO
             
@@ -121,7 +125,7 @@ def cluster_breakpoints(vcf_df, sv_type, cluster_size_min):
 
     # Cluster SV breakpoints using HDBSCAN
     cluster_labels = []
-    dbscan = HDBSCAN(min_cluster_size=cluster_size_min, min_samples=2)
+    dbscan = HDBSCAN(min_cluster_size=cluster_size_min, min_samples=3)
     if len(breakpoints) > 0:
         logging.info("Clustering %d SV breakpoints...", len(breakpoints))
         cluster_labels = dbscan.fit_predict(breakpoints)

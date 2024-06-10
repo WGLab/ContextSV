@@ -11,12 +11,32 @@ int SVData::add(std::string chr, int64_t start, int64_t end, int sv_type, std::s
     // The alternate allele may have IUPAC ambiguity codes. For now, set these
     // to N (unknown base) to simplify the VCF output
     // IUPAC ambiguity codes: https://www.bioinformatics.org/sms/iupac.html
-    for (auto& base : alt_allele) {
-        if (base == 'R' || base == 'Y' || base == 'S' || base == 'W' || base == 'K' || base == 'M' \
-            || base == 'B' || base == 'D' || base == 'H' || base == 'V') {
-            base = 'N';
+    // Replace all ambiguous bases with N (RYWSKMBDHV)
+    std::string ambiguous_bases = "RYWSKMBDHV";
+    bool is_ambiguous = false;
+    for (char& c : alt_allele) {
+        if (ambiguous_bases.find(c) != std::string::npos) {
+            c = 'N';
+            is_ambiguous = true;
         }
     }
+    if (is_ambiguous) {
+        std::cerr << "Warning: Ambiguous base(s) in alternate allele " << alt_allele << " at " << chr << ":" << start << "-" << end << std::endl;
+
+        // Check if there are any ambiguous bases left
+        if (alt_allele.find_first_of(ambiguous_bases) != std::string::npos) {
+            std::cerr << "Error: Failed to remove all ambiguous bases from alternate allele " << alt_allele << " at " << chr << ":" << start << "-" << end << std::endl;
+            return -1;
+        }
+    }
+    // bool is_ambiguous = false;
+    // if (alt_allele.find_first_of("RYWSKMBDHV") != std::string::npos) {
+    //     is_ambiguous = true;
+
+    //     // Set the alternate allele to N
+    //     alt_allele = "N";
+    //     // std::cerr << "Warning: Ambiguous base(s) in alternate allele " << alt_allele << " at " << chr << ":" << start << "-" << end << std::endl;
+    // }
 
     // Check if the SV candidate already exists in the map
     SVCandidate candidate(start, end, alt_allele);
