@@ -170,29 +170,39 @@ def cluster_breakpoints(vcf_df, sv_type, cluster_size_min):
         # Get the indices of SVs with the same label
         idx = cluster_labels == label
 
-        # Use the SV with the lowest log likelihood score, if available
-        # (values are not all the same)
-        max_score_idx = None
+        # Get HMM and read support values for the cluster
+        max_score_idx = 0  # Default to the first SV in the cluster
         cluster_hmm_scores = np.array(hmm_scores[idx])
         cluster_depth_scores = np.array(sv_support[idx])
         max_hmm = None
         max_support = None
+        max_hmm_idx = None
+        max_support_idx = None
+
+        # Find the maximum HMM score
         if len(np.unique(cluster_hmm_scores)) > 1:
-            # Find the index of the maximum score, excluding NaN values
-            max_score_idx = np.nanargmax(cluster_hmm_scores)
-            # max_score_idx = np.argmax(cluster_hmm_scores)
-            max_hmm = cluster_hmm_scores[max_score_idx]
+            max_hmm_idx = np.nanargmax(cluster_hmm_scores)
+            max_hmm = cluster_hmm_scores[max_hmm_idx]
 
-        # Use the SV with the highest read support if the log likelihood
-        # scores are all the same
-        elif len(np.unique(cluster_depth_scores)) > 1:
-            max_score_idx = np.argmax(cluster_depth_scores)
-            max_support = cluster_depth_scores[max_score_idx]
+        # Find the maximum read alignment and clipped base support
+        if len(np.unique(cluster_depth_scores)) > 1:
+            max_support_idx = np.argmax(cluster_depth_scores)
+            max_support = cluster_depth_scores[max_support_idx]
 
-        # Use the first SV in the cluster if the depth scores are all the
-        # same
-        else:
-            max_score_idx = 0
+        # For deletions, choose the SV with the highest HMM score if available
+        if sv_type == 'DEL':
+            if max_hmm is not None:
+                max_score_idx = max_hmm_idx
+            elif max_support is not None:
+                max_score_idx = max_support_idx
+
+        # For insertions and duplications, choose the SV with the highest read
+        # support if available
+        elif sv_type == 'INS/DUP':
+            if max_support is not None:
+                max_score_idx = max_support_idx
+            elif max_hmm is not None:
+                max_score_idx = max_hmm_idx
 
         # Get the VCF record with the highest depth score
         max_record = vcf_df.iloc[idx, :].iloc[max_score_idx, :]
@@ -276,11 +286,13 @@ def sv_merger(vcf_file_path, cluster_size_min=3, suffix='.merged'):
         logging.info("Clustering deletions on chromosome %s...", chromosome)
         chr_del_df = vcf_df[(vcf_df['CHROM'] == chromosome) & (vcf_df['INFO'].str.contains('SVTYPE=DEL'))]
         del_records = cluster_breakpoints(chr_del_df, 'DEL', cluster_size_min)
+        del chr_del_df
 
         # Cluster insertions and duplications
         logging.info("Clustering insertions and duplications on chromosome %s...", chromosome)
         chr_ins_dup_df = vcf_df[(vcf_df['CHROM'] == chromosome) & ((vcf_df['INFO'].str.contains('SVTYPE=INS')) | (vcf_df['INFO'].str.contains('SVTYPE=DUP')))]
         ins_dup_records = cluster_breakpoints(chr_ins_dup_df, 'INS/DUP', cluster_size_min)
+        del chr_ins_dup_df
 
         # Summarize the number of deletions and insertions/duplications
         del_count = del_records.shape[0]
@@ -297,11 +309,8 @@ def sv_merger(vcf_file_path, cluster_size_min=3, suffix='.merged'):
         
     logging.info("Processed %d records of %d total records.", records_processed, vcf_df.shape[0])
 
-
     # Free up memory
     del vcf_df
-    del chr_del_df
-    del chr_ins_dup_df
 
     # Open a new VCF file for writing
     logging.info("Writing merged VCF file...")
