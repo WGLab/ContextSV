@@ -8,7 +8,7 @@ Usage: python sv_merger.py <VCF file path>
 Output: <VCF file path>.merged.vcf
 """
 
-import os
+import os, sys
 import numpy as np
 import pandas as pd
 
@@ -19,6 +19,7 @@ import matplotlib.pyplot as plt  # For plotting merge behavior
 
 # HDBSCAN clustering algorithm
 from sklearn.cluster import HDBSCAN
+from sklearn.cluster import DBSCAN
 
 
 def plot_dbscan(breakpoints, chosen_breakpoints, filename='dbscan_clustering.png'):
@@ -113,7 +114,7 @@ def cluster_breakpoints(vcf_df, sv_type, cluster_size_min):
         breakpoints = np.column_stack((sv_start, sv_end))
     else:
         logging.error("Invalid SV type: %s", sv_type)
-        return
+        sys.exit(1)
     
     # Get the combined SV read and clipped base support
     sv_support = vcf_df['INFO'].str.extract(r'SUPPORT=(\d+)', expand=False).astype(np.int32)
@@ -121,13 +122,15 @@ def cluster_breakpoints(vcf_df, sv_type, cluster_size_min):
     sv_support = sv_support + sv_clipped_base_support
 
     # Get the HMM likelihood scores
-    hmm_scores = vcf_df['INFO'].str.extract(r'HMM=(\d+)', expand=False).astype(np.float32)
+    hmm_scores = vcf_df['INFO'].str.extract(r'HMM=(-?\d+\.?\d*)', expand=False).astype(float)
 
     # Set all 0 values to NaN
     hmm_scores[hmm_scores == 0] = np.nan
 
     # Cluster SV breakpoints using HDBSCAN
     cluster_labels = []
+
+    # dbscan = DBSCAN(eps=30000, min_samples=3)
     dbscan = HDBSCAN(min_cluster_size=cluster_size_min, min_samples=3)
     if len(breakpoints) > 0:
         logging.info("Clustering %d SV breakpoints...", len(breakpoints))
@@ -144,15 +147,22 @@ def cluster_breakpoints(vcf_df, sv_type, cluster_size_min):
 
         # Skip label -1 (outliers)
         if label == -1:
-            # Print the positions if any are within a certain range
-            pos_min = 180915940
-            pos_max = 180950356
+            # # Print the positions if any are within a certain range
+            # pos_min = 180915940
+            # pos_max = 180950356
+
+            # Debug if position is found
+            target_pos = 180949217
+
             idx = cluster_labels == label
             pos_values = breakpoints[idx][:, 0]
-            if (np.any(pos_values >= pos_min) and np.any(pos_values <= pos_max)):
+            if target_pos in pos_values:
+                logging.info(f"Outlier deletion positions: {pos_values}")
+
+            # if (np.any(pos_values >= pos_min) and np.any(pos_values <= pos_max)):
                 # Print all within range
-                pos_within_range = pos_values[(pos_values >= pos_min) & (pos_values <= pos_max)]
-                logging.info(f"Outlier deletion positions: {pos_within_range}")
+                # pos_within_range = pos_values[(pos_values >= pos_min) & (pos_values <= pos_max)]
+                # logging.info(f"Outlier deletion positions: {pos_within_range}")
                 # logging.info(f"Outlier deletion positions: {pos_values}")
 
             continue
@@ -163,17 +173,21 @@ def cluster_breakpoints(vcf_df, sv_type, cluster_size_min):
         # Use the SV with the lowest log likelihood score, if available
         # (values are not all the same)
         max_score_idx = None
-        cluster_hmm_scores = hmm_scores[idx]
-        cluster_depth_scores = sv_support[idx]
+        cluster_hmm_scores = np.array(hmm_scores[idx])
+        cluster_depth_scores = np.array(sv_support[idx])
+        max_hmm = None
+        max_support = None
         if len(np.unique(cluster_hmm_scores)) > 1:
             # Find the index of the maximum score, excluding NaN values
             max_score_idx = np.nanargmax(cluster_hmm_scores)
             # max_score_idx = np.argmax(cluster_hmm_scores)
+            max_hmm = cluster_hmm_scores[max_score_idx]
 
         # Use the SV with the highest read support if the log likelihood
         # scores are all the same
         elif len(np.unique(cluster_depth_scores)) > 1:
             max_score_idx = np.argmax(cluster_depth_scores)
+            max_support = cluster_depth_scores[max_score_idx]
 
         # Use the first SV in the cluster if the depth scores are all the
         # same
@@ -193,12 +207,26 @@ def cluster_breakpoints(vcf_df, sv_type, cluster_size_min):
         # Get all position values in the cluster
         pos_values = breakpoints[idx][:, 0]
 
-        # If the POS value is a certain value, plot the support
-        pos_min = 180915940
-        pos_max = 180950356
-        if (np.any(pos_values >= pos_min) and np.any(pos_values <= pos_max)) or cluster_size > 1000:
+        # Debug if position is found
+        target_pos = 180949217
+        if target_pos in pos_values:
             logging.info(f"Cluster size: {cluster_size}")
-            logging.info(f"Pos values: {pos_values}")
+            logging.info(f"Pos values:")
+            for k, pos in enumerate(pos_values):
+                logging.info(f"Row {k+1} - Pos: {pos}, HMM: {cluster_hmm_scores[k]}, support: {cluster_depth_scores[k]}")
+
+            logging.info(f"Chosen position: {max_record['POS']} - HMM: {max_hmm}, support: {max_support}")
+
+        # # If the POS value is a certain value, plot the support
+        # pos_min = 180915940
+        # pos_max = 180950356
+        # # if (np.any(pos_values >= pos_min) and np.any(pos_values <= pos_max)) or cluster_size > 1000:
+        # if (np.any(pos_values >= pos_min) and np.any(pos_values <= pos_max)):
+        #     logging.info(f"Cluster size: {cluster_size}")
+        #     logging.info(f"Pos values:")
+        #     for k, pos in enumerate(pos_values):
+        #         logging.info(f"Row {k+1} - Pos: {pos}, HMM: {cluster_hmm_scores[k]}, support: {cluster_depth_scores[k]}")
+
 
         # Append the chosen record to the dataframe of records that will
         # form the merged VCF file
@@ -234,6 +262,9 @@ def sv_merger(vcf_file_path, cluster_size_min=3, suffix='.merged'):
 
     # Create a set with each chromosome in the VCF file
     chromosomes = set(vcf_df['CHROM'].values)
+
+    # [TEST] Use only chromosome 5
+    # chromosomes = ['chr5']
 
     # Iterate over each chromosome
     records_processed = 0
@@ -276,7 +307,8 @@ def sv_merger(vcf_file_path, cluster_size_min=3, suffix='.merged'):
     logging.info("Writing merged VCF file...")
     merged_vcf = os.path.splitext(vcf_file_path)[0] + suffix + '.vcf'
 
-    logging.info("Writing %d records to merged VCF file...", merged_records.shape[0])
+    total_records = merged_records.shape[0]
+    logging.info("Writing %d records to merged VCF file...", total_records)
 
     merge_count = 0
     index_start = 0
@@ -318,7 +350,7 @@ def sv_merger(vcf_file_path, cluster_size_min=3, suffix='.merged'):
                 merge_count += 1
                 merged_vcf_file.write(f"{matching_record['CHROM']}\t{matching_record['POS']}\t{matching_record['ID']}\t{matching_record['REF']}\t{matching_record['ALT']}\t{matching_record['QUAL']}\t{matching_record['FILTER']}\t{matching_record['INFO']}\t{matching_record['FORMAT']}\t{matching_record['SAMPLE']}\n")
 
-            logging.info("Wrote %d of %d records to merged VCF file...", merge_count, merged_records.shape[0])
+        logging.info("Wrote %d of %d total records to merged VCF file...", merge_count, total_records)
 
     logging.info("Merged VCF file written to %s", merged_vcf)
 
