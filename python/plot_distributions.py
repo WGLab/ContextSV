@@ -33,14 +33,39 @@ def generate_sv_size_plot(input_vcf, output_png, plot_title="SV Caller"):
     sv_sizes = {}
 
     # Iterate over each record in the VCF file
+    print("SV CALLER: ", plot_title)
     for _, record in vcf_df.iterrows():
 
-        # Check if INFO/SVLEN is present. These are not present in BND and imprecise calls
-        if 'SVLEN' not in record['INFO']:
-            continue
+        # Get the POS
+        pos = record['POS']
 
-        # Get the SV type
-        sv_type = record['INFO'].split('SVTYPE=')[1].split(';')[0]
+        # Get the SV data by splitting semi-colon separated INFO field and
+        # extracting SVTYPE and SVLEN
+        info_fields = record['INFO'].split(';')
+        sv_type = None
+        sv_len = None  # INFO/SVLEN
+        sv_span = None  # INFO/END - POS
+        alignment = "NA"
+        for field in info_fields:
+            if field.startswith('SVTYPE='):
+                sv_type = field.split('=')[1]                
+            elif field.startswith('SVLEN='):
+                sv_len = abs(int(field.split('=')[1]))
+            elif field.startswith('END='):
+                sv_span = int(field.split('=')[1]) - pos
+            elif field.startswith('ALN='):
+                alignment = field.split('=')[1]
+
+        # Continue if SV type is BND (no SV size)
+        if sv_type == "BND":
+            continue
+        # If the SV caller is DELLY, then we use the second SV size for non-INS
+        # (they don't have SVLEN) and the first SV size for INS
+        sv_size = None
+        if plot_title == "DELLY" and sv_type != "INS":
+            sv_size = sv_span
+        else:
+            sv_size = sv_len
 
         # If the plot title is GIAB, then we need to convert INS to DUP if
         # INFO/SVTYPE is INS and INFO/REPTYPE is DUP
@@ -48,13 +73,7 @@ def generate_sv_size_plot(input_vcf, output_png, plot_title="SV Caller"):
             if 'REPTYPE=DUP' in record['INFO']:
                 sv_type = "DUP"
 
-        # Get the SV size
-        sv_size = int(record['INFO'].split('SVLEN=')[1].split(';')[0])
-
-        # Print the SV type and size
-        # print(f'SV type: {sv_type}, SV size: {sv_size}')
-
-        # If the SV type is not in the dictionary, add it
+        # Add the SV type if it's not in the dictionary
         if sv_type not in sv_sizes:
             sv_sizes[sv_type] = []
 
@@ -65,6 +84,7 @@ def generate_sv_size_plot(input_vcf, output_png, plot_title="SV Caller"):
     # different SV type
     sv_type_count = len(sv_sizes)
     fig, axes = plt.subplots(sv_type_count, 1, figsize=(10, 5 * sv_type_count))
+    print(f'Number of SV types: {sv_type_count}')
 
     # Create a dictionary of SV types and their corresponding colors. Use light
     # colors to make the plot more readable, such as 'skyblue' for deletions,
@@ -88,6 +108,20 @@ def generate_sv_size_plot(input_vcf, output_png, plot_title="SV Caller"):
     print('Number of SVs for each type with size > 50kb:')
     for sv_type in sv_types:
         print(f'{sv_labels[sv_type]}: {len([x for x in sv_sizes[sv_type] if abs(x) > 50000])}')
+
+    # Summary statistics
+    all_sv_sizes = []
+    for sv_type in sv_types:
+        all_sv_sizes.extend(sv_sizes[sv_type])
+    print('Summary statistics:')
+    print(f'Minimum SV size: {min(all_sv_sizes)}')
+    print(f'Maximum SV size: {max(all_sv_sizes)}')
+    print(f'Mean SV size: {np.mean(all_sv_sizes)}')
+    print(f'Median SV size: {np.median(all_sv_sizes)}')
+    print(f'Standard deviation of SV sizes: {np.std(all_sv_sizes)}')
+    print(f'Number of SVs >10kb: {len([x for x in all_sv_sizes if abs(x) > 10000])}')
+    print(f'Number of SVs >50kb: {len([x for x in all_sv_sizes if abs(x) > 50000])}')
+    print(f'Number of SVs >100kb: {len([x for x in all_sv_sizes if abs(x) > 100000])}')
 
     # Plot the SV size distributions
     size_scale = 1000 # Convert SV sizes from bp to kb. Use abs() to handle negative deletion sizes

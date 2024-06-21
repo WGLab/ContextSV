@@ -326,8 +326,7 @@ SVData SVCaller::run()
     SuppMap supplementary_alignments;
     int all_region_sv_count = 0;
     for (const auto& region : regions) {
-        std::cout << "Starting region: " << region << std::endl;
-
+        // std::cout << "Extracting alignments for region: " << region << std::endl;
         // Split the region into chunks and process each chunk in a separate
         // thread
         int num_threads = this->input_data->getThreadCount();
@@ -409,7 +408,7 @@ SVData SVCaller::run()
 
         // Increment the region count
         region_count++;
-        std::cout << "Region " << region_count << " of " << num_regions << " complete" << std::endl;
+        std::cout << "Extracted aligments for " << region_count << " of " << num_regions << " regions." << std::endl;
     }
 
     // Run split-read SV detection in a single thread
@@ -418,7 +417,6 @@ SVData SVCaller::run()
 
     auto end1 = std::chrono::high_resolution_clock::now();
     std::cout << "Finished detecting " << sv_calls.totalCalls() << " SVs from " << num_regions << " region(s). Elapsed time: " << getElapsedTime(start1, end1) << std::endl;
-
 
     // Return the SV calls
     return sv_calls;

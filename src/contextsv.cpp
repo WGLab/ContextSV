@@ -46,7 +46,7 @@ int ContextSV::run()
 
     // Write SV calls to file
     std::string output_dir = this->input_data->getOutputDir();
-    std::cout << "Writing SV calls to file " << output_dir << "/sv_calls.vcf..." << std::endl;
+    std::cout << "Writing SV calls to file " << output_dir << "/output.vcf..." << std::endl;
     sv_calls.saveToVCF(ref_genome, output_dir);
 
     // Format and print the time taken to call SVs

@@ -66,6 +66,10 @@ class InputData {
         void setSNPFilepath(std::string filepath);
         std::string getSNPFilepath();
 
+        // Set the ethnicity for SNP population frequencies.
+        void setEthnicity(std::string ethnicity);
+        std::string getEthnicity();
+
         // Set the genomic region to analyze.
 		void setRegion(std::string region);
         std::string getRegion();
@@ -120,9 +124,7 @@ class InputData {
         std::string long_read_bam;
         std::string ref_filepath;
         std::string snp_vcf_filepath;
-        // std::string pfb_filepath;  // Filepath to the tab-delimited file with SNP population frequencies
-        // PFBMap pfb_map;  // Map of population frequencies by SNP position
-        // (chr -> pos -> pfb)
+        std::string ethnicity;
         std::unordered_map<std::string, std::string> pfb_filepaths;  // Map of population frequency VCF filepaths by chromosome
         FASTAQuery fasta_query;
         std::string output_dir;

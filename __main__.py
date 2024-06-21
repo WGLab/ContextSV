@@ -59,6 +59,15 @@ def main():
         required=False
     )
 
+    # Specify the ethnicity of the sample for obtaining population allele
+    # frequencies from a database such as gnomAD. If not provided, the allele
+    # frequencies will be obtained for all populations.
+    parser.add_argument(
+        "-e", "--ethnicity",
+        help="ethnicity of the sample (e.g. afr, amr, eas, fin, nfe, oth, sas)",
+        required=False
+    )
+
     # Text file with VCF filepaths of SNP population allele frequencies for each
     # chromosome from a database such as gnomAD (e.g. 1=chr1.vcf.gz\n2=chr2.vcf.gz\n...).
     parser.add_argument(
@@ -215,6 +224,7 @@ def main():
     input_data.setLongReadBam(args.long_read)
     input_data.setRefGenome(args.reference)
     input_data.setSNPFilepath(args.snps)
+    input_data.setEthnicity(args.ethnicity)
     input_data.setRegion(args.region)
     input_data.setThreadCount(args.threads)
     input_data.setMeanChromosomeCoverage(args.chr_cov)
@@ -230,7 +240,7 @@ def main():
     contextsv.run(input_data)
 
     # Determine the data paths for downstream analysis.
-    vcf_path = os.path.join(args.output, "sv_calls.vcf")
+    vcf_path = os.path.join(args.output, "output.vcf")
     output_dir = args.output
     region = args.region
     cnv_data_path = os.path.join(args.output, "cnv_data.tsv")
@@ -240,7 +250,7 @@ def main():
         log.info("Generating CNV plots...")
         cnv_plots.run(vcf_path, cnv_data_path, output_dir, region)
 
-    log.info("Complete. Thank you for using contextSV!")
+    log.info("Complete. File saved to %s\nThank you for using ContextSV!", vcf_path)
 
 if __name__ == '__main__':
 

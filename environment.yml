@@ -10,7 +10,11 @@ dependencies:
   - htslib
   - swig
   - pytest
-  - plotly
-  - pandas
-  - scikit-learn
-  - joblib
+
+# [A] Generate directly from the file:
+#  conda env create -f environment.yml -n contextsv
+# [B] Generate after creating a new environment:
+# conda create -n contextsv
+# conda activate contextsv
+# conda env update -f environment.yml --prune  # Prune removes unused packages
+
