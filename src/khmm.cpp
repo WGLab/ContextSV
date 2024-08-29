@@ -304,6 +304,12 @@ std::pair<std::vector<int>, double> ViterbiLogNP_CHMM(CHMM hmm, int T, std::vect
 	// and BAF values).
 	biot = dmatrix(1, hmm.N, 1, T);  // Allocate a NxT double matrix (N=6 states)
 
+	// Create a dictionary for each state to store all BAF log probabilities
+	std::map<int, std::vector<double>> baf_log_probs;
+
+	// Create a dictionary for each state to store all BAF scaling factors
+	std::map<int, std::vector<double>> scaling_factors;
+
 	// Loop through each state N
 	// Start at 1 because states are 1-based (1-6)
 	for (i = 1; i <= hmm.N; i++)
@@ -323,7 +329,37 @@ std::pair<std::vector<int>, double> ViterbiLogNP_CHMM(CHMM hmm, int T, std::vect
 			double O1_logprob = b1iot(i, hmm.B1_mean, hmm.B1_sd, hmm.B1_uf, O1_val);
 
 			double O2_val = O2[t];
+
+// 			// If the BAF value is -1 (no data), set the log probability to 0
+// //			double O2_logprob = log(0.5);
+// //            double O2_logprob = 0;
+// 			if (O2_val == -1) {
+// 			    O2_val = 0.5;
+// //				O2_logprob = b2iot(i, hmm.B2_mean, hmm.B2_sd, hmm.B2_uf, pfb[t], O2_val);
+// 			}
+
+
+			// If no BAF data (value is -1), only use the LRR data [TEST]
+			// double O2_logprob = 0;
+			// if (O2_val != -1) {
+            // 	O2_logprob = b2iot(i, hmm.B2_mean, hmm.B2_sd, hmm.B2_uf, pfb[t], O2_val);
+			// }
+
 			double O2_logprob = b2iot(i, hmm.B2_mean, hmm.B2_sd, hmm.B2_uf, pfb[t], O2_val);
+
+			// Print the scaling factor to determine the contribution of O2 to
+			// the emission probability
+			// std::cout << "State = " << i << ", O2 = " << O2_val << std::endl;
+			// double sum = O1_logprob + O2_logprob;
+			// std::cout << "State = " << i <<  ", scaling factor (sum/O1) = "
+			// << O1_logprob / sum << std::endl;
+			
+			// Add the BAF log probability to the dictionary
+			baf_log_probs[i].push_back(O2_logprob);
+
+			// Add the scaling factor to the dictionary
+			double sum = O1_logprob + O2_logprob;
+			scaling_factors[i].push_back(sum / O1_logprob);
 
 			// Update the emission probability matrix with the joint probability
 			// of the marker being in state i at time t (log probability) based
@@ -333,6 +369,23 @@ std::pair<std::vector<int>, double> ViterbiLogNP_CHMM(CHMM hmm, int T, std::vect
 			// Update the SNP count
 			snp_count++;
 		}
+	}
+
+	// Print the mean BAF log probabilities and mean scaling factors for each
+	// state
+	for (i = 1; i <= hmm.N; i++)
+	{
+		double sum_baf = 0;
+		double sum_scaling = 0;
+		for (int j = 0; j < snp_count; j++)
+		{
+			sum_baf += baf_log_probs[i][j];
+			sum_scaling += scaling_factors[i][j];
+		}
+		double mean_baf = sum_baf / snp_count;
+		double mean_scaling = sum_scaling / snp_count;
+		std::cout << "State = " << i << ", mean BAF log prob = " << mean_baf
+		<< ", mean scaling factor = " << mean_scaling << std::endl;
 	}
 
 	/* 1. Initialization  */

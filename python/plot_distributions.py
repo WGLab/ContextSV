@@ -135,6 +135,20 @@ def generate_sv_size_plot(input_vcf, output_png, plot_title="SV Caller"):
         # Use a log scale for the y-axis
         axes[i].set_yscale('log')
 
+        # # In the same axis, plot a known duplication if within the range of the plot
+        if sv_type == 'DUP':
+            print("TEST: Found DUP")
+            cnv_size = 776237 / size_scale
+            x_min, x_max = axes[i].get_xlim()
+            if cnv_size > x_min and cnv_size < x_max:
+                axes[i].axvline(x=cnv_size, color='black', linestyle='--')
+            else:
+                # Print the values
+                print(f'CNV size: {cnv_size}, x_min: {x_min}, x_max: {x_max}')
+
+        # Refresh the plot
+        plt.draw()
+
     # Save the plot as a PNG file
     plt.tight_layout()
     plt.savefig(output_png)
@@ -155,7 +169,7 @@ def generate_sv_size_plot(input_vcf, output_png, plot_title="SV Caller"):
     # for cnv_size in akizu_5_cnv_sizes:
     #     if cnv_size / size_scale > x_min and cnv_size / size_scale < x_max:
     #         ax.axvline(x=cnv_size / size_scale, color='black', linestyle='--')
-        
+
     ax.set_xlabel('SV size (kb)')
     ax.set_ylabel('Frequency (log scale)')
     ax.set_title(f'{plot_title}: All SV types')
