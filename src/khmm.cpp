@@ -330,6 +330,8 @@ std::pair<std::vector<int>, double> ViterbiLogNP_CHMM(CHMM hmm, int T, std::vect
 
 			double O2_val = O2[t];
 
+			// std::cout << "State = " << i << ", O2 = " << O2_val << std::endl;
+
 // 			// If the BAF value is -1 (no data), set the log probability to 0
 // //			double O2_logprob = log(0.5);
 // //            double O2_logprob = 0;
@@ -339,9 +341,34 @@ std::pair<std::vector<int>, double> ViterbiLogNP_CHMM(CHMM hmm, int T, std::vect
 // 			}
 
 
-			// If no BAF data (value is -1), only use the LRR data [TEST]
-			// double O2_logprob = 0;
-			// if (O2_val != -1) {
+			// // If no BAF data (value is -1), only use the LRR data [TEST]
+			// double missing_BAF_alpha = -5.0;
+			// double O2_logprob = missing_BAF_alpha;
+			// if (O2_val == -1) {
+			// 	// O2_logprob = 0.0;
+			// 	// O2_logprob = -5.0;
+			// 	switch (i) {
+			// 		case 1:
+			// 			O2_logprob = 3.0;
+			// 			break;
+			// 		case 2:
+			// 			O2_logprob = 3.0;
+			// 			break;
+			// 		case 3:
+			// 			O2_logprob = -4.0;
+			// 			break;
+			// 		case 4:
+			// 			O2_logprob = -4.0;
+			// 			break;
+			// 		case 5:
+			// 			O2_logprob = -0.7;
+			// 			break;
+			// 		case 6:
+			// 			O2_logprob = -0.7;
+			// 			break;
+			// 	}
+
+			// } else {
             // 	O2_logprob = b2iot(i, hmm.B2_mean, hmm.B2_sd, hmm.B2_uf, pfb[t], O2_val);
 			// }
 
@@ -373,20 +400,21 @@ std::pair<std::vector<int>, double> ViterbiLogNP_CHMM(CHMM hmm, int T, std::vect
 
 	// Print the mean BAF log probabilities and mean scaling factors for each
 	// state
-	for (i = 1; i <= hmm.N; i++)
-	{
-		double sum_baf = 0;
-		double sum_scaling = 0;
-		for (int j = 0; j < snp_count; j++)
-		{
-			sum_baf += baf_log_probs[i][j];
-			sum_scaling += scaling_factors[i][j];
-		}
-		double mean_baf = sum_baf / snp_count;
-		double mean_scaling = sum_scaling / snp_count;
-		std::cout << "State = " << i << ", mean BAF log prob = " << mean_baf
-		<< ", mean scaling factor = " << mean_scaling << std::endl;
-	}
+	// for (i = 1; i <= hmm.N; i++)
+	// {
+	// 	int num_values = baf_log_probs[i].size();
+	// 	double sum_baf = 0;
+	// 	double sum_scaling = 0;
+	// 	for (int j = 0; j < num_values; j++)
+	// 	{
+	// 		sum_baf += baf_log_probs[i][j];
+	// 		sum_scaling += scaling_factors[i][j];
+	// 	}
+	// 	double mean_baf = sum_baf / num_values;
+	// 	double mean_scaling = sum_scaling / num_values;
+	// 	std::cout << "State = " << i << ", mean BAF log prob = " << mean_baf
+	// 	<< ", mean scaling factor = " << mean_scaling << std::endl;
+	// }
 
 	/* 1. Initialization  */
 

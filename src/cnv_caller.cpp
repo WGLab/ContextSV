@@ -806,6 +806,11 @@ double CNVCaller::calculateLog2Ratio(int start_pos, int end_pos, std::unordered_
     double window_mean_cov = (double) cum_depth / (double) pos_count;
 
     // Calculate the log2 ratio for the window
+    // Avoid division by zero by adding a small value to the denominator
+    if (window_mean_cov == 0)
+    {
+        window_mean_cov = 0.0001;
+    }
     double window_log2_ratio = log2(window_mean_cov / mean_chr_cov);
 
     return window_log2_ratio;
