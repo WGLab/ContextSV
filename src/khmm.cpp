@@ -264,6 +264,45 @@ double pdf_normalization(double obs, double mean, double sd)
 // SV calling with the HMM via the Viterbi algorithm
 std::pair<std::vector<int>, double> ViterbiLogNP_CHMM(CHMM hmm, int T, std::vector<double>& O1, std::vector<double>& O2, std::vector<double>& pfb, double **delta, int **psi, std::vector<double>& pprob)
 {
+	// Given the following HMM parameters:
+	// - A: Transition probability matrix
+	// - B: Emission probability matrix
+	// - pi: Initial state distribution
+	// - B1_mean: Mean of a continuous Gaussian distribution for state 1 through
+	//   N
+	// - B1_sd: Standard deviation of B1 values, which is the same for all
+	//   states
+	// - B1_uf: B1_uniform_fraction, the contribution of the uniform
+	//   distribution to the finite mixture model
+	// - B2_mean: Average of B_allele_freq
+	// - B2_sd: Standard deviation of four B_allele_freq, B2_sd[5] is specially
+	//   for state 1, where B is modelled as a wide normal distribution
+	// - B2_uf: B2_uniform_fraction, the fraction of the uniform distribution in
+	//   the finite mixture model
+	// And the following input parameters:
+	// - T: Probe, marker count (= Length of LRR array - 1)
+	// - O1: LRR (Log R Ratio)
+	// - O2: BAF (B-Allele Freq.)
+	// - PFB: Genome coordinates and population frequency of B allele from the
+	//   PFB file
+	// Run the Viterbi algorithm to find the most likely state sequence Q given
+	// the observations O1, O2.
+	//   At position t, the probability of the most likely state sequence ending
+	//   in state i is stored in delta[t][i].
+	//   The state that maximizes the probability is stored in psi[t][i].
+	//   The posterior log probability of the state sequence ending in state i
+	//   at time T is stored in pprob[i].
+	// Return the most likely state sequence Q and its likelihood.
+	// Also, return the equation for the most likely state sequence ending in
+	// state i at time T:
+	//  Pprob[i] = max_{q1, q2, ..., qT-1} [delta[T][i]]
+	//  Q[T] = argmax_{q1, q2, ..., qT-1} [delta[T][i]]
+	//   delta[t][i] = max_{j=1,2,...,N} [delta[t-1][j] * a[j][i] * b[i][O1[t]]
+	//   * b[i][O2[t]]]
+	//   psi[t][i] = argmax_{j=1,2,...,N} [delta[t-1][j] * a[j][i] * b[i][O1[t]]
+	//   * b[i][O2[t]]]
+	//   pprob[i] = delta[T][i]
+
 	int i, j; /* state indices */
 	int t;	  /* time index */
 
@@ -417,6 +456,15 @@ std::pair<std::vector<int>, double> ViterbiLogNP_CHMM(CHMM hmm, int T, std::vect
 	// }
 
 	/* 1. Initialization  */
+	// For each state i, calculate the maximum probability of being in state i
+	// at time 1, along with observing the sequence O1, O2. Here, delta is the
+	// maximum probability of being in state i at time 1, along with observing
+	// the sequence O1, O2. The maximum probability is stored in delta[1][i].
+	// Psi is set to 0 (no state) for the initialization step.
+	// Pprob is the posterior log probability of the state sequence ending in
+	// state i at time T, along with observing the sequence O1, O2. The
+	// posterior log probability for each state is initialized to -inf
+	// (near zero probability).
 
 	for (i = 1; i <= hmm.N; i++)
 	{
@@ -426,6 +474,14 @@ std::pair<std::vector<int>, double> ViterbiLogNP_CHMM(CHMM hmm, int T, std::vect
 	}
 
 	/* 2. Recursion */
+	// For each state j at time t, calculate the maximum probability of reaching
+	// state j at time t from any of the states i at time t-1 (previous state),
+	// along with observing the sequence O1, O2. Here, val (delta) is the
+	// maximum probability of being in state i at time t-1 and transitioning to
+	// state j at time t, along with observing the sequence O1, O2.
+	// The maximum probability is stored in delta[t][j], and the state i that
+	// maximizes the probability is stored in psi[t][j].
+
 	for (t = 2; t <= T; t++)
 	{
 
@@ -454,6 +510,14 @@ std::pair<std::vector<int>, double> ViterbiLogNP_CHMM(CHMM hmm, int T, std::vect
 	}
 
 	/* 3. Termination */
+	// After all observations have been processed, find the maximum probability
+	// of the state sequence ending in state i at time T, along with observing
+	// the sequence O1, O2. This is the maximum probability of the state
+	// sequence ending in state i at time T!
+	// The maximum probability for each state is stored in pprob[i].
+
+	// The state corresponding to the maximum probability is stored in q[T], and
+	// is found by backtracking through the psi matrix.
 
 	// Variable to store the most likely state at time T (maximum a posteriori
 	// probability estimate)
@@ -480,6 +544,10 @@ std::pair<std::vector<int>, double> ViterbiLogNP_CHMM(CHMM hmm, int T, std::vect
 	}
 
 	/* 4. Path (state sequence) backtracking */
+	// Backtrack through the psi matrix to find the most likely state sequence.
+	// We query the psi matrix at time T using the most likely state at time T
+	// from q[T]. We then backtrack through the psi matrix to find the most
+	// likely state at time T-1, T-2, ..., 1.
 	for (t = T - 1; t >= 1; t--)
 		q[t] = psi[t + 1][q[t + 1]];
 
