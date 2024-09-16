@@ -35,23 +35,10 @@ def parse_filename(filename):
         int: The start position.
         int: The end position.
     """
-    # Get the filename without the extension.
     filename = os.path.splitext(os.path.basename(filename))[0]
-
-    # Split before prefix
     filename = filename.split("sv_snps_")[1]
-    log.info("Split before chr")
-    log.info(filename)
-
-    # Split the filename into its parts.
     filename_parts = filename.split("_")
-    log.info("Split the filename into its parts")
-    log.info(filename_parts)
-
-    # Get the chromosome.
     chromosome = filename_parts[0]
-
-    # Get the start and end positions.
     try:
         start_position = int(filename_parts[1])
         end_position = int(filename_parts[2])
@@ -237,36 +224,38 @@ def run(cnv_data_file, output_html):
                 marker_colors.append("black")
             elif state in [5, 6]:
                 marker_colors.append("blue")
+            else:  # state is 0 (NA)
+                marker_colors.append("gray")
 
         # Now get the values before and after the CNV.
-        # sv_data_before = cnv_data[(cnv_data["position"] >= plot_start_position) & (cnv_data["position"] < start_position)]
-        # sv_data_after = cnv_data[(cnv_data["position"] > end_position) & (cnv_data["position"] <= plot_end_position)]
-        sv_data_before = cnv_data[(cnv_data["position"] < start_position)]
-        sv_data_after = cnv_data[(cnv_data["position"] > end_position)]
+        # # sv_data_before = cnv_data[(cnv_data["position"] >= plot_start_position) & (cnv_data["position"] < start_position)]
+        # # sv_data_after = cnv_data[(cnv_data["position"] > end_position) & (cnv_data["position"] <= plot_end_position)]
+        # sv_data_before = cnv_data[(cnv_data["position"] < start_position)]
+        # sv_data_after = cnv_data[(cnv_data["position"] > end_position)]
 
-        # Set the marker colors for the SNPs before and after the CNV to
-        # gray.
-        marker_colors_before = ["gray"] * len(sv_data_before)
-        marker_colors_after = ["gray"] * len(sv_data_after)
+        # # Set the marker colors for the SNPs before and after the CNV to
+        # # gray.
+        # marker_colors_before = ["gray"] * len(sv_data_before)
+        # marker_colors_after = ["gray"] * len(sv_data_after)
 
-        # Set the markers to be open if no SNP, filled if SNP (filled
-        # before and after the CNV).
-        marker_symbols_before = ["circle-open"] * len(sv_data_before)
-        marker_symbols_after = ["circle-open"] * len(sv_data_after)
+        # # Set the markers to be open if no SNP, filled if SNP (filled
+        # # before and after the CNV).
+        # marker_symbols_before = ["circle-open"] * len(sv_data_before)
+        # marker_symbols_after = ["circle-open"] * len(sv_data_after)
         
         # Use row['snp'] to get whether SNP or not (0=not SNP, 1=SNP).
         marker_symbols = ["circle" if snp == 1 else "circle-open" for snp in sv_data["snp"]]
-        marker_symbols = marker_symbols_before + marker_symbols + marker_symbols_after
+        # marker_symbols = marker_symbols_before + marker_symbols + marker_symbols_after
 
         # Concatenate the SNP data before, during, and after the CNV.
-        sv_data = pd.concat([sv_data_before, sv_data, sv_data_after])
+        # sv_data = pd.concat([sv_data_before, sv_data, sv_data_after])
 
         # Set all -1 B-allele frequency values to 0.
         sv_data.loc[sv_data["b_allele_freq"] == -1, "b_allele_freq"] = 0
 
         # Concatenate the marker colors before, during, and after the
         # CNV.
-        marker_colors = marker_colors_before + marker_colors + marker_colors_after
+        # marker_colors = marker_colors_before + marker_colors + marker_colors_after
 
         # Get the hover text for the state sequence markers.
         hover_text = []

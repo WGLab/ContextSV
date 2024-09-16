@@ -49,7 +49,7 @@ std::pair<SNPData, bool> CNVCaller::querySNPRegion(std::string chr, int64_t star
     bool snps_found = false;
     int window_size = this->input_data->getWindowSize();
 
-    printMessage("Window size: " + std::to_string(window_size));
+    // printMessage("Window size: " + std::to_string(window_size));
 
     for (int64_t i = start_pos; i <= end_pos; i += window_size)
     {
@@ -179,8 +179,6 @@ SNPData CNVCaller::runCopyNumberPrediction(std::string chr, std::map<SVCandidate
     {
         // Run the copy number prediction for the SV chunk
         std::async(std::launch::async, &CNVCaller::runCopyNumberPredictionChunk, this, chr, std::ref(sv_candidates), sv_chunk, std::ref(snp_info), hmm, window_size, mean_chr_cov, std::ref(pos_depth_map));
-        // std::future<SNPData> future = std::async(std::launch::async, &CNVCaller::runCopyNumberPredictionChunk, this, chr, std::ref(sv_candidates), sv_chunk, std::ref(snp_info), hmm, window_size, mean_chr_cov, std::ref(pos_depth_map));
-        // futures.push_back(std::move(future));
     }
 
     // Get the SNP data for each SV chunk
@@ -193,16 +191,6 @@ SNPData CNVCaller::runCopyNumberPrediction(std::string chr, std::map<SVCandidate
         {
             printMessage("Finished processing SV chunk " + std::to_string(current_chunk) + " of " + std::to_string(chunk_count) + "...");
         }
-
-        // // Update the SNP data
-        // if (this->input_data->getSaveCNVData())
-        // {
-        //     this->updateSNPVectors(snp_data, chunk_snp_data.pos, chunk_snp_data.pfb, chunk_snp_data.baf, chunk_snp_data.log2_cov, chunk_snp_data.state_sequence, chunk_snp_data.is_snp);
-        //     if (this->input_data->getVerbose())
-        //     {
-        //         printMessage("Updated SNP data for SV chunk " + std::to_string(current_chunk) + " of " + std::to_string(chunk_count) + "...");
-        //     }
-        // }
     }
 
     printMessage("Finished predicting copy number states for chromosome " + chr + "...");
@@ -238,8 +226,18 @@ void CNVCaller::runCopyNumberPredictionChunk(std::string chr, std::map<SVCandida
 
         // Loop through the SV region, calculate the log2 ratios, and run the
         // Viterbi algorithm to predict the copy number states
-        // printMessage("Querying SNPs for SV " + chr + ":" + std::to_string((int)start_pos) + "-" + std::to_string((int)end_pos) + "...");
-        std::pair<SNPData, bool> snp_call = this->querySNPRegion(chr, start_pos, end_pos, snp_info, pos_depth_map, mean_chr_cov);
+
+        // We will run the Viterbi algorithm on SNPs in the SV region +/- 1/2
+        // the SV length
+        int64_t sv_half_length = (end_pos - start_pos) / 2.0;
+        std::cout << "SV half length: " << sv_half_length << std::endl;
+        int64_t query_start = std::max((int64_t) 1, start_pos - sv_half_length);
+        int64_t query_end = end_pos + sv_half_length;
+
+        // printMessage("Querying SNPs for SV " + chr + ":" +
+        // std::to_string((int)start_pos) + "-" + std::to_string((int)end_pos) +
+        // "...");
+        std::pair<SNPData, bool> snp_call = this->querySNPRegion(chr, query_start, query_end, snp_info, pos_depth_map, mean_chr_cov);
         SNPData& sv_snps = snp_call.first;
         bool snps_found = snp_call.second;
 
@@ -248,12 +246,23 @@ void CNVCaller::runCopyNumberPredictionChunk(std::string chr, std::map<SVCandida
         std::vector<int>& state_sequence = prediction.first;
         double likelihood = prediction.second;
 
-        // Determine if there is a majority state and if it is greater than 75%
+        // Get all the states in the SV region
+        std::vector<int> sv_states;
+        for (size_t i = 0; i < state_sequence.size(); i++)
+        {
+            if (sv_snps.pos[i] >= start_pos && sv_snps.pos[i] <= end_pos)
+            {
+                sv_states.push_back(state_sequence[i]);
+            }
+        }
+
+        // Determine if there is a majority state within the SV region and if it
+        // is greater than 75%
         int max_state = 0;
         int max_count = 0;
         for (int i = 0; i < 6; i++)
         {
-            int state_count = std::count(state_sequence.begin(), state_sequence.end(), i+1);
+            int state_count = std::count(sv_states.begin(), sv_states.end(), i+1);
             if (state_count > max_count)
             {
                 max_state = i+1;
@@ -263,7 +272,7 @@ void CNVCaller::runCopyNumberPredictionChunk(std::string chr, std::map<SVCandida
 
         // If there is no majority state, then set the state to unknown
         double pct_threshold = 0.75;
-        int state_count = (int) state_sequence.size();
+        int state_count = (int) sv_states.size();
         if ((double) max_count / (double) state_count < pct_threshold)
         {
             max_state = 0;
@@ -285,51 +294,10 @@ void CNVCaller::runCopyNumberPredictionChunk(std::string chr, std::map<SVCandida
 
         // Update the SV copy number data
         this->updateSVCopyNumber(sv_candidates, sv_call, cnv_type, data_type, genotype, likelihood);
-        // this->updateSVCopyNumber(sv_candidates, sv_call, cnv_type, genotype, likelihood, data_type);
-
-        // // Update the SV type if it is not unknown
-        // if (cnv_type != sv_types::UNKNOWN)
-        // {
-        //     // In this prediction approach, all duplications can be assumed to
-        //     // be tandem duplications. A separate approach is needed to
-        //     // identify interspersed duplications
-        //     if (cnv_type == sv_types::DUP)
-        //     {
-        //         cnv_type = sv_types::TANDUP;
-        //     }
-        //     this->updateSVType(sv_candidates, sv_call, cnv_type, data_type);
-
-        //     // Update the SV type counts
-        //     cnv_type_counts[cnv_type]++;
-        // }
-
-        // // Update the SV genotype and HMM state sequence probability
-        // this->updateSVGenotype(sv_candidates, sv_call, genotype);
-        // this->updateSVLikelihood(sv_candidates, sv_call, likelihood);
-
         if (this->input_data->getSaveCNVData())
         {
-            // Create a new SNP data object to store the SNP data for the SV
-            // region
             SNPData snp_data;
-
-            // Preceding SNPs:
-            int64_t sv_half_length = (end_pos - start_pos) / 2;
-            int64_t before_sv_start = start_pos - sv_half_length;
-            std::pair<SNPData, bool> preceding_snps = this->querySNPRegion(chr, before_sv_start, start_pos-1, snp_info, pos_depth_map, mean_chr_cov);
-            std::pair<std::vector<int>, double> preceding_states = runViterbi(hmm, preceding_snps.first);
-            SNPData& pre_snp = preceding_snps.first;
-            this->updateSNPVectors(snp_data, pre_snp.pos, pre_snp.pfb, pre_snp.baf, pre_snp.log2_cov, preceding_states.first, pre_snp.is_snp);
-
-            // Within SV SNPs:
             this->updateSNPVectors(snp_data, sv_snps.pos, sv_snps.pfb, sv_snps.baf, sv_snps.log2_cov, state_sequence, sv_snps.is_snp);
-
-            // Following SNPs:
-            int64_t after_sv_end = end_pos + sv_half_length;
-            std::pair<SNPData, bool> following_snps = this->querySNPRegion(chr, end_pos+1, after_sv_end, snp_info, pos_depth_map, mean_chr_cov);
-            std::pair<std::vector<int>, double> following_states = runViterbi(hmm, following_snps.first);
-            SNPData& post_snp = following_snps.first;
-            this->updateSNPVectors(snp_data, post_snp.pos, post_snp.pfb, post_snp.baf, post_snp.log2_cov, following_states.first, post_snp.is_snp);
 
             // Save the SV SNP data as a TSV with a unique filename if the
             // length is greater than 10kb
@@ -353,8 +321,6 @@ void CNVCaller::runCopyNumberPredictionChunk(std::string chr, std::map<SVCandida
             printMessage(sv_types::SVTypeString[type] + ": " + std::to_string(count) + " / " + std::to_string(sv_chunk.size()) + " (" + std::to_string(pct) + "%)");
         }
     }
-
-    // return snp_data;
 }
 
 void CNVCaller::updateSVCopyNumber(std::map<SVCandidate, SVInfo> &sv_candidates, SVCandidate key, int sv_type_update, std::string data_type, std::string genotype, double hmm_likelihood)
@@ -378,41 +344,11 @@ void CNVCaller::updateSVCopyNumber(std::map<SVCandidate, SVInfo> &sv_candidates,
         {
             sv_candidates[key].hmm_likelihood = hmm_likelihood;
         }
-        // if (hmm_likelihood < sv_candidates[key].hmm_likelihood)
-        // {
-        //     sv_candidates[key].hmm_likelihood = hmm_likelihood;
-        // }
 
         // Update the genotype
         sv_candidates[key].genotype = genotype;
     }
 }
-
-// void CNVCaller::updateSVType(std::map<SVCandidate, SVInfo> &sv_candidates, SVCandidate key, int sv_type, std::string data_type)
-// {
-//     // Lock the SV candidate map
-//     std::lock_guard<std::mutex> lock(this->sv_candidates_mtx);
-
-//     // Update the SV type if the update is not unknown
-//     if (sv_type != sv_types::UNKNOWN)
-//     {
-//         // Update the SV type if the existing type is unknown
-//         if (sv_candidates[key].sv_type == sv_types::UNKNOWN)
-//         {
-//             sv_candidates[key].sv_type = sv_type;
-//         }
-//         sv_candidates[key].data_type.insert(data_type);
-//     }
-// }
-
-// void CNVCaller::updateSVGenotype(std::map<SVCandidate,SVInfo>& sv_candidates, SVCandidate key, std::string genotype)
-// {
-//     // Lock the SV candidate map
-//     std::lock_guard<std::mutex> lock(this->sv_candidates_mtx);
-
-//     // Update the SV genotype
-//     sv_candidates[key].genotype = genotype;
-// }
 
 void CNVCaller::updateDPValue(std::map<SVCandidate,SVInfo>& sv_candidates, SVCandidate key, int dp_value)
 {
@@ -563,14 +499,6 @@ void CNVCaller::run(SVData& sv_calls)
 
     std::cout << "Finished predicting copy number states for all chromosomes" << std::endl;
     std::cout << "Found a total of " << sv_calls.totalCalls() << " SV candidates" << std::endl;
-
-    // // Save the SNP data to a TSV file
-    // if (this->input_data->getSaveCNVData())
-    // {
-    //     std::string snp_output_tsv = this->input_data->getOutputDir() + "/cnv_data.tsv";
-    //     saveToTSV(snp_data, snp_output_tsv);
-    //     std::cout << "Saved SNP data to " << snp_output_tsv << std::endl;
-    // }
 }
 
 // Calculate the mean chromosome coverage

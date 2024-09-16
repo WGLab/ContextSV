@@ -243,12 +243,23 @@ def main():
     vcf_path = os.path.join(args.output, "output.vcf")
     output_dir = args.output
     region = args.region
-    cnv_data_path = os.path.join(args.output, "cnv_data.tsv")
+    # cnv_data_path = os.path.join(args.output, "cnv_data.tsv")
 
-    # Generate python-based CNV plots if SNP-based CNV predictions are enabled.
+    # Generate python-based CNV plots if SNP-based CNV predictions are enabled
     if (args.save_cnv and not args.disable_snp_cnv):
         log.info("Generating CNV plots...")
-        cnv_plots.run(vcf_path, cnv_data_path, output_dir, region)
+
+        # Find all TSV files in the output directory
+        for file in os.listdir(output_dir):
+            if file.endswith(".tsv"):
+                cnv_data_path = os.path.join(output_dir, file)
+
+                # Set the HTML output path by changing the file extension
+                output_html = os.path.splitext(cnv_data_path)[0] + ".html"
+
+                # Generate the CNV plot for the current TSV file
+                cnv_plots.run(cnv_data_path, output_html)
+        # cnv_plots.run(vcf_path, cnv_data_path, output_dir, region)
 
     log.info("Complete. File saved to %s\nThank you for using ContextSV!", vcf_path)
 

@@ -1,15 +1,16 @@
 name: contextsv
 channels:
-  - bioconda
+  - defaults
   - anaconda
   - conda-forge
-  - defaults
+  - bioconda
 dependencies:
-  - python
+  - python=3.11
   - numpy
   - htslib
   - swig
   - pytest
+  - plotly
 
 # [A] Generate directly from the file:
 #  conda env create -f environment.yml -n contextsv

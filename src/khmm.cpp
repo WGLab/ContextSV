@@ -65,14 +65,17 @@ std::pair<std::vector<int>, double> testVit_CHMM(CHMM hmm, int T, std::vector<do
 // O_t is the LRR value
 double b1iot(int state, double *mean, double *sd, double uf, double o)
 {
-	// Get the normalized PDF value
-	double normalized_pdf = pdf_normalization(o, mean[state], sd[state]);
+	// // Get the normalized PDF value
+	// double normalized_pdf = pdf_normalization(o, mean[state], sd[state]);
+
+	// // Update the emission probability
+	// double p = uf + ((1 - uf) * normalized_pdf);
+
+	// // Ensure that p is between FLOAT_MINIMUM and PROB_MAX
+	// p = std::max(FLOAT_MINIMUM, std::min(PROB_MAX, p));
 
 	// Update the emission probability
-	double p = uf + ((1 - uf) * normalized_pdf);
-
-	// Ensure that p is between FLOAT_MINIMUM and PROB_MAX
-	p = std::max(FLOAT_MINIMUM, std::min(PROB_MAX, p));
+	double p = uf + ((1 - uf) * pdf_normal(o, mean[state], sd[state]));
 
 	// Return the log probability
 	return log(p);
@@ -136,6 +139,7 @@ double b2iot(int state, double *mean, double *sd, double uf, double pfb, double 
 		{
 			p+= (1-uf) * (1-pfb) * pdf_normal (b, mean0, sd0);
 			p+= (1-uf) * pfb     * pdf_normal (b, 1-mean0, sd0);
+
 			// // Get the normalized PDF value
 			// double normalized_pdf_left = pdf_normalization(b, mean0, sd0);
 			// double normalized_pdf_right = pdf_normalization(b, 1 - mean0, sd0);
@@ -212,6 +216,7 @@ double b2iot(int state, double *mean, double *sd, double uf, double pfb, double 
 			p+= (1-uf) * 3*(1-pfb)*(1-pfb)*pfb     * pdf_normal (b, mean33, sd33);
 			p+= (1-uf) * 3*(1-pfb)*pfb*pfb         * pdf_normal (b, 1-mean33, sd33);
 			p+= (1-uf) * pfb*pfb*pfb               * pdf_normal (b, 1-mean0, sd0);
+
 			// // Get the normalized PDF values
 			// double normalized_pdf_1 = pdf_normalization(b, mean0, sd0);
 			// p += (1 - uf) * (1 - pfb) * (1 - pfb) * (1 - pfb) * normalized_pdf_1;
@@ -243,6 +248,7 @@ double b2iot(int state, double *mean, double *sd, double uf, double pfb, double 
 			p += (1-uf) * 6*(1-pfb)*(1-pfb)*pfb*pfb         * pdf_normal (b, mean50, sd50);
 			p += (1-uf) * 4*(1-pfb)*pfb*pfb*pfb             * pdf_normal (b, 1-mean25, sd25);
 			p += (1-uf) * pfb*pfb*pfb*pfb                   * pdf_normal (b, 1-mean0, sd0);
+			
 			// // Get the normalized PDF values
 			// double normalized_pdf_1 = pdf_normalization(b, mean0, sd0);
 			// p += (1 - uf) * (1 - pfb) * (1 - pfb) * (1 - pfb) * (1 - pfb) * normalized_pdf_1;
@@ -371,18 +377,6 @@ std::pair<std::vector<int>, double> ViterbiLogNP_CHMM(CHMM hmm, int T, std::vect
 
 	// Create a dictionary for each state to store all BAF scaling factors
 	std::map<int, std::vector<double>> scaling_factors;
-
-	// Print the size of O1 and O2
-	std::cout << "O1 size: " << O1.size() << std::endl;
-	std::cout << "O2 size: " << O2.size() << std::endl;
-	std::cout << "PFB size: " << pfb.size() << std::endl;
-	std::cout << "T: " << T << std::endl;
-	std::cout << "T(1): " << O1[1] << std::endl;
-	std::cout << "T(end): " << O1[T] << std::endl;
-	std::cout << "O2(1): " << O2[1] << std::endl;
-	std::cout << "O2(end): " << O2[T] << std::endl;
-	std::cout << "PFB(1): " << pfb[1] << std::endl;
-	std::cout << "PFB(end): " << pfb[T] << std::endl;
 
 	// Loop through each state N
 	// Start at 1 because states are 1-based (1-6)
