@@ -217,7 +217,7 @@ def main():
         if value is None:
             setattr(args, key, "")
 
-    # Set input parameters.
+    # Set input parameters
     input_data = contextsv.InputData()
     input_data.setVerbose(args.debug)
     input_data.setShortReadBam(args.short_read)
@@ -236,7 +236,7 @@ def main():
     input_data.saveCNVData(args.save_cnv)
     input_data.setWindowSize(args.window_size)
 
-    # Run the analysis.
+    # Run the analysis
     contextsv.run(input_data)
 
     # Determine the data paths for downstream analysis.

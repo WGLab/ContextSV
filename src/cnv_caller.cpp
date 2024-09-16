@@ -85,11 +85,11 @@ std::pair<SNPData, bool> CNVCaller::querySNPRegion(std::string chr, int64_t star
             // double baf_default = 0.5;
             double baf_default = -1.0;  // Use -1.0 to indicate no BAF data
             this->updateSNPData(snp_data, (window_start + window_end) / 2, pfb_default, baf_default, window_log2_ratio, false);
-            printMessage("No SNPs found in window " + chr + ":" + std::to_string((int)window_start) + "-" + std::to_string((int)window_end) + "...");
-            printMessage("Using position " + std::to_string((int)((window_start + window_end) / 2)) + " with default BAF and PFB values...");
+            // printMessage("No SNPs found in window " + chr + ":" + std::to_string((int)window_start) + "-" + std::to_string((int)window_end) + "...");
+            // printMessage("Using position " + std::to_string((int)((window_start + window_end) / 2)) + " with default BAF and PFB values...");
 
         } else {
-            printMessage("SNPs found in window " + chr + ":" + std::to_string((int)window_start) + "-" + std::to_string((int)window_end) + "...");
+            // printMessage("SNPs found in window " + chr + ":" + std::to_string((int)window_start) + "-" + std::to_string((int)window_end) + "...");
             snps_found = true;
 
             // Loop through the SNPs and calculate the log2 ratios
@@ -100,7 +100,7 @@ std::pair<SNPData, bool> CNVCaller::querySNPRegion(std::string chr, int64_t star
                 // Get the SNP position
                 int64_t snp_pos = snp_window_pos[j];
 
-                printMessage("SNP position: " + std::to_string((int)snp_pos));
+                // printMessage("SNP position: " + std::to_string((int)snp_pos));
 
                 // SNP bin starts at 1/2 the distance between the previous SNP
                 // and the current SNP, and ends at 1/2 the distance between
@@ -238,7 +238,7 @@ void CNVCaller::runCopyNumberPredictionChunk(std::string chr, std::map<SVCandida
 
         // Loop through the SV region, calculate the log2 ratios, and run the
         // Viterbi algorithm to predict the copy number states
-        printMessage("Querying SNPs for SV " + chr + ":" + std::to_string((int)start_pos) + "-" + std::to_string((int)end_pos) + "...");
+        // printMessage("Querying SNPs for SV " + chr + ":" + std::to_string((int)start_pos) + "-" + std::to_string((int)end_pos) + "...");
         std::pair<SNPData, bool> snp_call = this->querySNPRegion(chr, start_pos, end_pos, snp_info, pos_depth_map, mean_chr_cov);
         SNPData& sv_snps = snp_call.first;
         bool snps_found = snp_call.second;

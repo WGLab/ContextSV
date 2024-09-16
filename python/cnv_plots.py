@@ -398,10 +398,6 @@ def run(cnv_data_file, output_html):
         # Append the figure to the output html file.
         output_html_file.write(fig.to_html(full_html=False, include_plotlyjs="cdn"))
         log.info("Plotted CNV %s %s:%d-%d.", 'SVType', chromosome, start_position, end_position)
-        log.info("Plot range: %d-%d", plot_start_position, plot_end_position)
-        log.info("Data before: %d", len(sv_data_before))
-        log.info("Data during: %d", len(sv_data))
-        log.info("Data after: %d", len(sv_data_after))
 
         # Increment the CNV count.
         # cnv_count += 1

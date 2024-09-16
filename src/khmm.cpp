@@ -40,7 +40,9 @@ std::pair<std::vector<int>, double> testVit_CHMM(CHMM hmm, int T, std::vector<do
 	psi = imatrix(1, T, 1, hmm.N);	 // Allocate a TxN  int matrix (N=6 states)
 	
 	// Set initial posterior log probabilities for each state
-	std::vector<double>	plogproba(hmm.N + 1, -VITHUGE);
+	// std::vector<double>	plogproba(hmm.N + 1, -VITHUGE);
+	double *plogproba;
+	plogproba = dvector(1, hmm.N); // Allocate a double vector (N=6 states)
 
 	// Run the HMM
 	std::vector<int> q;  // State sequence
@@ -49,6 +51,7 @@ std::pair<std::vector<int>, double> testVit_CHMM(CHMM hmm, int T, std::vector<do
 	// Free the variables
 	free_imatrix(psi, 1, T, 1, hmm.N);
 	free_dmatrix(delta, 1, T, 1, hmm.N);
+	free_dvector(plogproba, 1, hmm.N);
 
 	// Pop the first element of q, which is always 0 (Done this way for 1-based
 	// indexing)
@@ -110,11 +113,13 @@ double b2iot(int state, double *mean, double *sd, double uf, double pfb, double 
 		}
 		else
 		{
-			// Get the normalized PDF value
-			double normalized_pdf = pdf_normalization(b, mean50_state1, sd50_state1);
+			p+= (1-uf) * pdf_normal (b, mean50_state1, sd50_state1);
 
-			// Update the emission probability
-			p += (1 - uf) * normalized_pdf;
+			// // Get the normalized PDF value
+			// double normalized_pdf = pdf_normalization(b, mean50_state1, sd50_state1);
+
+			// // Update the emission probability
+			// p += (1 - uf) * normalized_pdf;
 		}
 	}
 	else if (state == 2)
@@ -129,13 +134,15 @@ double b2iot(int state, double *mean, double *sd, double uf, double pfb, double 
 		}
 		else
 		{
-			// Get the normalized PDF value
-			double normalized_pdf_left = pdf_normalization(b, mean0, sd0);
-			double normalized_pdf_right = pdf_normalization(b, 1 - mean0, sd0);
+			p+= (1-uf) * (1-pfb) * pdf_normal (b, mean0, sd0);
+			p+= (1-uf) * pfb     * pdf_normal (b, 1-mean0, sd0);
+			// // Get the normalized PDF value
+			// double normalized_pdf_left = pdf_normalization(b, mean0, sd0);
+			// double normalized_pdf_right = pdf_normalization(b, 1 - mean0, sd0);
 
-			// Update the emission probability
-			p += (1 - uf) * (1 - pfb) * normalized_pdf_left;
-			p += (1 - uf) * pfb * normalized_pdf_right;
+			// // Update the emission probability
+			// p += (1 - uf) * (1 - pfb) * normalized_pdf_left;
+			// p += (1 - uf) * pfb * normalized_pdf_right;
 		}
 	}
 	else if (state == 3)
@@ -150,15 +157,19 @@ double b2iot(int state, double *mean, double *sd, double uf, double pfb, double 
 		}
 		else
 		{
-			// Get the normalized PDF values
-			double normalized_pdf_left = pdf_normalization(b, mean0, sd0);
-			double normalized_pdf_middle = pdf_normalization(b, mean50, sd50);
-			double normalized_pdf_right = pdf_normalization(b, 1 - mean0, sd0);
+			p+= (1-uf) * (1-pfb)*(1-pfb) * pdf_normal (b, mean0, sd0);
+			p+= (1-uf) * 2*pfb*(1-pfb)   * pdf_normal (b, mean50, sd50);
+			p+= (1-uf) * pfb*pfb         * pdf_normal (b, 1-mean0, sd0);
 
-			// Update the emission probability
-			p += (1 - uf) * (1 - pfb) * (1 - pfb) * normalized_pdf_left;
-			p += (1 - uf) * 2 * pfb * (1 - pfb) * normalized_pdf_middle;
-			p += (1 - uf) * pfb * pfb * normalized_pdf_right;
+			// // Get the normalized PDF values
+			// double normalized_pdf_left = pdf_normalization(b, mean0, sd0);
+			// double normalized_pdf_middle = pdf_normalization(b, mean50, sd50);
+			// double normalized_pdf_right = pdf_normalization(b, 1 - mean0, sd0);
+
+			// // Update the emission probability
+			// p += (1 - uf) * (1 - pfb) * (1 - pfb) * normalized_pdf_left;
+			// p += (1 - uf) * 2 * pfb * (1 - pfb) * normalized_pdf_middle;
+			// p += (1 - uf) * pfb * pfb * normalized_pdf_right;
 		}
 	}
 	else if (state == 4)
@@ -173,13 +184,16 @@ double b2iot(int state, double *mean, double *sd, double uf, double pfb, double 
 		}
 		else
 		{
-			// Get the normalized PDF values
-			double normalized_pdf_left = pdf_normalization(b, mean0, sd0);
-			double normalized_pdf_right = pdf_normalization(b, 1 - mean0, sd0);
+			p+= (1-uf) * (1-pfb) * pdf_normal (b, mean0, sd0);
+			p+= (1-uf) * pfb     * pdf_normal (b, 1-mean0, sd0);
 
-			// Update the emission probability
-			p += (1 - uf) * (1 - pfb) * normalized_pdf_left;
-			p += (1 - uf) * pfb * normalized_pdf_right;
+			// // Get the normalized PDF values
+			// double normalized_pdf_left = pdf_normalization(b, mean0, sd0);
+			// double normalized_pdf_right = pdf_normalization(b, 1 - mean0, sd0);
+
+			// // Update the emission probability
+			// p += (1 - uf) * (1 - pfb) * normalized_pdf_left;
+			// p += (1 - uf) * pfb * normalized_pdf_right;
 		}
 	}
 	else if (state == 5)
@@ -194,18 +208,22 @@ double b2iot(int state, double *mean, double *sd, double uf, double pfb, double 
 		}
 		else
 		{
-			// Get the normalized PDF values
-			double normalized_pdf_1 = pdf_normalization(b, mean0, sd0);
-			p += (1 - uf) * (1 - pfb) * (1 - pfb) * (1 - pfb) * normalized_pdf_1;
+			p+= (1-uf) * (1-pfb)*(1-pfb)*(1-pfb)   * pdf_normal (b, mean0, sd0);
+			p+= (1-uf) * 3*(1-pfb)*(1-pfb)*pfb     * pdf_normal (b, mean33, sd33);
+			p+= (1-uf) * 3*(1-pfb)*pfb*pfb         * pdf_normal (b, 1-mean33, sd33);
+			p+= (1-uf) * pfb*pfb*pfb               * pdf_normal (b, 1-mean0, sd0);
+			// // Get the normalized PDF values
+			// double normalized_pdf_1 = pdf_normalization(b, mean0, sd0);
+			// p += (1 - uf) * (1 - pfb) * (1 - pfb) * (1 - pfb) * normalized_pdf_1;
 
-			double normalized_pdf_2 = pdf_normalization(b, mean33, sd33);
-			p += (1 - uf) * 3 * (1 - pfb) * (1 - pfb) * pfb * normalized_pdf_2;
+			// double normalized_pdf_2 = pdf_normalization(b, mean33, sd33);
+			// p += (1 - uf) * 3 * (1 - pfb) * (1 - pfb) * pfb * normalized_pdf_2;
 
-			double normalized_pdf_3 = pdf_normalization(b, 1 - mean33, sd33);
-			p += (1 - uf) * 3 * (1 - pfb) * pfb * pfb * normalized_pdf_3;
+			// double normalized_pdf_3 = pdf_normalization(b, 1 - mean33, sd33);
+			// p += (1 - uf) * 3 * (1 - pfb) * pfb * pfb * normalized_pdf_3;
 
-			double normalized_pdf_4 = pdf_normalization(b, 1 - mean0, sd0);
-			p += (1 - uf) * pfb * pfb * pfb * normalized_pdf_4;
+			// double normalized_pdf_4 = pdf_normalization(b, 1 - mean0, sd0);
+			// p += (1 - uf) * pfb * pfb * pfb * normalized_pdf_4;
 		}
 	}
 	else if (state == 6)
@@ -220,21 +238,26 @@ double b2iot(int state, double *mean, double *sd, double uf, double pfb, double 
 		}
 		else
 		{
-			// Get the normalized PDF values
-			double normalized_pdf_1 = pdf_normalization(b, mean0, sd0);
-			p += (1 - uf) * (1 - pfb) * (1 - pfb) * (1 - pfb) * (1 - pfb) * normalized_pdf_1;
+			p += (1-uf) * (1-pfb)*(1-pfb)*(1-pfb)*(1-pfb)   * pdf_normal (b, mean0, sd0);
+			p += (1-uf) * 4*(1-pfb)*(1-pfb)*(1-pfb)*pfb     * pdf_normal (b, mean25, sd25);
+			p += (1-uf) * 6*(1-pfb)*(1-pfb)*pfb*pfb         * pdf_normal (b, mean50, sd50);
+			p += (1-uf) * 4*(1-pfb)*pfb*pfb*pfb             * pdf_normal (b, 1-mean25, sd25);
+			p += (1-uf) * pfb*pfb*pfb*pfb                   * pdf_normal (b, 1-mean0, sd0);
+			// // Get the normalized PDF values
+			// double normalized_pdf_1 = pdf_normalization(b, mean0, sd0);
+			// p += (1 - uf) * (1 - pfb) * (1 - pfb) * (1 - pfb) * (1 - pfb) * normalized_pdf_1;
 
-			double normalized_pdf_2 = pdf_normalization(b, mean25, sd25);
-			p += (1 - uf) * 4 * (1 - pfb) * (1 - pfb) * (1 - pfb) * pfb * normalized_pdf_2;
+			// double normalized_pdf_2 = pdf_normalization(b, mean25, sd25);
+			// p += (1 - uf) * 4 * (1 - pfb) * (1 - pfb) * (1 - pfb) * pfb * normalized_pdf_2;
 
-			double normalized_pdf_3 = pdf_normalization(b, mean50, sd50);
-			p += (1 - uf) * 6 * (1 - pfb) * (1 - pfb) * pfb * pfb * normalized_pdf_3;
+			// double normalized_pdf_3 = pdf_normalization(b, mean50, sd50);
+			// p += (1 - uf) * 6 * (1 - pfb) * (1 - pfb) * pfb * pfb * normalized_pdf_3;
 
-			double normalized_pdf_4 = pdf_normalization(b, 1 - mean25, sd25);
-			p += (1 - uf) * 4 * (1 - pfb) * pfb * pfb * pfb * normalized_pdf_4;
+			// double normalized_pdf_4 = pdf_normalization(b, 1 - mean25, sd25);
+			// p += (1 - uf) * 4 * (1 - pfb) * pfb * pfb * pfb * normalized_pdf_4;
 
-			double normalized_pdf_5 = pdf_normalization(b, 1 - mean0, sd0);
-			p += (1 - uf) * pfb * pfb * pfb * pfb * normalized_pdf_5;
+			// double normalized_pdf_5 = pdf_normalization(b, 1 - mean0, sd0);
+			// p += (1 - uf) * pfb * pfb * pfb * pfb * normalized_pdf_5;
 		}
 	}
 
@@ -262,7 +285,7 @@ double pdf_normalization(double obs, double mean, double sd)
 }
 
 // SV calling with the HMM via the Viterbi algorithm
-std::pair<std::vector<int>, double> ViterbiLogNP_CHMM(CHMM hmm, int T, std::vector<double>& O1, std::vector<double>& O2, std::vector<double>& pfb, double **delta, int **psi, std::vector<double>& pprob)
+std::pair<std::vector<int>, double> ViterbiLogNP_CHMM(CHMM hmm, int T, std::vector<double>& O1, std::vector<double>& O2, std::vector<double>& pfb, double **delta, int **psi, double *pprob)
 {
 	// Given the following HMM parameters:
 	// - A: Transition probability matrix
@@ -349,12 +372,23 @@ std::pair<std::vector<int>, double> ViterbiLogNP_CHMM(CHMM hmm, int T, std::vect
 	// Create a dictionary for each state to store all BAF scaling factors
 	std::map<int, std::vector<double>> scaling_factors;
 
+	// Print the size of O1 and O2
+	std::cout << "O1 size: " << O1.size() << std::endl;
+	std::cout << "O2 size: " << O2.size() << std::endl;
+	std::cout << "PFB size: " << pfb.size() << std::endl;
+	std::cout << "T: " << T << std::endl;
+	std::cout << "T(1): " << O1[1] << std::endl;
+	std::cout << "T(end): " << O1[T] << std::endl;
+	std::cout << "O2(1): " << O2[1] << std::endl;
+	std::cout << "O2(end): " << O2[T] << std::endl;
+	std::cout << "PFB(1): " << pfb[1] << std::endl;
+	std::cout << "PFB(end): " << pfb[T] << std::endl;
+
 	// Loop through each state N
 	// Start at 1 because states are 1-based (1-6)
 	for (i = 1; i <= hmm.N; i++)
 	{
-
-		// Loop through each probe T (0-based)
+		// Loop through each probe T in the observation sequence (O1, O2), 1-based
 		for (t = 1; t <= T; t++)
 		// for (t = 0; t < T; t++)
 		{
@@ -364,61 +398,13 @@ std::pair<std::vector<int>, double> ViterbiLogNP_CHMM(CHMM hmm, int T, std::vect
 			// Get the state observation likelihood b_j(O_t) of the observation
 			// symbol O_t given the current state j
 			// B1_uf is the previous alpha (transition probability)
-			double O1_val = O1[t];
+			double O1_val = O1[t-1]; // Adjust for 0-based indexing
 			double O1_logprob = b1iot(i, hmm.B1_mean, hmm.B1_sd, hmm.B1_uf, O1_val);
 
-			double O2_val = O2[t];
-
-			// std::cout << "State = " << i << ", O2 = " << O2_val << std::endl;
-
-// 			// If the BAF value is -1 (no data), set the log probability to 0
-// //			double O2_logprob = log(0.5);
-// //            double O2_logprob = 0;
-// 			if (O2_val == -1) {
-// 			    O2_val = 0.5;
-// //				O2_logprob = b2iot(i, hmm.B2_mean, hmm.B2_sd, hmm.B2_uf, pfb[t], O2_val);
-// 			}
-
-
-			// // If no BAF data (value is -1), only use the LRR data [TEST]
-			// double missing_BAF_alpha = -5.0;
-			// double O2_logprob = missing_BAF_alpha;
-			// if (O2_val == -1) {
-			// 	// O2_logprob = 0.0;
-			// 	// O2_logprob = -5.0;
-			// 	switch (i) {
-			// 		case 1:
-			// 			O2_logprob = 3.0;
-			// 			break;
-			// 		case 2:
-			// 			O2_logprob = 3.0;
-			// 			break;
-			// 		case 3:
-			// 			O2_logprob = -4.0;
-			// 			break;
-			// 		case 4:
-			// 			O2_logprob = -4.0;
-			// 			break;
-			// 		case 5:
-			// 			O2_logprob = -0.7;
-			// 			break;
-			// 		case 6:
-			// 			O2_logprob = -0.7;
-			// 			break;
-			// 	}
-
-			// } else {
-            // 	O2_logprob = b2iot(i, hmm.B2_mean, hmm.B2_sd, hmm.B2_uf, pfb[t], O2_val);
-			// }
-
-			double O2_logprob = b2iot(i, hmm.B2_mean, hmm.B2_sd, hmm.B2_uf, pfb[t], O2_val);
-
-			// Print the scaling factor to determine the contribution of O2 to
-			// the emission probability
-			// std::cout << "State = " << i << ", O2 = " << O2_val << std::endl;
-			// double sum = O1_logprob + O2_logprob;
-			// std::cout << "State = " << i <<  ", scaling factor (sum/O1) = "
-			// << O1_logprob / sum << std::endl;
+			double O2_val = O2[t-1]; // Adjust for 0-based indexing
+			double pfb_val = pfb[t-1]; // Adjust for 0-based indexing
+			double O2_logprob = b2iot(i, hmm.B2_mean, hmm.B2_sd, hmm.B2_uf, pfb_val, O2_val);
+			// double O2_logprob = b2iot(i, hmm.B2_mean, hmm.B2_sd, hmm.B2_uf, pfb[t], O2_val);
 			
 			// Add the BAF log probability to the dictionary
 			baf_log_probs[i].push_back(O2_logprob);
@@ -436,24 +422,6 @@ std::pair<std::vector<int>, double> ViterbiLogNP_CHMM(CHMM hmm, int T, std::vect
 			snp_count++;
 		}
 	}
-
-	// Print the mean BAF log probabilities and mean scaling factors for each
-	// state
-	// for (i = 1; i <= hmm.N; i++)
-	// {
-	// 	int num_values = baf_log_probs[i].size();
-	// 	double sum_baf = 0;
-	// 	double sum_scaling = 0;
-	// 	for (int j = 0; j < num_values; j++)
-	// 	{
-	// 		sum_baf += baf_log_probs[i][j];
-	// 		sum_scaling += scaling_factors[i][j];
-	// 	}
-	// 	double mean_baf = sum_baf / num_values;
-	// 	double mean_scaling = sum_scaling / num_values;
-	// 	std::cout << "State = " << i << ", mean BAF log prob = " << mean_baf
-	// 	<< ", mean scaling factor = " << mean_scaling << std::endl;
-	// }
 
 	/* 1. Initialization  */
 	// For each state i, calculate the maximum probability of being in state i
@@ -481,7 +449,6 @@ std::pair<std::vector<int>, double> ViterbiLogNP_CHMM(CHMM hmm, int T, std::vect
 	// state j at time t, along with observing the sequence O1, O2.
 	// The maximum probability is stored in delta[t][j], and the state i that
 	// maximizes the probability is stored in psi[t][j].
-
 	for (t = 2; t <= T; t++)
 	{
 
@@ -496,7 +463,9 @@ std::pair<std::vector<int>, double> ViterbiLogNP_CHMM(CHMM hmm, int T, std::vect
 			maxvalind = 1;
 			for (i = 1; i <= hmm.N; i++)
 			{
-				val = delta[t - 1][i] + log(A1[i][j]);  // Update the delta matrix (log probability)
+				// Update the delta matrix (log probability) as the maximum
+				// probability of being in state j at time t
+				val = delta[t - 1][i] + log(A1[i][j]);
 				if (val > maxval)  // Update the max value
 				{
 					maxval = val;
