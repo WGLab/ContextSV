@@ -230,7 +230,7 @@ void CNVCaller::runCopyNumberPredictionChunk(std::string chr, std::map<SVCandida
         // We will run the Viterbi algorithm on SNPs in the SV region +/- 1/2
         // the SV length
         int64_t sv_half_length = (end_pos - start_pos) / 2.0;
-        std::cout << "SV half length: " << sv_half_length << std::endl;
+        // std::cout << "SV half length: " << sv_half_length << std::endl;
         int64_t query_start = std::max((int64_t) 1, start_pos - sv_half_length);
         int64_t query_end = end_pos + sv_half_length;
 

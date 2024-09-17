@@ -20,7 +20,6 @@
 	The basic framework (including variable name, subroutine name) is highly similar to the original UMDHMM package, but the actual implementation is completely different as no "discrete symbol emission" is used in PennCNV.
 */
 
-// Entry point
 std::pair<std::vector<int>, double> testVit_CHMM(CHMM hmm, int T, std::vector<double>& O1, std::vector<double>& O2, std::vector<double>& pfb)
 {
 	// T= probe, marker count (= Length of LRR array - 1)
@@ -60,9 +59,6 @@ std::pair<std::vector<int>, double> testVit_CHMM(CHMM hmm, int T, std::vector<do
 	return state_sequence;
 }
 
-// Emission probability: Calculate the state observationn likelihood b_j(O_t) of
-// the observation symbol O_t given the current state j
-// O_t is the LRR value
 double b1iot(int state, double *mean, double *sd, double uf, double o)
 {
 	// // Get the normalized PDF value
@@ -81,9 +77,6 @@ double b1iot(int state, double *mean, double *sd, double uf, double o)
 	return log(p);
 }
 
-// Emission probability: Calculate the state observationn likelihood b_j(O_t) of
-// the observation symbol O_t given the current state j
-// O_t is the BAF value
 double b2iot(int state, double *mean, double *sd, double uf, double pfb, double b)
 {
 	double p = 0;
@@ -290,7 +283,6 @@ double pdf_normalization(double obs, double mean, double sd)
 	return normalized_pdf;
 }
 
-// SV calling with the HMM via the Viterbi algorithm
 std::pair<std::vector<int>, double> ViterbiLogNP_CHMM(CHMM hmm, int T, std::vector<double>& O1, std::vector<double>& O2, std::vector<double>& pfb, double **delta, int **psi, double *pprob)
 {
 	// Given the following HMM parameters:
@@ -322,21 +314,9 @@ std::pair<std::vector<int>, double> ViterbiLogNP_CHMM(CHMM hmm, int T, std::vect
 	//   The posterior log probability of the state sequence ending in state i
 	//   at time T is stored in pprob[i].
 	// Return the most likely state sequence Q and its likelihood.
-	// Also, return the equation for the most likely state sequence ending in
-	// state i at time T:
-	//  Pprob[i] = max_{q1, q2, ..., qT-1} [delta[T][i]]
-	//  Q[T] = argmax_{q1, q2, ..., qT-1} [delta[T][i]]
-	//   delta[t][i] = max_{j=1,2,...,N} [delta[t-1][j] * a[j][i] * b[i][O1[t]]
-	//   * b[i][O2[t]]]
-	//   psi[t][i] = argmax_{j=1,2,...,N} [delta[t-1][j] * a[j][i] * b[i][O1[t]]
-	//   * b[i][O2[t]]]
-	//   pprob[i] = delta[T][i]
 
 	int i, j; /* state indices */
 	int t;	  /* time index */
-
-	int snp_count = 0;
-
 	int maxvalind;
 	double maxval, val;
 	double **biot;
@@ -378,56 +358,33 @@ std::pair<std::vector<int>, double> ViterbiLogNP_CHMM(CHMM hmm, int T, std::vect
 	// Create a dictionary for each state to store all BAF scaling factors
 	std::map<int, std::vector<double>> scaling_factors;
 
-	// Loop through each state N
-	// Start at 1 because states are 1-based (1-6)
+	// Loop through each state (1-based)
 	for (i = 1; i <= hmm.N; i++)
 	{
 		// Loop through each probe T in the observation sequence (O1, O2), 1-based
 		for (t = 1; t <= T; t++)
-		// for (t = 0; t < T; t++)
 		{
-			// A regular SNP marker; we use both LRR and BAF information to
-			// calculate the joint probability of the marker being in state i
-
 			// Get the state observation likelihood b_j(O_t) of the observation
 			// symbol O_t given the current state j
-			// B1_uf is the previous alpha (transition probability)
+			// B_uf is the previous alpha (transition probability)
+
+			// Calculate the O1 emission probability
 			double O1_val = O1[t-1]; // Adjust for 0-based indexing
 			double O1_logprob = b1iot(i, hmm.B1_mean, hmm.B1_sd, hmm.B1_uf, O1_val);
 
+			// Calculate the O2 emission probability
 			double O2_val = O2[t-1]; // Adjust for 0-based indexing
 			double pfb_val = pfb[t-1]; // Adjust for 0-based indexing
-			double O2_logprob = b2iot(i, hmm.B2_mean, hmm.B2_sd, hmm.B2_uf, pfb_val, O2_val);
-			// double O2_logprob = b2iot(i, hmm.B2_mean, hmm.B2_sd, hmm.B2_uf, pfb[t], O2_val);
-			
-			// Add the BAF log probability to the dictionary
-			baf_log_probs[i].push_back(O2_logprob);
-
-			// Add the scaling factor to the dictionary
-			double sum = O1_logprob + O2_logprob;
-			scaling_factors[i].push_back(sum / O1_logprob);
+			double O2_logprob = b2iot(i, hmm.B2_mean, hmm.B2_sd, hmm.B2_uf, pfb_val, O2_val);			
 
 			// Update the emission probability matrix with the joint probability
 			// of the marker being in state i at time t (log probability) based
 			// on both LRR and BAF values
 			biot[i][t] = O1_logprob + O2_logprob;
-
-			// Update the SNP count
-			snp_count++;
 		}
 	}
 
 	/* 1. Initialization  */
-	// For each state i, calculate the maximum probability of being in state i
-	// at time 1, along with observing the sequence O1, O2. Here, delta is the
-	// maximum probability of being in state i at time 1, along with observing
-	// the sequence O1, O2. The maximum probability is stored in delta[1][i].
-	// Psi is set to 0 (no state) for the initialization step.
-	// Pprob is the posterior log probability of the state sequence ending in
-	// state i at time T, along with observing the sequence O1, O2. The
-	// posterior log probability for each state is initialized to -inf
-	// (near zero probability).
-
 	for (i = 1; i <= hmm.N; i++)
 	{
 		delta[1][i] = hmm.pi[i] + biot[i][1];  // Initialize the delta matrix (log probability)
@@ -438,19 +395,9 @@ std::pair<std::vector<int>, double> ViterbiLogNP_CHMM(CHMM hmm, int T, std::vect
 	/* 2. Recursion */
 	// For each state j at time t, calculate the maximum probability of reaching
 	// state j at time t from any of the states i at time t-1 (previous state),
-	// along with observing the sequence O1, O2. Here, val (delta) is the
-	// maximum probability of being in state i at time t-1 and transitioning to
-	// state j at time t, along with observing the sequence O1, O2.
-	// The maximum probability is stored in delta[t][j], and the state i that
-	// maximizes the probability is stored in psi[t][j].
+	// along with observing the sequence O1, O2.
 	for (t = 2; t <= T; t++)
 	{
-
-		// Based on the SNP distance, update the transition matrix
-		// Not used in this implementation (snpdist is always 1)
-		// if (hmm.dist != 1)
-		// 	convertHMMTransition(hmm, A1, snpdist[t - 1]); /*t-1 is used because the current val is calculated from previous values*/
-
 		for (j = 1; j <= hmm.N; j++)
 		{
 			maxval = -VITHUGE;
@@ -476,7 +423,7 @@ std::pair<std::vector<int>, double> ViterbiLogNP_CHMM(CHMM hmm, int T, std::vect
 	// After all observations have been processed, find the maximum probability
 	// of the state sequence ending in state i at time T, along with observing
 	// the sequence O1, O2. This is the maximum probability of the state
-	// sequence ending in state i at time T!
+	// sequence ending in state i at time T.
 	// The maximum probability for each state is stored in pprob[i].
 
 	// The state corresponding to the maximum probability is stored in q[T], and
@@ -484,7 +431,7 @@ std::pair<std::vector<int>, double> ViterbiLogNP_CHMM(CHMM hmm, int T, std::vect
 
 	// Variable to store the most likely state at time T (maximum a posteriori
 	// probability estimate)
-	double max_a_posteriori_prob = -VITHUGE;
+	// double max_a_posteriori_prob = -VITHUGE;
 	q[T] = 1;
 	for (i = 1; i <= hmm.N; i++)
 	{
@@ -502,7 +449,7 @@ std::pair<std::vector<int>, double> ViterbiLogNP_CHMM(CHMM hmm, int T, std::vect
 			pprob[i] = current_prob;  // Update the posterior log probability for state i
 
 			// Update the maximum a posteriori probability estimate
-			max_a_posteriori_prob = current_prob;
+			// max_a_posteriori_prob = current_prob;
 		}
 	}
 
@@ -522,7 +469,10 @@ std::pair<std::vector<int>, double> ViterbiLogNP_CHMM(CHMM hmm, int T, std::vect
 	free_dmatrix(A1, 1, hmm.N, 1, hmm.N);
 
 	// Return the state sequence and its likelihood
+	double max_a_posteriori_prob = pprob[q[T]];
+
 	return std::make_pair(q, max_a_posteriori_prob);
+	// return std::make_pair(q, max_a_posteriori_prob);
 }
 
 CHMM ReadCHMM(const char *filename)

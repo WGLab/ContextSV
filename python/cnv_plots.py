@@ -97,7 +97,7 @@ def run(cnv_data_file, output_html):
     # Filter the CNV data to the region using pandas, and make the chromosome
     # column a string.
     log.info("Loading CNV data from %s", cnv_data_file)
-    cnv_data = pd.read_csv(cnv_data_file, sep="\t", header=0, dtype={"chromosome": str})
+    sv_data = pd.read_csv(cnv_data_file, sep="\t", header=0, dtype={"chromosome": str})
     # if start_position is not None and end_position is not None:
     #     cnv_data = cnv_data[(cnv_data["chromosome"] == chromosome) & (cnv_data["position"] >= start_position) & (cnv_data["position"] <= end_position)]
     # else:
@@ -106,7 +106,7 @@ def run(cnv_data_file, output_html):
     # Filter the CNV data to only include SNPs.
     # cnv_data = cnv_data[cnv_data["snp"] == 1]
 
-    log.info("Loaded %d SNPs from %s", len(cnv_data), cnv_data_file)
+    log.info("Loaded %d SNPs from %s", len(sv_data), cnv_data_file)
 
     # Create an output html file where we will append the CNV plots.
     if start_position is not None and end_position is not None:
@@ -133,7 +133,7 @@ def run(cnv_data_file, output_html):
 
         # Loop through the VCF data and plot each CNV (DEL or DUP) along with log2
         # ratio and BAF values for the SNPs in the CNV.
-        cnv_count = 0
+        # cnv_count = 0
         # for _, sv_data in vcf_data.iterrows():
 
         #     # Get the INFO field
@@ -195,8 +195,8 @@ def run(cnv_data_file, output_html):
 
         # Get the plot range as the minimum and maximum positions in the CNV
         # data.
-        plot_start_position = cnv_data["position"].min()
-        plot_end_position = cnv_data["position"].max()
+        plot_start_position = sv_data["position"].min()
+        plot_end_position = sv_data["position"].max()
 
         # Get the CNV state, log2 ratio, and BAF values for all SNPs in the
         # plot range.
@@ -205,7 +205,7 @@ def run(cnv_data_file, output_html):
         # plot_start_position) & (cnv_data["position"] <=
         # plot_end_position)]
         # sv_data = cnv_data[(cnv_data["position"] >= start_position) & (cnv_data["position"] <= end_position)]
-        sv_data = cnv_data
+        # sv_data = cnv_data
 
         # If there are no SNPs in the plot range, skip the CNV.
         if len(sv_data) == 0:
@@ -217,15 +217,18 @@ def run(cnv_data_file, output_html):
         # Get the marker colors for the state sequence.
         marker_colors = []
         for state in sv_data["cnv_state"]:
-            # marker_colors.append("black")  # [TEST] Set all markers to black.
             if state in [1, 2]:
                 marker_colors.append("red")
             elif state in [3, 4]:
                 marker_colors.append("black")
             elif state in [5, 6]:
                 marker_colors.append("blue")
-            else:  # state is 0 (NA)
-                marker_colors.append("gray")
+
+        # Set the marker colors for the SNPs before and after the CNV to
+        # gray (no state prediction).
+        for i in range(len(sv_data)):
+            if sv_data["position"].iloc[i] < start_position or sv_data["position"].iloc[i] > end_position:
+                marker_colors[i] = "gray"
 
         # Now get the values before and after the CNV.
         # # sv_data_before = cnv_data[(cnv_data["position"] >= plot_start_position) & (cnv_data["position"] < start_position)]

@@ -50,10 +50,10 @@ std::pair<std::vector<int>, double> testVit_CHMM(CHMM hmm, int T, std::vector<do
 /// Viterbi algorithm
 std::pair<std::vector<int>, double> ViterbiLogNP_CHMM(CHMM phmm, int T, std::vector<double>& O1, std::vector<double>& O2, std::vector<double>& pfb, double **delta, int **psi, double *pprob);
 
-/// O1 emission probability
+/// O1 emission probability (log2 coverage)
 double b1iot (int state, double *mean, double *sd, double uf, double o);
 
-/// O2 emission probability
+/// O2 emission probability (B-allele frequency)
 double b2iot (int state, double *mean, double *sd, double uf, double pfb, double b);
 
 /// Return the probability of observing a value in a normal distribution, normalized to a range of [min_pdf, max_pdf]
