@@ -372,15 +372,23 @@ std::pair<std::vector<int>, double> ViterbiLogNP_CHMM(CHMM hmm, int T, std::vect
 			double O1_val = O1[t-1]; // Adjust for 0-based indexing
 			double O1_logprob = b1iot(i, hmm.B1_mean, hmm.B1_sd, hmm.B1_uf, O1_val);
 
-			// Calculate the O2 emission probability
-			double O2_val = O2[t-1]; // Adjust for 0-based indexing
-			double pfb_val = pfb[t-1]; // Adjust for 0-based indexing
-			double O2_logprob = b2iot(i, hmm.B2_mean, hmm.B2_sd, hmm.B2_uf, pfb_val, O2_val);			
+			// If there is no SNP (B-allele frequency) data, just use the LRR
+			// emission probability
+			if (O2[t-1] == -1)
+			{
+				biot[i][t] = O1_logprob * 3;
+			} else {
 
-			// Update the emission probability matrix with the joint probability
-			// of the marker being in state i at time t (log probability) based
-			// on both LRR and BAF values
-			biot[i][t] = O1_logprob + O2_logprob;
+				// Calculate the O2 emission probability
+				double O2_val = O2[t-1]; // Adjust for 0-based indexing
+				double pfb_val = pfb[t-1]; // Adjust for 0-based indexing
+				double O2_logprob = b2iot(i, hmm.B2_mean, hmm.B2_sd, hmm.B2_uf, pfb_val, O2_val);
+
+				// Update the emission probability matrix with the joint probability
+				// of the marker being in state i at time t (log probability) based
+				// on both LRR and BAF values
+				biot[i][t] = O1_logprob + O2_logprob;
+			}
 		}
 	}
 
