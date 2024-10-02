@@ -21,6 +21,8 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
+# import plotly
+import plotly.graph_objects as go
 
 def generate_sv_size_plot(input_vcf, output_png, plot_title="SV Caller"):
     # Read VCF file into a pandas DataFrame
@@ -86,11 +88,8 @@ def generate_sv_size_plot(input_vcf, output_png, plot_title="SV Caller"):
     fig, axes = plt.subplots(sv_type_count, 1, figsize=(10, 5 * sv_type_count))
     print(f'Number of SV types: {sv_type_count}')
 
-    # Create a dictionary of SV types and their corresponding colors. Use light
-    # colors to make the plot more readable, such as 'skyblue' for deletions,
-    # 'lightgreen' for duplications, 'lightcoral' for inversions, and 'violet'
-    # for insertions
-    sv_colors = {'DEL': 'skyblue', 'DUP': 'lightgreen', 'INV': 'lightcoral', 'INS': 'violet'}
+    # Create a dictionary of SV types and their corresponding colors.
+    sv_colors = {'DEL': 'crimson', 'DUP': 'royalblue', 'INV': 'orange', 'INS': 'limegreen'}
 
     # Create a dictionary of SV types and their corresponding labels
     sv_labels = {'DEL': 'Deletion', 'DUP': 'Duplication', 'INV': 'Inversion', 'INS': 'Insertion'}
@@ -100,9 +99,15 @@ def generate_sv_size_plot(input_vcf, output_png, plot_title="SV Caller"):
 
     # Print the number of SVs for each type, starting with the label
     print("SV Caller: ", plot_title)
+    print("Total number of SVs: ", len(vcf_df))
+
     print('Number of SVs for each type:')
+    total_sv_count = 0
     for sv_type in sv_types:
         print(f'{sv_labels[sv_type]}: {len(sv_sizes[sv_type])}')
+        total_sv_count += len(sv_sizes[sv_type])
+
+    print(f'Total number of SVs (sum): {total_sv_count}')
 
     # Print the number of SVs for each type with size > 50kb
     print('Number of SVs for each type with size > 50kb:')
@@ -154,29 +159,36 @@ def generate_sv_size_plot(input_vcf, output_png, plot_title="SV Caller"):
     plt.savefig(output_png)
 
     # Plot an additional plot with suffix _full.png that includes all SV types
-    fig, ax = plt.subplots(figsize=(10, 5))
-    # Sort the SV types in order DEL, DUP, INS
-    sv_types_rearrange = ['DEL', 'DUP', 'INS']
-    for sv_type in sv_types_rearrange:
-        sizes = np.array(sv_sizes[sv_type])
-        ax.hist(np.abs(sizes) / size_scale, bins=100, color=sv_colors[sv_type], alpha=1.0, label=sv_labels[sv_type],
-                edgecolor='black')
+    # (using plotly to avoid overlapping histograms)
+    fig = go.Figure()
+    for sv_type in sv_types:
+        sizes = np.array(np.abs(sv_sizes[sv_type]))
+        fig.add_trace(go.Histogram(x=sizes / size_scale, name=sv_labels[sv_type], marker_color=sv_colors[sv_type], xbins=dict(size=100)))
 
-    # # In the same axis, plot several landmarks of SV sizes from a list
-    # # of known SVs (CNV1, CNV2, CNV3, CNV4, CNV5) from Gracia-Diaz et al. 2024 if within the range of the plot
-    # akizu_5_cnv_sizes = [143033, 776238, 247758, 131964, 157440]
-    # x_min, x_max = ax.get_xlim()
-    # for cnv_size in akizu_5_cnv_sizes:
-    #     if cnv_size / size_scale > x_min and cnv_size / size_scale < x_max:
-    #         ax.axvline(x=cnv_size / size_scale, color='black', linestyle='--')
+    # Update the layout to group the bars side by side
+    fig.update_layout(
+        barmode='group',
+        title=f'{plot_title}: All SV types',
+        xaxis_title='SV size (kb)',
+        yaxis_title='Frequency (log scale)',
+        yaxis_type='log',
+        bargap=0.2,
+    )
 
-    ax.set_xlabel('SV size (kb)')
-    ax.set_ylabel('Frequency (log scale)')
-    ax.set_title(f'{plot_title}: All SV types')
-    ax.set_yscale('log')
-    plt.legend()
-    plt.tight_layout()
-    plt.savefig(output_png.replace('.png', '_full.png'))
+    # Move the legend to the top right inside the plot
+    fig.update_layout(legend=dict(
+        orientation='v',
+        yanchor='top',
+        y=0.75,
+        xanchor='right',
+        x=0.75,
+    ))
+
+    # Set a larger font size for all text in the plot
+    fig.update_layout(font=dict(size=32))
+    
+    # # Save the plot as a high-resolution PNG file for using in posters
+    fig.write_image(output_png.replace('.png', '_full.png'), width=1200, height=800)
 
 
 if __name__ == '__main__':
