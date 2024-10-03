@@ -15,8 +15,9 @@
 #include <future>
 /// @endcond
 
-// SV candidate alignment data (chr, start, end, sequence)
-using AlignmentData   = std::tuple<std::string, int64_t, int64_t, std::string>;
+// SV candidate alignment data (chr, start, end, sequence, query start, query
+// end, mismatch rate)
+using AlignmentData   = std::tuple<std::string, int64_t, int64_t, std::string, int32_t, int32_t, double>;
 using AlignmentVector = std::vector<AlignmentData>;
 
 // Query map (query name, alignment vector)
@@ -31,8 +32,9 @@ class SVCaller {
         InputData* input_data;
         std::mutex sv_mtx;  // Mutex for locking the SV data
 
-        // Detect SVs from long read alignments in the CIGAR string
-        void detectSVsFromCIGAR(bam_hdr_t* header, bam1_t* alignment, SVData& sv_calls);
+        // Detect SVs from the CIGAR string of a read alignment, and return the
+        // mismatch rate, and the start and end positions of the query sequence
+        std::tuple<double, int32_t, int32_t> detectSVsFromCIGAR(bam_hdr_t* header, bam1_t* alignment, SVData& sv_calls, bool is_primary);
 
         // Detect SVs at a region from long read alignments. This is used for
         // whole genome analysis running in parallel.

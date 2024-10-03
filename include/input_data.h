@@ -94,15 +94,6 @@ class InputData {
         void setThreadCount(int thread_count);
         int getThreadCount();
 
-        // Disable CIGAR string SV calling. This is useful for testing.
-        void setDisableCIGAR(bool disable_cigar);
-        bool getDisableCIGAR();
-
-        // Disable SNP-based CNV calling. This is useful for calling SVs on
-        // assemblies since alignment calling is sufficient.
-        void setDisableSNPCNV(bool disable_snp_cnv);
-        bool getDisableSNPCNV();
-
         // Set the whole genome flag to true if the entire genome is being
         // analyzed.
         void setWholeGenome(bool whole_genome);
@@ -137,8 +128,6 @@ class InputData {
         std::map<std::string, double> chr_cov;  // Map of pre-calculated mean coverage values for each chromosome
         int thread_count;
         std::string hmm_filepath;
-        bool disable_cigar;
-        bool disable_snp_cnv;
         std::string cnv_filepath;
         bool whole_genome;  // True if the entire genome is being analyzed
         bool verbose;  // True if verbose output is enabled

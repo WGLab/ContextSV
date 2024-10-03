@@ -37,9 +37,6 @@ RegionData SVCaller::detectSVsFromRegion(std::string region)
     SVData sv_calls;
     std::string bam_filepath = this->input_data->getLongReadBam();
 
-    // Check if the CIGAR string should be used for SV calling
-    bool disable_cigar = this->input_data->getDisableCIGAR();
-
     // Open the BAM file in a thread-safe manner
     samFile *fp_in = sam_open(bam_filepath.c_str(), "r");
     if (fp_in == NULL) {
@@ -72,8 +69,8 @@ RegionData SVCaller::detectSVsFromRegion(std::string region)
     SuppMap supplementary_alignments;
     while (readNextAlignment(fp_in, itr, bam1) >= 0) {
 
-        // Skip secondary and unmapped alignments
-        if (bam1->core.flag & BAM_FSECONDARY || bam1->core.flag & BAM_FUNMAP) {
+        // Skip secondary and unmapped alignments, duplicates, and QC failures
+        if (bam1->core.flag & BAM_FSECONDARY || bam1->core.flag & BAM_FUNMAP || bam1->core.flag & BAM_FDUP || bam1->core.flag & BAM_FQCFAIL) {
             // Do nothing
 
         // Skip alignments with low mapping quality
@@ -81,7 +78,6 @@ RegionData SVCaller::detectSVsFromRegion(std::string region)
             // Do nothing
 
         } else {
-
             // Get the QNAME (query template name) for associating split reads
             std::string qname = bam_get_qname(bam1);
 
@@ -93,14 +89,49 @@ RegionData SVCaller::detectSVsFromRegion(std::string region)
                 int64_t start = bam1->core.pos;
                 int64_t end = bam_endpos(bam1);
 
+                // Call SVs directly from the CIGAR string
+                std::tuple<double, int32_t, int32_t> query_info = this->detectSVsFromCIGAR(bamHdr, bam1, sv_calls, true);
+                double mismatch_rate = std::get<0>(query_info);
+                int32_t query_start = std::get<1>(query_info);
+                int32_t query_end = std::get<2>(query_info);
+
                 // Add the primary alignment to the map
-                AlignmentData alignment(chr, start, end, ".");
+                AlignmentData alignment(chr, start, end, ".", query_start, query_end, mismatch_rate);
                 // primary_alignments[qname].push_back(alignment);
                 primary_alignments[qname] = alignment;
 
-                // Call SVs directly from the CIGAR string
-                if (disable_cigar == false) {
-                    this->detectSVsFromCIGAR(bamHdr, bam1, sv_calls);
+                // Check if there are supplementary alignments, determine if
+                // there is overlap, and trim the alignments with the highest
+                // mismatch rate
+                auto it = supplementary_alignments.find(qname);
+                if (it != supplementary_alignments.end()) {
+                    AlignmentVector supp_alignments = it->second;
+                    for (auto& supp_alignment : supp_alignments) {
+                        // Get the query start and end positions
+                        int32_t supp_query_start = std::get<4>(supp_alignment);
+                        int32_t supp_query_end = std::get<5>(supp_alignment);
+
+                        // Check if there is overlap between the primary and
+                        // supplementary alignments
+                        int overlap = std::max(0, std::min(query_end, supp_query_end) - std::max(query_start, supp_query_start));
+                        if (overlap > 0) {
+                            // Calculate the mismatch rate at the overlap
+                            query_ovelap_start = std::max(query_start, supp_query_start);
+                            query_overlap_end = std::min(query_end, supp_query_end);
+
+                            // Get the sequence of the primary alignment
+                            std::string primary_seq = bam_get_seq(bam1);
+                            std::string supp_seq = bam_get_seq(supp_alignment);
+
+                            // TODO: Calculate the mismatch rate at the overlap
+                            int mismatch_count = 0;
+                            for (int i = query_overlap_start; i < query_overlap_end; i++) {
+                                if (primary_seq[i] != supp_seq[i]) {
+                                    mismatch_count++;
+                                }
+                            }
+                        }
+                    }
                 }
 
             // Process supplementary alignments
@@ -110,10 +141,15 @@ RegionData SVCaller::detectSVsFromRegion(std::string region)
                 std::string chr = bamHdr->target_name[bam1->core.tid];
                 int32_t start = bam1->core.pos;
                 int32_t end = bam_endpos(bam1);
-                AlignmentData alignment(chr, start, end, ".");
+
+                // Get CIGAR string information (don't call SVs in the supplementary alignments)
+                std::tuple<double, int32_t, int32_t> query_info = this->detectSVsFromCIGAR(bamHdr, bam1, sv_calls, false);
+                double mismatch_rate = std::get<0>(query_info);
+                int32_t query_start = std::get<1>(query_info);
+                int32_t query_end = std::get<2>(query_info);
 
                 // Add the supplementary alignment to the map
-                //supplementary_alignments[qname].push_back(alignment);
+                AlignmentData alignment(chr, start, end, ".", query_start, query_end, mismatch_rate);
                 auto it = supplementary_alignments.find(qname);
                 if (it == supplementary_alignments.end()) {
                     supplementary_alignments[qname] = {alignment};
@@ -150,14 +186,12 @@ SVCaller::SVCaller(InputData &input_data)
 {
     this->input_data = &input_data;
 }
-
-// Detect SVs from the CIGAR string of a read alignment.
-void SVCaller::detectSVsFromCIGAR(bam_hdr_t* header, bam1_t* alignment, SVData& sv_calls)
+std::tuple<double, int32_t, int32_t> SVCaller::detectSVsFromCIGAR(bam_hdr_t* header, bam1_t* alignment, SVData& sv_calls, bool is_primary)
 {
     // Get the chromosome
     std::string chr = header->target_name[alignment->core.tid];
 
-    // Get the position
+    // Get the position of the alignment in the reference genome
     int32_t pos = alignment->core.pos;
 
     // Get the CIGAR string
@@ -176,9 +210,17 @@ void SVCaller::detectSVsFromCIGAR(bam_hdr_t* header, bam1_t* alignment, SVData& 
     std::vector<std::thread> threads;
     std::vector<SVData> sv_calls_vec;
 
-    // Loop through the CIGAR string and process operations
+    // Loop through the CIGAR string, process operations, detect SVs (primary
+    // only), update clipped base support, calculate sequence identity for
+    // potential duplications (primary only), and calculate
+    // the clipped base support and mismatch rate
     int32_t ref_pos;
     int32_t ref_end;
+    int match_count = 0;
+    int mismatch_count = 0;
+    int32_t query_start = 0;  // First alignment position in the query
+    int32_t query_end = 0;    // Last alignment position in the query
+    bool first_op = false;  // First alignment operation for the query
     for (int i = 0; i < cigar_len; i++) {
 
         // Get the CIGAR operation
@@ -188,7 +230,7 @@ void SVCaller::detectSVsFromCIGAR(bam_hdr_t* header, bam1_t* alignment, SVData& 
         int op_len = bam_cigar_oplen(cigar[i]);
         
         // Check if the CIGAR operation is an insertion
-        if (op == BAM_CINS) {
+        if (op == BAM_CINS && is_primary) {
 
             // Add the SV if greater than the minimum SV size
             if (op_len >= this->min_sv_size) {
@@ -255,7 +297,7 @@ void SVCaller::detectSVsFromCIGAR(bam_hdr_t* header, bam1_t* alignment, SVData& 
             }
 
         // Check if the CIGAR operation is a deletion
-        } else if (op == BAM_CDEL) {
+        } else if (op == BAM_CDEL && is_primary) {
 
             // Add the SV if greater than the minimum SV size
             if (op_len >= this->min_sv_size) {
@@ -275,6 +317,46 @@ void SVCaller::detectSVsFromCIGAR(bam_hdr_t* header, bam1_t* alignment, SVData& 
             // Update the clipped base support
             std::lock_guard<std::mutex> lock(this->sv_mtx);
             sv_calls.updateClippedBaseSupport(chr, pos);
+
+            // Update the query alignment start position
+            if (!first_op) {
+                query_start = query_pos + op_len;
+                first_op = true;
+            }
+        }
+
+        // Update match/mismatch counts
+        if (op == BAM_CEQUAL) {
+            match_count += op_len;
+        } else if (op == BAM_CDIFF) {
+            mismatch_count += op_len;
+        } else if (op == BAM_CMATCH) {
+            // Compare read and reference sequences
+            // Get the sequence from the query
+            uint8_t* seq_ptr = bam_get_seq(alignment);
+            std::string cmatch_seq_str = "";
+            for (int j = 0; j < op_len; j++) {
+                cmatch_seq_str += seq_nt16_str[bam_seqi(seq_ptr, query_pos + j)];
+            }
+
+            // Get the corresponding reference sequence
+            int cmatch_pos = pos + 1;  // Querying the reference genome is 1-based
+            std::string cmatch_ref_str = this->input_data->queryRefGenome(chr, cmatch_pos, cmatch_pos + op_len - 1);
+
+            // Check that the two sequence lengths are equal
+            if (cmatch_seq_str.length() != cmatch_ref_str.length()) {
+                std::cerr << "ERROR: Sequence lengths do not match" << std::endl;
+                exit(1);
+            }
+
+            // Compare the two sequences and update the mismatch count
+            for (int j = 0; j < op_len; j++) {
+                if (cmatch_seq_str[j] != cmatch_ref_str[j]) {
+                    mismatch_count++;
+                } else {
+                    match_count++;
+                }
+            }
         }
 
         // Update the reference coordinate based on the CIGAR operation
@@ -298,6 +380,17 @@ void SVCaller::detectSVsFromCIGAR(bam_hdr_t* header, bam1_t* alignment, SVData& 
             exit(1);
         }
     }
+
+    // Update the query end position
+    query_end = query_pos;
+
+    // Calculate the mismatch rate
+    double mismatch_rate = (double)mismatch_count / (double)(match_count + mismatch_count);
+    std::cout << "Mismatch count: " << mismatch_count << std::endl;
+    std::cout << "Match count: " << match_count << std::endl;
+    std::cout << "Mismatch rate (%): " << mismatch_rate * 100 << std::endl;
+
+    return std::tuple<double, int32_t, int32_t>(mismatch_rate, query_start, query_end);
 }
 
 // Detect SVs from split read alignments (primary and supplementary) and
@@ -439,9 +532,16 @@ void SVCaller::detectSVsFromSplitReads(SVData& sv_calls, PrimaryMap& primary_map
         // Get the primary alignment chromosome
         std::string primary_chr = std::get<0>(primary_alignment);
 
-        // Get the start and end positions of the primary alignment
+        // Get the start and end positions of the primary alignment (reference)
         int32_t primary_start = std::get<1>(primary_alignment);
         int32_t primary_end = std::get<2>(primary_alignment);
+
+        // Get the query start and end positions
+        int32_t primary_query_start = std::get<4>(primary_alignment);
+        int32_t primary_query_end = std::get<5>(primary_alignment);
+
+        // Get the mismatch rate
+        double primary_mismatch_rate = std::get<6>(primary_alignment);
 
         // Loop through the supplementary alignments and find gaps and overlaps
         AlignmentVector supp_alignments = supp_map[qname];
@@ -458,8 +558,33 @@ void SVCaller::detectSVsFromSplitReads(SVData& sv_calls, PrimaryMap& primary_map
             }
 
             // Get the start and end positions of the supplementary alignment
+            // (on the reference genome)
             int32_t supp_start = std::get<1>(supp_alignment);
             int32_t supp_end = std::get<2>(supp_alignment);
+
+            // Get the query start and end positions
+            int32_t supp_query_start = std::get<4>(supp_alignment);
+            int32_t supp_query_end = std::get<5>(supp_alignment);
+
+            // Get the mismatch rate
+            double supp_mismatch_rate = std::get<6>(supp_alignment);
+
+            // Determine if there is overlap between the primary and
+            // supplementary query sequences
+            int32_t overlap_start = std::max(primary_query_start, supp_query_start);
+            int32_t overlap_end = std::min(primary_query_end, supp_query_end);
+            int32_t overlap_length = overlap_end - overlap_start;
+            if (overlap_length > 0) {
+                // Choose the alignment with the lower mismatch rate,
+                // and trim the overlap from the other alignment
+                if (primary_mismatch_rate < supp_mismatch_rate) {
+                    // Trim the overlap from the supplementary alignment
+                    supp_start = supp_end - overlap_length;
+                } else {
+                    // Trim the overlap from the primary alignment
+                    primary_end = primary_start + overlap_length;
+                }
+            }
 
             // Gap analysis (deletion or duplication)
             if (supp_start < primary_start && supp_end < primary_start) {
@@ -468,12 +593,16 @@ void SVCaller::detectSVsFromSplitReads(SVData& sv_calls, PrimaryMap& primary_map
 
                 // Use the gap ends as the SV endpoints
                 if (primary_start - supp_end >= this->min_sv_size) {
+
+                    // Add the SV call
                     sv_calls.add(supp_chr, supp_end+1, primary_start+1, UNKNOWN, ".", "GAPINNER_A");
                     sv_count++;
                 }
 
                 // Also use the alignment ends as the SV endpoints
                 if (primary_end - supp_start >= this->min_sv_size) {
+
+                    // Add the SV call
                     sv_calls.add(supp_chr, supp_start+1, primary_end+1, UNKNOWN, ".", "GAPOUTER_A");
                     sv_count++;
                 }
@@ -485,12 +614,16 @@ void SVCaller::detectSVsFromSplitReads(SVData& sv_calls, PrimaryMap& primary_map
 
                 // Use the gap ends as the SV endpoints
                 if (supp_start - primary_end >= this->min_sv_size) {
+
+                    // Add the SV call
                     sv_calls.add(supp_chr, primary_end+1, supp_start+1, UNKNOWN, ".", "GAPINNER_B");
                     sv_count++;
                 }
 
                 // Also use the alignment ends as the SV endpoints
                 if (supp_end - primary_start >= this->min_sv_size) {
+
+                    // Add the SV call
                     sv_calls.add(supp_chr, primary_start+1, supp_end+1, UNKNOWN, ".", "GAPOUTER_B");
                     sv_count++;
                 }

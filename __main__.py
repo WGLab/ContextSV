@@ -153,24 +153,6 @@ def main():
         required=False,
         help=argparse.SUPPRESS
     )
-
-    # Turn off CIGAR string SV detection (split-read only)
-    parser.add_argument(
-        "--disable-cigar",
-        required=False,
-        action="store_true",
-        default=False,
-        help=argparse.SUPPRESS
-    )
-
-    # Turn off SNP-based CNV predictions for SV classification.
-    parser.add_argument(
-        "--disable-snp-cnv",
-        required=False,
-        action="store_true",
-        default=False,
-        help=argparse.SUPPRESS
-    )
     
     # ----------------------------------------------------------------------- #
 
@@ -195,8 +177,8 @@ def main():
         log.warning("Short read alignment file not provided. Using long read alignment file in its place.")
         args.short_read = args.long_read
 
-    # SNPs file is required unless SNP-based CNV predictions are disabled.
-    if (args.snps is None and not args.disable_snp_cnv):
+    # SNPs file is required
+    if (args.snps is None):
         log.error("Please provide the SNPs file.")
         arg_error = True
 
@@ -231,8 +213,6 @@ def main():
     input_data.setAlleleFreqFilepaths(args.pfb)
     input_data.setHMMFilepath(args.hmm)
     input_data.setOutputDir(args.output)
-    input_data.setDisableCIGAR(args.disable_cigar)
-    input_data.setDisableSNPCNV(args.disable_snp_cnv)
     input_data.saveCNVData(args.save_cnv)
     input_data.setWindowSize(args.window_size)
 
@@ -246,7 +226,7 @@ def main():
     # cnv_data_path = os.path.join(args.output, "cnv_data.tsv")
 
     # Generate python-based CNV plots if SNP-based CNV predictions are enabled
-    if (args.save_cnv and not args.disable_snp_cnv):
+    if (args.save_cnv):
         log.info("Generating CNV plots...")
 
         # Find all TSV files in the output directory

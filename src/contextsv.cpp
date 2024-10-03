@@ -32,14 +32,11 @@ int ContextSV::run()
     SVCaller sv_caller(*this->input_data);
     SVData sv_calls = sv_caller.run();
 
-    // Classify SVs based on SNP CNV predictions if enabled
-    if (this->input_data->getDisableSNPCNV() == false) {
-        // Call CNVs at SNP positions
-        std::cout << "Running CNV predictions..." << std::endl;
-        CNVCaller cnv_caller(*this->input_data);
-        cnv_caller.run(sv_calls);
-        std::cout << "CNV predictions complete." << std::endl;
-    }
+    // Classify SVs based on copy number predictions
+    std::cout << "Running copy number predictions..." << std::endl;
+    CNVCaller cnv_caller(*this->input_data);
+    cnv_caller.run(sv_calls);
+    std::cout << "Copy number predictions complete." << std::endl;
 
     // Print the total number of SVs called
     std::cout << "Total SVs called: " << sv_calls.totalCalls() << std::endl;

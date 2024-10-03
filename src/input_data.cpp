@@ -30,8 +30,6 @@ InputData::InputData()
     this->thread_count = 1;
     this->hmm_filepath = "data/wgs.hmm";
     this->whole_genome = true;
-    this->disable_cigar = false;
-    this->disable_snp_cnv = false;
     this->verbose = false;
     this->save_cnv_data = false;
 }
@@ -456,26 +454,6 @@ void InputData::setHMMFilepath(std::string filepath)
             std::cout << "Using HMM file: " << this->hmm_filepath << std::endl;
         }
     }
-}
-
-void InputData::setDisableCIGAR(bool disable_cigar)
-{
-    this->disable_cigar = disable_cigar;
-}
-
-bool InputData::getDisableCIGAR()
-{
-    return this->disable_cigar;
-}
-
-void InputData::setDisableSNPCNV(bool disable_snp_cnv)
-{
-    this->disable_snp_cnv = disable_snp_cnv;
-}
-
-bool InputData::getDisableSNPCNV()
-{
-    return this->disable_snp_cnv;
 }
 
 void InputData::setWholeGenome(bool whole_genome)
