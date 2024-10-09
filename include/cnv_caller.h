@@ -148,7 +148,7 @@ class CNVCaller {
         void getSNPPopulationFrequencies(std::string chr, SNPInfo& snp_info);
 
         // Save a TSV with B-allele frequencies, log 2 ratios, and copy number predictions
-        void saveToTSV(SNPData& snp_data, std::string filepath);
+        void saveToTSV(SNPData& snp_data, std::string filepath, std::string chr);
 };
 
 #endif // CNV_CALLER_H

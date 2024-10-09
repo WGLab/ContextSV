@@ -82,12 +82,6 @@ def main():
         required=True
     )
 
-    parser.add_argument(
-        "-r", "--region",
-        help="region to analyze (e.g. chr1, chr1:1000-2000). If not provided, the entire genome will be analyzed",
-        required=False,
-    )
-
     # Thread count.
     parser.add_argument(
         "-t", "--threads",
@@ -207,7 +201,6 @@ def main():
     input_data.setRefGenome(args.reference)
     input_data.setSNPFilepath(args.snps)
     input_data.setEthnicity(args.ethnicity)
-    input_data.setRegion(args.region)
     input_data.setThreadCount(args.threads)
     input_data.setMeanChromosomeCoverage(args.chr_cov)
     input_data.setAlleleFreqFilepaths(args.pfb)
@@ -222,7 +215,6 @@ def main():
     # Determine the data paths for downstream analysis.
     vcf_path = os.path.join(args.output, "output.vcf")
     output_dir = args.output
-    region = args.region
     # cnv_data_path = os.path.join(args.output, "cnv_data.tsv")
 
     # Generate python-based CNV plots if SNP-based CNV predictions are enabled

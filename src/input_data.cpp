@@ -29,7 +29,6 @@ InputData::InputData()
     this->region_set = false;
     this->thread_count = 1;
     this->hmm_filepath = "data/wgs.hmm";
-    this->whole_genome = true;
     this->verbose = false;
     this->save_cnv_data = false;
 }
@@ -124,96 +123,6 @@ void InputData::setOutputDir(std::string dirpath)
     system(cmd.c_str());
 }
 
-std::string InputData::getRegion()
-{
-    return this->region;
-}
-
-void InputData::setRegion(std::string region)
-{
-    this->region = region;
-    
-    // Check if empty string. This means all chromosomes will be used
-    if (region == "")
-    {
-        std::cout << "No region specified. Using all chromosomes" << std::endl;
-        this->whole_genome = true;
-        return;
-    }
-
-    // Parse the region
-    char *tok = strtok((char *)region.c_str(), ":");
-    int col = 0;
-    while (tok != NULL)
-    {
-        // Get the chromosome
-        if (col == 0)
-        {
-            this->region_chr = tok;
-        }
-
-        // Get the start and end positions
-        else if (col == 1)
-        {
-            // Check if empty
-            if (strcmp(tok, "") == 0)
-            {
-                break;
-            }
-
-            // Split the start and end positions
-            char *start_tok = strtok(tok, "-");
-            char *end_tok = strtok(NULL, "-");
-
-            // Get the start position
-            if (start_tok != NULL)
-            {
-                this->region_start = atoi(start_tok);
-            }
-
-            // Get the end position
-            if (end_tok != NULL)
-            {
-                this->region_end = atoi(end_tok);
-            }
-        }
-        tok = strtok(NULL, ":");
-        col++;
-    }
-
-    // Check if a valid chromosome was parsed
-    if (this->region_chr == "")
-    {
-        std::cerr << "Error: Could not parse region" << std::endl;
-        exit(1);
-    }
-
-    // Check if only a chromosome was parsed
-    if (this->region_start == 0 && this->region_end == 0)
-    {
-        // Use the entire chromosome as the region
-        this->region_set = true;
-
-        // Set the whole genome flag to false
-        this->whole_genome = false;
-        std::cout << "Parsed region = " << this->region_chr << std::endl;
-    } else {
-        // Check if a valid chromosome start and end position were parsed
-        if (this->region_start == 0 || this->region_end == 0 || this->region_start > this->region_end)
-        {
-            std::cerr << "Error: Region start and end positions not set" << std::endl;
-            exit(1);
-        } else {
-            // Set the region
-            this->region_set = true;
-
-            // Set the whole genome flag to false
-            this->whole_genome = false;
-            std::cout << "Parsed region = " << this->region_chr << ":" << this->region_start << "-" << this->region_end << std::endl;
-        }
-    }
-}
-
 int InputData::getWindowSize()
 {
     return this->window_size;
@@ -242,26 +151,6 @@ std::string InputData::getEthnicity()
 void InputData::setEthnicity(std::string ethnicity)
 {
     this->ethnicity = ethnicity;
-}
-
-std::string InputData::getRegionChr()
-{
-    return this->region_chr;
-}
-
-int InputData::getRegionStart()
-{
-    return this->region_start;
-}
-
-int InputData::getRegionEnd()
-{
-    return this->region_end;
-}
-
-bool InputData::getRegionSet()
-{
-    return this->region_set;
 }
 
 void InputData::setMeanChromosomeCoverage(std::string chr_cov)
@@ -454,16 +343,6 @@ void InputData::setHMMFilepath(std::string filepath)
             std::cout << "Using HMM file: " << this->hmm_filepath << std::endl;
         }
     }
-}
-
-void InputData::setWholeGenome(bool whole_genome)
-{
-    this->whole_genome = whole_genome;
-}
-
-bool InputData::getWholeGenome()
-{
-    return this->whole_genome;
 }
 
 void InputData::setVerbose(bool verbose)

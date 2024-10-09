@@ -70,14 +70,6 @@ class InputData {
         void setEthnicity(std::string ethnicity);
         std::string getEthnicity();
 
-        // Set the genomic region to analyze.
-		void setRegion(std::string region);
-        std::string getRegion();
-        std::string getRegionChr();
-        int getRegionStart();
-        int getRegionEnd();
-        bool getRegionSet();
-
         // Set the window size for the log2 ratio calculation.
         void setWindowSize(int window_size);
         int getWindowSize();
@@ -93,11 +85,6 @@ class InputData {
         // Set the number of threads to use when parallelization is possible.
         void setThreadCount(int thread_count);
         int getThreadCount();
-
-        // Set the whole genome flag to true if the entire genome is being
-        // analyzed.
-        void setWholeGenome(bool whole_genome);
-        bool getWholeGenome();
 
         // Set the verbose flag to true if verbose output is desired.
         void setVerbose(bool verbose);

@@ -304,7 +304,7 @@ void CNVCaller::runCopyNumberPredictionChunk(std::string chr, std::map<SVCandida
             if (end_pos - start_pos > 10000) {
                 std::string sv_filename = this->input_data->getOutputDir() + "/sv_snps_" + chr + "_" + std::to_string((int)start_pos) + "_" + std::to_string((int)end_pos) + ".tsv";
                 std::cout << "Saving SV SNP data to " << sv_filename << std::endl;
-                this->saveToTSV(snp_data, sv_filename);
+                this->saveToTSV(snp_data, sv_filename, chr);
             }
         }
     }
@@ -426,15 +426,7 @@ CNVCaller::CNVCaller(InputData &input_data)
 void CNVCaller::run(SVData& sv_calls)
 {
     // Predict copy number states at SNP positions using a hidden Markov model
-    // Get the region data
-    bool whole_genome = this->input_data->getWholeGenome();
-    std::vector<std::string> chromosomes;
-    if (whole_genome)
-    {
-        chromosomes = this->input_data->getRefGenomeChromosomes();
-    } else {
-        chromosomes.push_back(this->input_data->getRegionChr());
-    }
+    // chromosomes = this->input_data->getRefGenomeChromosomes();
 
     // Read the HMM from file
     std::string hmm_filepath = this->input_data->getHMMFilepath();
@@ -1020,7 +1012,7 @@ void CNVCaller::getSNPPopulationFrequencies(std::string chr, SNPInfo& snp_info)
     }
 }
 
-void CNVCaller::saveToTSV(SNPData& snp_data, std::string filepath)
+void CNVCaller::saveToTSV(SNPData& snp_data, std::string filepath, std::string chr)
 {
     // Open the TSV file for writing
     std::ofstream tsv_file(filepath);
@@ -1029,7 +1021,6 @@ void CNVCaller::saveToTSV(SNPData& snp_data, std::string filepath)
     tsv_file << "chromosome\tposition\tsnp\tb_allele_freq\tlog2_ratio\tcnv_state\tpopulation_freq" << std::endl;
 
     // Write the data
-    std::string chr = this->input_data->getRegionChr();
     int snp_count = (int) snp_data.pos.size();
     for (int i = 0; i < snp_count; i++)
     {

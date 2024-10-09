@@ -446,50 +446,34 @@ SVData SVCaller::run()
     std::string bam_filepath = this->input_data->getLongReadBam();
 
     // Get the region data
-    bool whole_genome = this->input_data->getWholeGenome();
-    std::vector<std::string> regions;
-    if (whole_genome) {
-        regions = this->input_data->getRefGenomeChromosomes();
-    } else {
-        regions.push_back(this->input_data->getRegion());
-    }
-    int num_regions = regions.size();
+    std::vector<std::string> chromosomes = this->input_data->getRefGenomeChromosomes();
+    int chr_count = chromosomes.size();
 
     // Loop through each region and detect SVs
-    std::cout << "Detecting SVs from " << num_regions << " region(s)..." << std::endl;
+    std::cout << "Detecting SVs from " << chr_count << " chromosome(s)..." << std::endl;
     int region_count = 0;
     auto start1 = std::chrono::high_resolution_clock::now();
     SVData sv_calls;
     PrimaryMap primary_alignments;
     SuppMap supplementary_alignments;
     int all_region_sv_count = 0;
-    for (const auto& region : regions) {
-        // std::cout << "Extracting alignments for region: " << region << std::endl;
+    for (const auto& chr : chromosomes) {
         // Split the region into chunks and process each chunk in a separate
         // thread
         int num_threads = this->input_data->getThreadCount();
+        int chr_len = this->input_data->getRefGenomeChromosomeLength(chr);
 
-        // If a region range is specified (e.g., chr1:1-1000), use a single
-        // thread
+        // Split the region into chunks
         std::vector<std::string> region_chunks;
-        if (region.find(":") != std::string::npos) {
-            num_threads = 1;
-            region_chunks.push_back(region);
-        } else {
-            // Get the chromosome length
-            int chr_len = this->input_data->getRefGenomeChromosomeLength(region);
-
-            // Split the region into chunks
-            int chunk_size = chr_len / num_threads;
-            for (int i = 0; i < num_threads; i++) {
-                int start = i * chunk_size + 1;  // 1-based
-                int end = start + chunk_size;
-                if (i == num_threads - 1) {
-                    end = chr_len;
-                }
-                std::string chunk = region + ":" + std::to_string(start) + "-" + std::to_string(end);
-                region_chunks.push_back(chunk);
+        int chunk_size = chr_len / num_threads;
+        for (int i = 0; i < num_threads; i++) {
+            int start = i * chunk_size + 1;  // 1-based
+            int end = start + chunk_size;
+            if (i == num_threads - 1) {
+                end = chr_len;
             }
+            std::string chunk = chr + ":" + std::to_string(start) + "-" + std::to_string(end);
+            region_chunks.push_back(chunk);
         }
 
         // Loop through the chunks and process each chunk in a separate thread
@@ -546,7 +530,7 @@ SVData SVCaller::run()
 
         // Increment the region count
         region_count++;
-        std::cout << "Extracted aligments for " << region_count << " of " << num_regions << " regions." << std::endl;
+        std::cout << "Extracted aligments for " << region_count << " of " << chr_count << " chromosome(s)..." << std::endl;
     }
 
     // Run split-read SV detection in a single thread
@@ -554,7 +538,7 @@ SVData SVCaller::run()
     this->detectSVsFromSplitReads(sv_calls, primary_alignments, supplementary_alignments);
 
     auto end1 = std::chrono::high_resolution_clock::now();
-    std::cout << "Finished detecting " << sv_calls.totalCalls() << " SVs from " << num_regions << " region(s). Elapsed time: " << getElapsedTime(start1, end1) << std::endl;
+    std::cout << "Finished detecting " << sv_calls.totalCalls() << " SVs from " << chr_count << " chromosome(s). Elapsed time: " << getElapsedTime(start1, end1) << std::endl;
 
     // Return the SV calls
     return sv_calls;
