@@ -74,6 +74,15 @@ class InputData {
         void setWindowSize(int window_size);
         int getWindowSize();
 
+        // Set the chromosome to analyze.
+        void setChromosome(std::string chr);
+        std::string getChromosome();
+
+        // Set the region to analyze.
+        void setRegion(std::string region);
+        std::pair<int32_t, int32_t> getRegion();
+        bool isRegionSet();
+
         // Set entire-chromosome mean coverage values to speed up the log2 ratio calculations.
         void setMeanChromosomeCoverage(std::string chr_cov);
         double getMeanChromosomeCoverage(std::string chr);
@@ -106,17 +115,14 @@ class InputData {
         std::unordered_map<std::string, std::string> pfb_filepaths;  // Map of population frequency VCF filepaths by chromosome
         FASTAQuery fasta_query;
         std::string output_dir;
-        std::string region;
         int window_size;
-        std::string region_chr;
-        int64_t region_start;
-        int64_t region_end;
-        bool region_set;
+        std::string chr;  // Chromosome to analyze
+        std::pair<int32_t, int32_t> region;  // Region to analyze
+        bool region_set;  // True if a region is set
         std::map<std::string, double> chr_cov;  // Map of pre-calculated mean coverage values for each chromosome
         int thread_count;
         std::string hmm_filepath;
         std::string cnv_filepath;
-        bool whole_genome;  // True if the entire genome is being analyzed
         bool verbose;  // True if verbose output is enabled
         bool save_cnv_data;  // True if SNP CNV regions should be extended around SV breakpoints, and saved to a TSV file (Large performance hit)
 };

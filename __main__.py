@@ -59,6 +59,22 @@ def main():
         required=False
     )
 
+    parser.add_argument(
+        '-c', '--chr',
+        help="chromosome to analyze (e.g. 1, 2, 3, ..., X, Y)",
+        required=False,
+        default="",
+        type=str
+    )
+
+    parser.add_argument(
+        "-r", "--region",
+        help="region to analyze (e.g. 1:1000-2000)",
+        required=False,
+        default="",
+        type=str
+    )
+
     # Specify the ethnicity of the sample for obtaining population allele
     # frequencies from a database such as gnomAD. If not provided, the allele
     # frequencies will be obtained for all populations.
@@ -202,6 +218,8 @@ def main():
     input_data.setSNPFilepath(args.snps)
     input_data.setEthnicity(args.ethnicity)
     input_data.setThreadCount(args.threads)
+    input_data.setChromosome(args.chr)
+    input_data.setRegion(args.region)
     input_data.setMeanChromosomeCoverage(args.chr_cov)
     input_data.setAlleleFreqFilepaths(args.pfb)
     input_data.setHMMFilepath(args.hmm)

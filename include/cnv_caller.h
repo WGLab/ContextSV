@@ -49,14 +49,13 @@ class CNVCaller {
     private:
         InputData* input_data;
 
-        // Mutex for locking the SV candidate map
-        mutable std::mutex sv_candidates_mtx;
-
-        // Mutex for locking the SNP info
-        mutable std::mutex snp_data_mtx;
-
-        // Mutex for locking the HMM prediction
-        mutable std::mutex hmm_mtx;
+        mutable std::mutex sv_candidates_mtx; // SV candidate map mutex
+        mutable std::mutex snp_data_mtx;  // SNP data mutex
+        mutable std::mutex hmm_mtx;  // HMM mutex
+        CHMM hmm;
+        SNPData snp_data;
+        SNPInfo snp_info;
+        double mean_chr_cov = 0.0;
 
         // Define a map of CNV genotypes by HMM predicted state.
         // We only use the first 3 genotypes (0/0, 0/1, 1/1) for the VCF output.
@@ -104,13 +103,8 @@ class CNVCaller {
 
         // Run copy number prediction for a chunk of SV candidates
         void runCopyNumberPredictionChunk(std::string chr, std::map<SVCandidate, SVInfo>& sv_candidates, std::vector<SVCandidate> sv_chunk, SNPInfo& snp_info, CHMM hmm, int window_size, double mean_chr_cov, std::unordered_map<uint64_t, int>& pos_depth_map);
-        // SNPData runCopyNumberPredictionChunk(std::string chr, std::map<SVCandidate, SVInfo>& sv_candidates, std::vector<SVCandidate> sv_chunk, SNPInfo& snp_info, CHMM hmm, int window_size, double mean_chr_cov, std::unordered_map<uint64_t, int>& pos_depth_map);
 
         void updateSVCopyNumber(std::map<SVCandidate, SVInfo>& sv_candidates, SVCandidate key, int sv_type_update, std::string data_type, std::string genotype, double hmm_likelihood);
-
-        // void updateSVType(std::map<SVCandidate, SVInfo>& sv_candidates, SVCandidate key, int sv_type, std::string data_type);
-
-        // void updateSVGenotype(std::map<SVCandidate, SVInfo>& sv_candidates, SVCandidate key, std::string genotype);
 
         void updateDPValue(std::map<SVCandidate, SVInfo>& sv_candidates, SVCandidate key, int dp_value);
 
@@ -126,9 +120,11 @@ class CNVCaller {
     public:
         CNVCaller(InputData& input_data);
 
-        // Detect CNVs and return the state sequence by SNP position
-        // (key = [chromosome, SNP position], value = state)
-		void run(SVData& sv_calls);
+        // Load file data for a chromosome (SNP positions, BAF values, and PFB values)
+        void loadChromosomeData(std::string chr);
+
+        // Run copy number prediction for a region
+        SNPData runCopyNumberPrediction(std::string chr, std::map<SVCandidate, SVInfo>& sv_candidates);
 
         // Calculate the mean chromosome coverage
         double calculateMeanChromosomeCoverage(std::string chr);

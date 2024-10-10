@@ -17,7 +17,7 @@
 
 // SV candidate alignment data (chr, start, end, sequence, query start, query
 // end, mismatch map)
-using AlignmentData   = std::tuple<std::string, int64_t, int64_t, std::string, int32_t, int32_t, std::map<int, int>>;
+using AlignmentData   = std::tuple<std::string, int64_t, int64_t, std::string, int32_t, int32_t, std::unordered_map<int, int>>;
 using AlignmentVector = std::vector<AlignmentData>;
 
 // Query map (query name, alignment vector)
@@ -34,7 +34,7 @@ class SVCaller {
 
         // Detect SVs from the CIGAR string of a read alignment, and return the
         // mismatch rate, and the start and end positions of the query sequence
-        std::tuple<std::map<int, int>, int32_t, int32_t> detectSVsFromCIGAR(bam_hdr_t* header, bam1_t* alignment, SVData& sv_calls, bool is_primary);
+        std::tuple<std::unordered_map<int, int>, int32_t, int32_t> detectSVsFromCIGAR(bam_hdr_t* header, bam1_t* alignment, SVData& sv_calls, bool is_primary);
 
         // Detect SVs at a region from long read alignments. This is used for
         // whole genome analysis running in parallel.
@@ -49,7 +49,7 @@ class SVCaller {
         // Calculate the mismatch rate given a map of query positions to
         // match/mismatch (1/0) values within a specified range of the query
         // sequence
-        double calculateMismatchRate(std::map<int, int>& mismatch_map, int32_t start, int32_t end);
+        double calculateMismatchRate(std::unordered_map<int, int>& mismatch_map, int32_t start, int32_t end);
 
     public:
         SVCaller(InputData& input_data);

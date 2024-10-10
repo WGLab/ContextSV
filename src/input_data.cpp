@@ -20,13 +20,11 @@ InputData::InputData()
     this->long_read_bam = "";
     this->ref_filepath = "";
     this->snp_vcf_filepath = "";
-    this->output_dir = "";
-    this->region = "";
-    this->window_size = 10000;
-    this->region_chr = "";
-    this->region_start = 0;
-    this->region_end = 0;
+    this->chr = "";
+    this->region = std::make_pair(0, 0);
     this->region_set = false;
+    this->output_dir = "";
+    this->window_size = 10000;
     this->thread_count = 1;
     this->hmm_filepath = "data/wgs.hmm";
     this->verbose = false;
@@ -153,6 +151,56 @@ void InputData::setEthnicity(std::string ethnicity)
     this->ethnicity = ethnicity;
 }
 
+void InputData::setChromosome(std::string chr)
+{
+    this->chr = chr;
+}
+
+std::string InputData::getChromosome()
+{
+    return this->chr;
+}
+
+void InputData::setRegion(std::string region)
+{
+    // Check if the region is valid
+    if (region != "")
+    {
+        // Split the region by colon
+        std::istringstream ss(region);
+        std::string token;
+        std::vector<std::string> region_tokens;
+
+        while (std::getline(ss, token, '-'))
+        {
+            region_tokens.push_back(token);
+        }
+
+        // Check if the region is valid
+        if (region_tokens.size() == 2)
+        {
+            // Get the start and end positions
+            int32_t start = std::stoi(region_tokens[0]);
+            int32_t end = std::stoi(region_tokens[1]);
+
+            // Set the region
+            this->region = std::make_pair(start, end);
+            this->region_set = true;
+        }
+    }
+    std::cout << "Region set to " << this->region.first << "-" << this->region.second << std::endl;
+}
+
+std::pair<int32_t, int32_t> InputData::getRegion()
+{
+    return this->region;
+}
+
+bool InputData::isRegionSet()
+{
+    return this->region_set;
+}
+
 void InputData::setMeanChromosomeCoverage(std::string chr_cov)
 {
     // Update the chromosome coverage map if the string is not empty
@@ -232,9 +280,9 @@ void InputData::setAlleleFreqFilepaths(std::string filepath)
 
         // If a region is set, load only the chromosome in the region
         std::string target_chr;
-        if (this->region_set)
+        if (this->chr != "")
         {
-            target_chr = this->region_chr;
+            target_chr = this->chr;
 
             // Check if the region is in chr notation
             if (target_chr.find("chr") != std::string::npos)

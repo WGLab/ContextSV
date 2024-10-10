@@ -123,7 +123,12 @@ std::pair<SNPData, bool> CNVCaller::querySNPRegion(std::string chr, int64_t star
 
     return std::make_pair(snp_data, snps_found);
 }
-SNPData CNVCaller::runCopyNumberPrediction(std::string chr, std::map<SVCandidate, SVInfo>& sv_candidates, SNPInfo& snp_info, CHMM hmm, int window_size, double mean_chr_cov)
+SNPData CNVCaller::runCopyNumberPrediction(std::string chr, std::map<SVCandidate, SVInfo> &sv_candidates)
+{
+    return this->runCopyNumberPrediction(chr, sv_candidates, this->snp_info, this->hmm, this->input_data->getWindowSize(), this->mean_chr_cov);
+}
+
+SNPData CNVCaller::runCopyNumberPrediction(std::string chr, std::map<SVCandidate, SVInfo> &sv_candidates, SNPInfo &snp_info, CHMM hmm, int window_size, double mean_chr_cov)
 {
     SNPData snp_data;
 
@@ -200,8 +205,6 @@ SNPData CNVCaller::runCopyNumberPrediction(std::string chr, std::map<SVCandidate
 
 void CNVCaller::runCopyNumberPredictionChunk(std::string chr, std::map<SVCandidate, SVInfo>& sv_candidates, std::vector<SVCandidate> sv_chunk, SNPInfo& snp_info, CHMM hmm, int window_size, double mean_chr_cov, std::unordered_map<uint64_t, int>& pos_depth_map)
 {
-    // SNPData snp_data;
-
     // Map with counts for each CNV type
     std::map<int, int> cnv_type_counts;
     for (int i = 0; i < 6; i++)
@@ -423,74 +426,38 @@ CNVCaller::CNVCaller(InputData &input_data)
     this->input_data = &input_data;
 }
 
-void CNVCaller::run(SVData& sv_calls)
+void CNVCaller::loadChromosomeData(std::string chr)
 {
-    // Predict copy number states at SNP positions using a hidden Markov model
-    // chromosomes = this->input_data->getRefGenomeChromosomes();
-
     // Read the HMM from file
     std::string hmm_filepath = this->input_data->getHMMFilepath();
     std::cout << "Reading HMM from file: " << hmm_filepath << std::endl;
-    CHMM hmm = ReadCHMM(hmm_filepath.c_str());
+    this->hmm = ReadCHMM(hmm_filepath.c_str());
 
-    // Get the window size for HMM observations
-    int window_size = this->input_data->getWindowSize();
-
-    // Loop over SV call chromosomes
-    std::cout << "Predicting copy number states for SV candidates..." << std::endl;
-    std::set<std::string> sv_chromosomes = sv_calls.getChromosomes();
-
-    // Process each chromosome
-    SNPData snp_data;
-    int current_chr = 0;
-    int chr_count = (int) sv_chromosomes.size();
-    for (auto const& chr : sv_chromosomes)
+    // First, calculate the mean chromosome coverage
+    double mean_chr_cov = 0;
+    try
     {
-        // Get the SV candidates for the chromosome
-        std::map<SVCandidate, SVInfo>& chr_sv_calls = sv_calls.getChromosomeSVs(chr);
-
-        // First, calculate the mean chromosome coverage
-        double mean_chr_cov = 0;
-        try
-        {
-            mean_chr_cov = this->input_data->getMeanChromosomeCoverage(chr);
-            printMessage("User-provided mean chromosome coverage for " + chr + ": " + std::to_string(mean_chr_cov));
-        }
-        catch(const std::out_of_range& e)
-        {
-            // No user-provided mean chromosome coverage
-            printMessage("Calculating mean chromosome coverage for " + chr + "...");
-            mean_chr_cov = calculateMeanChromosomeCoverage(chr);
-            printMessage("Mean chromosome coverage for " + chr + ": " + std::to_string(mean_chr_cov));
-        }
-
-        // Read the SNP positions and B-allele frequency values from the VCF file
-        SNPInfo snp_info;
-        std::cout << "Reading SNP allele frequencies for chromosome " << chr << " from VCF file..." << std::endl;
-        std::string snp_filepath = this->input_data->getSNPFilepath();
-        readSNPAlleleFrequencies(chr, snp_filepath, snp_info);
-
-        // Get the population frequencies for each SNP
-        std::cout << "Obtaining SNP population frequencies for chromosome " << chr << "..." << std::endl;
-        getSNPPopulationFrequencies(chr, snp_info);
-
-        // Start a thread to run the copy number prediction for the entire chromosome
-        printMessage("Running copy number prediction for chromosome " + chr + "...");
-
-        // Run copy number prediction for the chromosome
-        SNPData chr_snp_data = runCopyNumberPrediction(chr, chr_sv_calls, snp_info, hmm, window_size, mean_chr_cov);
-
-        // Add the SNP data to the SNP data map
-        if (this->input_data->getSaveCNVData())
-        {
-            printMessage("Updating SNP data...");
-            updateSNPVectors(snp_data, chr_snp_data.pos, chr_snp_data.pfb, chr_snp_data.baf, chr_snp_data.log2_cov, chr_snp_data.state_sequence, chr_snp_data.is_snp);
-        }
-        printMessage("Finished processing chromosome " + chr + " (" + std::to_string(++current_chr) + " of " + std::to_string(chr_count) + ")...");
+        mean_chr_cov = this->input_data->getMeanChromosomeCoverage(chr);
+        printMessage("User-provided mean chromosome coverage for " + chr + ": " + std::to_string(mean_chr_cov));
     }
+    catch(const std::out_of_range& e)
+    {
+        // No user-provided mean chromosome coverage
+        printMessage("Calculating mean chromosome coverage for " + chr + "...");
+        mean_chr_cov = calculateMeanChromosomeCoverage(chr);
+        printMessage("Mean chromosome coverage for " + chr + ": " + std::to_string(mean_chr_cov));
+    }
+    this->mean_chr_cov = mean_chr_cov;
 
-    std::cout << "Finished predicting copy number states for all chromosomes" << std::endl;
-    std::cout << "Found a total of " << sv_calls.totalCalls() << " SV candidates" << std::endl;
+    // Read the SNP positions and B-allele frequency values from the VCF file
+    std::cout << "Reading SNP allele frequencies for chromosome " << chr << " from VCF file..." << std::endl;
+    std::string snp_filepath = this->input_data->getSNPFilepath();
+    readSNPAlleleFrequencies(chr, snp_filepath, this->snp_info);
+
+    // Get the population frequencies for each SNP
+    std::cout << "Obtaining SNP population frequencies for chromosome " << chr << "..." << std::endl;
+    getSNPPopulationFrequencies(chr, this->snp_info);
+    std::cout << "Finished loading chromosome data for " << chr << std::endl;
 }
 
 // Calculate the mean chromosome coverage
@@ -772,7 +739,16 @@ void CNVCaller::readSNPAlleleFrequencies(std::string chr, std::string filepath, 
     if (this->input_data->getVerbose()) {
         std::cout << "Filtering SNPs by depth, quality, and region..." << std::endl;
     }
-    std::string cmd = "bcftools view -r " + chr + " -v snps -i 'QUAL > 30 && DP > 10 && FILTER = \"PASS\"' " + filepath + " > " + filtered_snp_vcf_filepath;
+
+    // // Check if a region was specified by the user
+    std::string region_str = chr;
+    if (this->input_data->isRegionSet())
+    {
+        std::pair<int32_t, int32_t> region = this->input_data->getRegion();
+        region_str = chr + ":" + std::to_string(region.first) + "-" + std::to_string(region.second);
+    }
+
+    std::string cmd = "bcftools view -r " + region_str + " -v snps -i 'QUAL > 30 && DP > 10 && FILTER = \"PASS\"' " + filepath + " > " + filtered_snp_vcf_filepath;
     if (this->input_data->getVerbose()) {
         std::cout << "Filtering SNPs by depth and quality..." << std::endl;
         std::cout << "Command: " << cmd << std::endl;
@@ -907,6 +883,18 @@ void CNVCaller::getSNPPopulationFrequencies(std::string chr, SNPInfo& snp_info)
     std::pair<int64_t, int64_t> snp_range = snp_info.getSNPRange(chr);
     int64_t snp_start = snp_range.first;
     int64_t snp_end = snp_range.second;
+
+    // Check if a region was specified by the user
+    if (this->input_data->isRegionSet())
+    {
+        std::pair<int32_t, int32_t> region = this->input_data->getRegion();
+        if (snp_start < region.first) {
+            snp_start = region.first;
+        } else if (snp_end > region.second) {
+            snp_end = region.second;
+        }
+    }
+
     std::cout << "SNP range for chromosome " << chr << ": " << snp_start << "-" << snp_end << std::endl;
 
     // Get the number of avaiable threads
