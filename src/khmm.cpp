@@ -468,9 +468,7 @@ std::pair<std::vector<int>, double> ViterbiLogNP_CHMM(CHMM hmm, int T, std::vect
 	free_dmatrix(A1, 1, hmm.N, 1, hmm.N);
 
 	// Return the state sequence and its likelihood
-	double max_a_posteriori_prob = pprob[q[T]];
-
-	return std::make_pair(q, max_a_posteriori_prob);
+	return std::make_pair(q, min_prob);
 }
 
 CHMM ReadCHMM(const char *filename)

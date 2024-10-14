@@ -80,7 +80,7 @@ def main():
     # frequencies will be obtained for all populations.
     parser.add_argument(
         "-e", "--ethnicity",
-        help="ethnicity of the sample (e.g. afr, amr, eas, fin, nfe, oth, sas)",
+        help="ethnicity of the sample (e.g. afr, amr, eas, fin, nfe, oth, sas, asj)",
         required=False
     )
 

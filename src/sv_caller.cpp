@@ -88,7 +88,7 @@ RegionData SVCaller::detectSVsFromRegion(std::string region)
                 // Get the primary alignment chromosome, start, end, and depth
                 std::string chr = bamHdr->target_name[bam1->core.tid];
                 int64_t start = bam1->core.pos;
-                int64_t end = bam_endpos(bam1);
+                int64_t end = bam_endpos(bam1);  // This is the first position after the alignment
 
                 // Call SVs directly from the CIGAR string
                 std::tuple<std::unordered_map<int, int>, int32_t, int32_t> query_info = this->detectSVsFromCIGAR(bamHdr, bam1, sv_calls, true);
@@ -99,6 +99,18 @@ RegionData SVCaller::detectSVsFromRegion(std::string region)
                 // Add the primary alignment to the map
                 AlignmentData alignment(chr, start, end, ".", query_start, query_end, match_map);
                 primary_alignments[qname] = std::move(alignment);
+
+                // // If Read ID == 8873acc1-eb84-415d-8557-a32a8f52ccee, print the
+                // // alignment
+                // if (qname == "8873acc1-eb84-415d-8557-a32a8f52ccee") {
+                //     std::cout << "Primary alignment: " << chr << ":" << start << "-" << end << std::endl;
+                //     std::cout << "Query start: " << query_start << ", Query end: " << query_end << std::endl;
+                //     std::cout << "Match map: ";
+                //     for (const auto& entry : match_map) {
+                //         std::cout << entry.first << ":" << entry.second << " ";
+                //     }
+                //     std::cout << std::endl;
+                // }
 
             // Process supplementary alignments
             } else if (bam1->core.flag & BAM_FSUPPLEMENTARY) {
@@ -117,6 +129,18 @@ RegionData SVCaller::detectSVsFromRegion(std::string region)
                 // Add the supplementary alignment to the map
                 AlignmentData alignment(chr, start, end, ".", query_start, query_end, std::move(match_map));
                 supplementary_alignments[qname].emplace_back(alignment);
+
+                // If Read ID == 8873acc1-eb84-415d-8557-a32a8f52ccee, print the
+                // alignment
+                if (qname == "8873acc1-eb84-415d-8557-a32a8f52ccee") {
+                    std::cout << "Supplementary alignment: " << chr << ":" << start << "-" << end << std::endl;
+                    std::cout << "Query start: " << query_start << ", Query end: " << query_end << std::endl;
+                    std::cout << "Match map: ";
+                    for (const auto& entry : match_map) {
+                        std::cout << entry.first << ":" << entry.second << " ";
+                    }
+                    std::cout << std::endl;
+                }
             }
         }
 
@@ -159,8 +183,6 @@ double SVCaller::calculateMismatchRate(std::unordered_map<int, int> &match_map, 
             }
         }
     }
-
-    // Calculate the mismatch rate
     double mismatch_rate = (double)mismatch_count / (double)(match_count + mismatch_count);
 
     // Return the mismatch rate
@@ -303,8 +325,8 @@ std::tuple<std::unordered_map<int, int>, int32_t, int32_t> SVCaller::detectSVsFr
                 sv_calls.add(chr, ref_pos, ref_end, DEL, ".", "CIGARDEL");
             }
 
-        // Check if the CIGAR operation is a soft clip
-        } else if (op == BAM_CSOFT_CLIP) {
+        // Check if the CIGAR operation is a clipped base
+        } else if (op == BAM_CSOFT_CLIP || op == BAM_CHARD_CLIP) {
 
             // Update the clipped base support
             // std::lock_guard<std::mutex> lock(this->sv_mtx);
@@ -544,18 +566,26 @@ void SVCaller::detectSVsFromSplitReads(SVData& sv_calls, PrimaryMap& primary_map
             int32_t overlap_end = std::min(primary_query_end, supp_query_end);
             int32_t overlap_length = overlap_end - overlap_start;
             if (overlap_length > 0) {
-                // Calculate the mismatch rate at the overlap for each alignment at the overlap
-                double primary_mismatch_rate = this->calculateMismatchRate(primary_match_map, overlap_start, overlap_end);
-                double supp_mismatch_rate = this->calculateMismatchRate(supp_match_map, overlap_start, overlap_end);
+                // Calculate the mismatch rate for each alignment at the overlap
+                double primary_mismatch_rate = this->calculateMismatchRate(primary_match_map, overlap_start, overlap_end-1);
+                double supp_mismatch_rate = this->calculateMismatchRate(supp_match_map, overlap_start, overlap_end-1);
 
                 // Trim the overlap from the alignment with the higher mismatch
                 // rate
                 if (primary_mismatch_rate > supp_mismatch_rate) {
                     // Trim the overlap from the primary alignment
-                    primary_end -= overlap_length;
+                    if (primary_query_start < supp_query_start) {
+                        primary_query_end = supp_query_start;
+                    } else {
+                        primary_query_start = supp_query_end;
+                    }
                 } else {
                     // Trim the overlap from the supplementary alignment
-                    supp_end -= overlap_length;
+                    if (supp_query_start < primary_query_start) {
+                        supp_query_end = primary_query_start;
+                    } else {
+                        supp_query_start = primary_query_end;
+                    }
                 }
             }
 
