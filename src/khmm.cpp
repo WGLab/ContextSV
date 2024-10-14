@@ -37,9 +37,6 @@ std::pair<std::vector<int>, double> testVit_CHMM(CHMM hmm, int T, std::vector<do
 	int **psi;		// Matrix
 	delta = dmatrix(1, T, 1, hmm.N); // Allocate a TxN  double matrix (N=6 states)
 	psi = imatrix(1, T, 1, hmm.N);	 // Allocate a TxN  int matrix (N=6 states)
-	
-	// Set initial posterior log probabilities for each state
-	// std::vector<double>	plogproba(hmm.N + 1, -VITHUGE);
 	double *plogproba;
 	plogproba = dvector(1, hmm.N); // Allocate a double vector (N=6 states)
 
@@ -64,13 +61,14 @@ double b1iot(int state, double *mean, double *sd, double uf, double o)
 	// // Get the normalized PDF value
 	// double normalized_pdf = pdf_normalization(o, mean[state], sd[state]);
 
-	// // Update the emission probability
-	// double p = uf + ((1 - uf) * normalized_pdf);
-
-	// // Ensure that p is between FLOAT_MINIMUM and PROB_MAX
-	// p = std::max(FLOAT_MINIMUM, std::min(PROB_MAX, p));
-
-	// Update the emission probability
+	// Fix the log observation to not below lower bound
+	bool thresholded = false;
+	if (o < mean[1])
+	{
+		// std::cout << "O of state " << state << " is below the lower bound: " << o << ", mean: " << mean[1] << std::endl;
+		o = mean[1];
+		thresholded = true;
+	}
 	double p = uf + ((1 - uf) * pdf_normal(o, mean[state], sd[state]));
 
 	// Return the log probability
@@ -306,14 +304,8 @@ std::pair<std::vector<int>, double> ViterbiLogNP_CHMM(CHMM hmm, int T, std::vect
 	// - O2: BAF (B-Allele Freq.)
 	// - PFB: Genome coordinates and population frequency of B allele from the
 	//   PFB file
-	// Run the Viterbi algorithm to find the most likely state sequence Q given
-	// the observations O1, O2.
-	//   At position t, the probability of the most likely state sequence ending
-	//   in state i is stored in delta[t][i].
-	//   The state that maximizes the probability is stored in psi[t][i].
-	//   The posterior log probability of the state sequence ending in state i
-	//   at time T is stored in pprob[i].
-	// Return the most likely state sequence Q and its likelihood.
+	// Return the most likely state sequence Q and its likelihood using the
+	// Viterbi algorithm
 
 	int i, j; /* state indices */
 	int t;	  /* time index */
@@ -346,47 +338,41 @@ std::pair<std::vector<int>, double> ViterbiLogNP_CHMM(CHMM hmm, int T, std::vect
 		hmm.pi[i] = log(hmm.pi[i]);  // Convert to log probability due to underflow
 	}
 
-	// Bi(Ot) is an NxT matrix of emission probabilities (observation likelihoods)
-	// expressing the probability of an observation Ot being generated from a
-	// state i. Ot is the observation symbol at time t (in this case, the LRR
-	// and BAF values).
+	// Biot is the NxT matrix of state observation likelihoods.
 	biot = dmatrix(1, hmm.N, 1, T);  // Allocate a NxT double matrix (N=6 states)
-
-	// Create a dictionary for each state to store all BAF log probabilities
-	std::map<int, std::vector<double>> baf_log_probs;
-
-	// Create a dictionary for each state to store all BAF scaling factors
-	std::map<int, std::vector<double>> scaling_factors;
-
-	// Loop through each state (1-based)
 	for (i = 1; i <= hmm.N; i++)
 	{
 		// Loop through each probe T in the observation sequence (O1, O2), 1-based
+		double previous_O2 = -1;
+		double previous_pfb = -1;
 		for (t = 1; t <= T; t++)
 		{
 			// Get the state observation likelihood b_j(O_t) of the observation
 			// symbol O_t given the current state j
-			// B_uf is the previous alpha (transition probability)
 
 			// Calculate the O1 emission probability
 			double O1_val = O1[t-1]; // Adjust for 0-based indexing
-			double O1_logprob = b1iot(i, hmm.B1_mean, hmm.B1_sd, hmm.B1_uf, O1_val);
+			// double O1_logprob = b1iot(i, hmm.B1_mean, hmm.B1_sd, hmm.B1_uf, O1_val);
 
 			// If there is no SNP (B-allele frequency) data, just use the LRR
 			// emission probability
 			if (O2[t-1] == -1)
 			{
-				biot[i][t] = O1_logprob * 3;
+
+				// Calculate the O1 emission probability
+				double O1_logprob = b1iot(i, hmm.B1_mean, hmm.B1_sd, hmm.B1_uf, O1_val);
+				biot[i][t] = O1_logprob;
+
 			} else {
+
+				// Calculate the O1 emission probability
+				double O1_logprob = b1iot(i, hmm.B1_mean, hmm.B1_sd, hmm.B1_uf, O1_val);
 
 				// Calculate the O2 emission probability
 				double O2_val = O2[t-1]; // Adjust for 0-based indexing
 				double pfb_val = pfb[t-1]; // Adjust for 0-based indexing
 				double O2_logprob = b2iot(i, hmm.B2_mean, hmm.B2_sd, hmm.B2_uf, pfb_val, O2_val);
 
-				// Update the emission probability matrix with the joint probability
-				// of the marker being in state i at time t (log probability) based
-				// on both LRR and BAF values
 				biot[i][t] = O1_logprob + O2_logprob;
 			}
 		}
@@ -395,10 +381,11 @@ std::pair<std::vector<int>, double> ViterbiLogNP_CHMM(CHMM hmm, int T, std::vect
 	/* 1. Initialization  */
 	for (i = 1; i <= hmm.N; i++)
 	{
-		delta[1][i] = hmm.pi[i] + biot[i][1];  // Initialize the delta matrix (log probability)
+		delta[1][i] = hmm.pi[i] + biot[i][1];  // Initialize the delta matrix (log probability) to the initial state distribution + the emission probability
 		psi[1][i] = 0;  // Initialize the psi matrix (state sequence) to 0 (no state)
 		pprob[i] = -VITHUGE;  // Initialize posterior log probabilities for each state to -inf
 	}
+	std::cout << std::endl;
 
 	/* 2. Recursion */
 	// For each state j at time t, calculate the maximum probability of reaching
@@ -422,8 +409,9 @@ std::pair<std::vector<int>, double> ViterbiLogNP_CHMM(CHMM hmm, int T, std::vect
 				}
 			}
 
+
 			delta[t][j] = maxval + biot[j][t];  // Update the delta matrix (log probability)
-			psi[t][j] = maxvalind;  // Update the psi matrix (state sequence)
+			psi[t][j] = maxvalind;  // Update the psi matrixm to store the most likely previous state at time t for state j
 		}
 	}
 
@@ -441,23 +429,13 @@ std::pair<std::vector<int>, double> ViterbiLogNP_CHMM(CHMM hmm, int T, std::vect
 	// probability estimate)
 	// double max_a_posteriori_prob = -VITHUGE;
 	q[T] = 1;
+	double min_prob = -VITHUGE;
 	for (i = 1; i <= hmm.N; i++)
 	{
-		// Get the log probability of state i at time T
-		double current_prob = delta[T][i];
-
-		// Get the posterior log probability of the state
-		double prev_prob = pprob[i];
-
-		// If it's greater than the initial probability, update the probability
-		if (current_prob > prev_prob)
+		if (delta[T][i] > min_prob)
 		{
-			// *pprob = prob;
-			q[T] = i;  // Set the state at time T to i
-			pprob[i] = current_prob;  // Update the posterior log probability for state i
-
-			// Update the maximum a posteriori probability estimate
-			// max_a_posteriori_prob = current_prob;
+			min_prob = delta[T][i];
+			q[T] = i;
 		}
 	}
 
@@ -467,7 +445,20 @@ std::pair<std::vector<int>, double> ViterbiLogNP_CHMM(CHMM hmm, int T, std::vect
 	// from q[T]. We then backtrack through the psi matrix to find the most
 	// likely state at time T-1, T-2, ..., 1.
 	for (t = T - 1; t >= 1; t--)
+	{
 		q[t] = psi[t + 1][q[t + 1]];
+	}
+
+	// // Print t, the state, delta, biot, and psi
+	// for (t = 1; t <= T; t++)
+	// {
+	// 	std::cout << "Time " << t << " with state " << q[t] << ":" << std::endl;
+	// 	for (i = 1; i <= hmm.N; i++)
+	// 	{
+	// 		std::cout << "State " << i << ": delta = " << delta[t][i] << ", biot = " << biot[i][t] << ", psi = " << psi[t][i] << ", LRR = " << O1[t-1] << ", BAF = " << O2[t-1] << std::endl;
+	// 	}
+	// 	std::cout << std::endl;
+	// }
 
 	for (i = 1; i <= hmm.N; i++)
 	{ /*recover the HMM model as original*/
@@ -480,7 +471,6 @@ std::pair<std::vector<int>, double> ViterbiLogNP_CHMM(CHMM hmm, int T, std::vect
 	double max_a_posteriori_prob = pprob[q[T]];
 
 	return std::make_pair(q, max_a_posteriori_prob);
-	// return std::make_pair(q, max_a_posteriori_prob);
 }
 
 CHMM ReadCHMM(const char *filename)

@@ -5,6 +5,7 @@
 
 /// @cond
 #include <iostream>
+#include <sstream>
 #include <fstream>
 #include <stdio.h>
 #include <stdlib.h>
@@ -18,9 +19,7 @@
 #include <thread>
 #include <future>
 #include <string>
-// std::max
-#include <algorithm>
-
+#include <algorithm>  // std::max
 
 #include "utils.h"
 #include "sv_data.h"
@@ -51,6 +50,7 @@ std::pair<SNPData, bool> CNVCaller::querySNPRegion(std::string chr, int64_t star
 
     // printMessage("Window size: " + std::to_string(window_size));
 
+    std::cout << "Querying SNPs for region " << chr << ":" << start_pos << "-" << end_pos << "..." << std::endl;
     for (int64_t i = start_pos; i <= end_pos; i += window_size)
     {
         // Run a sliding non-overlapping window of size window_size across
@@ -97,7 +97,6 @@ std::pair<SNPData, bool> CNVCaller::querySNPRegion(std::string chr, int64_t star
             int64_t bin_end = 0;
             for (int j = 0; j < snp_count; j++)
             {
-                // Get the SNP position
                 int64_t snp_pos = snp_window_pos[j];
 
                 // printMessage("SNP position: " + std::to_string((int)snp_pos));
@@ -113,7 +112,7 @@ std::pair<SNPData, bool> CNVCaller::querySNPRegion(std::string chr, int64_t star
 
                 // Calculate the log2 ratio for the SNP bin
                 double bin_cov = calculateLog2Ratio(bin_start, bin_end, pos_depth_map, mean_chr_cov);
-                this->updateSNPData(snp_data, (bin_start + bin_end) / 2, snp_window_pfbs[j], snp_window_bafs[j], bin_cov, true);
+                this->updateSNPData(snp_data, snp_pos, snp_window_pfbs[j], snp_window_bafs[j], bin_cov, true);
 
                 // Update the previous bin start
                 bin_start = bin_end + 1;
@@ -222,6 +221,14 @@ void CNVCaller::runCopyNumberPredictionChunk(std::string chr, std::map<SVCandida
         int64_t start_pos = std::get<0>(candidate);
         int64_t end_pos = std::get<1>(candidate);
 
+        // // [TEST] Skip if not in the following list of SVs
+        // std::vector<std::string> sv_list = {"chr19:53013528-53051102", "chr1:43593639-43617165", "chr6:35786784-35799012", "chr1:152787870-152798352", "chr17:41265461-41275765", "chr5:180950357-181003515"};
+        // std::string sv_key = chr + ":" + std::to_string((int)start_pos) + "-" + std::to_string((int)end_pos);
+        // if (std::find(sv_list.begin(), sv_list.end(), sv_key) == sv_list.end())
+        // {
+        //     continue;
+        // }
+
         // Get the depth at the start position. This is used as the FORMAT/DP
         // value in the VCF file
         int dp_value = pos_depth_map[start_pos];
@@ -305,7 +312,18 @@ void CNVCaller::runCopyNumberPredictionChunk(std::string chr, std::map<SVCandida
             // Save the SV SNP data as a TSV with a unique filename if the
             // length is greater than 10kb
             if (end_pos - start_pos > 10000) {
-                std::string sv_filename = this->input_data->getOutputDir() + "/sv_snps_" + chr + "_" + std::to_string((int)start_pos) + "_" + std::to_string((int)end_pos) + ".tsv";
+                // Format the size in kb
+                std::string size_kb = std::to_string((int) (end_pos - start_pos) / 1000);
+
+                // Format the likelihood as a string with 6 decimal places
+                std::stringstream ss;
+                ss << std::fixed << std::setprecision(6) << likelihood;
+                std::string likelihood_str = ss.str();
+
+                // Save the SV SNP data to a TSV file
+                // (SVTYPE-DATATYPE-LENGTH-CHR-START-END-LIKELIHOOD)
+                std::string sv_filename = this->input_data->getOutputDir() + "/" + sv_types::SVTypeString[cnv_type] + "_" + data_type + "_" + size_kb + "kb_" + chr + "_" + std::to_string((int)start_pos) + "_" + std::to_string((int)end_pos) + "_" + likelihood_str + ".tsv";
+                // std::string sv_filename = this->input_data->getOutputDir() + "/sv_snps_" + chr + "_" + std::to_string((int)start_pos) + "_" + std::to_string((int)end_pos) + ".tsv";
                 std::cout << "Saving SV SNP data to " << sv_filename << std::endl;
                 this->saveToTSV(snp_data, sv_filename, chr);
             }
@@ -684,16 +702,20 @@ double CNVCaller::calculateLog2Ratio(int start_pos, int end_pos, std::unordered_
     }
 
     // Continue if there are no positions in the region
-    if (pos_count == 0)
+    // if (pos_count == 0)
+    // {
+    //     return 0;
+    // }
+
+    // Calculate the window coverage log2 ratio (0 if no positions)
+    double window_mean_cov = 0;
+    if (pos_count > 0)
     {
-        return 0;
+        window_mean_cov = (double) cum_depth / (double) pos_count;
     }
 
-    // Calculate the window coverage log2 ratio
-    double window_mean_cov = (double) cum_depth / (double) pos_count;
-
     // Calculate the log2 ratio for the window
-    // Avoid division by zero by adding a small value to the denominator
+    // Avoid log2(0) by using a small value
     if (window_mean_cov == 0)
     {
         window_mean_cov = 0.0001;

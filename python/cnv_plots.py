@@ -31,21 +31,32 @@ def parse_filename(filename):
         filename (str): The name of the CNV data file.
     
     Returns:
-        str: The chromosome.
-        int: The start position.
-        int: The end position.
+        SV type, data type, size in kb, chromosome, start position, end position
     """
     filename = os.path.splitext(os.path.basename(filename))[0]
-    filename = filename.split("sv_snps_")[1]
+    # filename = filename.split("sv_snps_")[1]
     filename_parts = filename.split("_")
-    chromosome = filename_parts[0]
     try:
-        start_position = int(filename_parts[1])
-        end_position = int(filename_parts[2])
+        sv_type = filename_parts[0]
+        data_type = filename_parts[1]
+        size_kb = filename_parts[2]
+        chr = filename_parts[3]
+        start_pos = filename_parts[4]
+        end_pos = filename_parts[5]
+        likelihood = filename_parts[6]
     except IndexError:
-        start_position, end_position = None, None
+        # Print error message and return None for all values.
+        log.error("Error: Could not parse filename %s", filename)
+        return None, None, None, None, None, None, None
 
-    return chromosome, start_position, end_position
+    # chromosome = filename_parts[0]
+    # try:
+    #     start_position = int(filename_parts[1])
+    #     end_position = int(filename_parts[2])
+    # except IndexError:
+    #     start_position, end_position = None, None
+
+    return sv_type, data_type, size_kb, chr, int(start_pos), int(end_pos), likelihood
 
 def run(cnv_data_file, output_html):
     """
@@ -67,8 +78,10 @@ def run(cnv_data_file, output_html):
 
     # Parse the region.
     # chromosome, start_position, end_position = parse_region(region)
-    chromosome, start_position, end_position = parse_filename(cnv_data_file)
-    log.info("Chromosome: %s, Start: %s, End: %s", chromosome, start_position, end_position)
+    # chromosome, start_position, end_position = parse_filename(cnv_data_file)
+    sv_type, data_type, size_kb, chromosome, start_position, end_position, likelihood = parse_filename(cnv_data_file)
+    log.info("SV Type: %s, Data Type: %s, Size: %s kb, Chromosome: %s, Start: %s, End: %s, Likelihood: %s", sv_type, data_type, size_kb, chromosome, start_position, end_position, likelihood)
+    # log.info("Chromosome: %s, Start: %s, End: %s", chromosome, start_position, end_position)
 
     # if start_position is not None and end_position is not None:
     #     log.info("Plotting CNVs in region %s:%d-%d.", chromosome, start_position, end_position)
@@ -224,11 +237,11 @@ def run(cnv_data_file, output_html):
             elif state in [5, 6]:
                 marker_colors.append("blue")
 
-        # Set the marker colors for the SNPs before and after the CNV to
+        # [TEST] Set the marker colors for the SNPs before and after the CNV to
         # gray (no state prediction).
-        for i in range(len(sv_data)):
-            if sv_data["position"].iloc[i] < start_position or sv_data["position"].iloc[i] > end_position:
-                marker_colors[i] = "gray"
+        # for i in range(len(sv_data)):
+        #     if sv_data["position"].iloc[i] < start_position or sv_data["position"].iloc[i] > end_position:
+        #         marker_colors[i] = "gray"
 
         # Now get the values before and after the CNV.
         # # sv_data_before = cnv_data[(cnv_data["position"] >= plot_start_position) & (cnv_data["position"] < start_position)]
@@ -263,7 +276,7 @@ def run(cnv_data_file, output_html):
         # Get the hover text for the state sequence markers.
         hover_text = []
         for _, row in sv_data.iterrows():
-            hover_text.append(f"SNP: {row['snp']}<br>TYPE: {'NA'}<br>CHR: {row['chromosome']}<br>POS: {row['position']}<br>L2R: {row['log2_ratio']}<br>BAF: {row['b_allele_freq']}<br>PFB: {row['population_freq']}")
+            hover_text.append(f"SNP: {row['snp']}<br>TYPE: {'NA'}<br>CHR: {row['chromosome']}<br>POS: {row['position']}<br>L2R: {row['log2_ratio']}<br>BAF: {row['b_allele_freq']}<br>PFB: {row['population_freq']}<br>STATE: {row['cnv_state']}")
             # hover_text.append(f"TYPE: {cnv_types[row['cnv_state']]}<br>CHR: {row['chromosome']}<br>POS: {row['position']}<br>L2R: {row['log2_ratio']}<br>BAF: {row['b_allele_freq']}<br>PFB: {row['population_freq']}")
 
         # Create the log2 ratio trace.
