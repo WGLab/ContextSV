@@ -3,6 +3,7 @@
 #ifndef SV_CALLER_H
 #define SV_CALLER_H
 
+#include "cnv_caller.h"
 #include "input_data.h"
 #include "cnv_data.h"
 #include "sv_data.h"
@@ -44,7 +45,7 @@ class SVCaller {
         int readNextAlignment(samFile *fp_in, hts_itr_t *itr, bam1_t *bam1);
 
         // Detect SVs from split alignments
-        void detectSVsFromSplitReads(SVData& sv_calls, PrimaryMap& primary_map, SuppMap& supp_map);
+        void detectSVsFromSplitReads(SVData& sv_calls, PrimaryMap& primary_map, SuppMap& supp_map, CNVCaller& cnv_caller);
 
         // Calculate the mismatch rate given a map of query positions to
         // match/mismatch (1/0) values within a specified range of the query

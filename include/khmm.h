@@ -48,7 +48,7 @@ CHMM ReadCHMM (const char *filename);
 std::pair<std::vector<int>, double> testVit_CHMM(CHMM hmm, int T, std::vector<double>& O1, std::vector<double>& O2, std::vector<double>& pfb);
 
 /// Viterbi algorithm
-std::pair<std::vector<int>, double> ViterbiLogNP_CHMM(CHMM phmm, int T, std::vector<double>& O1, std::vector<double>& O2, std::vector<double>& pfb, double **delta, int **psi, double *pprob);
+std::pair<std::vector<int>, double> ViterbiLogNP_CHMM(CHMM phmm, int T, std::vector<double>& O1, std::vector<double>& O2, std::vector<double>& pfb, double **delta, int **psi);
 
 /// O1 emission probability (log2 coverage)
 double b1iot (int state, double *mean, double *sd, double uf, double o);

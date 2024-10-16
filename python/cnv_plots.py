@@ -23,40 +23,27 @@ log.basicConfig(
     ]
 )
 
-def parse_filename(filename):
+def parse_region(region):
     """
-    Parse a CNV data file name into its chromosome and start and end positions.
+    Parses the region string to get the chromosome, start position, and end
+    position.
     
     Args:
-        filename (str): The name of the CNV data file.
+        region (str): The region string in the format "chr:start-end".
     
     Returns:
-        SV type, data type, size in kb, chromosome, start position, end position
+        tuple: A tuple containing the chromosome, start position, and end
+        position.
     """
-    filename = os.path.splitext(os.path.basename(filename))[0]
-    # filename = filename.split("sv_snps_")[1]
-    filename_parts = filename.split("_")
-    try:
-        sv_type = filename_parts[0]
-        data_type = filename_parts[1]
-        size_kb = filename_parts[2]
-        chr = filename_parts[3]
-        start_pos = filename_parts[4]
-        end_pos = filename_parts[5]
-        likelihood = filename_parts[6]
-    except IndexError:
-        # Print error message and return None for all values.
-        log.error("Error: Could not parse filename %s", filename)
-        return None, None, None, None, None, None, None
 
-    # chromosome = filename_parts[0]
-    # try:
-    #     start_position = int(filename_parts[1])
-    #     end_position = int(filename_parts[2])
-    # except IndexError:
-    #     start_position, end_position = None, None
+    # Split the region string by ":" and "-".
+    region_parts = region.split(":")
+    chromosome = region_parts[0]
+    region_parts = region_parts[1].split("-")
+    start_position = int(region_parts[0])
+    end_position = int(region_parts[1])
 
-    return sv_type, data_type, size_kb, chr, int(start_pos), int(end_pos), likelihood
+    return chromosome, start_position, end_position
 
 def run(cnv_data_file, output_html):
     """
@@ -71,121 +58,55 @@ def run(cnv_data_file, output_html):
     Returns:
         None
     """
-    snp_cnvs_only = False
-
-    # Set the maximum number of CNVs to plot.
-    max_cnvs = 20
-
-    # Parse the region.
-    # chromosome, start_position, end_position = parse_region(region)
-    # chromosome, start_position, end_position = parse_filename(cnv_data_file)
-    sv_type, data_type, size_kb, chromosome, start_position, end_position, likelihood = parse_filename(cnv_data_file)
-    log.info("SV Type: %s, Data Type: %s, Size: %s kb, Chromosome: %s, Start: %s, End: %s, Likelihood: %s", sv_type, data_type, size_kb, chromosome, start_position, end_position, likelihood)
-    # log.info("Chromosome: %s, Start: %s, End: %s", chromosome, start_position, end_position)
-
-    # if start_position is not None and end_position is not None:
-    #     log.info("Plotting CNVs in region %s:%d-%d.", chromosome, start_position, end_position)
-    # else:
-    #     log.info("Plotting CNVs in region %s.", chromosome)
-
-    # # Set up the CNV type string list for the 6 CNV states.
-    # cnv_types = ["NAN", "DEL", "DEL", "NEUT", "NEUT", "DUP", "DUP"]
-
-    # # Filter the VCF file to the region using pandas, and make the chromosome
-    # # column a string.
-    # log.info("Loading VCF data from %s", vcf_file)
-    # try:
-    #     vcf_data = pd.read_csv(vcf_file, sep="\t", comment="#", header=None, dtype={0: str})
-    # except pd.errors.EmptyDataError:
-    #     log.info("No variants found in %s.", vcf_file)
-    #     return
-    
-    # if start_position is not None and end_position is not None:
-    #     vcf_data = vcf_data[(vcf_data[0] == chromosome) & (vcf_data[1] >= start_position) & (vcf_data[1] <= end_position)]
-    # else:
-    #     vcf_data = vcf_data[(vcf_data[0] == chromosome)]
-
-    # log.info("Loaded %d variants from %s", len(vcf_data), vcf_file)
 
     # Filter the CNV data to the region using pandas, and make the chromosome
     # column a string.
     log.info("Loading CNV data from %s", cnv_data_file)
-    sv_data = pd.read_csv(cnv_data_file, sep="\t", header=0, dtype={"chromosome": str})
-    # if start_position is not None and end_position is not None:
-    #     cnv_data = cnv_data[(cnv_data["chromosome"] == chromosome) & (cnv_data["position"] >= start_position) & (cnv_data["position"] <= end_position)]
-    # else:
-    #     cnv_data = cnv_data[(cnv_data["chromosome"] == chromosome)]
 
-    # Filter the CNV data to only include SNPs.
-    # cnv_data = cnv_data[cnv_data["snp"] == 1]
+    # Read the first 3 lines of the file to get metadata.
+    # Metadata is formatted as follows:
+    # "SVTYPE="
+    # "POS="
+    # "HMM_LOGLH="
+    metadata = {}
+    metadata_row_count = 3
+    with open(cnv_data_file, "r", encoding="utf-8") as f:
+        # Read the first 3 lines of the file.
+        for _ in range(metadata_row_count):
+            line = f.readline().strip()
+            if '=' in line:
+                key, value = line.split("=")
+                log.info("Metadata: %s=%s", key, value)
+                value = value.strip()
+                metadata[key] = value
 
-    log.info("Loaded %d SNPs from %s", len(sv_data), cnv_data_file)
+    sv_type = metadata["SVTYPE"]
+    position = metadata["POS"]
+    chromosome, start_position, end_position = parse_region(position)
+    hmm_loglh = float(metadata["HMM_LOGLH"])
+
+    # Extract information from the metadata.
+    log.info("SV type: %s, chromosome: %s, start position: %d, end position: %d, HMM log likelihood: %f", sv_type, chromosome, start_position, end_position, hmm_loglh)
+
+    # Read the CNV data from the file.
+    sv_data = pd.read_csv(cnv_data_file, sep="\t", header=metadata_row_count, dtype={"chromosome": str})
+    if len(sv_data) == 0:
+        log.info("No predictions found in %s", cnv_data_file)
+        return
+    else:
+        log.info("Found %d predictions in %s", len(sv_data), cnv_data_file)
 
     # Create an output html file where we will append the CNV plots.
     if start_position is not None and end_position is not None:
         html_filename = f"cnv_plots_{chromosome}_{start_position}_{end_position}.html"
     else:
         html_filename = f"cnv_plots_{chromosome}.html"
-    
-    # # Create the output directory if it doesn't exist.
-    # if not os.path.exists(output_path):
-    #     os.makedirs(output_path)
 
     # Create the output html file.
     if os.path.exists(output_html):
         os.remove(output_html)
-    # output_html_filepath = os.path.join(output_path, html_filename)
-    # if os.path.exists(output_html_filepath):
-    #     os.remove(output_html_filepath)
 
     with open(output_html, "w", encoding="utf-8") as output_html_file:
-
-        # Get the INFO field column by searching for the first column that
-        # contains SVTYPE=.
-        # info_column = get_info_field_column(vcf_data)
-
-        # Loop through the VCF data and plot each CNV (DEL or DUP) along with log2
-        # ratio and BAF values for the SNPs in the CNV.
-        # cnv_count = 0
-        # for _, sv_data in vcf_data.iterrows():
-
-        #     # Get the INFO field
-        #     info_field = sv_data[info_column]
-
-        # Get the SVTYPE field value.
-        # svtype = get_info_field_value(info_field, "SVTYPE")
-        # if svtype == "INS" and get_info_field_value(info_field, "REPTYPE") == "DUP":
-        #     svtype = "DUP"
-
-        # Get the ALN field value (alignment type used to call the SV).
-        # aln = get_info_field_value(info_field, "ALN")
-
-        # # Skip the SV if SNP CNV data was not used to call it.
-        # if snp_cnvs_only and "SNPCNV" not in aln:
-        #     continue
-
-        # log.info("Found CNV %s %s:%d-%d, LEN=%d", svtype, sv_data[0], sv_data[1], sv_data[1] + int(get_info_field_value(info_field, "SVLEN")) - 1, int(get_info_field_value(info_field, "SVLEN")))
-
-        # # Analyze the CNV if it is a DEL or DUP (=INS with INFO/REPTYE=DUP)
-        # if svtype in ("DEL", "DUP"):
-
-        #     # Get the read support for the CNV.
-        #     read_support = int(get_info_field_value(info_field, "SUPPORT"))
-
-        # # Skip the CNV if the support is < 2.
-        # if read_support < 2:
-        #     continue
-
-        # Get the start position.
-        # start_position = int(sv_data[1])
-
-        # Get the SV length.
-        # cnv_length = int(get_info_field_value(info_field, "SVLEN"))
-        # log.info("CNV length: %d", cnv_length)
-
-        # Continue if the CNV length is < MIN_CNV_LENGTH
-        # if abs(cnv_length) < MIN_CNV_LENGTH:
-        #     continue
 
         # Use absolute value of CNV length (deletions are negative).
         # cnv_length = abs(cnv_length)
@@ -196,16 +117,6 @@ def run(cnv_data_file, output_html):
             log.info("Skipping CNV %s:%d-%d due to length < %d.", chromosome, start_position, end_position, MIN_CNV_LENGTH)
             return
 
-        # # Get the end position using the start position and SV length.
-        # end_position = start_position + cnv_length - 1
-
-        # Get the chromosome.
-        # chromosome = sv_data[0]
-
-        # # Get the plot range as a multiple of the CNV length.
-        # plot_start_position = start_position - (cnv_length/2)
-        # plot_end_position = end_position + (cnv_length/2)
-
         # Get the plot range as the minimum and maximum positions in the CNV
         # data.
         plot_start_position = sv_data["position"].min()
@@ -214,11 +125,6 @@ def run(cnv_data_file, output_html):
         # Get the CNV state, log2 ratio, and BAF values for all SNPs in the
         # plot range.
         log.info("Getting SNPs in CNV %s:%d-%d.", chromosome, plot_start_position, plot_end_position)
-        # sv_data = cnv_data[(cnv_data["position"] >=
-        # plot_start_position) & (cnv_data["position"] <=
-        # plot_end_position)]
-        # sv_data = cnv_data[(cnv_data["position"] >= start_position) & (cnv_data["position"] <= end_position)]
-        # sv_data = cnv_data
 
         # If there are no SNPs in the plot range, skip the CNV.
         if len(sv_data) == 0:
@@ -243,21 +149,6 @@ def run(cnv_data_file, output_html):
         #     if sv_data["position"].iloc[i] < start_position or sv_data["position"].iloc[i] > end_position:
         #         marker_colors[i] = "gray"
 
-        # Now get the values before and after the CNV.
-        # # sv_data_before = cnv_data[(cnv_data["position"] >= plot_start_position) & (cnv_data["position"] < start_position)]
-        # # sv_data_after = cnv_data[(cnv_data["position"] > end_position) & (cnv_data["position"] <= plot_end_position)]
-        # sv_data_before = cnv_data[(cnv_data["position"] < start_position)]
-        # sv_data_after = cnv_data[(cnv_data["position"] > end_position)]
-
-        # # Set the marker colors for the SNPs before and after the CNV to
-        # # gray.
-        # marker_colors_before = ["gray"] * len(sv_data_before)
-        # marker_colors_after = ["gray"] * len(sv_data_after)
-
-        # # Set the markers to be open if no SNP, filled if SNP (filled
-        # # before and after the CNV).
-        # marker_symbols_before = ["circle-open"] * len(sv_data_before)
-        # marker_symbols_after = ["circle-open"] * len(sv_data_after)
         
         # Use row['snp'] to get whether SNP or not (0=not SNP, 1=SNP).
         marker_symbols = ["circle" if snp == 1 else "circle-open" for snp in sv_data["snp"]]
@@ -268,10 +159,6 @@ def run(cnv_data_file, output_html):
 
         # Set all -1 B-allele frequency values to 0.
         sv_data.loc[sv_data["b_allele_freq"] == -1, "b_allele_freq"] = 0
-
-        # Concatenate the marker colors before, during, and after the
-        # CNV.
-        # marker_colors = marker_colors_before + marker_colors + marker_colors_after
 
         # Get the hover text for the state sequence markers.
         hover_text = []
@@ -414,14 +301,6 @@ def run(cnv_data_file, output_html):
     log.info("Saved CNV plots to %s.", output_html)
 
 if __name__ == "__main__":
-    # Get the input and output file paths from the command line arguments.
-    # vcf_file = sys.argv[1]
-    # cnv_data_file = sys.argv[2]
-    # output_path = sys.argv[3]
-    # region = sys.argv[4]
-
-    # run(vcf_file, cnv_data_file, output_path, region)
-
     cnv_data_file = sys.argv[1]
     output_path = sys.argv[2]
 

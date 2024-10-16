@@ -4,7 +4,6 @@
 //
 
 #include "sv_caller.h"
-#include "cnv_caller.h"
 
 #include <htslib/sam.h>
 
@@ -132,15 +131,15 @@ RegionData SVCaller::detectSVsFromRegion(std::string region)
 
                 // If Read ID == 8873acc1-eb84-415d-8557-a32a8f52ccee, print the
                 // alignment
-                if (qname == "8873acc1-eb84-415d-8557-a32a8f52ccee") {
-                    std::cout << "Supplementary alignment: " << chr << ":" << start << "-" << end << std::endl;
-                    std::cout << "Query start: " << query_start << ", Query end: " << query_end << std::endl;
-                    std::cout << "Match map: ";
-                    for (const auto& entry : match_map) {
-                        std::cout << entry.first << ":" << entry.second << " ";
-                    }
-                    std::cout << std::endl;
-                }
+                // if (qname == "8873acc1-eb84-415d-8557-a32a8f52ccee") {
+                //     std::cout << "Supplementary alignment: " << chr << ":" << start << "-" << end << std::endl;
+                //     std::cout << "Query start: " << query_start << ", Query end: " << query_end << std::endl;
+                //     std::cout << "Match map: ";
+                //     for (const auto& entry : match_map) {
+                //         std::cout << entry.first << ":" << entry.second << " ";
+                //     }
+                //     std::cout << std::endl;
+                // }
             }
         }
 
@@ -304,9 +303,9 @@ std::tuple<std::unordered_map<int, int>, int32_t, int32_t> SVCaller::detectSVsFr
                 // Lock the SV calls object and add the insertion
                 std::lock_guard<std::mutex> lock(this->sv_mtx);
                 if (is_duplication) {
-                    sv_calls.add(chr, ref_pos, ref_end, DUP, ins_seq_str, "CIGARDUP");
+                    sv_calls.add(chr, ref_pos, ref_end, DUP, ins_seq_str, "CIGARDUP", "./.", 0.0);
                 } else {
-                    sv_calls.add(chr, ref_pos, ref_end, INS, ins_seq_str, "CIGARINS");
+                    sv_calls.add(chr, ref_pos, ref_end, INS, ins_seq_str, "CIGARINS", "./.", 0.0);
                 }
             }
 
@@ -322,7 +321,7 @@ std::tuple<std::unordered_map<int, int>, int32_t, int32_t> SVCaller::detectSVsFr
 
                 // Lock the SV calls object and add the deletion
                 // std::lock_guard<std::mutex> lock(this->sv_mtx);
-                sv_calls.add(chr, ref_pos, ref_end, DEL, ".", "CIGARDEL");
+                sv_calls.add(chr, ref_pos, ref_end, DEL, ".", "CIGARDEL", "./.", 0.0);
             }
 
         // Check if the CIGAR operation is a clipped base
@@ -479,21 +478,11 @@ SVData SVCaller::run()
 
             // Run split-read SV detection in a single thread
             std::cout << "Detecting SVs from split-read alignments..." << std::endl;
-            this->detectSVsFromSplitReads(sv_calls_region, primary_map, supp_map);
-            int split_read_sv_count = sv_calls_region.totalCalls() - region_sv_count;
-            std::cout << "Detected " << split_read_sv_count << " additional SVs from split-read alignments..." << std::endl;
-            // sv_calls.concatenate(sv_calls_region);
-
-            // Run copy number predictions
-            std::cout << "Predicting copy number from split-read alignments..." << std::endl;
-            std::map<SVCandidate, SVInfo>& sv_candidates = sv_calls_region.getChromosomeSVs(chr);
-            cnv_caller.runCopyNumberPrediction(chr, sv_candidates);
-            std::cout << "Predicted copy number from split-read alignments." << std::endl;
+            this->detectSVsFromSplitReads(sv_calls_region, primary_map, supp_map, cnv_caller);
 
             // Add the SV calls to the main SV calls object
             sv_calls.concatenate(sv_calls_region);
         }
-
 
         // Increment the region count
         region_count++;
@@ -508,7 +497,7 @@ SVData SVCaller::run()
 
 
 // Detect SVs from split read alignments
-void SVCaller::detectSVsFromSplitReads(SVData& sv_calls, PrimaryMap& primary_map, SuppMap& supp_map)
+void SVCaller::detectSVsFromSplitReads(SVData& sv_calls, PrimaryMap& primary_map, SuppMap& supp_map, CNVCaller& cnv_caller)
 {
     // Loop through the map of primary alignments by QNAME and find gaps and
     // overlaps from supplementary alignments
@@ -566,39 +555,62 @@ void SVCaller::detectSVsFromSplitReads(SVData& sv_calls, PrimaryMap& primary_map
             int32_t overlap_end = std::min(primary_query_end, supp_query_end);
             int32_t overlap_length = overlap_end - overlap_start;
             if (overlap_length > 0) {
+                // std::cout << "Overlap detected for read " << qname << std::endl;
+                // std::cout << "Primary read position: " << primary_query_start << "-" << primary_query_end << std::endl;
+                // std::cout << "Supplementary read position: " << supp_query_start << "-" << supp_query_end << std::endl;
+                // std::cout << "Overlap range: " << overlap_start << "-" << overlap_end << std::endl;
+                // std::cout << "Overlap length: " << overlap_length << std::endl;
+                // std::cout << "Primary reference position: " << primary_start << "-" << primary_end << std::endl;
+                // std::cout << "Supplementary reference position: " << supp_start << "-" << supp_end << std::endl;
+
                 // Calculate the mismatch rate for each alignment at the overlap
                 double primary_mismatch_rate = this->calculateMismatchRate(primary_match_map, overlap_start, overlap_end-1);
                 double supp_mismatch_rate = this->calculateMismatchRate(supp_match_map, overlap_start, overlap_end-1);
+                // std::cout << "Primary mismatch rate: " << primary_mismatch_rate << std::endl;
+                // std::cout << "Supplementary mismatch rate: " << supp_mismatch_rate << std::endl;
 
                 // Trim the overlap from the alignment with the higher mismatch
                 // rate
                 if (primary_mismatch_rate > supp_mismatch_rate) {
                     // Trim the overlap from the primary alignment
-                    if (primary_query_start < supp_query_start) {
-                        primary_query_end = supp_query_start;
-                    } else {
-                        primary_query_start = supp_query_end;
+                    // Determine if the overlap is at the start or end of the
+                    // alignment
+                    if (overlap_start == primary_query_start) {
+                        // Trim the read alignment from the start of the alignment
+                        primary_start += overlap_length;
+                    } else if (overlap_end == primary_query_end) {
+                        // Trim the overlap from the end of the alignment
+                        primary_end -= overlap_length;
                     }
+
                 } else {
                     // Trim the overlap from the supplementary alignment
-                    if (supp_query_start < primary_query_start) {
-                        supp_query_end = primary_query_start;
-                    } else {
-                        supp_query_start = primary_query_end;
+                    // Determine if the overlap is at the start or end of the
+                    // alignment
+                    if (overlap_start == supp_query_start) {
+                        // Trim the read alignment from the start of the alignment
+                        supp_start += overlap_length;
+                    } else if (overlap_end == supp_query_end) {
+                        // Trim the overlap from the end of the alignment
+                        supp_end -= overlap_length;
                     }
                 }
             }
 
             // Gap analysis (deletion or duplication)
             if (supp_start < primary_start && supp_end < primary_start) {
+
                 // Gap with supplementary before primary:
                 // [supp_start] [supp_end] -- [primary_start] [primary_end]
+                std::vector<std::pair<SVCandidate, std::string>> sv_list;  // SV candidate and alignment type
 
                 // Use the gap ends as the SV endpoints
                 if (primary_start - supp_end >= this->min_sv_size) {
 
                     // Add the SV call
-                    sv_calls.add(supp_chr, supp_end+1, primary_start+1, UNKNOWN, ".", "GAPINNER_A");
+                    SVCandidate sv_candidate(supp_end+1, primary_start+1, ".");
+                    std::pair<SVCandidate, std::string> sv_pair(sv_candidate, "GAPINNER_A");
+                    sv_list.push_back(sv_pair);
                     sv_count++;
                 }
 
@@ -606,20 +618,65 @@ void SVCaller::detectSVsFromSplitReads(SVData& sv_calls, PrimaryMap& primary_map
                 if (primary_end - supp_start >= this->min_sv_size) {
 
                     // Add the SV call
-                    sv_calls.add(supp_chr, supp_start+1, primary_end+1, UNKNOWN, ".", "GAPOUTER_A");
+                    SVCandidate sv_candidate(supp_start+1, primary_end+1, ".");
+                    std::pair<SVCandidate, std::string> sv_pair(sv_candidate, "GAPOUTER_A");
+                    sv_list.push_back(sv_pair);
                     sv_count++;
                 }
 
+                // Determine which SV to keep based on HMM prediction likelihood
+                if (sv_list.size() == 1) {
+                    // Just add the SV call
+                    std::cout << "Adding single SV call" << std::endl;
+                    SVCandidate& best_sv = sv_list[0].first;
+                    std::string& aln_type = sv_list[0].second;
+                    int64_t sv_start = std::get<0>(best_sv);
+                    int64_t sv_end = std::get<1>(best_sv);
+                    sv_calls.add(supp_chr, sv_start, sv_end, UNKNOWN, ".", aln_type, "./.", 0.0);
+
+                } else if (sv_list.size() == 2) {
+                    // Run copy number prediction for the SVs and retrieve the
+                    // best SV call
+                    std::tuple<int, double, int, std::string, bool> best_sv_info = cnv_caller.runCopyNumberPredictionPair(supp_chr, sv_list[0].first, sv_list[1].first);
+
+                    // SV candidate information
+                    int best_idx = std::get<0>(best_sv_info);
+                    SVCandidate best_sv = sv_list[best_idx].first;
+                    std::string aln_type = sv_list[best_idx].second;
+                    int64_t sv_start = std::get<0>(best_sv);
+                    int64_t sv_end = std::get<1>(best_sv);
+
+                    // Prediction information
+                    double best_likelihood = std::get<1>(best_sv_info);
+                    int best_sv_type = std::get<2>(best_sv_info);
+                    std::string best_sv_genotype = std::get<3>(best_sv_info);
+                    bool snps_found = std::get<4>(best_sv_info);
+
+                    // Add detail on whether SNPs were used in the copy number
+                    // prediction to the alignment type
+                    if (snps_found) {
+                        aln_type += "_SNPS";
+                    } else {
+                        aln_type += "_NOSNPS";
+                    }
+
+                    // Add the best SV call
+                    std::cout << "Adding best SV call" << std::endl;
+                    sv_calls.add(supp_chr, sv_start, sv_end, best_sv_type, ".", aln_type, best_sv_genotype, best_likelihood);
+                }
                 
             } else if (supp_start > primary_end && supp_end > primary_end) {
                 // Gap with supplementary after primary:
                 // [primary_start] [primary_end] -- [supp_start] [supp_end]
+                std::vector<std::pair<SVCandidate, std::string>> sv_list;  // SV candidate and alignment type
 
                 // Use the gap ends as the SV endpoints
                 if (supp_start - primary_end >= this->min_sv_size) {
 
                     // Add the SV call
-                    sv_calls.add(supp_chr, primary_end+1, supp_start+1, UNKNOWN, ".", "GAPINNER_B");
+                    SVCandidate sv_candidate(primary_end+1, supp_start+1, ".");
+                    std::pair<SVCandidate, std::string> sv_pair(sv_candidate, "GAPINNER_B");
+                    sv_list.push_back(sv_pair);
                     sv_count++;
                 }
 
@@ -627,8 +684,50 @@ void SVCaller::detectSVsFromSplitReads(SVData& sv_calls, PrimaryMap& primary_map
                 if (supp_end - primary_start >= this->min_sv_size) {
 
                     // Add the SV call
-                    sv_calls.add(supp_chr, primary_start+1, supp_end+1, UNKNOWN, ".", "GAPOUTER_B");
+                    SVCandidate sv_candidate(primary_start+1, supp_end+1, ".");
+                    std::pair<SVCandidate, std::string> sv_pair(sv_candidate, "GAPOUTER_B");
+                    sv_list.push_back(sv_pair);
                     sv_count++;
+                }
+
+                // Determine which SV to keep based on HMM prediction likelihood
+                if (sv_list.size() == 1) {
+                    // Just add the SV call
+                    std::cout << "Adding single SV call" << std::endl;
+                    SVCandidate& best_sv = sv_list[0].first;
+                    std::string& aln_type = sv_list[0].second;
+                    int64_t sv_start = std::get<0>(best_sv);
+                    int64_t sv_end = std::get<1>(best_sv);
+                    sv_calls.add(supp_chr, sv_start, sv_end, UNKNOWN, ".", aln_type, "./.", 0.0);
+
+                } else if (sv_list.size() == 2) {
+                    // Run copy number prediction for the SVs and retrieve the
+                    // best SV call
+                    std::tuple<int, double, int, std::string, bool> best_sv_info = cnv_caller.runCopyNumberPredictionPair(supp_chr, sv_list[0].first, sv_list[1].first);
+
+                    // SV candidate information
+                    int best_idx = std::get<0>(best_sv_info);
+                    SVCandidate best_sv = sv_list[best_idx].first;
+                    std::string aln_type = sv_list[best_idx].second;
+                    int64_t sv_start = std::get<0>(best_sv);
+                    int64_t sv_end = std::get<1>(best_sv);
+
+                    // Prediction information
+                    double best_likelihood = std::get<1>(best_sv_info);
+                    int best_sv_type = std::get<2>(best_sv_info);
+                    std::string best_sv_genotype = std::get<3>(best_sv_info);
+                    bool snps_found = std::get<4>(best_sv_info);
+
+                    // Add detail on whether SNPs were used in the copy number
+                    // prediction to the alignment type
+                    if (snps_found) {
+                        aln_type += "_SNPS";
+                    } else {
+                        aln_type += "_NOSNPS";
+                    }
+
+                    // Add the best SV call
+                    sv_calls.add(supp_chr, sv_start, sv_end, best_sv_type, ".", aln_type, best_sv_genotype, best_likelihood);
                 }
             }
         }

@@ -22,56 +22,42 @@
 
 std::pair<std::vector<int>, double> testVit_CHMM(CHMM hmm, int T, std::vector<double>& O1, std::vector<double>& O2, std::vector<double>& pfb)
 {
-	// T= probe, marker count (= Length of LRR array - 1)
+	// T= probe, marker count
 	// O1 = LRR (Log R Ratio)
 	// O2 = BAF (B-Allele Freq.)
-	// PFB = Genome coordinates and population frequency of B allele from the
-	// PFB file
-	// Note: PFB is replaced with Q (state sequence) after running the HMM
+	// PFB = Genome coordinates and B-allele population frequencies
 	// SNPDIST = Genome coordinates and population frequency for each SNP in the HumanHap550 array
-	// PLOGPROBA = LOGPROB, log probability for each of the 6 states
-	// Note: PLOGPROBA is replaced with DELTA (delta matrix) after running the
-	// HMM, which is used to calculate the probability of the most likely state
 
 	double **delta; // Matrix
 	int **psi;		// Matrix
 	delta = dmatrix(1, T, 1, hmm.N); // Allocate a TxN  double matrix (N=6 states)
 	psi = imatrix(1, T, 1, hmm.N);	 // Allocate a TxN  int matrix (N=6 states)
-	double *plogproba;
-	plogproba = dvector(1, hmm.N); // Allocate a double vector (N=6 states)
 
 	// Run the HMM
 	std::vector<int> q;  // State sequence
-	std::pair<std::vector<int>, double> state_sequence = ViterbiLogNP_CHMM(hmm, T, O1, O2, pfb, delta, psi, plogproba);
+	std::pair<std::vector<int>, double> state_sequence = ViterbiLogNP_CHMM(hmm, T, O1, O2, pfb, delta, psi);
 
 	// Free the variables
 	free_imatrix(psi, 1, T, 1, hmm.N);
 	free_dmatrix(delta, 1, T, 1, hmm.N);
-	free_dvector(plogproba, 1, hmm.N);
 
 	// Pop the first element of q, which is always 0 (Done this way for 1-based
 	// indexing)
-	state_sequence.first.erase(state_sequence.first.begin());
+	if (!state_sequence.first.empty()) {
+		state_sequence.first.erase(state_sequence.first.begin());
+	}
 
 	return state_sequence;
 }
 
 double b1iot(int state, double *mean, double *sd, double uf, double o)
 {
-	// // Get the normalized PDF value
-	// double normalized_pdf = pdf_normalization(o, mean[state], sd[state]);
-
-	// Fix the log observation to not below lower bound
-	bool thresholded = false;
 	if (o < mean[1])
 	{
-		// std::cout << "O of state " << state << " is below the lower bound: " << o << ", mean: " << mean[1] << std::endl;
 		o = mean[1];
-		thresholded = true;
 	}
 	double p = uf + ((1 - uf) * pdf_normal(o, mean[state], sd[state]));
 
-	// Return the log probability
 	return log(p);
 }
 
@@ -88,7 +74,6 @@ double b2iot(int state, double *mean, double *sd, double uf, double pfb, double 
 	double sd33 = sd[3];  // sd[3] = 0.33
 	double sd50 = sd[4];  // sd[4] = 0.5
 	double sd50_state1 = sd[5];  // sd[5] = 0.5
-
 	p = uf;  // UF = previous alpha (transition probability)
 
 	// PDF normal is the transition probability distrubution a_ij (initialized
@@ -108,12 +93,6 @@ double b2iot(int state, double *mean, double *sd, double uf, double pfb, double 
 		else
 		{
 			p+= (1-uf) * pdf_normal (b, mean50_state1, sd50_state1);
-
-			// // Get the normalized PDF value
-			// double normalized_pdf = pdf_normalization(b, mean50_state1, sd50_state1);
-
-			// // Update the emission probability
-			// p += (1 - uf) * normalized_pdf;
 		}
 	}
 	else if (state == 2)
@@ -130,14 +109,6 @@ double b2iot(int state, double *mean, double *sd, double uf, double pfb, double 
 		{
 			p+= (1-uf) * (1-pfb) * pdf_normal (b, mean0, sd0);
 			p+= (1-uf) * pfb     * pdf_normal (b, 1-mean0, sd0);
-
-			// // Get the normalized PDF value
-			// double normalized_pdf_left = pdf_normalization(b, mean0, sd0);
-			// double normalized_pdf_right = pdf_normalization(b, 1 - mean0, sd0);
-
-			// // Update the emission probability
-			// p += (1 - uf) * (1 - pfb) * normalized_pdf_left;
-			// p += (1 - uf) * pfb * normalized_pdf_right;
 		}
 	}
 	else if (state == 3)
@@ -155,16 +126,6 @@ double b2iot(int state, double *mean, double *sd, double uf, double pfb, double 
 			p+= (1-uf) * (1-pfb)*(1-pfb) * pdf_normal (b, mean0, sd0);
 			p+= (1-uf) * 2*pfb*(1-pfb)   * pdf_normal (b, mean50, sd50);
 			p+= (1-uf) * pfb*pfb         * pdf_normal (b, 1-mean0, sd0);
-
-			// // Get the normalized PDF values
-			// double normalized_pdf_left = pdf_normalization(b, mean0, sd0);
-			// double normalized_pdf_middle = pdf_normalization(b, mean50, sd50);
-			// double normalized_pdf_right = pdf_normalization(b, 1 - mean0, sd0);
-
-			// // Update the emission probability
-			// p += (1 - uf) * (1 - pfb) * (1 - pfb) * normalized_pdf_left;
-			// p += (1 - uf) * 2 * pfb * (1 - pfb) * normalized_pdf_middle;
-			// p += (1 - uf) * pfb * pfb * normalized_pdf_right;
 		}
 	}
 	else if (state == 4)
@@ -181,14 +142,6 @@ double b2iot(int state, double *mean, double *sd, double uf, double pfb, double 
 		{
 			p+= (1-uf) * (1-pfb) * pdf_normal (b, mean0, sd0);
 			p+= (1-uf) * pfb     * pdf_normal (b, 1-mean0, sd0);
-
-			// // Get the normalized PDF values
-			// double normalized_pdf_left = pdf_normalization(b, mean0, sd0);
-			// double normalized_pdf_right = pdf_normalization(b, 1 - mean0, sd0);
-
-			// // Update the emission probability
-			// p += (1 - uf) * (1 - pfb) * normalized_pdf_left;
-			// p += (1 - uf) * pfb * normalized_pdf_right;
 		}
 	}
 	else if (state == 5)
@@ -207,19 +160,6 @@ double b2iot(int state, double *mean, double *sd, double uf, double pfb, double 
 			p+= (1-uf) * 3*(1-pfb)*(1-pfb)*pfb     * pdf_normal (b, mean33, sd33);
 			p+= (1-uf) * 3*(1-pfb)*pfb*pfb         * pdf_normal (b, 1-mean33, sd33);
 			p+= (1-uf) * pfb*pfb*pfb               * pdf_normal (b, 1-mean0, sd0);
-
-			// // Get the normalized PDF values
-			// double normalized_pdf_1 = pdf_normalization(b, mean0, sd0);
-			// p += (1 - uf) * (1 - pfb) * (1 - pfb) * (1 - pfb) * normalized_pdf_1;
-
-			// double normalized_pdf_2 = pdf_normalization(b, mean33, sd33);
-			// p += (1 - uf) * 3 * (1 - pfb) * (1 - pfb) * pfb * normalized_pdf_2;
-
-			// double normalized_pdf_3 = pdf_normalization(b, 1 - mean33, sd33);
-			// p += (1 - uf) * 3 * (1 - pfb) * pfb * pfb * normalized_pdf_3;
-
-			// double normalized_pdf_4 = pdf_normalization(b, 1 - mean0, sd0);
-			// p += (1 - uf) * pfb * pfb * pfb * normalized_pdf_4;
 		}
 	}
 	else if (state == 6)
@@ -239,22 +179,6 @@ double b2iot(int state, double *mean, double *sd, double uf, double pfb, double 
 			p += (1-uf) * 6*(1-pfb)*(1-pfb)*pfb*pfb         * pdf_normal (b, mean50, sd50);
 			p += (1-uf) * 4*(1-pfb)*pfb*pfb*pfb             * pdf_normal (b, 1-mean25, sd25);
 			p += (1-uf) * pfb*pfb*pfb*pfb                   * pdf_normal (b, 1-mean0, sd0);
-			
-			// // Get the normalized PDF values
-			// double normalized_pdf_1 = pdf_normalization(b, mean0, sd0);
-			// p += (1 - uf) * (1 - pfb) * (1 - pfb) * (1 - pfb) * (1 - pfb) * normalized_pdf_1;
-
-			// double normalized_pdf_2 = pdf_normalization(b, mean25, sd25);
-			// p += (1 - uf) * 4 * (1 - pfb) * (1 - pfb) * (1 - pfb) * pfb * normalized_pdf_2;
-
-			// double normalized_pdf_3 = pdf_normalization(b, mean50, sd50);
-			// p += (1 - uf) * 6 * (1 - pfb) * (1 - pfb) * pfb * pfb * normalized_pdf_3;
-
-			// double normalized_pdf_4 = pdf_normalization(b, 1 - mean25, sd25);
-			// p += (1 - uf) * 4 * (1 - pfb) * pfb * pfb * pfb * normalized_pdf_4;
-
-			// double normalized_pdf_5 = pdf_normalization(b, 1 - mean0, sd0);
-			// p += (1 - uf) * pfb * pfb * pfb * pfb * normalized_pdf_5;
 		}
 	}
 
@@ -281,7 +205,7 @@ double pdf_normalization(double obs, double mean, double sd)
 	return normalized_pdf;
 }
 
-std::pair<std::vector<int>, double> ViterbiLogNP_CHMM(CHMM hmm, int T, std::vector<double>& O1, std::vector<double>& O2, std::vector<double>& pfb, double **delta, int **psi, double *pprob)
+std::pair<std::vector<int>, double> ViterbiLogNP_CHMM(CHMM hmm, int T, std::vector<double>& O1, std::vector<double>& O2, std::vector<double>& pfb, double **delta, int **psi)
 {
 	// Given the following HMM parameters:
 	// - A: Transition probability matrix
@@ -383,9 +307,7 @@ std::pair<std::vector<int>, double> ViterbiLogNP_CHMM(CHMM hmm, int T, std::vect
 	{
 		delta[1][i] = hmm.pi[i] + biot[i][1];  // Initialize the delta matrix (log probability) to the initial state distribution + the emission probability
 		psi[1][i] = 0;  // Initialize the psi matrix (state sequence) to 0 (no state)
-		pprob[i] = -VITHUGE;  // Initialize posterior log probabilities for each state to -inf
 	}
-	std::cout << std::endl;
 
 	/* 2. Recursion */
 	// For each state j at time t, calculate the maximum probability of reaching
@@ -418,16 +340,7 @@ std::pair<std::vector<int>, double> ViterbiLogNP_CHMM(CHMM hmm, int T, std::vect
 	/* 3. Termination */
 	// After all observations have been processed, find the maximum probability
 	// of the state sequence ending in state i at time T, along with observing
-	// the sequence O1, O2. This is the maximum probability of the state
-	// sequence ending in state i at time T.
-	// The maximum probability for each state is stored in pprob[i].
-
-	// The state corresponding to the maximum probability is stored in q[T], and
-	// is found by backtracking through the psi matrix.
-
-	// Variable to store the most likely state at time T (maximum a posteriori
-	// probability estimate)
-	// double max_a_posteriori_prob = -VITHUGE;
+	// the sequence O1, O2.
 	q[T] = 1;
 	double min_prob = -VITHUGE;
 	for (i = 1; i <= hmm.N; i++)
@@ -464,6 +377,7 @@ std::pair<std::vector<int>, double> ViterbiLogNP_CHMM(CHMM hmm, int T, std::vect
 	{ /*recover the HMM model as original*/
 		hmm.pi[i] = exp(hmm.pi[i]);
 	}
+
 	free_dmatrix(biot, 1, hmm.N, 1, T);
 	free_dmatrix(A1, 1, hmm.N, 1, hmm.N);
 

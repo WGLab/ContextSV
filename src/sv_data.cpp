@@ -2,41 +2,26 @@
 #include "vcf_writer.h"
 
 /// @cond
+#include <unordered_set>
 #include <iostream>
 #include <fstream>
 /// @endcond
 
-int SVData::add(std::string chr, int64_t start, int64_t end, int sv_type, std::string alt_allele, std::string data_type)
+
+int SVData::add(std::string chr, int64_t start, int64_t end, int sv_type, std::string alt_allele, std::string data_type, std::string genotype, double hmm_likelihood)
 {
-    // The alternate allele may have IUPAC ambiguity codes. For now, set these
-    // to N (unknown base) to simplify the VCF output
-    // IUPAC ambiguity codes: https://www.bioinformatics.org/sms/iupac.html
-    // Replace all ambiguous bases with N (RYWSKMBDHV)
-    std::string ambiguous_bases = "RYWSKMBDHV";
+    // Set of ambiguous bases (RYWSKMBDHV)
+    const std::unordered_set<char> ambiguous_bases = {'R', 'Y', 'W', 'S', 'K', 'M', 'B', 'D', 'H', 'V'};
     bool is_ambiguous = false;
-    for (char& c : alt_allele) {
-        if (ambiguous_bases.find(c) != std::string::npos) {
+
+    // Check if the alternate allele contains ambiguous bases
+    for (char c : alt_allele) {
+        if (ambiguous_bases.count(c) > 0) {
             c = 'N';
             is_ambiguous = true;
         }
     }
-    if (is_ambiguous) {
-        std::cerr << "Warning: Ambiguous base(s) in alternate allele " << alt_allele << " at " << chr << ":" << start << "-" << end << std::endl;
-
-        // Check if there are any ambiguous bases left
-        if (alt_allele.find_first_of(ambiguous_bases) != std::string::npos) {
-            std::cerr << "Error: Failed to remove all ambiguous bases from alternate allele " << alt_allele << " at " << chr << ":" << start << "-" << end << std::endl;
-            return -1;
-        }
-    }
-    // bool is_ambiguous = false;
-    // if (alt_allele.find_first_of("RYWSKMBDHV") != std::string::npos) {
-    //     is_ambiguous = true;
-
-    //     // Set the alternate allele to N
-    //     alt_allele = "N";
-    //     // std::cerr << "Warning: Ambiguous base(s) in alternate allele " << alt_allele << " at " << chr << ":" << start << "-" << end << std::endl;
-    // }
+    // std::cerr << "Warning: Ambiguous base(s) in alternate allele at " << chr << ":" << start << "-" << end << std::endl;
 
     // Check if the SV candidate already exists in the map
     SVCandidate candidate(start, end, alt_allele);
@@ -48,6 +33,16 @@ int SVData::add(std::string chr, int64_t start, int64_t end, int sv_type, std::s
         // Update the SV type if it is unknown
         if (sv_info.sv_type == UNKNOWN) {
             sv_info.sv_type = sv_type;
+        }
+
+        // Update the genotype if it is unknown
+        if (sv_info.genotype == "./.") {
+            sv_info.genotype = genotype;
+        }
+
+        // Update the HMM likelihood
+        if ((sv_info.hmm_likelihood == 0.0) || (hmm_likelihood > sv_info.hmm_likelihood)) {
+            sv_info.hmm_likelihood = hmm_likelihood;
         }
 
         // Add the alignment type used to call the SV
@@ -68,7 +63,8 @@ int SVData::add(std::string chr, int64_t start, int64_t end, int sv_type, std::s
         }
 
         // Create a new SVInfo object (SV type, alignment support, read depth, data type, SV length, genotype)
-        SVInfo sv_info(sv_type, 1, 0, data_type, sv_length, "./.", 0.0);
+        // SVInfo sv_info(sv_type, 1, 0, data_type, sv_length, "./.", 0.0);
+        SVInfo sv_info(sv_type, 1, 0, data_type, sv_length, genotype, hmm_likelihood, "");
 
         // Add the SV candidate to the map
         this->sv_calls[chr][candidate] = sv_info;

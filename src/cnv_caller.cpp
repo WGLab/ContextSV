@@ -50,7 +50,7 @@ std::pair<SNPData, bool> CNVCaller::querySNPRegion(std::string chr, int64_t star
 
     // printMessage("Window size: " + std::to_string(window_size));
 
-    std::cout << "Querying SNPs for region " << chr << ":" << start_pos << "-" << end_pos << "..." << std::endl;
+    // std::cout << "Querying SNPs for region " << chr << ":" << start_pos << "-" << end_pos << "..." << std::endl;
     for (int64_t i = start_pos; i <= end_pos; i += window_size)
     {
         // Run a sliding non-overlapping window of size window_size across
@@ -59,12 +59,14 @@ std::pair<SNPData, bool> CNVCaller::querySNPRegion(std::string chr, int64_t star
         int64_t window_end = std::min(i + window_size - 1, end_pos);
 
         // Get the SNP info for the window
+        // std::cout << "Querying SNPs for window " << chr << ":" << window_start << "-" << window_end << "..." << std::endl;
         this->snp_data_mtx.lock();
         std::tuple<std::vector<int64_t>, std::vector<double>, std::vector<double>> window_snps = snp_info.querySNPs(chr, window_start, window_end);
         this->snp_data_mtx.unlock();
         std::vector<int64_t>& snp_window_pos = std::get<0>(window_snps);  // SNP positions
         std::vector<double>& snp_window_bafs = std::get<1>(window_snps);  // B-allele frequencies
         std::vector<double>& snp_window_pfbs = std::get<2>(window_snps);  // Population frequencies of the B allele
+        // std::cout << "SNPs found: " << snp_window_pos.size() << std::endl;
 
         // Loop though the SNP positions and calculate the log2 ratio for
         // the window up to the SNP, then calculate the log2 ratio centered
@@ -77,6 +79,7 @@ std::pair<SNPData, bool> CNVCaller::querySNPRegion(std::string chr, int64_t star
         // PFB values, and the coverage log2 ratio
         if (snp_count == 0)
         {
+            // std::cout << "No SNPs found in window " << chr << ":" << window_start << "-" << window_end << "..." << std::endl;
             // Calculate the log2 ratio for the window
             double window_log2_ratio = calculateLog2Ratio(window_start, window_end, pos_depth_map, mean_chr_cov);
 
@@ -89,6 +92,7 @@ std::pair<SNPData, bool> CNVCaller::querySNPRegion(std::string chr, int64_t star
             // printMessage("Using position " + std::to_string((int)((window_start + window_end) / 2)) + " with default BAF and PFB values...");
 
         } else {
+            // std::cout << "SNPs found in window " << chr << ":" << window_start << "-" << window_end << "..." << std::endl;
             // printMessage("SNPs found in window " + chr + ":" + std::to_string((int)window_start) + "-" + std::to_string((int)window_end) + "...");
             snps_found = true;
 
@@ -127,19 +131,161 @@ SNPData CNVCaller::runCopyNumberPrediction(std::string chr, std::map<SVCandidate
     return this->runCopyNumberPrediction(chr, sv_candidates, this->snp_info, this->hmm, this->input_data->getWindowSize(), this->mean_chr_cov);
 }
 
+std::tuple<int, double, int, std::string, bool> CNVCaller::runCopyNumberPredictionPair(std::string chr, SVCandidate sv_one, SVCandidate sv_two)
+{
+    // std::cout << "Running copy number prediction for SV pair " << chr << ":" << std::get<0>(sv_one) << "-" << std::get<1>(sv_one) << " and " << std::get<0>(sv_two) << "-" << std::get<1>(sv_two) << "..." << std::endl;
+    double best_likelihood = 0.0;
+    bool best_likelihood_set = false;
+    bool snps_found = false;
+    int best_index = 0;
+    std::pair<int64_t, int64_t> best_pos;
+    SNPData best_snp_data;
+
+    // Calculate depths for the SV region
+    std::unordered_map<uint64_t, int> pos_depth_map;
+    int64_t start_pos = std::min(std::get<0>(sv_one), std::get<0>(sv_two));
+    int64_t end_pos = std::max(std::get<1>(sv_one), std::get<1>(sv_two));
+
+    // std::cout << "Calculating read depths for SV region " << chr << ":" << start_pos << "-" << end_pos << "..." << std::endl;
+    calculateDepthsForSNPRegion(chr, start_pos, end_pos, pos_depth_map);
+
+    int current_index = 0;
+    int predicted_cnv_type = sv_types::UNKNOWN;
+    std::string genotype = "./.";
+    for (const auto& sv_call : {sv_one, sv_two})
+    {
+        // Get the SV candidate
+        const SVCandidate& candidate = sv_call;
+
+        // Get the start and end positions of the SV call
+        int64_t start_pos = std::get<0>(candidate);
+        int64_t end_pos = std::get<1>(candidate);
+
+        // Get the depth at the start position, which is used as the FORMAT/DP
+        // value
+        // int dp_value = pos_depth_map[start_pos];
+
+        // Run the Viterbi algorithm on SNPs in the SV region +/- 1/2
+        // the SV length
+        int64_t sv_length = (end_pos - start_pos) / 2.0;
+        int64_t snp_start_pos = std::max((int64_t) 1, start_pos - sv_length);
+        int64_t snp_end_pos = end_pos + sv_length;
+
+        // Query the SNP region for the SV candidate
+        std::pair<SNPData, bool> snp_call = querySNPRegion(chr, snp_start_pos, snp_end_pos, this->snp_info, pos_depth_map, this->mean_chr_cov);
+        SNPData sv_snps = snp_call.first;
+        bool sv_snps_found = snp_call.second;
+
+        // // Check that sv_snps has data
+        // if (sv_snps.pos.size() == 0)
+        // {
+        //     std::cerr << "No SNPs found for SV " << chr << ":" << start_pos << "-" << end_pos << "..." << std::endl;
+        // }
+
+        // Run the Viterbi algorithm
+        // std::cout << "Running Viterbi algorithm for SV " << chr << ":" << start_pos << "-" << end_pos << "..." << std::endl;
+        
+        std::pair<std::vector<int>, double> prediction = runViterbi(this->hmm, sv_snps);
+        std::vector<int>& state_sequence = prediction.first;
+        double likelihood = prediction.second;
+
+        // Get all the states in the SV region
+        // std::cout << "Getting states in SV region " << chr << ":" << start_pos << "-" << end_pos << "..." << std::endl;
+        std::vector<int> sv_states;
+        for (size_t i = 0; i < state_sequence.size(); i++)
+        {
+            if (sv_snps.pos[i] >= start_pos && sv_snps.pos[i] <= end_pos)
+            {
+                sv_states.push_back(state_sequence[i]);
+            }
+        }
+
+        // Determine if there is a majority state within the SV region and if it
+        // is greater than 75%
+        // std::cout << "Determining majority state in SV region " << chr << ":" << start_pos << "-" << end_pos << "..." << std::endl;
+        double pct_threshold = 0.75;
+        int max_state = 0;
+        int max_count = 0;
+        for (int i = 0; i < 6; i++)
+        {
+            int state_count = std::count(sv_states.begin(), sv_states.end(), i+1);
+            if (state_count > max_count)
+            {
+                max_state = i+1;
+                max_count = state_count;
+            }
+        }
+        
+        // If there is no majority state, then set the state to unknown
+        int state_count = (int) sv_states.size();
+        if ((double) max_count / (double) state_count < pct_threshold)
+        {
+            max_state = 0;
+        }
+
+        // Update the SV calls with the CNV type and genotype if the likelihood
+        // is greater than the best likelihood
+        // std::cout << "Updating SV calls for SV " << chr << ":" << start_pos << "-" << end_pos << "..." << std::endl;
+        predicted_cnv_type = cnv_type_map[max_state];
+        genotype = cnv_genotype_map[max_state];
+        if (!best_likelihood_set || (likelihood > best_likelihood))
+        {
+            best_likelihood = likelihood;
+            best_likelihood_set = true;
+            snps_found = sv_snps_found;
+            best_index = current_index;
+            // best_snp_data = std::move(sv_snps);
+            best_snp_data = sv_snps;
+            best_pos = std::make_pair(start_pos, end_pos);
+        }
+        current_index++;
+    }
+
+    // // Throw an error if the best likelihood is not set
+    // if (!best_likelihood_set)
+    // {
+    //     std::cerr << "Error: Best likelihood is not set for SV " << chr << ":" << std::get<0>(sv_one) << "-" << std::get<1>(sv_one) << " and " << std::get<0>(sv_two) << "-" << std::get<1>(sv_two) << "..." << std::endl;
+    //     exit(1);
+    // }
+
+    // Save the SV calls as a TSV file if enabled
+    if (this->input_data->getSaveCNVData() && (end_pos - start_pos) > 10000)
+    {
+        // std::string size_kb = std::to_string((int) (end_pos - start_pos) /
+        // 1000);
+        int size_kb = (int) (best_pos.second - best_pos.first) / 1000;
+        std::string cnv_type_str = "";
+        if (predicted_cnv_type == sv_types::UNKNOWN)
+        {
+            cnv_type_str = "UNKNOWN";
+        } else {
+            cnv_type_str = SVTypeString[predicted_cnv_type];
+        }
+
+        // // If the CNV type str is still empty, throw an error
+        // if (cnv_type_str == "")
+        // {
+        //     std::cerr << "Error: CNV type string is empty for type " << predicted_cnv_type << "..." << std::endl;
+        //     exit(1);
+        // }
+        std::string sv_filename = this->input_data->getOutputDir() + "/" + cnv_type_str + "_" + chr + "_" + std::to_string((int) best_pos.first) + "-" + std::to_string((int) best_pos.second) + ".tsv";
+        std::cout << "Saving SV copy number predictions to " << sv_filename << "..." << std::endl;
+        this->saveSVCopyNumberToTSV(best_snp_data, sv_filename, chr, best_pos.first, best_pos.second, cnv_type_str, best_likelihood);
+    }
+
+    return std::make_tuple(best_index, best_likelihood, predicted_cnv_type, genotype, snps_found);
+}
+
 SNPData CNVCaller::runCopyNumberPrediction(std::string chr, std::map<SVCandidate, SVInfo> &sv_candidates, SNPInfo &snp_info, CHMM hmm, int window_size, double mean_chr_cov)
 {
     SNPData snp_data;
-
-    // Get the chromosome SV candidates
-    //std::map<SVCandidate, SVInfo>& sv_candidates = sv_calls.getChromosomeSVs(chr);
     int sv_count = (int) sv_candidates.size();
-    printMessage("Total SV count: " + std::to_string(sv_count));
+    // printMessage("Total SV count: " + std::to_string(sv_count));
 
     // If there are no SV candidates, then return
     if (sv_count == 0)
     {
-        printMessage("No SV candidates found for chromosome " + chr);
+        // printMessage("No SV candidates found for chromosome " + chr);
         return snp_data;
     }
 
@@ -181,6 +327,7 @@ SNPData CNVCaller::runCopyNumberPrediction(std::string chr, std::map<SVCandidate
     std::vector<std::future<SNPData>> futures;
     for (const auto& sv_chunk : sv_chunks)
     {
+
         // Run the copy number prediction for the SV chunk
         std::async(std::launch::async, &CNVCaller::runCopyNumberPredictionChunk, this, chr, std::ref(sv_candidates), sv_chunk, std::ref(snp_info), hmm, window_size, mean_chr_cov, std::ref(pos_depth_map));
     }
@@ -325,7 +472,7 @@ void CNVCaller::runCopyNumberPredictionChunk(std::string chr, std::map<SVCandida
                 std::string sv_filename = this->input_data->getOutputDir() + "/" + sv_types::SVTypeString[cnv_type] + "_" + data_type + "_" + size_kb + "kb_" + chr + "_" + std::to_string((int)start_pos) + "_" + std::to_string((int)end_pos) + "_" + likelihood_str + ".tsv";
                 // std::string sv_filename = this->input_data->getOutputDir() + "/sv_snps_" + chr + "_" + std::to_string((int)start_pos) + "_" + std::to_string((int)end_pos) + ".tsv";
                 std::cout << "Saving SV SNP data to " << sv_filename << std::endl;
-                this->saveToTSV(snp_data, sv_filename, chr);
+                // this->saveToTSV(snp_data, sv_filename, chr);
             }
         }
     }
@@ -1022,10 +1169,43 @@ void CNVCaller::getSNPPopulationFrequencies(std::string chr, SNPInfo& snp_info)
     }
 }
 
-void CNVCaller::saveToTSV(SNPData& snp_data, std::string filepath, std::string chr)
+void CNVCaller::saveSVCopyNumberToTSV(SNPData& snp_data, std::string filepath, std::string chr, int64_t start, int64_t end, std::string sv_type, double likelihood)
 {
+    // Check the lengths of the vectors and identify any that don't match
+    int pos_count = (int) snp_data.pos.size();
+    int pfb_count = (int) snp_data.pfb.size();
+    int baf_count = (int) snp_data.baf.size();
+    int log2_cov_count = (int) snp_data.log2_cov.size();
+    int state_count = (int) snp_data.state_sequence.size();
+    int is_snp_count = (int) snp_data.is_snp.size();
+    if (pfb_count != pos_count) {
+        printError("ERROR: SNP position count " + std::to_string(pos_count) + " does not match PFB count " + std::to_string(pfb_count));
+    }
+    if (baf_count != pos_count) {
+        printError("ERROR: SNP position count " + std::to_string(pos_count) + " does not match BAF count " + std::to_string(baf_count));
+    }
+    if (log2_cov_count != pos_count) {
+        printError("ERROR: SNP position count " + std::to_string(pos_count) + " does not match log2 coverage count " + std::to_string(log2_cov_count));
+    }
+    if (state_count != pos_count) {
+        printError("ERROR: SNP position count " + std::to_string(pos_count) + " does not match state count " + std::to_string(state_count));
+    }
+    if (is_snp_count != pos_count) {
+        printError("ERROR: SNP position count " + std::to_string(pos_count) + " does not match is_snp count " + std::to_string(is_snp_count));
+    }
+
     // Open the TSV file for writing
     std::ofstream tsv_file(filepath);
+
+    // Format the size string in kb
+    std::stringstream ss;
+    ss << std::fixed << std::setprecision(6) << likelihood;
+    std::string likelihood_str = ss.str();
+
+    // Print SV information to the TSV file
+    tsv_file << "SVTYPE=" << sv_type << std::endl;
+    tsv_file << "POS=" << chr << ":" << start << "-" << end << std::endl;
+    tsv_file << "HMM_LOGLH=" << likelihood_str << std::endl;
 
     // Write the header
     tsv_file << "chromosome\tposition\tsnp\tb_allele_freq\tlog2_ratio\tcnv_state\tpopulation_freq" << std::endl;
@@ -1034,30 +1214,58 @@ void CNVCaller::saveToTSV(SNPData& snp_data, std::string filepath, std::string c
     int snp_count = (int) snp_data.pos.size();
     for (int i = 0; i < snp_count; i++)
     {
-        // Get the SNP data
-        int64_t pos        = snp_data.pos[i];
-        bool    is_snp     = snp_data.is_snp[i];
-        double  pfb        = snp_data.pfb[i];
-        double  baf        = snp_data.baf[i];
-        double  log2_ratio = snp_data.log2_cov[i];
-        int     cn_state   = snp_data.state_sequence[i];
+        try {
+            // Get the SNP data
+            int64_t pos        = snp_data.pos.at(i);
+            bool    is_snp     = snp_data.is_snp.at(i);
+            double  pfb        = snp_data.pfb.at(i);
+            double  baf        = snp_data.baf.at(i);
+            double  log2_ratio = snp_data.log2_cov.at(i);
+            int     cn_state   = snp_data.state_sequence.at(i);            
 
-        // If the SNP is not a SNP, then set the BAF to 0.0
-        if (!is_snp)
-        {
-            baf = 0.0;
+            // If the SNP is not a SNP, then set the BAF to 0.0
+            if (!is_snp)
+            {
+                baf = 0.0;
+            }
+
+            // Write the TSV line (chrom, pos, baf, lrr, state)
+            tsv_file << \
+                chr          << "\t" << \
+                pos          << "\t" << \
+                is_snp       << "\t" << \
+                baf          << "\t" << \
+                log2_ratio   << "\t" << \
+                cn_state     << "\t" << \
+                pfb          << \
+            std::endl;
+        } catch (const std::out_of_range& e) {
+            printError("ERROR: Out of range exception when writing SNP data to TSV file");
         }
+        // // Get the SNP data
+        // int64_t pos        = snp_data.pos[i];
+        // bool    is_snp     = snp_data.is_snp[i];
+        // double  pfb        = snp_data.pfb[i];
+        // double  baf        = snp_data.baf[i];
+        // double  log2_ratio = snp_data.log2_cov[i];
+        // int     cn_state   = snp_data.state_sequence[i];
 
-        // Write the TSV line (chrom, pos, baf, lrr, state)
-        tsv_file << \
-            chr          << "\t" << \
-            pos          << "\t" << \
-            is_snp       << "\t" << \
-            baf          << "\t" << \
-            log2_ratio   << "\t" << \
-            cn_state     << "\t" << \
-            pfb          << \
-        std::endl;
+        // // If the SNP is not a SNP, then set the BAF to 0.0
+        // if (!is_snp)
+        // {
+        //     baf = 0.0;
+        // }
+
+        // // Write the TSV line (chrom, pos, baf, lrr, state)
+        // tsv_file << \
+        //     chr          << "\t" << \
+        //     pos          << "\t" << \
+        //     is_snp       << "\t" << \
+        //     baf          << "\t" << \
+        //     log2_ratio   << "\t" << \
+        //     cn_state     << "\t" << \
+        //     pfb          << \
+        // std::endl;
     }
 
     // Close the file

@@ -123,6 +123,10 @@ class CNVCaller {
         // Load file data for a chromosome (SNP positions, BAF values, and PFB values)
         void loadChromosomeData(std::string chr);
 
+        // Run copy number prediction for a pair of SV candidates, and add only
+        // the SV candidate with the highest likelihood
+        std::tuple<int, double, int, std::string, bool> runCopyNumberPredictionPair(std::string chr, SVCandidate sv_one, SVCandidate sv_two);
+
         // Run copy number prediction for a region
         SNPData runCopyNumberPrediction(std::string chr, std::map<SVCandidate, SVInfo>& sv_candidates);
 
@@ -144,7 +148,7 @@ class CNVCaller {
         void getSNPPopulationFrequencies(std::string chr, SNPInfo& snp_info);
 
         // Save a TSV with B-allele frequencies, log 2 ratios, and copy number predictions
-        void saveToTSV(SNPData& snp_data, std::string filepath, std::string chr);
+        void saveSVCopyNumberToTSV(SNPData& snp_data, std::string filepath, std::string chr, int64_t start, int64_t end, std::string sv_type, double likelihood);
 };
 
 #endif // CNV_CALLER_H
