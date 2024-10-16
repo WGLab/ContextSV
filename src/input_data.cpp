@@ -21,7 +21,7 @@ InputData::InputData()
     this->ref_filepath = "";
     this->snp_vcf_filepath = "";
     this->chr = "";
-    this->region = std::make_pair(0, 0);
+    this->start_end = std::make_pair(0, 0);
     this->region_set = false;
     this->output_dir = "";
     this->window_size = 10000;
@@ -184,16 +184,16 @@ void InputData::setRegion(std::string region)
             int32_t end = std::stoi(region_tokens[1]);
 
             // Set the region
-            this->region = std::make_pair(start, end);
+            this->start_end = std::make_pair(start, end);
             this->region_set = true;
         }
     }
-    std::cout << "Region set to " << this->region.first << "-" << this->region.second << std::endl;
+    std::cout << "Region set to " << this->start_end.first << "-" << this->start_end.second << std::endl;
 }
 
 std::pair<int32_t, int32_t> InputData::getRegion()
 {
-    return this->region;
+    return this->start_end;
 }
 
 bool InputData::isRegionSet()

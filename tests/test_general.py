@@ -54,8 +54,8 @@ def test_run():
     input_data.setOutputDir(TEST_OUTDIR)
     input_data.saveCNVData(True)
     
-    # # Run the analysis.
-    # contextsv.run(input_data)
+    # Run the analysis.
+    contextsv.run(input_data)
 
     # ========================================================================
 

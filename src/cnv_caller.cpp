@@ -143,11 +143,22 @@ std::tuple<int, double, int, std::string, bool> CNVCaller::runCopyNumberPredicti
 
     // Calculate depths for the SV region
     std::unordered_map<uint64_t, int> pos_depth_map;
-    int64_t start_pos = std::min(std::get<0>(sv_one), std::get<0>(sv_two));
-    int64_t end_pos = std::max(std::get<1>(sv_one), std::get<1>(sv_two));
+    int64_t region_start_pos = std::min(std::get<0>(sv_one), std::get<0>(sv_two));
+    int64_t region_end_pos = std::max(std::get<1>(sv_one), std::get<1>(sv_two));
 
-    // std::cout << "Calculating read depths for SV region " << chr << ":" << start_pos << "-" << end_pos << "..." << std::endl;
-    calculateDepthsForSNPRegion(chr, start_pos, end_pos, pos_depth_map);
+    // std::cout << "Calculating read depths for SV region " << chr << ":" <<
+    // start_pos << "-" << end_pos << "..." << std::endl;
+    
+    // If extending the CNV regions, then extend the SV region by window size *
+    // N. Otherwise, log2 ratios will be zero due to missing read depth data
+    // before/after the first/last SV positions
+    if (this->input_data->getSaveCNVData())
+    {
+        int extend_factor = 100;
+        region_start_pos = std::max((int64_t) 1, region_start_pos - this->input_data->getWindowSize() * extend_factor);
+        region_end_pos = region_end_pos + this->input_data->getWindowSize() * extend_factor;
+    }
+    calculateDepthsForSNPRegion(chr, region_start_pos, region_end_pos, pos_depth_map);
 
     int current_index = 0;
     int predicted_cnv_type = sv_types::UNKNOWN;
@@ -176,15 +187,8 @@ std::tuple<int, double, int, std::string, bool> CNVCaller::runCopyNumberPredicti
         SNPData sv_snps = snp_call.first;
         bool sv_snps_found = snp_call.second;
 
-        // // Check that sv_snps has data
-        // if (sv_snps.pos.size() == 0)
-        // {
-        //     std::cerr << "No SNPs found for SV " << chr << ":" << start_pos << "-" << end_pos << "..." << std::endl;
-        // }
-
         // Run the Viterbi algorithm
         // std::cout << "Running Viterbi algorithm for SV " << chr << ":" << start_pos << "-" << end_pos << "..." << std::endl;
-        
         std::pair<std::vector<int>, double> prediction = runViterbi(this->hmm, sv_snps);
         std::vector<int>& state_sequence = prediction.first;
         double likelihood = prediction.second;
@@ -234,41 +238,22 @@ std::tuple<int, double, int, std::string, bool> CNVCaller::runCopyNumberPredicti
             best_likelihood_set = true;
             snps_found = sv_snps_found;
             best_index = current_index;
-            // best_snp_data = std::move(sv_snps);
-            best_snp_data = sv_snps;
+
+            // Add the state sequence to the SNP data (avoid copying the data)
+            sv_snps.state_sequence = std::move(state_sequence);
+            best_snp_data = std::move(sv_snps);
             best_pos = std::make_pair(start_pos, end_pos);
         }
         current_index++;
     }
 
-    // // Throw an error if the best likelihood is not set
-    // if (!best_likelihood_set)
-    // {
-    //     std::cerr << "Error: Best likelihood is not set for SV " << chr << ":" << std::get<0>(sv_one) << "-" << std::get<1>(sv_one) << " and " << std::get<0>(sv_two) << "-" << std::get<1>(sv_two) << "..." << std::endl;
-    //     exit(1);
-    // }
-
     // Save the SV calls as a TSV file if enabled
-    if (this->input_data->getSaveCNVData() && (end_pos - start_pos) > 10000)
+    int64_t sv_start_pos = std::get<0>(best_pos);
+    int64_t sv_end_pos = std::get<1>(best_pos);
+    if (this->input_data->getSaveCNVData() && predicted_cnv_type != sv_types::UNKNOWN && (sv_end_pos - sv_start_pos) > 10000)
     {
-        // std::string size_kb = std::to_string((int) (end_pos - start_pos) /
-        // 1000);
-        int size_kb = (int) (best_pos.second - best_pos.first) / 1000;
-        std::string cnv_type_str = "";
-        if (predicted_cnv_type == sv_types::UNKNOWN)
-        {
-            cnv_type_str = "UNKNOWN";
-        } else {
-            cnv_type_str = SVTypeString[predicted_cnv_type];
-        }
-
-        // // If the CNV type str is still empty, throw an error
-        // if (cnv_type_str == "")
-        // {
-        //     std::cerr << "Error: CNV type string is empty for type " << predicted_cnv_type << "..." << std::endl;
-        //     exit(1);
-        // }
-        std::string sv_filename = this->input_data->getOutputDir() + "/" + cnv_type_str + "_" + chr + "_" + std::to_string((int) best_pos.first) + "-" + std::to_string((int) best_pos.second) + ".tsv";
+        std::string cnv_type_str = SVTypeString[predicted_cnv_type];
+        std::string sv_filename = this->input_data->getOutputDir() + "/" + cnv_type_str + "_" + chr + "_" + std::to_string((int) sv_start_pos) + "-" + std::to_string((int) sv_end_pos) + ".tsv";
         std::cout << "Saving SV copy number predictions to " << sv_filename << "..." << std::endl;
         this->saveSVCopyNumberToTSV(best_snp_data, sv_filename, chr, best_pos.first, best_pos.second, cnv_type_str, best_likelihood);
     }
@@ -726,7 +711,7 @@ void CNVCaller::calculateDepthsForSNPRegion(std::string chr, int64_t start_pos, 
     std::vector<std::string> region_chunks;
     int64_t region_size = end_pos - start_pos;
     int64_t min_threading_size = 10000;
-    printMessage("Region size: " + std::to_string(region_size));
+    // printMessage("Region size: " + std::to_string(region_size));
     if (region_size < min_threading_size)
     {
         region_chunks.push_back(chr + ":" + std::to_string(start_pos) + "-" + std::to_string(end_pos));
@@ -1171,29 +1156,6 @@ void CNVCaller::getSNPPopulationFrequencies(std::string chr, SNPInfo& snp_info)
 
 void CNVCaller::saveSVCopyNumberToTSV(SNPData& snp_data, std::string filepath, std::string chr, int64_t start, int64_t end, std::string sv_type, double likelihood)
 {
-    // Check the lengths of the vectors and identify any that don't match
-    int pos_count = (int) snp_data.pos.size();
-    int pfb_count = (int) snp_data.pfb.size();
-    int baf_count = (int) snp_data.baf.size();
-    int log2_cov_count = (int) snp_data.log2_cov.size();
-    int state_count = (int) snp_data.state_sequence.size();
-    int is_snp_count = (int) snp_data.is_snp.size();
-    if (pfb_count != pos_count) {
-        printError("ERROR: SNP position count " + std::to_string(pos_count) + " does not match PFB count " + std::to_string(pfb_count));
-    }
-    if (baf_count != pos_count) {
-        printError("ERROR: SNP position count " + std::to_string(pos_count) + " does not match BAF count " + std::to_string(baf_count));
-    }
-    if (log2_cov_count != pos_count) {
-        printError("ERROR: SNP position count " + std::to_string(pos_count) + " does not match log2 coverage count " + std::to_string(log2_cov_count));
-    }
-    if (state_count != pos_count) {
-        printError("ERROR: SNP position count " + std::to_string(pos_count) + " does not match state count " + std::to_string(state_count));
-    }
-    if (is_snp_count != pos_count) {
-        printError("ERROR: SNP position count " + std::to_string(pos_count) + " does not match is_snp count " + std::to_string(is_snp_count));
-    }
-
     // Open the TSV file for writing
     std::ofstream tsv_file(filepath);
 
@@ -1214,58 +1176,30 @@ void CNVCaller::saveSVCopyNumberToTSV(SNPData& snp_data, std::string filepath, s
     int snp_count = (int) snp_data.pos.size();
     for (int i = 0; i < snp_count; i++)
     {
-        try {
-            // Get the SNP data
-            int64_t pos        = snp_data.pos.at(i);
-            bool    is_snp     = snp_data.is_snp.at(i);
-            double  pfb        = snp_data.pfb.at(i);
-            double  baf        = snp_data.baf.at(i);
-            double  log2_ratio = snp_data.log2_cov.at(i);
-            int     cn_state   = snp_data.state_sequence.at(i);            
+        // Get the SNP data
+        int64_t pos        = snp_data.pos[i];
+        bool    is_snp     = snp_data.is_snp[i];
+        double  pfb        = snp_data.pfb[i];
+        double  baf        = snp_data.baf[i];
+        double  log2_ratio = snp_data.log2_cov[i];
+        int     cn_state   = snp_data.state_sequence[i];
 
-            // If the SNP is not a SNP, then set the BAF to 0.0
-            if (!is_snp)
-            {
-                baf = 0.0;
-            }
-
-            // Write the TSV line (chrom, pos, baf, lrr, state)
-            tsv_file << \
-                chr          << "\t" << \
-                pos          << "\t" << \
-                is_snp       << "\t" << \
-                baf          << "\t" << \
-                log2_ratio   << "\t" << \
-                cn_state     << "\t" << \
-                pfb          << \
-            std::endl;
-        } catch (const std::out_of_range& e) {
-            printError("ERROR: Out of range exception when writing SNP data to TSV file");
+        // If the SNP is not a SNP, then set the BAF to 0.0
+        if (!is_snp)
+        {
+            baf = 0.0;
         }
-        // // Get the SNP data
-        // int64_t pos        = snp_data.pos[i];
-        // bool    is_snp     = snp_data.is_snp[i];
-        // double  pfb        = snp_data.pfb[i];
-        // double  baf        = snp_data.baf[i];
-        // double  log2_ratio = snp_data.log2_cov[i];
-        // int     cn_state   = snp_data.state_sequence[i];
 
-        // // If the SNP is not a SNP, then set the BAF to 0.0
-        // if (!is_snp)
-        // {
-        //     baf = 0.0;
-        // }
-
-        // // Write the TSV line (chrom, pos, baf, lrr, state)
-        // tsv_file << \
-        //     chr          << "\t" << \
-        //     pos          << "\t" << \
-        //     is_snp       << "\t" << \
-        //     baf          << "\t" << \
-        //     log2_ratio   << "\t" << \
-        //     cn_state     << "\t" << \
-        //     pfb          << \
-        // std::endl;
+        // Write the TSV line (chrom, pos, baf, lrr, state)
+        tsv_file << \
+            chr          << "\t" << \
+            pos          << "\t" << \
+            is_snp       << "\t" << \
+            baf          << "\t" << \
+            log2_ratio   << "\t" << \
+            cn_state     << "\t" << \
+            pfb          << \
+        std::endl;
     }
 
     // Close the file

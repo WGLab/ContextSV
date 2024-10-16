@@ -117,7 +117,7 @@ class InputData {
         std::string output_dir;
         int window_size;
         std::string chr;  // Chromosome to analyze
-        std::pair<int32_t, int32_t> region;  // Region to analyze
+        std::pair<int32_t, int32_t> start_end;  // Region to analyze
         bool region_set;  // True if a region is set
         std::map<std::string, double> chr_cov;  // Map of pre-calculated mean coverage values for each chromosome
         int thread_count;

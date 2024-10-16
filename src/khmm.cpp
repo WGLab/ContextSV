@@ -267,8 +267,6 @@ std::pair<std::vector<int>, double> ViterbiLogNP_CHMM(CHMM hmm, int T, std::vect
 	for (i = 1; i <= hmm.N; i++)
 	{
 		// Loop through each probe T in the observation sequence (O1, O2), 1-based
-		double previous_O2 = -1;
-		double previous_pfb = -1;
 		for (t = 1; t <= T; t++)
 		{
 			// Get the state observation likelihood b_j(O_t) of the observation
@@ -276,7 +274,6 @@ std::pair<std::vector<int>, double> ViterbiLogNP_CHMM(CHMM hmm, int T, std::vect
 
 			// Calculate the O1 emission probability
 			double O1_val = O1[t-1]; // Adjust for 0-based indexing
-			// double O1_logprob = b1iot(i, hmm.B1_mean, hmm.B1_sd, hmm.B1_uf, O1_val);
 
 			// If there is no SNP (B-allele frequency) data, just use the LRR
 			// emission probability

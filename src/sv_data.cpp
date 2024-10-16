@@ -10,18 +10,13 @@
 
 int SVData::add(std::string chr, int64_t start, int64_t end, int sv_type, std::string alt_allele, std::string data_type, std::string genotype, double hmm_likelihood)
 {
-    // Set of ambiguous bases (RYWSKMBDHV)
-    const std::unordered_set<char> ambiguous_bases = {'R', 'Y', 'W', 'S', 'K', 'M', 'B', 'D', 'H', 'V'};
-    bool is_ambiguous = false;
-
     // Check if the alternate allele contains ambiguous bases
+    const std::unordered_set<char> ambiguous_bases = {'R', 'Y', 'W', 'S', 'K', 'M', 'B', 'D', 'H', 'V'};
     for (char c : alt_allele) {
         if (ambiguous_bases.count(c) > 0) {
             c = 'N';
-            is_ambiguous = true;
         }
     }
-    // std::cerr << "Warning: Ambiguous base(s) in alternate allele at " << chr << ":" << start << "-" << end << std::endl;
 
     // Check if the SV candidate already exists in the map
     SVCandidate candidate(start, end, alt_allele);
