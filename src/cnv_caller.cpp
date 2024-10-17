@@ -446,7 +446,7 @@ void CNVCaller::runCopyNumberPredictionChunk(std::string chr, std::map<SVCandida
             sv_snps.state_sequence = std::move(state_sequence);
 
             // Save the SV calls as a TSV file
-            std::string cnv_type_str = SVTypeString[cnv_type];
+            std::string cnv_type_str = SVTypeString[updated_sv_type];
             std::string sv_filename = this->input_data->getOutputDir() + "/" + cnv_type_str + "_" + chr + "_" + std::to_string((int) start_pos) + "-" + std::to_string((int) end_pos) + "_CIGAR.tsv";
             std::cout << "Saving SV CIGAR copy number predictions to " << sv_filename << "..." << std::endl;
             this->saveSVCopyNumberToTSV(sv_snps, sv_filename, chr, start_pos, end_pos, cnv_type_str, likelihood);

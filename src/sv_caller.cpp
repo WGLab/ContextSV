@@ -633,7 +633,7 @@ void SVCaller::detectSVsFromSplitReads(SVData& sv_calls, PrimaryMap& primary_map
                 // Determine which SV to keep based on HMM prediction likelihood
                 if (sv_list.size() == 1) {
                     // Just add the SV call
-                    std::cout << "Adding single SV call" << std::endl;
+                    // std::cout << "Adding single SV call" << std::endl;
                     SVCandidate& best_sv = sv_list[0].first;
                     std::string& aln_type = sv_list[0].second;
                     int64_t sv_start = std::get<0>(best_sv);
@@ -667,7 +667,7 @@ void SVCaller::detectSVsFromSplitReads(SVData& sv_calls, PrimaryMap& primary_map
                     }
 
                     // Add the best SV call
-                    std::cout << "Adding best SV call" << std::endl;
+                    // std::cout << "Adding best SV call" << std::endl;
                     sv_calls.add(supp_chr, sv_start, sv_end, best_sv_type, ".", aln_type, best_sv_genotype, best_likelihood);
                 }
                 
@@ -699,7 +699,7 @@ void SVCaller::detectSVsFromSplitReads(SVData& sv_calls, PrimaryMap& primary_map
                 // Determine which SV to keep based on HMM prediction likelihood
                 if (sv_list.size() == 1) {
                     // Just add the SV call
-                    std::cout << "Adding single SV call" << std::endl;
+                    // std::cout << "Adding single SV call" << std::endl;
                     SVCandidate& best_sv = sv_list[0].first;
                     std::string& aln_type = sv_list[0].second;
                     int64_t sv_start = std::get<0>(best_sv);
