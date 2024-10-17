@@ -468,7 +468,7 @@ SVData SVCaller::run()
         // Process each chunk one at a time
         for (const auto& sub_region : region_chunks) {
             // Detect SVs from the sub-region
-            std::cout << "Detecting SVs from " << sub_region << "..." << std::endl;
+            std::cout << "Detecting CIGAR string SVs from " << sub_region << "..." << std::endl;
             RegionData region_data = this->detectSVsFromRegion(sub_region);
             SVData& sv_calls_region = std::get<0>(region_data);
             PrimaryMap& primary_map = std::get<1>(region_data);
@@ -476,8 +476,14 @@ SVData SVCaller::run()
             int region_sv_count = sv_calls_region.totalCalls();
             std::cout << "Detected " << region_sv_count << " SVs from " << sub_region << "..." << std::endl;
 
+            // Run copy number variant detection from the SVs detected from the
+            // CIGAR string
+            std::cout << "Detecting copy number variants from CIGAR string SVs..." << std::endl;
+            std::map<SVCandidate, SVInfo>& cigar_svs = sv_calls_region.getChromosomeSVs(chr);
+            cnv_caller.runCopyNumberPrediction(chr, cigar_svs);
+
             // Run split-read SV detection in a single thread
-            std::cout << "Detecting SVs from split-read alignments..." << std::endl;
+            std::cout << "Detecting copy number variants from split reads..." << std::endl;
             this->detectSVsFromSplitReads(sv_calls_region, primary_map, supp_map, cnv_caller);
 
             // Add the SV calls to the main SV calls object
@@ -632,7 +638,7 @@ void SVCaller::detectSVsFromSplitReads(SVData& sv_calls, PrimaryMap& primary_map
                     std::string& aln_type = sv_list[0].second;
                     int64_t sv_start = std::get<0>(best_sv);
                     int64_t sv_end = std::get<1>(best_sv);
-                    sv_calls.add(supp_chr, sv_start, sv_end, UNKNOWN, ".", aln_type, "./.", 0.0);
+                    sv_calls.add(supp_chr, sv_start, sv_end, sv_types::UNKNOWN, ".", aln_type, "./.", 0.0);
 
                 } else if (sv_list.size() == 2) {
                     // Run copy number prediction for the SVs and retrieve the
@@ -698,7 +704,7 @@ void SVCaller::detectSVsFromSplitReads(SVData& sv_calls, PrimaryMap& primary_map
                     std::string& aln_type = sv_list[0].second;
                     int64_t sv_start = std::get<0>(best_sv);
                     int64_t sv_end = std::get<1>(best_sv);
-                    sv_calls.add(supp_chr, sv_start, sv_end, UNKNOWN, ".", aln_type, "./.", 0.0);
+                    sv_calls.add(supp_chr, sv_start, sv_end, sv_types::UNKNOWN, ".", aln_type, "./.", 0.0);
 
                 } else if (sv_list.size() == 2) {
                     // Run copy number prediction for the SVs and retrieve the

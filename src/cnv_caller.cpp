@@ -253,8 +253,8 @@ std::tuple<int, double, int, std::string, bool> CNVCaller::runCopyNumberPredicti
     if (this->input_data->getSaveCNVData() && predicted_cnv_type != sv_types::UNKNOWN && (sv_end_pos - sv_start_pos) > 10000)
     {
         std::string cnv_type_str = SVTypeString[predicted_cnv_type];
-        std::string sv_filename = this->input_data->getOutputDir() + "/" + cnv_type_str + "_" + chr + "_" + std::to_string((int) sv_start_pos) + "-" + std::to_string((int) sv_end_pos) + ".tsv";
-        std::cout << "Saving SV copy number predictions to " << sv_filename << "..." << std::endl;
+        std::string sv_filename = this->input_data->getOutputDir() + "/" + cnv_type_str + "_" + chr + "_" + std::to_string((int) sv_start_pos) + "-" + std::to_string((int) sv_end_pos) + "_SPLITALN.tsv";
+        std::cout << "Saving SV split-alignment copy number predictions to " << sv_filename << "..." << std::endl;
         this->saveSVCopyNumberToTSV(best_snp_data, sv_filename, chr, best_pos.first, best_pos.second, cnv_type_str, best_likelihood);
     }
 
@@ -436,42 +436,20 @@ void CNVCaller::runCopyNumberPredictionChunk(std::string chr, std::map<SVCandida
 
         // Update the SV copy number data
         this->updateSVCopyNumber(sv_candidates, sv_call, cnv_type, data_type, genotype, likelihood);
-        if (this->input_data->getSaveCNVData())
+
+        // Save the SV calls as a TSV file if enabled, if the SV type is
+        // known, and the length is greater than 10 kb
+        int updated_sv_type = sv_candidates[sv_call].sv_type;
+        if (this->input_data->getSaveCNVData() && updated_sv_type != sv_types::UNKNOWN && (end_pos - start_pos) > 10000)
         {
-            SNPData snp_data;
-            this->updateSNPVectors(snp_data, sv_snps.pos, sv_snps.pfb, sv_snps.baf, sv_snps.log2_cov, state_sequence, sv_snps.is_snp);
+            // Add the state sequence to the SNP data (avoid copying the data)
+            sv_snps.state_sequence = std::move(state_sequence);
 
-            // Save the SV SNP data as a TSV with a unique filename if the
-            // length is greater than 10kb
-            if (end_pos - start_pos > 10000) {
-                // Format the size in kb
-                std::string size_kb = std::to_string((int) (end_pos - start_pos) / 1000);
-
-                // Format the likelihood as a string with 6 decimal places
-                std::stringstream ss;
-                ss << std::fixed << std::setprecision(6) << likelihood;
-                std::string likelihood_str = ss.str();
-
-                // Save the SV SNP data to a TSV file
-                // (SVTYPE-DATATYPE-LENGTH-CHR-START-END-LIKELIHOOD)
-                std::string sv_filename = this->input_data->getOutputDir() + "/" + sv_types::SVTypeString[cnv_type] + "_" + data_type + "_" + size_kb + "kb_" + chr + "_" + std::to_string((int)start_pos) + "_" + std::to_string((int)end_pos) + "_" + likelihood_str + ".tsv";
-                // std::string sv_filename = this->input_data->getOutputDir() + "/sv_snps_" + chr + "_" + std::to_string((int)start_pos) + "_" + std::to_string((int)end_pos) + ".tsv";
-                std::cout << "Saving SV SNP data to " << sv_filename << std::endl;
-                // this->saveToTSV(snp_data, sv_filename, chr);
-            }
-        }
-    }
-
-    // Print the SV type counts (proportions)
-    if (this->input_data->getVerbose())
-    {
-        printMessage("SV chunk type counts for chromosome " + chr + ":");
-        for (auto const& type_count : cnv_type_counts)
-        {
-            int type = type_count.first;
-            int count = type_count.second;
-            double pct = (double) count / (double) sv_chunk.size() * 100;
-            printMessage(sv_types::SVTypeString[type] + ": " + std::to_string(count) + " / " + std::to_string(sv_chunk.size()) + " (" + std::to_string(pct) + "%)");
+            // Save the SV calls as a TSV file
+            std::string cnv_type_str = SVTypeString[cnv_type];
+            std::string sv_filename = this->input_data->getOutputDir() + "/" + cnv_type_str + "_" + chr + "_" + std::to_string((int) start_pos) + "-" + std::to_string((int) end_pos) + "_CIGAR.tsv";
+            std::cout << "Saving SV CIGAR copy number predictions to " << sv_filename << "..." << std::endl;
+            this->saveSVCopyNumberToTSV(sv_snps, sv_filename, chr, start_pos, end_pos, cnv_type_str, likelihood);
         }
     }
 }
