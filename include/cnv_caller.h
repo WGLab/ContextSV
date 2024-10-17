@@ -49,14 +49,13 @@ class CNVCaller {
     private:
         InputData* input_data;
 
-        // Mutex for locking the SV candidate map
-        mutable std::mutex sv_candidates_mtx;
-
-        // Mutex for locking the SNP info
-        mutable std::mutex snp_data_mtx;
-
-        // Mutex for locking the HMM prediction
-        mutable std::mutex hmm_mtx;
+        mutable std::mutex sv_candidates_mtx; // SV candidate map mutex
+        mutable std::mutex snp_data_mtx;  // SNP data mutex
+        mutable std::mutex hmm_mtx;  // HMM mutex
+        CHMM hmm;
+        SNPData snp_data;
+        SNPInfo snp_info;
+        double mean_chr_cov = 0.0;
 
         // Define a map of CNV genotypes by HMM predicted state.
         // We only use the first 3 genotypes (0/0, 0/1, 1/1) for the VCF output.
@@ -94,7 +93,7 @@ class CNVCaller {
 
         void updateSNPVectors(SNPData& snp_data, std::vector<int64_t>& pos, std::vector<double>& pfb, std::vector<double>& baf, std::vector<double>& log2_cov, std::vector<int>& state_sequence, std::vector<bool>& is_snp);
 
-        std::vector<int> runViterbi(CHMM hmm, SNPData &snp_data);
+        std::pair<std::vector<int>, double> runViterbi(CHMM hmm, SNPData &snp_data);
 
         // Query a region for SNPs and return the SNP data
         std::pair<SNPData, bool> querySNPRegion(std::string chr, int64_t start_pos, int64_t end_pos, SNPInfo &snp_info, std::unordered_map<uint64_t, int> &pos_depth_map, double mean_chr_cov);
@@ -103,11 +102,11 @@ class CNVCaller {
         SNPData runCopyNumberPrediction(std::string chr, std::map<SVCandidate, SVInfo>& sv_candidates, SNPInfo& snp_info, CHMM hmm, int window_size, double mean_chr_cov);
 
         // Run copy number prediction for a chunk of SV candidates
-        SNPData runCopyNumberPredictionChunk(std::string chr, std::map<SVCandidate, SVInfo>& sv_candidates, std::vector<SVCandidate> sv_chunk, SNPInfo& snp_info, CHMM hmm, int window_size, double mean_chr_cov, std::unordered_map<uint64_t, int>& pos_depth_map);
+        void runCopyNumberPredictionChunk(std::string chr, std::map<SVCandidate, SVInfo>& sv_candidates, std::vector<SVCandidate> sv_chunk, SNPInfo& snp_info, CHMM hmm, int window_size, double mean_chr_cov, std::unordered_map<uint64_t, int>& pos_depth_map);
 
-        void updateSVType(std::map<SVCandidate, SVInfo>& sv_candidates, SVCandidate key, int sv_type, std::string data_type);
+        void updateSVCopyNumber(std::map<SVCandidate, SVInfo>& sv_candidates, SVCandidate key, int sv_type_update, std::string data_type, std::string genotype, double hmm_likelihood);
 
-        void updateSVGenotype(std::map<SVCandidate, SVInfo>& sv_candidates, SVCandidate key, std::string genotype);
+        void updateDPValue(std::map<SVCandidate, SVInfo>& sv_candidates, SVCandidate key, int dp_value);
 
         // Split a region into chunks for parallel processing
         std::vector<std::string> splitRegionIntoChunks(std::string chr, int64_t start_pos, int64_t end_pos, int chunk_count);
@@ -121,9 +120,15 @@ class CNVCaller {
     public:
         CNVCaller(InputData& input_data);
 
-        // Detect CNVs and return the state sequence by SNP position
-        // (key = [chromosome, SNP position], value = state)
-		void run(SVData& sv_calls);
+        // Load file data for a chromosome (SNP positions, BAF values, and PFB values)
+        void loadChromosomeData(std::string chr);
+
+        // Run copy number prediction for a pair of SV candidates, and add only
+        // the SV candidate with the highest likelihood
+        std::tuple<int, double, int, std::string, bool> runCopyNumberPredictionPair(std::string chr, SVCandidate sv_one, SVCandidate sv_two);
+
+        // Run copy number prediction for a region
+        SNPData runCopyNumberPrediction(std::string chr, std::map<SVCandidate, SVInfo>& sv_candidates);
 
         // Calculate the mean chromosome coverage
         double calculateMeanChromosomeCoverage(std::string chr);
@@ -143,7 +148,7 @@ class CNVCaller {
         void getSNPPopulationFrequencies(std::string chr, SNPInfo& snp_info);
 
         // Save a TSV with B-allele frequencies, log 2 ratios, and copy number predictions
-        void saveToTSV(SNPData& snp_data, std::string filepath);
+        void saveSVCopyNumberToTSV(SNPData& snp_data, std::string filepath, std::string chr, int64_t start, int64_t end, std::string sv_type, double likelihood);
 };
 
 #endif // CNV_CALLER_H

@@ -112,13 +112,13 @@ thread_count=40
 python contextsv --threads $thread_count -o $output_dir -lr $long_read_bam --snps $snps_file --reference $ref_file --pfb $pfb_file
 
 # The output VCF filepath is located here:
-output_vcf=$output_dir/sv_calls.vcf
+output_vcf=$output_dir/output.vcf
 
 # Merge SVs (~3-4 hours for whole-genome, 40 cores)
 python contextsv --merge $output_vcf
 
 # The final merged VCF filepath is located here:
-merged_vcf=$output_dir/sv_calls.merged.vcf
+merged_vcf=$output_dir/output.merged.vcf
 ```
 
 ## Input arguments
@@ -153,4 +153,7 @@ options:
 For release history, please visit [here](https://github.com/WGLab/ContextSV/releases). 
 
 ## Getting help
-Please refer to the [contextSV issue pages](https://github.com/WGLab/ContextSV/issues) for posting your issues. We will also respond your questions quickly. Your comments are critical to improve our tool and will benefit other users.
+Please refer to the [contextSV issue
+pages](https://github.com/WGLab/ContextSV/issues) for posting your issues, we
+will respond quickly. Your comments will
+benefit other users, and are crucial to improving this tool.

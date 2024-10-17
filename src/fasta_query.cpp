@@ -121,15 +121,15 @@ std::string FASTAQuery::query(std::string chr, int64_t pos_start, int64_t pos_en
     const std::string& sequence = this->chr_to_seq[chr];
 
     // Get the substring
-    std::string subsequence = sequence.substr(pos_start, length);
+    // std::string subsequence = sequence.substr(pos_start, length);
 
     // If the subsequence is empty, return empty string
-    if (subsequence == "")
+    if (sequence.substr(pos_start, length).empty())
     {
         return "";
     }
 
-    return subsequence;
+    return sequence.substr(pos_start, length);
 }
 
 // Function to get the chromosome contig lengths in VCF header format

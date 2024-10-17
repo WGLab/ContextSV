@@ -31,7 +31,8 @@ class SVData {
             {1, "DUP"},
             {2, "INV"},
             {3, "INS"},
-            {4, "BND"}
+            {4, "BND"},
+            {5, "DUP"}
         };
         
     public:
@@ -39,7 +40,7 @@ class SVData {
         SVData() {};
 
         // Add a new SV candidate to the map
-        int add(std::string chr, int64_t start, int64_t end, int sv_type, std::string alt_allele, std::string data_type);
+        int add(std::string chr, int64_t start, int64_t end, int sv_type, std::string alt_allele, std::string data_type, std::string genotype, double hmm_likelihood);
 
         // Concatenates two SVData objects
         void concatenate(const SVData& sv_data);

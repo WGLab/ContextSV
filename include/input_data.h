@@ -66,17 +66,22 @@ class InputData {
         void setSNPFilepath(std::string filepath);
         std::string getSNPFilepath();
 
-        // Set the genomic region to analyze.
-		void setRegion(std::string region);
-        std::string getRegion();
-        std::string getRegionChr();
-        int getRegionStart();
-        int getRegionEnd();
-        bool getRegionSet();
+        // Set the ethnicity for SNP population frequencies.
+        void setEthnicity(std::string ethnicity);
+        std::string getEthnicity();
 
         // Set the window size for the log2 ratio calculation.
         void setWindowSize(int window_size);
         int getWindowSize();
+
+        // Set the chromosome to analyze.
+        void setChromosome(std::string chr);
+        std::string getChromosome();
+
+        // Set the region to analyze.
+        void setRegion(std::string region);
+        std::pair<int32_t, int32_t> getRegion();
+        bool isRegionSet();
 
         // Set entire-chromosome mean coverage values to speed up the log2 ratio calculations.
         void setMeanChromosomeCoverage(std::string chr_cov);
@@ -89,20 +94,6 @@ class InputData {
         // Set the number of threads to use when parallelization is possible.
         void setThreadCount(int thread_count);
         int getThreadCount();
-
-        // Disable CIGAR string SV calling. This is useful for testing.
-        void setDisableCIGAR(bool disable_cigar);
-        bool getDisableCIGAR();
-
-        // Disable SNP-based CNV calling. This is useful for calling SVs on
-        // assemblies since alignment calling is sufficient.
-        void setDisableSNPCNV(bool disable_snp_cnv);
-        bool getDisableSNPCNV();
-
-        // Set the whole genome flag to true if the entire genome is being
-        // analyzed.
-        void setWholeGenome(bool whole_genome);
-        bool getWholeGenome();
 
         // Set the verbose flag to true if verbose output is desired.
         void setVerbose(bool verbose);
@@ -120,25 +111,18 @@ class InputData {
         std::string long_read_bam;
         std::string ref_filepath;
         std::string snp_vcf_filepath;
-        // std::string pfb_filepath;  // Filepath to the tab-delimited file with SNP population frequencies
-        // PFBMap pfb_map;  // Map of population frequencies by SNP position
-        // (chr -> pos -> pfb)
+        std::string ethnicity;
         std::unordered_map<std::string, std::string> pfb_filepaths;  // Map of population frequency VCF filepaths by chromosome
         FASTAQuery fasta_query;
         std::string output_dir;
-        std::string region;
         int window_size;
-        std::string region_chr;
-        int64_t region_start;
-        int64_t region_end;
-        bool region_set;
+        std::string chr;  // Chromosome to analyze
+        std::pair<int32_t, int32_t> start_end;  // Region to analyze
+        bool region_set;  // True if a region is set
         std::map<std::string, double> chr_cov;  // Map of pre-calculated mean coverage values for each chromosome
         int thread_count;
         std::string hmm_filepath;
-        bool disable_cigar;
-        bool disable_snp_cnv;
         std::string cnv_filepath;
-        bool whole_genome;  // True if the entire genome is being analyzed
         bool verbose;  // True if verbose output is enabled
         bool save_cnv_data;  // True if SNP CNV regions should be extended around SV breakpoints, and saved to a TSV file (Large performance hit)
 };

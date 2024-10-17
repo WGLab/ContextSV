@@ -45,15 +45,18 @@ CHMM ReadCHMM (const char *filename);
 // void FreeCHMM(CHMM *phmm);
 
 /// Run the main HMM algorithm
-std::vector<int> testVit_CHMM(CHMM hmm, int T, std::vector<double>& O1, std::vector<double>& O2, std::vector<double>& pfb);
+std::pair<std::vector<int>, double> testVit_CHMM(CHMM hmm, int T, std::vector<double>& O1, std::vector<double>& O2, std::vector<double>& pfb);
 
 /// Viterbi algorithm
-std::vector<int> ViterbiLogNP_CHMM(CHMM phmm, int T, std::vector<double>& O1, std::vector<double>& O2, std::vector<double>& pfb, double **delta, int **psi, std::vector<double>& pprob);
+std::pair<std::vector<int>, double> ViterbiLogNP_CHMM(CHMM phmm, int T, std::vector<double>& O1, std::vector<double>& O2, std::vector<double>& pfb, double **delta, int **psi);
 
-/// O1 emission probability
+/// O1 emission probability (log2 coverage)
 double b1iot (int state, double *mean, double *sd, double uf, double o);
 
-/// O2 emission probability
+/// O2 emission probability (B-allele frequency)
 double b2iot (int state, double *mean, double *sd, double uf, double pfb, double b);
+
+/// Return the probability of observing a value in a normal distribution, normalized to a range of [min_pdf, max_pdf]
+double pdf_normalization(double obs, double mean, double sd);
 
 #endif // _HMM_H_

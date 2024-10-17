@@ -63,8 +63,8 @@ docs/html/
 *.sif
 
 # Test directories
-python/dbscan_tests
-python/agglo_tests
+python/dbscan
+python/agglo
 linktoscripts
 tests/data
 

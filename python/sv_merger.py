@@ -8,7 +8,7 @@ Usage: python sv_merger.py <VCF file path>
 Output: <VCF file path>.merged.vcf
 """
 
-import os
+import os, sys
 import numpy as np
 import pandas as pd
 
@@ -17,11 +17,9 @@ logging.basicConfig(level=logging.INFO)
 
 import matplotlib.pyplot as plt  # For plotting merge behavior
 
-# DBSCAN clustering algorithm
+# HDBSCAN clustering algorithm
+from sklearn.cluster import HDBSCAN
 from sklearn.cluster import DBSCAN
-
-# Agglomerative clustering algorithm
-from sklearn.cluster import AgglomerativeClustering
 
 
 def plot_dbscan(breakpoints, chosen_breakpoints, filename='dbscan_clustering.png'):
@@ -63,14 +61,197 @@ def plot_dbscan(breakpoints, chosen_breakpoints, filename='dbscan_clustering.png
     plt.savefig(filename)
 
 
-def sv_merger(vcf_file_path, mode='dbscan', eps=100, min_samples=2, suffix='.merged'):
+def update_support(record, cluster_size):
+    """
+    Set the SUPPORT field in the INFO column of a VCF record to the cluster size.
+    """
+    # Get the INFO column
+    info = record['INFO']
+
+    # Parse the INFO columns
+    info_fields = info.split(';')
+
+    # Loop and update the SUPPORT field, while creating a new INFO string
+    updated_info = ''
+    for field in info_fields:
+        if field.startswith('SUPPORT='):
+            # Get the current SUPPORT field
+            previous_support = int(field.split('=')[1])
+
+            # Add the cluster size to the SUPPORT field
+            updated_info += f'SUPPORT={previous_support + cluster_size};'
+            # updated_info += f'SUPPORT={cluster_size};'
+        else:
+            updated_info += field + ';'  # Append the field to the updated INFO
+            
+    # Update the INFO column
+    record['INFO'] = updated_info
+
+    return record
+
+def cluster_breakpoints(vcf_df, sv_type, cluster_size_min):
+    """
+    Cluster SV breakpoints using HDBSCAN.
+    """
+    # Set up the output DataFrame
+    merged_records = pd.DataFrame(columns=['INDEX', 'CHROM', 'POS', 'INFO'])
+
+    # Format the SV breakpoints
+    breakpoints = None
+    if sv_type == 'DEL':
+        sv_start = vcf_df['POS'].values
+        sv_end = vcf_df['INFO'].str.extract(r'END=(\d+)', expand=False).astype(np.int32)
+
+        # Format the deletion breakpoints
+        breakpoints = np.column_stack((sv_start, sv_end))
+
+    elif sv_type == 'INS/DUP':
+        sv_start = vcf_df['POS'].values
+        sv_len = vcf_df['INFO'].str.extract(r'SVLEN=(-?\d+)', expand=False).astype(np.int32)
+        sv_end = sv_start + sv_len - 1
+
+        # Format the insertion and duplication breakpoints
+        breakpoints = np.column_stack((sv_start, sv_end))
+    else:
+        logging.error("Invalid SV type: %s", sv_type)
+        sys.exit(1)
+    
+    # Get the combined SV read and clipped base support
+    sv_support = vcf_df['INFO'].str.extract(r'SUPPORT=(\d+)', expand=False).astype(np.int32)
+    sv_clipped_base_support = vcf_df['INFO'].str.extract(r'CLIPSUP=(\d+)', expand=False).astype(np.int32)
+    sv_support = sv_support + sv_clipped_base_support
+
+    # Get the HMM likelihood scores
+    hmm_scores = vcf_df['INFO'].str.extract(r'HMM=(-?\d+\.?\d*)', expand=False).astype(float)
+
+    # Set all 0 values to NaN
+    hmm_scores[hmm_scores == 0] = np.nan
+
+    # Cluster SV breakpoints using HDBSCAN
+    cluster_labels = []
+
+    # dbscan = DBSCAN(eps=30000, min_samples=3)
+    dbscan = HDBSCAN(min_cluster_size=cluster_size_min, min_samples=3)
+    if len(breakpoints) > 0:
+        logging.info("Clustering %d SV breakpoints...", len(breakpoints))
+        cluster_labels = dbscan.fit_predict(breakpoints)
+
+        logging.info("Label counts: %d", len(np.unique(cluster_labels)))
+
+    # Set all 0 values to NaN
+    hmm_scores[hmm_scores == 0] = np.nan
+
+    # Merge SVs with the same label
+    unique_labels = np.unique(cluster_labels)
+    for label in unique_labels:
+
+        # Skip label -1 (outliers)
+        if label == -1:
+            # # Print the positions if any are within a certain range
+            # pos_min = 180915940
+            # pos_max = 180950356
+
+            # Debug if position is found
+            target_pos = 180949217
+
+            idx = cluster_labels == label
+            pos_values = breakpoints[idx][:, 0]
+            if target_pos in pos_values:
+                logging.info(f"Outlier deletion positions: {pos_values}")
+
+            # if (np.any(pos_values >= pos_min) and np.any(pos_values <= pos_max)):
+                # Print all within range
+                # pos_within_range = pos_values[(pos_values >= pos_min) & (pos_values <= pos_max)]
+                # logging.info(f"Outlier deletion positions: {pos_within_range}")
+                # logging.info(f"Outlier deletion positions: {pos_values}")
+
+            continue
+
+        # Get the indices of SVs with the same label
+        idx = cluster_labels == label
+
+        # Get HMM and read support values for the cluster
+        max_score_idx = 0  # Default to the first SV in the cluster
+        cluster_hmm_scores = np.array(hmm_scores[idx])
+        cluster_depth_scores = np.array(sv_support[idx])
+        max_hmm = None
+        max_support = None
+        max_hmm_idx = None
+        max_support_idx = None
+
+        # Find the maximum HMM score
+        if len(np.unique(cluster_hmm_scores)) > 1:
+            max_hmm_idx = np.nanargmax(cluster_hmm_scores)
+            max_hmm = cluster_hmm_scores[max_hmm_idx]
+
+        # Find the maximum read alignment and clipped base support
+        if len(np.unique(cluster_depth_scores)) > 1:
+            max_support_idx = np.argmax(cluster_depth_scores)
+            max_support = cluster_depth_scores[max_support_idx]
+
+        # For deletions, choose the SV with the highest HMM score if available
+        if sv_type == 'DEL':
+            if max_hmm is not None:
+                max_score_idx = max_hmm_idx
+            elif max_support is not None:
+                max_score_idx = max_support_idx
+
+        # For insertions and duplications, choose the SV with the highest read
+        # support if available
+        elif sv_type == 'INS/DUP':
+            if max_support is not None:
+                max_score_idx = max_support_idx
+            elif max_hmm is not None:
+                max_score_idx = max_hmm_idx
+
+        # Get the VCF record with the highest depth score
+        max_record = vcf_df.iloc[idx, :].iloc[max_score_idx, :]
+
+        # Get the number of SVs in this cluster
+        cluster_size = np.sum(idx)
+        # logging.info("DEL Cluster size: %s", cluster_size)
+
+        # Update the SUPPORT field in the INFO column
+        max_record = update_support(max_record, cluster_size)
+
+        # Get all position values in the cluster
+        pos_values = breakpoints[idx][:, 0]
+
+        # Debug if position is found
+        target_pos = 180949217
+        if target_pos in pos_values:
+            logging.info(f"Cluster size: {cluster_size}")
+            logging.info(f"Pos values:")
+            for k, pos in enumerate(pos_values):
+                logging.info(f"Row {k+1} - Pos: {pos}, HMM: {cluster_hmm_scores[k]}, support: {cluster_depth_scores[k]}")
+
+            logging.info(f"Chosen position: {max_record['POS']} - HMM: {max_hmm}, support: {max_support}")
+
+        # # If the POS value is a certain value, plot the support
+        # pos_min = 180915940
+        # pos_max = 180950356
+        # # if (np.any(pos_values >= pos_min) and np.any(pos_values <= pos_max)) or cluster_size > 1000:
+        # if (np.any(pos_values >= pos_min) and np.any(pos_values <= pos_max)):
+        #     logging.info(f"Cluster size: {cluster_size}")
+        #     logging.info(f"Pos values:")
+        #     for k, pos in enumerate(pos_values):
+        #         logging.info(f"Row {k+1} - Pos: {pos}, HMM: {cluster_hmm_scores[k]}, support: {cluster_depth_scores[k]}")
+
+
+        # Append the chosen record to the dataframe of records that will
+        # form the merged VCF file
+        merged_records.loc[merged_records.shape[0]] = max_record
+
+    return merged_records
+
+def sv_merger(vcf_file_path, cluster_size_min=3, suffix='.merged'):
     """
     Use DBSCAN to merge SVs with the same breakpoint.
     Mode can be 'dbscan', 'gmm', or 'agglomerative'.
     https://scikit-learn.org/stable/modules/generated/sklearn.cluster.DBSCAN.html
     """
 
-    logging.info(f"Merging SVs in {vcf_file_path} using {mode} with eps={eps} and min_samples={min_samples}...")
+    logging.info("Merging SVs in %s using HDBSCAN with minimum cluster size=%d...", vcf_file_path, cluster_size_min)
     
     # Read VCF file into a pandas DataFrame, using only CHROM, POS, and INFO
     # columns
@@ -78,206 +259,68 @@ def sv_merger(vcf_file_path, mode='dbscan', eps=100, min_samples=2, suffix='.mer
     vcf_df = pd.read_csv(vcf_file_path, sep='\t', comment='#', header=None, usecols=[0, 1, 7], \
                             names=['CHROM', 'POS', 'INFO'], \
                                 dtype={'CHROM': str, 'POS': np.int64, 'INFO': str})
-    logging.info("VCF file read into a pandas DataFrame.")
+
+    # Add a column at the beginning with the index
+    vcf_df.insert(0, 'INDEX', range(0, len(vcf_df)))
+    logging.info("Reading complete.")
 
     # Print total number of records
-    logging.info(f"Total number of records: {vcf_df.shape[0]}")
+    logging.info("Total number of records: %d", vcf_df.shape[0])
 
     # Store a dataframe of records that will form the merged VCF file
-    merged_records = pd.DataFrame(columns=['CHROM', 'POS', 'INFO'])
-    
+    merged_records = pd.DataFrame(columns=['INDEX', 'CHROM', 'POS', 'INFO'])
+
     # Create a set with each chromosome in the VCF file
     chromosomes = set(vcf_df['CHROM'].values)
 
-    # Number of clustering plots to generate
-    max_plots = 10
-    num_plots = 0
+    # [TEST] Use only chromosome 5
+    # chromosomes = ['chr5']
 
     # Iterate over each chromosome
     records_processed = 0
     current_chromosome = 0
     chromosome_count = len(chromosomes)
     for chromosome in chromosomes:
-        logging.info(f"Clustering SVs on chromosome {chromosome}...")
 
-        # Get the chromosome deletion, insertion, and duplication breakpoints
+        # Cluster deletions
+        logging.info("Clustering deletions on chromosome %s...", chromosome)
         chr_del_df = vcf_df[(vcf_df['CHROM'] == chromosome) & (vcf_df['INFO'].str.contains('SVTYPE=DEL'))]
+        del_records = cluster_breakpoints(chr_del_df, 'DEL', cluster_size_min)
+        del chr_del_df
+
+        # Cluster insertions and duplications
+        logging.info("Clustering insertions and duplications on chromosome %s...", chromosome)
         chr_ins_dup_df = vcf_df[(vcf_df['CHROM'] == chromosome) & ((vcf_df['INFO'].str.contains('SVTYPE=INS')) | (vcf_df['INFO'].str.contains('SVTYPE=DUP')))]
+        ins_dup_records = cluster_breakpoints(chr_ins_dup_df, 'INS/DUP', cluster_size_min)
+        del chr_ins_dup_df
 
-        # Get the deletion start and end positions
-        chr_del_start = chr_del_df['POS'].values
-        chr_del_end = chr_del_df['INFO'].str.extract(r'END=(\d+)', expand=False).astype(np.int32)
+        # Summarize the number of deletions and insertions/duplications
+        del_count = del_records.shape[0]
+        ins_dup_count = ins_dup_records.shape[0]
+        records_processed += del_count + ins_dup_count
+        logging.info("Chromosome %s - %d deletions, %d insertions, and duplications merged.", chromosome, del_count, ins_dup_count)
 
-        # Get the insertion and duplication start and end positions
-        chr_ins_dup_start = chr_ins_dup_df['POS'].values
-        chr_ins_dup_len = chr_ins_dup_df['INFO'].str.extract(r'SVLEN=(-?\d+)', expand=False).astype(np.int32)
-        chr_ins_dup_end = chr_ins_dup_start + chr_ins_dup_len - 1
+        # Append the deletion and insertion/duplication records to the merged
+        # records DataFrame
+        merged_records = pd.concat([merged_records, del_records, ins_dup_records], ignore_index=True)
 
-        # Format the deletion breakpoints
-        chr_del_breakpoints = np.column_stack((chr_del_start, chr_del_end))
-        logging.info("Number of deletion breakpoints: " + str(len(chr_del_breakpoints)))
-
-        # Format the insertion and duplication breakpoints
-        chr_ins_dup_breakpoints = np.column_stack((chr_ins_dup_start, chr_ins_dup_end))
-        logging.info("Number of insertion and duplication breakpoints: " + str(len(chr_ins_dup_breakpoints)))
-
-        # Get the SV depth and clipped base evidence scores for deletions
-        # chr_del_depth_scores = chr_del_df['INFO'].str.extract(r'DP=(\d+)',
-        # expand=False).astype(np.int32)
-        chr_del_support = chr_del_df['INFO'].str.extract(r'SUPPORT=(\d+)', expand=False).astype(np.int32)
-        chr_del_clipped_bases = chr_del_df['INFO'].str.extract(r'CLIPSUP=(\d+)', expand=False).astype(np.int32)
-        chr_del_depth_scores = chr_del_support + chr_del_clipped_bases
-
-        # Get the SV depth and clipped base evidence scores for insertions
-        # and duplications
-        # chr_ins_dup_depth_scores =
-        # chr_ins_dup_df['INFO'].str.extract(r'DP=(\d+)',
-        # expand=False).astype(np.int32)
-        chr_ins_dup_support = chr_ins_dup_df['INFO'].str.extract(r'SUPPORT=(\d+)', expand=False).astype(np.int32)
-        chr_ins_dup_clipped_bases = chr_ins_dup_df['INFO'].str.extract(r'CLIPSUP=(\d+)', expand=False).astype(np.int32)
-        chr_ins_dup_depth_scores = chr_ins_dup_support + chr_ins_dup_clipped_bases
-
-        # Cluster SV breakpoints using the specified mode
-        if mode == 'dbscan':
-            # Cluster SV breakpoints using DBSCAN
-            dbscan = DBSCAN(eps=eps, min_samples=min_samples)
-
-            # Cluster deletion breakpoints
-            if len(chr_del_breakpoints) > 0:
-                logging.info(f"Clustering deletion breakpoints using DBSCAN with eps={eps} and min_samples={min_samples}...")
-                del_labels = dbscan.fit_predict(chr_del_breakpoints)
-                logging.info(f"Deletion label counts: {len(np.unique(del_labels))}")
-            else:
-                del_labels = []
-
-            # Cluster insertion and duplication breakpoints together since
-            # insertions are a subset of duplications
-            if len(chr_ins_dup_breakpoints) > 0:
-                logging.info(f"Clustering insertion and duplication breakpoints using DBSCAN with eps={eps} and min_samples={min_samples}...")
-                ins_dup_labels = dbscan.fit_predict(chr_ins_dup_breakpoints)
-                logging.info(f"Insertion and duplication label counts: {len(np.unique(ins_dup_labels))}")
-            else:
-                ins_dup_labels = []
-
-        elif mode == 'agglomerative':
-            # Cluster SV breakpoints using agglomerative clustering
-            logging.info(f"Clustering deletion breakpoints using agglomerative clustering with eps={eps}...")
-            agglomerative = AgglomerativeClustering(n_clusters=None, distance_threshold=eps, compute_full_tree=True)
-
-            # Cluster deletion breakpoints
-            del_labels = agglomerative.fit_predict(chr_del_breakpoints)
-            logging.info(f"Deletion label counts: {len(np.unique(del_labels))}")
-
-            # Cluster insertion breakpoints
-            logging.info(f"Clustering insertion and duplication breakpoints using agglomerative clustering with eps={eps}...")
-            ins_labels = agglomerative.fit_predict(chr_ins_dup_breakpoints)
-            logging.info(f"Insertion label counts: {len(np.unique(ins_labels))}")
-
-        # Get the unique deletion labels for the chromosome
-        unique_del_labels = np.unique(del_labels)
-
-        # Get the unique insertion and duplication labels for the chromosome
-        unique_ins_dup_labels = np.unique(ins_dup_labels)
-
-        # Merge deletions with the same label
-        del_count = 0
-        for label in unique_del_labels:
-
-            # Skip label -1 (outliers)
-            if label == -1:
-                continue
-
-            # Get the indices of SVs with the same label
-            idx = del_labels == label
-
-            # Get the SV depth scores with the same label
-            depth_scores = chr_del_depth_scores[idx]
-
-            # Get the index of the SV with the highest depth score
-            max_depth_score_idx = np.argmax(depth_scores)
-
-            # Get the VCF record with the highest depth score
-            max_del_record = chr_del_df.iloc[idx, :].iloc[max_depth_score_idx, :]
-
-            # Plot the DBSCAN clustering behavior if there are 10 < X < 20 SVs with the same label
-            plot_enabled = False
-            if plot_enabled:
-                if len(chr_del_breakpoints[idx]) > 10 and len(chr_del_breakpoints[idx]) < 20 and num_plots < max_plots:
-
-                    # Increment the number of plots
-                    num_plots += 1
-
-                    # Convert the max depth score index (index within labels) to the index within the original deletion DataFrame
-                    chosen_idx = np.where(idx)[0][max_depth_score_idx]
-                    chosen_breakpoints = chr_del_breakpoints[chosen_idx]
-                    plot_dbscan(chr_del_breakpoints[idx], chosen_breakpoints, filename=f"dbscan_clustering_{num_plots}.png")
-
-                    # TEST: Return if the number of plots is reached
-                    if num_plots == max_plots:
-                        return
-
-            # Append the chosen record to the dataframe of records that will
-            # form the merged VCF file
-            merged_records.loc[merged_records.shape[0]] = max_del_record
-
-        # Merge insertions and duplications with the same label
-        ins_dup_count = 0
-        for label in unique_ins_dup_labels:
-
-            # Skip label -1 (outliers)
-            if label == -1:
-                continue
-
-            # Get the indices of SVs with the same label
-            idx = ins_dup_labels == label
-
-            # Get the SV depth scores with the same label
-            depth_scores = chr_ins_dup_depth_scores[idx]
-
-            # Get the index of the SV with the highest depth score
-            max_depth_score_idx = np.argmax(depth_scores)
-
-            # Get the VCF record with the highest depth score
-            max_ins_dup_record = chr_ins_dup_df.iloc[idx, :].iloc[max_depth_score_idx, :]
-
-            # Append the chosen record to the dataframe of records that will
-            # form the merged VCF file
-            merged_records.loc[merged_records.shape[0]] = max_ins_dup_record
-
-        logging.info(f"Chromosome {chromosome} - {del_count} deletions, {ins_dup_count} insertions, and duplications merged.")
-        
         current_chromosome += 1
-        logging.info(f"Processed {current_chromosome} of {chromosome_count} chromosomes.")
-
-        records_processed += chr_del_breakpoints.shape[0] + chr_ins_dup_breakpoints.shape[0]
+        logging.info("Processed %d of %d chromosomes.", current_chromosome, chromosome_count)
         
-    logging.info(f"Processed {records_processed} records of {vcf_df.shape[0]} total records.")
+    logging.info("Processed %d records of %d total records.", records_processed, vcf_df.shape[0])
 
     # Free up memory
     del vcf_df
-    del chr_del_df
-    del chr_ins_dup_df
-    del chr_del_start
-    del chr_del_end
-    del chr_ins_dup_start
-    del chr_ins_dup_len
-    del chr_ins_dup_end
-    del chr_del_breakpoints
-    del chr_ins_dup_breakpoints
-    del chr_del_depth_scores
-    del chr_ins_dup_depth_scores
-    del del_labels
-    del ins_dup_labels
-    del unique_del_labels
-    del unique_ins_dup_labels
 
     # Open a new VCF file for writing
     logging.info("Writing merged VCF file...")
     merged_vcf = os.path.splitext(vcf_file_path)[0] + suffix + '.vcf'
 
-    logging.info(f"Writing {merged_records.shape[0]} records to merged VCF file...")
+    total_records = merged_records.shape[0]
+    logging.info("Writing %d records to merged VCF file...", total_records)
 
     merge_count = 0
+    index_start = 0
     with open(merged_vcf, 'w', encoding='utf-8') as merged_vcf_file:
 
         # Write the VCF header to the merged VCF file
@@ -296,11 +339,17 @@ def sv_merger(vcf_file_path, mode='dbscan', eps=100, min_samples=2, suffix='.mer
                                              'FILTER': str, 'INFO': str, 'FORMAT': str, 'SAMPLE': str}, \
                                              chunksize=1000):
             
-            # Get the matching records from the chunk by merging on CHROM, POS,
-            # and INFO, but only keep the records from the chunk since they
-            # contain the full VCF record
-            matching_records = pd.merge(chunk, merged_records, on=['CHROM', 'POS', 'INFO'], how='inner')
-            matching_records = matching_records.drop_duplicates(subset=['CHROM', 'POS', 'INFO'])  # Drop duplicate records
+            # Add an INDEX column to the chunk
+            chunk.insert(0, 'INDEX', range(index_start, index_start + chunk.shape[0]))
+            index_start += chunk.shape[0]
+
+            # Merge on INDEX, and use all information from the original VCF file
+            # (chunk) but update the INFO field with the merged INFO field.
+            # This is done by dropping the INFO column from the chunk so that
+            # the INFO column from the merged_records dataframe is used.
+            matching_records = pd.merge(chunk.drop(columns=['INFO']), merged_records[['INDEX', 'INFO']], on=['INDEX'], how='inner')
+            matching_records = matching_records.drop_duplicates(subset=['INDEX'])  # Drop duplicate records
+            matching_records = matching_records.drop(columns=['INDEX'])  # Drop the INDEX column
 
             # Remove the matching records from the merged records dataframe
             merged_records = merged_records[~merged_records.isin(matching_records)].dropna()
@@ -310,34 +359,37 @@ def sv_merger(vcf_file_path, mode='dbscan', eps=100, min_samples=2, suffix='.mer
                 merge_count += 1
                 merged_vcf_file.write(f"{matching_record['CHROM']}\t{matching_record['POS']}\t{matching_record['ID']}\t{matching_record['REF']}\t{matching_record['ALT']}\t{matching_record['QUAL']}\t{matching_record['FILTER']}\t{matching_record['INFO']}\t{matching_record['FORMAT']}\t{matching_record['SAMPLE']}\n")
 
-            logging.info(f"Wrote {merge_count} of {merged_records.shape[0]} records to merged VCF file...")
+        logging.info("Wrote %d of %d total records to merged VCF file...", merge_count, total_records)
 
-    logging.info(f"Processed {merge_count} records of {merged_records.shape[0]} total records.")
-
-    logging.info("Merged VCF file written to " + merged_vcf)
+    logging.info("Merged VCF file written to %s", merged_vcf)
 
     return merged_vcf
 
 if __name__ == '__main__':
     import sys
     if len(sys.argv) < 2:
-        logging.info(f"Usage: {sys.argv[0]} <VCF file path>")
+        logging.info("Usage: %s <VCF file path>", sys.argv[0])
         sys.exit(1)
 
     # Get the VCF file path from the command line
     vcf_file_path = sys.argv[1]
 
-    # Get the epsilon value from the command line
+    # Check if the file exists
+    if not os.path.exists(vcf_file_path):
+        logging.error("Error: %s not found.", vcf_file_path)
+        sys.exit(1)
+
+    # Get the minimum cluster size from the command line
     if len(sys.argv) > 2:
-        eps = int(sys.argv[2])
+        cluster_size_min = int(sys.argv[2])
     else:
-        eps = 30
+        cluster_size_min = 2
 
     # Get the suffix from the command line
-    suffix = '.merged_eps' + str(eps)
+    suffix = '.merged'
     if len(sys.argv) > 3:
         suffix += sys.argv[3]
 
     # DBSCAN 
-    sv_merger(sys.argv[1], mode='dbscan', eps=eps, suffix=suffix)
+    sv_merger(vcf_file_path, cluster_size_min=cluster_size_min, suffix=suffix)
     
