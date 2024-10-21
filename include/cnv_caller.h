@@ -130,6 +130,10 @@ class CNVCaller {
         // Run copy number prediction for a region
         SNPData runCopyNumberPrediction(std::string chr, std::map<SVCandidate, SVInfo>& sv_candidates);
 
+        std::tuple<double, int, std::string, bool> runSingleCopyNumberPrediction(std::string chr, SVCandidate sv_candidate);
+
+        void updateSVsFromCopyNumberPrediction(SVData& sv_calls, std::vector<std::pair<SVCandidate, std::string>>& sv_list, std::string chr);
+
         // Calculate the mean chromosome coverage
         double calculateMeanChromosomeCoverage(std::string chr);
 

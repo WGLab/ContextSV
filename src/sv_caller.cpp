@@ -99,18 +99,6 @@ RegionData SVCaller::detectSVsFromRegion(std::string region)
                 AlignmentData alignment(chr, start, end, ".", query_start, query_end, match_map);
                 primary_alignments[qname] = std::move(alignment);
 
-                // // If Read ID == 8873acc1-eb84-415d-8557-a32a8f52ccee, print the
-                // // alignment
-                // if (qname == "8873acc1-eb84-415d-8557-a32a8f52ccee") {
-                //     std::cout << "Primary alignment: " << chr << ":" << start << "-" << end << std::endl;
-                //     std::cout << "Query start: " << query_start << ", Query end: " << query_end << std::endl;
-                //     std::cout << "Match map: ";
-                //     for (const auto& entry : match_map) {
-                //         std::cout << entry.first << ":" << entry.second << " ";
-                //     }
-                //     std::cout << std::endl;
-                // }
-
             // Process supplementary alignments
             } else if (bam1->core.flag & BAM_FSUPPLEMENTARY) {
 
@@ -631,45 +619,7 @@ void SVCaller::detectSVsFromSplitReads(SVData& sv_calls, PrimaryMap& primary_map
                 }
 
                 // Determine which SV to keep based on HMM prediction likelihood
-                if (sv_list.size() == 1) {
-                    // Just add the SV call
-                    // std::cout << "Adding single SV call" << std::endl;
-                    SVCandidate& best_sv = sv_list[0].first;
-                    std::string& aln_type = sv_list[0].second;
-                    int64_t sv_start = std::get<0>(best_sv);
-                    int64_t sv_end = std::get<1>(best_sv);
-                    sv_calls.add(supp_chr, sv_start, sv_end, sv_types::UNKNOWN, ".", aln_type, "./.", 0.0);
-
-                } else if (sv_list.size() == 2) {
-                    // Run copy number prediction for the SVs and retrieve the
-                    // best SV call
-                    std::tuple<int, double, int, std::string, bool> best_sv_info = cnv_caller.runCopyNumberPredictionPair(supp_chr, sv_list[0].first, sv_list[1].first);
-
-                    // SV candidate information
-                    int best_idx = std::get<0>(best_sv_info);
-                    SVCandidate best_sv = sv_list[best_idx].first;
-                    std::string aln_type = sv_list[best_idx].second;
-                    int64_t sv_start = std::get<0>(best_sv);
-                    int64_t sv_end = std::get<1>(best_sv);
-
-                    // Prediction information
-                    double best_likelihood = std::get<1>(best_sv_info);
-                    int best_sv_type = std::get<2>(best_sv_info);
-                    std::string best_sv_genotype = std::get<3>(best_sv_info);
-                    bool snps_found = std::get<4>(best_sv_info);
-
-                    // Add detail on whether SNPs were used in the copy number
-                    // prediction to the alignment type
-                    if (snps_found) {
-                        aln_type += "_SNPS";
-                    } else {
-                        aln_type += "_NOSNPS";
-                    }
-
-                    // Add the best SV call
-                    // std::cout << "Adding best SV call" << std::endl;
-                    sv_calls.add(supp_chr, sv_start, sv_end, best_sv_type, ".", aln_type, best_sv_genotype, best_likelihood);
-                }
+                cnv_caller.updateSVsFromCopyNumberPrediction(sv_calls, sv_list, supp_chr);
                 
             } else if (supp_start > primary_end && supp_end > primary_end) {
                 // Gap with supplementary after primary:
@@ -697,44 +647,7 @@ void SVCaller::detectSVsFromSplitReads(SVData& sv_calls, PrimaryMap& primary_map
                 }
 
                 // Determine which SV to keep based on HMM prediction likelihood
-                if (sv_list.size() == 1) {
-                    // Just add the SV call
-                    // std::cout << "Adding single SV call" << std::endl;
-                    SVCandidate& best_sv = sv_list[0].first;
-                    std::string& aln_type = sv_list[0].second;
-                    int64_t sv_start = std::get<0>(best_sv);
-                    int64_t sv_end = std::get<1>(best_sv);
-                    sv_calls.add(supp_chr, sv_start, sv_end, sv_types::UNKNOWN, ".", aln_type, "./.", 0.0);
-
-                } else if (sv_list.size() == 2) {
-                    // Run copy number prediction for the SVs and retrieve the
-                    // best SV call
-                    std::tuple<int, double, int, std::string, bool> best_sv_info = cnv_caller.runCopyNumberPredictionPair(supp_chr, sv_list[0].first, sv_list[1].first);
-
-                    // SV candidate information
-                    int best_idx = std::get<0>(best_sv_info);
-                    SVCandidate best_sv = sv_list[best_idx].first;
-                    std::string aln_type = sv_list[best_idx].second;
-                    int64_t sv_start = std::get<0>(best_sv);
-                    int64_t sv_end = std::get<1>(best_sv);
-
-                    // Prediction information
-                    double best_likelihood = std::get<1>(best_sv_info);
-                    int best_sv_type = std::get<2>(best_sv_info);
-                    std::string best_sv_genotype = std::get<3>(best_sv_info);
-                    bool snps_found = std::get<4>(best_sv_info);
-
-                    // Add detail on whether SNPs were used in the copy number
-                    // prediction to the alignment type
-                    if (snps_found) {
-                        aln_type += "_SNPS";
-                    } else {
-                        aln_type += "_NOSNPS";
-                    }
-
-                    // Add the best SV call
-                    sv_calls.add(supp_chr, sv_start, sv_end, best_sv_type, ".", aln_type, best_sv_genotype, best_likelihood);
-                }
+                cnv_caller.updateSVsFromCopyNumberPrediction(sv_calls, sv_list, supp_chr);
             }
         }
     }

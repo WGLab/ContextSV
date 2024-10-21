@@ -126,6 +126,177 @@ std::pair<SNPData, bool> CNVCaller::querySNPRegion(std::string chr, int64_t star
 
     return std::make_pair(snp_data, snps_found);
 }
+
+std::tuple<double, int, std::string, bool> CNVCaller::runSingleCopyNumberPrediction(std::string chr, SVCandidate sv_candidate)
+{
+    // std::cout << "Running copy number prediction for SV pair " << chr << ":" << std::get<0>(sv_one) << "-" << std::get<1>(sv_one) << " and " << std::get<0>(sv_two) << "-" << std::get<1>(sv_two) << "..." << std::endl;
+
+    // Calculate depths for the SV region
+    std::unordered_map<uint64_t, int> pos_depth_map;
+    int64_t region_start_pos = std::get<0>(sv_candidate);
+    int64_t region_end_pos = std::get<1>(sv_candidate);
+    // int64_t region_start_pos = std::min(std::get<0>(sv_one), std::get<0>(sv_two));
+    // int64_t region_end_pos = std::max(std::get<1>(sv_one), std::get<1>(sv_two));
+
+    // std::cout << "Calculating read depths for SV region " << chr << ":" <<
+    // start_pos << "-" << end_pos << "..." << std::endl;
+    
+    // If extending the CNV regions, then extend the SV region by window size *
+    // N. Otherwise, log2 ratios will be zero due to missing read depth data
+    // before/after the first/last SV positions
+    if (this->input_data->getSaveCNVData())
+    {
+        int extend_factor = 100;
+        region_start_pos = std::max((int64_t) 1, region_start_pos - this->input_data->getWindowSize() * extend_factor);
+        region_end_pos = region_end_pos + this->input_data->getWindowSize() * extend_factor;
+    }
+    calculateDepthsForSNPRegion(chr, region_start_pos, region_end_pos, pos_depth_map);
+
+    int predicted_cnv_type = sv_types::UNKNOWN;
+    std::string genotype = "./.";
+    
+    // Get the SV candidate
+    const SVCandidate& candidate = sv_candidate;
+
+    // Get the start and end positions of the SV call
+    int64_t start_pos = std::get<0>(candidate);
+    int64_t end_pos = std::get<1>(candidate);
+
+    // Get the depth at the start position, which is used as the FORMAT/DP
+    // value
+    // int dp_value = pos_depth_map[start_pos];
+
+    // Run the Viterbi algorithm on SNPs in the SV region +/- 1/2
+    // the SV length
+    int64_t sv_length = (end_pos - start_pos) / 2.0;
+    int64_t snp_start_pos = std::max((int64_t) 1, start_pos - sv_length);
+    int64_t snp_end_pos = end_pos + sv_length;
+
+    // Query the SNP region for the SV candidate
+    std::pair<SNPData, bool> snp_call = querySNPRegion(chr, snp_start_pos, snp_end_pos, this->snp_info, pos_depth_map, this->mean_chr_cov);
+    SNPData sv_snps = snp_call.first;
+    bool snps_found = snp_call.second;
+
+    // Run the Viterbi algorithm
+    // std::cout << "Running Viterbi algorithm for SV " << chr << ":" << start_pos << "-" << end_pos << "..." << std::endl;
+    std::pair<std::vector<int>, double> prediction = runViterbi(this->hmm, sv_snps);
+    std::vector<int>& state_sequence = prediction.first;
+    double likelihood = prediction.second;
+
+    // Add the state sequence to the SNP data (avoid copying the data)
+    sv_snps.state_sequence = std::move(state_sequence);
+
+    // Get all the states in the SV region
+    // std::cout << "Getting states in SV region " << chr << ":" << start_pos << "-" << end_pos << "..." << std::endl;
+    std::vector<int> sv_states;
+    for (size_t i = 0; i < state_sequence.size(); i++)
+    {
+        if (sv_snps.pos[i] >= start_pos && sv_snps.pos[i] <= end_pos)
+        {
+            sv_states.push_back(state_sequence[i]);
+        }
+    }
+
+    // Determine if there is a majority state within the SV region and if it
+    // is greater than 75%
+    // std::cout << "Determining majority state in SV region " << chr << ":" << start_pos << "-" << end_pos << "..." << std::endl;
+    double pct_threshold = 0.75;
+    int max_state = 0;
+    int max_count = 0;
+    for (int i = 0; i < 6; i++)
+    {
+        int state_count = std::count(sv_states.begin(), sv_states.end(), i+1);
+        if (state_count > max_count)
+        {
+            max_state = i+1;
+            max_count = state_count;
+        }
+    }
+    
+    // Update SV type and genotype based on the majority state
+    int state_count = (int) sv_states.size();
+    if ((double) max_count / (double) state_count > pct_threshold)
+    {
+        predicted_cnv_type = cnv_type_map[max_state];
+        genotype = cnv_genotype_map[max_state];
+    }
+
+    // Update the SV calls with the CNV type and genotype if the likelihood
+    // is greater than the best likelihood
+    // std::cout << "Updating SV calls for SV " << chr << ":" << start_pos << "-" << end_pos << "..." << std::endl;
+    // predicted_cnv_type = cnv_type_map[max_state];
+    // genotype = cnv_genotype_map[max_state];
+
+    // Save the SV calls as a TSV file if enabled
+    if (this->input_data->getSaveCNVData() && predicted_cnv_type != sv_types::UNKNOWN && (end_pos - start_pos) > 10000)
+    {
+        std::string cnv_type_str = SVTypeString[predicted_cnv_type];
+        std::string sv_filename = this->input_data->getOutputDir() + "/" + cnv_type_str + "_" + chr + "_" + std::to_string((int) start_pos) + "-" + std::to_string((int) end_pos) + "_SPLITALN.tsv";
+        // std::string sv_filename = this->input_data->getOutputDir() + "/" + cnv_type_str + "_" + chr + "_" + std::to_string((int) sv_start_pos) + "-" + std::to_string((int) sv_end_pos) + "_SPLITALN.tsv";
+        std::cout << "[1] Saving SV split-alignment copy number predictions to " << sv_filename << "..." << std::endl;
+        this->saveSVCopyNumberToTSV(sv_snps, sv_filename, chr, start_pos, end_pos, cnv_type_str, likelihood);
+        // this->saveSVCopyNumberToTSV(best_snp_data, sv_filename, chr, best_pos.first, best_pos.second, cnv_type_str, best_likelihood);
+    }
+
+    return std::make_tuple(likelihood, predicted_cnv_type, genotype, snps_found);
+}
+
+void CNVCaller::updateSVsFromCopyNumberPrediction(SVData &sv_calls, std::vector<std::pair<SVCandidate, std::string>> &sv_list, std::string chr)
+{
+    if (sv_list.size() == 1) {
+        // Run copy number prediction for the SV candidate
+        SVCandidate& sv_candidate = sv_list[0].first;
+        std::string aln_type = sv_list[0].second;
+        int64_t start_pos = std::get<0>(sv_candidate);
+        int64_t end_pos = std::get<1>(sv_candidate);
+        std::tuple<double, int, std::string, bool> cnv_prediction = this->runSingleCopyNumberPrediction(chr, sv_candidate);
+
+        // Update the SV calls with the copy number prediction
+        double likelihood = std::get<0>(cnv_prediction);
+        int cnv_type = std::get<1>(cnv_prediction);
+        std::string genotype = std::get<2>(cnv_prediction);
+        bool snps_found = std::get<3>(cnv_prediction);
+        if (snps_found)
+        {
+            aln_type += "_SNPS";
+        } else {
+            aln_type += "_NOSNPS";
+        }
+
+        // Add the SV call to the main SV data
+        sv_calls.add(chr, start_pos, end_pos, cnv_type, ".", aln_type, genotype, likelihood);
+
+    } else if (sv_list.size() == 2) {
+        // Run copy number prediction for the SV pair and add only the SV
+        // candidate with the highest likelihood
+        SVCandidate& sv_one = sv_list[0].first;
+        SVCandidate& sv_two = sv_list[1].first;
+        std::tuple<int, double, int, std::string, bool> cnv_prediction = this->runCopyNumberPredictionPair(chr, sv_one, sv_two);
+
+        // Get the SV info
+        int best_index = std::get<0>(cnv_prediction);
+        SVCandidate& best_sv_candidate = sv_list[best_index].first;
+        int64_t start_pos = std::get<0>(best_sv_candidate);
+        int64_t end_pos = std::get<1>(best_sv_candidate);
+        std::string aln_type = sv_list[best_index].second;
+
+        // Get the prediction data
+        double best_likelihood = std::get<1>(cnv_prediction);
+        int best_cnv_type = std::get<2>(cnv_prediction);
+        std::string best_genotype = std::get<3>(cnv_prediction);
+        bool snps_found = std::get<4>(cnv_prediction);
+        if (snps_found)
+        {
+            aln_type += "_SNPS";
+        } else {
+            aln_type += "_NOSNPS";
+        }
+
+        // Add the SV call to the main SV data
+        sv_calls.add(chr, start_pos, end_pos, best_cnv_type, ".", aln_type, best_genotype, best_likelihood);
+    }
+}
+
 SNPData CNVCaller::runCopyNumberPrediction(std::string chr, std::map<SVCandidate, SVInfo> &sv_candidates)
 {
     return this->runCopyNumberPrediction(chr, sv_candidates, this->snp_info, this->hmm, this->input_data->getWindowSize(), this->mean_chr_cov);
@@ -220,18 +391,15 @@ std::tuple<int, double, int, std::string, bool> CNVCaller::runCopyNumberPredicti
             }
         }
         
-        // If there is no majority state, then set the state to unknown
+        // Update SV type and genotype based on the majority state
         int state_count = (int) sv_states.size();
-        if ((double) max_count / (double) state_count < pct_threshold)
+        if ((double) max_count / (double) state_count > pct_threshold)
         {
-            max_state = 0;
+            predicted_cnv_type = cnv_type_map[max_state];
+            genotype = cnv_genotype_map[max_state];
         }
 
-        // Update the SV calls with the CNV type and genotype if the likelihood
-        // is greater than the best likelihood
-        // std::cout << "Updating SV calls for SV " << chr << ":" << start_pos << "-" << end_pos << "..." << std::endl;
-        predicted_cnv_type = cnv_type_map[max_state];
-        genotype = cnv_genotype_map[max_state];
+        // Update the best SV call based on the likelihood
         if (!best_likelihood_set || (likelihood > best_likelihood))
         {
             best_likelihood = likelihood;
@@ -254,7 +422,7 @@ std::tuple<int, double, int, std::string, bool> CNVCaller::runCopyNumberPredicti
     {
         std::string cnv_type_str = SVTypeString[predicted_cnv_type];
         std::string sv_filename = this->input_data->getOutputDir() + "/" + cnv_type_str + "_" + chr + "_" + std::to_string((int) sv_start_pos) + "-" + std::to_string((int) sv_end_pos) + "_SPLITALN.tsv";
-        std::cout << "Saving SV split-alignment copy number predictions to " << sv_filename << "..." << std::endl;
+        std::cout << "[2] Saving SV split-alignment copy number predictions to " << sv_filename << "..." << std::endl;
         this->saveSVCopyNumberToTSV(best_snp_data, sv_filename, chr, best_pos.first, best_pos.second, cnv_type_str, best_likelihood);
     }
 
@@ -1136,6 +1304,36 @@ void CNVCaller::saveSVCopyNumberToTSV(SNPData& snp_data, std::string filepath, s
 {
     // Open the TSV file for writing
     std::ofstream tsv_file(filepath);
+    if (!tsv_file.is_open())
+    {
+        std::cerr << "ERROR: Could not open TSV file for writing: " << filepath << std::endl;
+        exit(1);
+    }
+
+    // Ensure all values are valid, and print an error message if not
+    if (chr == "" || start == 0 || end == 0 || sv_type == "")
+    {
+        std::cerr << "ERROR: Invalid SV information for TSV file: " << chr << ":" << start << "-" << end << " " << sv_type << std::endl;
+        exit(1);
+    }
+
+    if (snp_data.pos.size() == 0)
+    {
+        std::cerr << "ERROR: No SNP data available for TSV file: " << chr << ":" << start << "-" << end << " " << sv_type << std::endl;
+        exit(1);
+    }
+
+    if (likelihood == 0.0)
+    {
+        std::cerr << "ERROR: Invalid likelihood value for TSV file: " << chr << ":" << start << "-" << end << " " << sv_type << std::endl;
+        exit(1);
+    }
+
+    if (sv_type.empty())
+    {
+        std::cerr << "ERROR: Invalid SV type for TSV file: " << chr << ":" << start << "-" << end << " " << sv_type << std::endl;
+        exit(1);
+    }
 
     // Format the size string in kb
     std::stringstream ss;
