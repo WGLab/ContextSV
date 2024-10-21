@@ -5,10 +5,8 @@ tests](https://github.com/WGLab/ContextSV/actions/workflows/build-tests.yml/badg
 ![contextsv_small_15p](https://github.com/WGLab/ContextSV/assets/14855676/79d70c76-a34a-472e-a14c-e49489ae0f09)
 
 # ContextSV
-_This is a work in progress, software is under development and not ready for official release._
 
-An alignment-based, generalized structural variant caller for long-read
-sequencing/mapping data.
+Whole-genome structural variant caller for long read sequencing data.
 
 ContextSV takes as input a long read alignments file (BAM), a 
 corresponding reference genome file (FASTA), a VCF file with high-quality SNPs 
