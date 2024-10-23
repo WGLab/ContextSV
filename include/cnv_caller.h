@@ -48,7 +48,6 @@ struct SNPData {
 class CNVCaller {
     private:
         InputData* input_data;
-
         mutable std::mutex sv_candidates_mtx; // SV candidate map mutex
         mutable std::mutex snp_data_mtx;  // SNP data mutex
         mutable std::mutex hmm_mtx;  // HMM mutex
@@ -91,15 +90,10 @@ class CNVCaller {
 
         void updateSNPData(SNPData& snp_data, int64_t pos, double pfb, double baf, double log2_cov, bool is_snp);
 
-        void updateSNPVectors(SNPData& snp_data, std::vector<int64_t>& pos, std::vector<double>& pfb, std::vector<double>& baf, std::vector<double>& log2_cov, std::vector<int>& state_sequence, std::vector<bool>& is_snp);
-
         std::pair<std::vector<int>, double> runViterbi(CHMM hmm, SNPData &snp_data);
 
         // Query a region for SNPs and return the SNP data
         std::pair<SNPData, bool> querySNPRegion(std::string chr, int64_t start_pos, int64_t end_pos, SNPInfo &snp_info, std::unordered_map<uint64_t, int> &pos_depth_map, double mean_chr_cov);
-
-        // Run copy number prediction for a region
-        SNPData runCopyNumberPrediction(std::string chr, std::map<SVCandidate, SVInfo>& sv_candidates, SNPInfo& snp_info, CHMM hmm, int window_size, double mean_chr_cov);
 
         // Run copy number prediction for a chunk of SV candidates
         void runCopyNumberPredictionChunk(std::string chr, std::map<SVCandidate, SVInfo>& sv_candidates, std::vector<SVCandidate> sv_chunk, SNPInfo& snp_info, CHMM hmm, int window_size, double mean_chr_cov, std::unordered_map<uint64_t, int>& pos_depth_map);
@@ -127,8 +121,8 @@ class CNVCaller {
         // the SV candidate with the highest likelihood
         std::tuple<int, double, int, std::string, bool> runCopyNumberPredictionPair(std::string chr, SVCandidate sv_one, SVCandidate sv_two);
 
-        // Run copy number prediction for a region
-        SNPData runCopyNumberPrediction(std::string chr, std::map<SVCandidate, SVInfo>& sv_candidates);
+        // Run copy number prediction for SVs meeting the minimum length threshold
+        SNPData runCopyNumberPrediction(std::string chr, std::map<SVCandidate, SVInfo>& sv_candidates, int min_length);
 
         std::tuple<double, int, std::string, bool> runSingleCopyNumberPrediction(std::string chr, SVCandidate sv_candidate);
 

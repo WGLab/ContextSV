@@ -74,6 +74,10 @@ class InputData {
         void setWindowSize(int window_size);
         int getWindowSize();
 
+        // Set the minimum CNV length to use for copy number predictions.
+        void setMinCNVLength(int min_cnv_length);
+        int getMinCNVLength();
+
         // Set the chromosome to analyze.
         void setChromosome(std::string chr);
         std::string getChromosome();
@@ -100,9 +104,7 @@ class InputData {
         bool getVerbose();
 
         // Set whether to extend the SNP CNV regions around the SV breakpoints
-        // (+/- 1/2 SV length). Set to false to speed up predictions. Set to
-        // true to generate plots with predictions for surrounding regions.
-        // This is a large performance hit (Will also save the CNV data to a TSV file).
+        // (+/- 1/2 SV length), save a TSV file, and generate HTML reports.
         void saveCNVData(bool save_cnv_data);
         bool getSaveCNVData();
         
@@ -116,6 +118,7 @@ class InputData {
         FASTAQuery fasta_query;
         std::string output_dir;
         int window_size;
+        int min_cnv_length;
         std::string chr;  // Chromosome to analyze
         std::pair<int32_t, int32_t> start_end;  // Region to analyze
         bool region_set;  // True if a region is set

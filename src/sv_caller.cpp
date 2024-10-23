@@ -417,6 +417,7 @@ SVData SVCaller::run()
     auto start1 = std::chrono::high_resolution_clock::now();
     SVData sv_calls;
     int chunk_count = 10000;  // Number of chunks to split the chromosome into
+    int min_cnv_length = this->input_data->getMinCNVLength();
     for (const auto& chr : chromosomes) {
         std::cout << "Extracting alignments for chromosome " << chr << "..." << std::endl;
 
@@ -465,10 +466,10 @@ SVData SVCaller::run()
             std::cout << "Detected " << region_sv_count << " SVs from " << sub_region << "..." << std::endl;
 
             // Run copy number variant detection from the SVs detected from the
-            // CIGAR string
+            // CIGAR string, using a minimum CNV length threshold
             std::cout << "Detecting copy number variants from CIGAR string SVs..." << std::endl;
             std::map<SVCandidate, SVInfo>& cigar_svs = sv_calls_region.getChromosomeSVs(chr);
-            cnv_caller.runCopyNumberPrediction(chr, cigar_svs);
+            cnv_caller.runCopyNumberPrediction(chr, cigar_svs, min_cnv_length);
 
             // Run split-read SV detection in a single thread
             std::cout << "Detecting copy number variants from split reads..." << std::endl;
@@ -493,28 +494,17 @@ SVData SVCaller::run()
 // Detect SVs from split read alignments
 void SVCaller::detectSVsFromSplitReads(SVData& sv_calls, PrimaryMap& primary_map, SuppMap& supp_map, CNVCaller& cnv_caller)
 {
-    // Loop through the map of primary alignments by QNAME and find gaps and
-    // overlaps from supplementary alignments
+    // Find split-read SV evidence
     int sv_count = 0;
+    int min_cnv_length = this->input_data->getMinCNVLength();
     for (const auto& entry : primary_map) {
-        // Get the QNAME
         std::string qname = entry.first;
-
-        // Get the first primary alignment
         AlignmentData primary_alignment = entry.second;
-
-        // Get the primary alignment chromosome
         std::string primary_chr = std::get<0>(primary_alignment);
-
-        // Get the start and end positions of the primary alignment (reference)
         int32_t primary_start = std::get<1>(primary_alignment);
         int32_t primary_end = std::get<2>(primary_alignment);
-
-        // Get the query start and end positions
         int32_t primary_query_start = std::get<4>(primary_alignment);
         int32_t primary_query_end = std::get<5>(primary_alignment);
-
-        // Get the primary mismatch map
         std::unordered_map<int, int> primary_match_map = std::get<6>(primary_alignment);
 
         // Loop through the supplementary alignments and find gaps and overlaps
@@ -530,17 +520,10 @@ void SVCaller::detectSVsFromSplitReads(SVData& sv_calls, PrimaryMap& primary_map
             if (primary_chr != supp_chr) {
                 continue;
             }
-
-            // Get the start and end positions of the supplementary alignment
-            // (on the reference genome)
             int32_t supp_start = std::get<1>(supp_alignment);
             int32_t supp_end = std::get<2>(supp_alignment);
-
-            // Get the query start and end positions
             int32_t supp_query_start = std::get<4>(supp_alignment);
             int32_t supp_query_end = std::get<5>(supp_alignment);
-
-            // Get the supplementary mismatch map
             std::unordered_map<int, int> supp_match_map = std::get<6>(supp_alignment);
 
             // Determine if there is overlap between the primary and
@@ -566,26 +549,16 @@ void SVCaller::detectSVsFromSplitReads(SVData& sv_calls, PrimaryMap& primary_map
                 // Trim the overlap from the alignment with the higher mismatch
                 // rate
                 if (primary_mismatch_rate > supp_mismatch_rate) {
-                    // Trim the overlap from the primary alignment
-                    // Determine if the overlap is at the start or end of the
-                    // alignment
                     if (overlap_start == primary_query_start) {
-                        // Trim the read alignment from the start of the alignment
                         primary_start += overlap_length;
                     } else if (overlap_end == primary_query_end) {
-                        // Trim the overlap from the end of the alignment
                         primary_end -= overlap_length;
                     }
 
                 } else {
-                    // Trim the overlap from the supplementary alignment
-                    // Determine if the overlap is at the start or end of the
-                    // alignment
                     if (overlap_start == supp_query_start) {
-                        // Trim the read alignment from the start of the alignment
                         supp_start += overlap_length;
                     } else if (overlap_end == supp_query_end) {
-                        // Trim the overlap from the end of the alignment
                         supp_end -= overlap_length;
                     }
                 }
@@ -599,9 +572,7 @@ void SVCaller::detectSVsFromSplitReads(SVData& sv_calls, PrimaryMap& primary_map
                 std::vector<std::pair<SVCandidate, std::string>> sv_list;  // SV candidate and alignment type
 
                 // Use the gap ends as the SV endpoints
-                if (primary_start - supp_end >= this->min_sv_size) {
-
-                    // Add the SV call
+                if (primary_start - supp_end >= min_cnv_length) {
                     SVCandidate sv_candidate(supp_end+1, primary_start+1, ".");
                     std::pair<SVCandidate, std::string> sv_pair(sv_candidate, "GAPINNER_A");
                     sv_list.push_back(sv_pair);
@@ -609,9 +580,7 @@ void SVCaller::detectSVsFromSplitReads(SVData& sv_calls, PrimaryMap& primary_map
                 }
 
                 // Also use the alignment ends as the SV endpoints
-                if (primary_end - supp_start >= this->min_sv_size) {
-
-                    // Add the SV call
+                if (primary_end - supp_start >= min_cnv_length) {
                     SVCandidate sv_candidate(supp_start+1, primary_end+1, ".");
                     std::pair<SVCandidate, std::string> sv_pair(sv_candidate, "GAPOUTER_A");
                     sv_list.push_back(sv_pair);
@@ -627,9 +596,7 @@ void SVCaller::detectSVsFromSplitReads(SVData& sv_calls, PrimaryMap& primary_map
                 std::vector<std::pair<SVCandidate, std::string>> sv_list;  // SV candidate and alignment type
 
                 // Use the gap ends as the SV endpoints
-                if (supp_start - primary_end >= this->min_sv_size) {
-
-                    // Add the SV call
+                if (supp_start - primary_end >= min_cnv_length) {
                     SVCandidate sv_candidate(primary_end+1, supp_start+1, ".");
                     std::pair<SVCandidate, std::string> sv_pair(sv_candidate, "GAPINNER_B");
                     sv_list.push_back(sv_pair);
@@ -637,9 +604,7 @@ void SVCaller::detectSVsFromSplitReads(SVData& sv_calls, PrimaryMap& primary_map
                 }
 
                 // Also use the alignment ends as the SV endpoints
-                if (supp_end - primary_start >= this->min_sv_size) {
-
-                    // Add the SV call
+                if (supp_end - primary_start >= min_cnv_length) {
                     SVCandidate sv_candidate(primary_start+1, supp_end+1, ".");
                     std::pair<SVCandidate, std::string> sv_pair(sv_candidate, "GAPOUTER_B");
                     sv_list.push_back(sv_pair);

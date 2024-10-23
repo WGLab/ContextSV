@@ -89,7 +89,8 @@ def generate_sv_size_plot(input_vcf, output_png, plot_title="SV Caller"):
     print(f'Number of SV types: {sv_type_count}')
 
     # Create a dictionary of SV types and their corresponding colors.
-    sv_colors = {'DEL': 'crimson', 'DUP': 'royalblue', 'INV': 'orange', 'INS': 'limegreen'}
+    # From: https://davidmathlogic.com/colorblind/
+    sv_colors = {'DEL': '#D81B60', 'DUP': '#1E88E5', 'INV': '#FFC107', 'INS': '#004D40'}
 
     # Create a dictionary of SV types and their corresponding labels
     sv_labels = {'DEL': 'Deletion', 'DUP': 'Duplication', 'INV': 'Inversion', 'INS': 'Insertion'}
@@ -160,10 +161,21 @@ def generate_sv_size_plot(input_vcf, output_png, plot_title="SV Caller"):
 
     # Plot an additional plot with suffix _full.png that includes all SV types
     # (using plotly to avoid overlapping histograms)
+    max_size = np.max(np.abs(all_sv_sizes))
+    max_bin_edge = np.max([1000000, max_size])  # Set the maximum bin edge to 1Mb or the max size
+    bin_edges = [0, 1000, 5000, 10000, 50000, 100000, 500000, max_bin_edge]  # Bin edges
+    bin_edges = np.array(bin_edges) / size_scale  # Convert to kb
+    bin_labels = ['0-1kb', '1-5kb', '5-10kb', '10-50kb', '50-100kb', '100-500kb', '500kb+']
+    x_values = np.arange(len(bin_edges) - 1)  # x values for the histogram
+
+    # Create histograms using the bin edges
     fig = go.Figure()
     for sv_type in sv_types:
-        sizes = np.array(np.abs(sv_sizes[sv_type]))
-        fig.add_trace(go.Histogram(x=sizes / size_scale, name=sv_labels[sv_type], marker_color=sv_colors[sv_type], xbins=dict(size=100)))
+        sizes = np.array(np.abs(sv_sizes[sv_type])) / size_scale
+
+        counts, _ = np.histogram(sizes, bins=bin_edges)
+        fig.add_trace(go.Bar(x=x_values, y=counts, name=sv_labels[sv_type], marker_color=sv_colors[sv_type]))
+
 
     # Update the layout to group the bars side by side
     fig.update_layout(
@@ -172,8 +184,11 @@ def generate_sv_size_plot(input_vcf, output_png, plot_title="SV Caller"):
         xaxis_title='SV size (kb)',
         yaxis_title='Frequency (log scale)',
         yaxis_type='log',
-        bargap=0.2,
+        bargap=0.3,
     )
+
+    # Add the bin edges to the x-axis ticks as a range
+    fig.update_xaxes(tickvals=x_values, ticktext=bin_labels)
 
     # Move the legend to the top right inside the plot
     fig.update_layout(legend=dict(
@@ -185,10 +200,11 @@ def generate_sv_size_plot(input_vcf, output_png, plot_title="SV Caller"):
     ))
 
     # Set a larger font size for all text in the plot
-    fig.update_layout(font=dict(size=32))
+    fig.update_layout(font=dict(size=26))
     
     # # Save the plot as a high-resolution PNG file for using in posters
     fig.write_image(output_png.replace('.png', '_full.png'), width=1200, height=800)
+    print(f'Saved plot to {output_png.replace(".png", "_full.png")}')
 
 
 if __name__ == '__main__':

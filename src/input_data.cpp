@@ -24,7 +24,8 @@ InputData::InputData()
     this->start_end = std::make_pair(0, 0);
     this->region_set = false;
     this->output_dir = "";
-    this->window_size = 10000;
+    this->window_size = 2500;
+    this->min_cnv_length = 1000;
     this->thread_count = 1;
     this->hmm_filepath = "data/wgs.hmm";
     this->verbose = false;
@@ -149,6 +150,16 @@ std::string InputData::getEthnicity()
 void InputData::setEthnicity(std::string ethnicity)
 {
     this->ethnicity = ethnicity;
+}
+
+int InputData::getMinCNVLength()
+{
+    return this->min_cnv_length;
+}
+
+void InputData::setMinCNVLength(int min_cnv_length)
+{
+    this->min_cnv_length = min_cnv_length;
 }
 
 void InputData::setChromosome(std::string chr)

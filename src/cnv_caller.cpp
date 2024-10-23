@@ -43,12 +43,9 @@ std::pair<std::vector<int>, double> CNVCaller::runViterbi(CHMM hmm, SNPData& snp
 // Function to obtain SNP information for a region
 std::pair<SNPData, bool> CNVCaller::querySNPRegion(std::string chr, int64_t start_pos, int64_t end_pos, SNPInfo& snp_info, std::unordered_map<uint64_t, int>& pos_depth_map, double mean_chr_cov)
 {
-    // Get the SNP information for the region
     SNPData snp_data;
     bool snps_found = false;
     int window_size = this->input_data->getWindowSize();
-
-    // printMessage("Window size: " + std::to_string(window_size));
 
     // std::cout << "Querying SNPs for region " << chr << ":" << start_pos << "-" << end_pos << "..." << std::endl;
     for (int64_t i = start_pos; i <= end_pos; i += window_size)
@@ -66,7 +63,6 @@ std::pair<SNPData, bool> CNVCaller::querySNPRegion(std::string chr, int64_t star
         std::vector<int64_t>& snp_window_pos = std::get<0>(window_snps);  // SNP positions
         std::vector<double>& snp_window_bafs = std::get<1>(window_snps);  // B-allele frequencies
         std::vector<double>& snp_window_pfbs = std::get<2>(window_snps);  // Population frequencies of the B allele
-        // std::cout << "SNPs found: " << snp_window_pos.size() << std::endl;
 
         // Loop though the SNP positions and calculate the log2 ratio for
         // the window up to the SNP, then calculate the log2 ratio centered
@@ -79,21 +75,12 @@ std::pair<SNPData, bool> CNVCaller::querySNPRegion(std::string chr, int64_t star
         // PFB values, and the coverage log2 ratio
         if (snp_count == 0)
         {
-            // std::cout << "No SNPs found in window " << chr << ":" << window_start << "-" << window_end << "..." << std::endl;
-            // Calculate the log2 ratio for the window
             double window_log2_ratio = calculateLog2Ratio(window_start, window_end, pos_depth_map, mean_chr_cov);
-
-            // Use the window center position
             double pfb_default = 0.5;
-            // double baf_default = 0.5;
             double baf_default = -1.0;  // Use -1.0 to indicate no BAF data
             this->updateSNPData(snp_data, (window_start + window_end) / 2, pfb_default, baf_default, window_log2_ratio, false);
-            // printMessage("No SNPs found in window " + chr + ":" + std::to_string((int)window_start) + "-" + std::to_string((int)window_end) + "...");
-            // printMessage("Using position " + std::to_string((int)((window_start + window_end) / 2)) + " with default BAF and PFB values...");
 
         } else {
-            // std::cout << "SNPs found in window " << chr << ":" << window_start << "-" << window_end << "..." << std::endl;
-            // printMessage("SNPs found in window " + chr + ":" + std::to_string((int)window_start) + "-" + std::to_string((int)window_end) + "...");
             snps_found = true;
 
             // Loop through the SNPs and calculate the log2 ratios
@@ -101,10 +88,6 @@ std::pair<SNPData, bool> CNVCaller::querySNPRegion(std::string chr, int64_t star
             int64_t bin_end = 0;
             for (int j = 0; j < snp_count; j++)
             {
-                int64_t snp_pos = snp_window_pos[j];
-
-                // printMessage("SNP position: " + std::to_string((int)snp_pos));
-
                 // SNP bin starts at 1/2 the distance between the previous SNP
                 // and the current SNP, and ends at 1/2 the distance between
                 // the current SNP and the next SNP. For the first SNP, the
@@ -112,6 +95,7 @@ std::pair<SNPData, bool> CNVCaller::querySNPRegion(std::string chr, int64_t star
                 // between the first SNP and the next SNP, and for the last
                 // SNP, the bin starts at 1/2 the distance between the previous
                 // SNP and the last SNP and ends at the window end.
+                int64_t snp_pos = snp_window_pos[j];
                 bin_end = snp_pos + (j == snp_count-1 ? (window_end - snp_pos) / 2 : (snp_window_pos[j+1] - snp_pos) / 2);
 
                 // Calculate the log2 ratio for the SNP bin
@@ -130,13 +114,9 @@ std::pair<SNPData, bool> CNVCaller::querySNPRegion(std::string chr, int64_t star
 std::tuple<double, int, std::string, bool> CNVCaller::runSingleCopyNumberPrediction(std::string chr, SVCandidate sv_candidate)
 {
     // std::cout << "Running copy number prediction for SV pair " << chr << ":" << std::get<0>(sv_one) << "-" << std::get<1>(sv_one) << " and " << std::get<0>(sv_two) << "-" << std::get<1>(sv_two) << "..." << std::endl;
-
-    // Calculate depths for the SV region
     std::unordered_map<uint64_t, int> pos_depth_map;
     int64_t region_start_pos = std::get<0>(sv_candidate);
     int64_t region_end_pos = std::get<1>(sv_candidate);
-    // int64_t region_start_pos = std::min(std::get<0>(sv_one), std::get<0>(sv_two));
-    // int64_t region_end_pos = std::max(std::get<1>(sv_one), std::get<1>(sv_two));
 
     // std::cout << "Calculating read depths for SV region " << chr << ":" <<
     // start_pos << "-" << end_pos << "..." << std::endl;
@@ -154,11 +134,7 @@ std::tuple<double, int, std::string, bool> CNVCaller::runSingleCopyNumberPredict
 
     int predicted_cnv_type = sv_types::UNKNOWN;
     std::string genotype = "./.";
-    
-    // Get the SV candidate
     const SVCandidate& candidate = sv_candidate;
-
-    // Get the start and end positions of the SV call
     int64_t start_pos = std::get<0>(candidate);
     int64_t end_pos = std::get<1>(candidate);
 
@@ -183,7 +159,7 @@ std::tuple<double, int, std::string, bool> CNVCaller::runSingleCopyNumberPredict
     std::vector<int>& state_sequence = prediction.first;
     double likelihood = prediction.second;
 
-    // Add the state sequence to the SNP data (avoid copying the data)
+    // Add the state sequence to the SNP data
     sv_snps.state_sequence = std::move(state_sequence);
 
     // Get all the states in the SV region
@@ -221,21 +197,13 @@ std::tuple<double, int, std::string, bool> CNVCaller::runSingleCopyNumberPredict
         genotype = cnv_genotype_map[max_state];
     }
 
-    // Update the SV calls with the CNV type and genotype if the likelihood
-    // is greater than the best likelihood
-    // std::cout << "Updating SV calls for SV " << chr << ":" << start_pos << "-" << end_pos << "..." << std::endl;
-    // predicted_cnv_type = cnv_type_map[max_state];
-    // genotype = cnv_genotype_map[max_state];
-
     // Save the SV calls as a TSV file if enabled
     if (this->input_data->getSaveCNVData() && predicted_cnv_type != sv_types::UNKNOWN && (end_pos - start_pos) > 10000)
     {
         std::string cnv_type_str = SVTypeString[predicted_cnv_type];
         std::string sv_filename = this->input_data->getOutputDir() + "/" + cnv_type_str + "_" + chr + "_" + std::to_string((int) start_pos) + "-" + std::to_string((int) end_pos) + "_SPLITALN.tsv";
-        // std::string sv_filename = this->input_data->getOutputDir() + "/" + cnv_type_str + "_" + chr + "_" + std::to_string((int) sv_start_pos) + "-" + std::to_string((int) sv_end_pos) + "_SPLITALN.tsv";
-        std::cout << "[1] Saving SV split-alignment copy number predictions to " << sv_filename << "..." << std::endl;
+        std::cout << "Saving SV split-alignment copy number predictions to " << sv_filename << "..." << std::endl;
         this->saveSVCopyNumberToTSV(sv_snps, sv_filename, chr, start_pos, end_pos, cnv_type_str, likelihood);
-        // this->saveSVCopyNumberToTSV(best_snp_data, sv_filename, chr, best_pos.first, best_pos.second, cnv_type_str, best_likelihood);
     }
 
     return std::make_tuple(likelihood, predicted_cnv_type, genotype, snps_found);
@@ -297,11 +265,6 @@ void CNVCaller::updateSVsFromCopyNumberPrediction(SVData &sv_calls, std::vector<
     }
 }
 
-SNPData CNVCaller::runCopyNumberPrediction(std::string chr, std::map<SVCandidate, SVInfo> &sv_candidates)
-{
-    return this->runCopyNumberPrediction(chr, sv_candidates, this->snp_info, this->hmm, this->input_data->getWindowSize(), this->mean_chr_cov);
-}
-
 std::tuple<int, double, int, std::string, bool> CNVCaller::runCopyNumberPredictionPair(std::string chr, SVCandidate sv_one, SVCandidate sv_two)
 {
     // std::cout << "Running copy number prediction for SV pair " << chr << ":" << std::get<0>(sv_one) << "-" << std::get<1>(sv_one) << " and " << std::get<0>(sv_two) << "-" << std::get<1>(sv_two) << "..." << std::endl;
@@ -359,13 +322,11 @@ std::tuple<int, double, int, std::string, bool> CNVCaller::runCopyNumberPredicti
         bool sv_snps_found = snp_call.second;
 
         // Run the Viterbi algorithm
-        // std::cout << "Running Viterbi algorithm for SV " << chr << ":" << start_pos << "-" << end_pos << "..." << std::endl;
         std::pair<std::vector<int>, double> prediction = runViterbi(this->hmm, sv_snps);
         std::vector<int>& state_sequence = prediction.first;
         double likelihood = prediction.second;
 
         // Get all the states in the SV region
-        // std::cout << "Getting states in SV region " << chr << ":" << start_pos << "-" << end_pos << "..." << std::endl;
         std::vector<int> sv_states;
         for (size_t i = 0; i < state_sequence.size(); i++)
         {
@@ -377,7 +338,6 @@ std::tuple<int, double, int, std::string, bool> CNVCaller::runCopyNumberPredicti
 
         // Determine if there is a majority state within the SV region and if it
         // is greater than 75%
-        // std::cout << "Determining majority state in SV region " << chr << ":" << start_pos << "-" << end_pos << "..." << std::endl;
         double pct_threshold = 0.75;
         int max_state = 0;
         int max_count = 0;
@@ -422,23 +382,36 @@ std::tuple<int, double, int, std::string, bool> CNVCaller::runCopyNumberPredicti
     {
         std::string cnv_type_str = SVTypeString[predicted_cnv_type];
         std::string sv_filename = this->input_data->getOutputDir() + "/" + cnv_type_str + "_" + chr + "_" + std::to_string((int) sv_start_pos) + "-" + std::to_string((int) sv_end_pos) + "_SPLITALN.tsv";
-        std::cout << "[2] Saving SV split-alignment copy number predictions to " << sv_filename << "..." << std::endl;
+        std::cout << "Saving SV split-alignment copy number predictions to " << sv_filename << "..." << std::endl;
         this->saveSVCopyNumberToTSV(best_snp_data, sv_filename, chr, best_pos.first, best_pos.second, cnv_type_str, best_likelihood);
     }
 
     return std::make_tuple(best_index, best_likelihood, predicted_cnv_type, genotype, snps_found);
 }
 
-SNPData CNVCaller::runCopyNumberPrediction(std::string chr, std::map<SVCandidate, SVInfo> &sv_candidates, SNPInfo &snp_info, CHMM hmm, int window_size, double mean_chr_cov)
+SNPData CNVCaller::runCopyNumberPrediction(std::string chr, std::map<SVCandidate, SVInfo> &sv_candidates, int min_length)
 {
+    SNPInfo& snp_info = this->snp_info;
+    CHMM& hmm = this->hmm;
+    int window_size = this->input_data->getWindowSize();
+    double mean_chr_cov = this->mean_chr_cov;
     SNPData snp_data;
-    int sv_count = (int) sv_candidates.size();
-    // printMessage("Total SV count: " + std::to_string(sv_count));
 
-    // If there are no SV candidates, then return
+    // Filter the SV candidates by length
+    std::map<SVCandidate, SVInfo> filtered_sv_candidates;
+    for (const auto& sv_call : sv_candidates)
+    {
+        int64_t start_pos = std::get<0>(sv_call.first);
+        int64_t end_pos = std::get<1>(sv_call.first);
+        if ((end_pos - start_pos) >= min_length)
+        {
+            filtered_sv_candidates[sv_call.first] = sv_call.second;
+        }
+    }
+    sv_candidates = std::move(filtered_sv_candidates);
+    int sv_count = (int) sv_candidates.size();
     if (sv_count == 0)
     {
-        // printMessage("No SV candidates found for chromosome " + chr);
         return snp_data;
     }
 
@@ -1391,27 +1364,3 @@ void CNVCaller::updateSNPData(SNPData& snp_data, int64_t pos, double pfb, double
     snp_data.log2_cov.emplace_back(log2_cov);
     snp_data.is_snp.emplace_back(is_snp);
 }
-
-void CNVCaller::updateSNPVectors(SNPData &snp_data, std::vector<int64_t> &pos, std::vector<double> &pfb, std::vector<double> &baf, std::vector<double> &log2_cov, std::vector<int> &state_sequence, std::vector<bool> &is_snp)
-{
-    // Update the SNP data by first reserving space for the new data and then
-    // inserting the new data
-    snp_data.pos.reserve(snp_data.pos.size() + pos.size());
-    snp_data.pos.insert(snp_data.pos.end(), std::make_move_iterator(pos.begin()), std::make_move_iterator(pos.end()));
-
-    snp_data.pfb.reserve(snp_data.pfb.size() + pfb.size());
-    snp_data.pfb.insert(snp_data.pfb.end(), std::make_move_iterator(pfb.begin()), std::make_move_iterator(pfb.end()));
-
-    snp_data.baf.reserve(snp_data.baf.size() + baf.size());
-    snp_data.baf.insert(snp_data.baf.end(), std::make_move_iterator(baf.begin()), std::make_move_iterator(baf.end()));
-
-    snp_data.log2_cov.reserve(snp_data.log2_cov.size() + log2_cov.size());
-    snp_data.log2_cov.insert(snp_data.log2_cov.end(), std::make_move_iterator(log2_cov.begin()), std::make_move_iterator(log2_cov.end()));
-
-    snp_data.state_sequence.reserve(snp_data.state_sequence.size() + state_sequence.size());
-    snp_data.state_sequence.insert(snp_data.state_sequence.end(), std::make_move_iterator(state_sequence.begin()), std::make_move_iterator(state_sequence.end()));
-
-    snp_data.is_snp.reserve(snp_data.is_snp.size() + is_snp.size());
-    snp_data.is_snp.insert(snp_data.is_snp.end(), std::make_move_iterator(is_snp.begin()), std::make_move_iterator(is_snp.end()));
-}
-

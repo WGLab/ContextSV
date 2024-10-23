@@ -117,10 +117,19 @@ def main():
     # Window size for calculating log2 ratios for CNV predictions.
     parser.add_argument(
         "--window-size",
-        help="window size for calculating log2 ratios for CNV predictions (default: 10 kb)",
+        help="window size for calculating log2 ratios for CNV predictions (default: 2500 bp)",
         required=False,
         type=int,
-        default=10000
+        default=2500
+    )
+
+    # Minimum SV length for copy number variation (CNV) predictions.
+    parser.add_argument(
+        "--min-cnv-length",
+        help="minimum SV length for CNV predictions (default: 1000 bp)",
+        required=False,
+        type=int,
+        default=1000
     )
 
     # Verbose mode.
@@ -226,6 +235,7 @@ def main():
     input_data.setOutputDir(args.output)
     input_data.saveCNVData(args.save_cnv)
     input_data.setWindowSize(args.window_size)
+    input_data.setMinCNVLength(args.min_cnv_length)
 
     # Run the analysis
     contextsv.run(input_data)
