@@ -58,8 +58,7 @@ int SVData::add(std::string chr, int64_t start, int64_t end, int sv_type, std::s
         }
 
         // Create a new SVInfo object (SV type, alignment support, read depth, data type, SV length, genotype)
-        // SVInfo sv_info(sv_type, 1, 0, data_type, sv_length, "./.", 0.0);
-        SVInfo sv_info(sv_type, 1, 0, data_type, sv_length, genotype, hmm_likelihood, "");
+        SVInfo sv_info(sv_type, 1, 0, data_type, sv_length, genotype, hmm_likelihood);
 
         // Add the SV candidate to the map
         this->sv_calls[chr][candidate] = sv_info;
@@ -85,31 +84,6 @@ void SVData::concatenate(const SVData &sv_data)
             this->sv_calls[chr][candidate] = info;
         }
     }
-}
-
-void SVData::updateSVType(std::string chr, SVCandidate candidate, int sv_type, std::string data_type)
-{
-    // Update the SV type if it is unknown
-    SVInfo& sv_info = this->sv_calls[chr][candidate];
-    if (sv_info.sv_type == UNKNOWN) {
-        sv_info.sv_type = sv_type;
-
-        // Update the alignment type used to call the SV
-        sv_info.data_type.insert(data_type);
-    }
-}
-
-void SVData::updateGenotype(std::string chr, SVCandidate candidate, std::string genotype)
-{
-    // Update the SV genotype
-    // Check if the chromosome and candidate exist in the map
-    if (this->sv_calls.find(chr) == this->sv_calls.end() || this->sv_calls[chr].find(candidate) == this->sv_calls[chr].end()) {
-        std::cerr << "Error: SV candidate " << chr << ":" << std::get<0>(candidate) << "-" << std::get<1>(candidate) << " does not exist in the SV data" << std::endl;
-        return;
-    }
-
-    SVInfo& sv_info = this->sv_calls[chr][candidate];
-    sv_info.genotype = genotype;
 }
 
 void SVData::updateClippedBaseSupport(std::string chr, int64_t pos)
@@ -351,30 +325,4 @@ int SVData::totalCalls()
     }
 
     return sv_calls;
-}
-
-int SVData::totalDeletions()
-{
-    int del_calls = 0;
-    for (auto const& sv_call : this->sv_calls) {
-        for (auto const& sv_info : sv_call.second) {
-            if (sv_info.second.sv_type == DEL) {
-                del_calls += 1;
-            }
-        }
-    }
-
-    return del_calls;
-}
-
-int SVData::totalDeletions(std::string chr)
-{
-    int del_calls = 0;
-    for (auto const& sv_info : this->sv_calls[chr]) {
-        if (sv_info.second.sv_type == DEL) {
-            del_calls += 1;
-        }
-    }
-
-    return del_calls;
 }
