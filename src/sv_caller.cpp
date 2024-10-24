@@ -419,7 +419,7 @@ SVData SVCaller::run()
     int chunk_count = 10000;  // Number of chunks to split the chromosome into
     int min_cnv_length = this->input_data->getMinCNVLength();
     for (const auto& chr : chromosomes) {
-        std::cout << "Extracting alignments for chromosome " << chr << "..." << std::endl;
+        std::cout << "Running SV detection for chromosome " << chr << "..." << std::endl;
 
         // Split the chromosome into chunks
         std::vector<std::string> region_chunks;
@@ -452,26 +452,35 @@ SVData SVCaller::run()
         std::cout << "Loading chromosome data for copy number predictions..." << std::endl;
         CNVCaller cnv_caller(*this->input_data);
         cnv_caller.loadChromosomeData(chr);
-        std::cout << "Loaded chromosome data for copy number predictions." << std::endl;
+        // std::cout << "Loaded chromosome data for copy number predictions." << std::endl;
 
         // Process each chunk one at a time
+        std::cout << "Processing " << region_chunks.size() << " region(s) for chromosome " << chr << "..." << std::endl;
         for (const auto& sub_region : region_chunks) {
             // Detect SVs from the sub-region
-            std::cout << "Detecting CIGAR string SVs from " << sub_region << "..." << std::endl;
+            // std::cout << "Detecting CIGAR string SVs from " << sub_region << "..." << std::endl;
             RegionData region_data = this->detectSVsFromRegion(sub_region);
             SVData& sv_calls_region = std::get<0>(region_data);
             PrimaryMap& primary_map = std::get<1>(region_data);
             SuppMap& supp_map = std::get<2>(region_data);
             int region_sv_count = sv_calls_region.totalCalls();
-            std::cout << "Detected " << region_sv_count << " SVs from " << sub_region << "..." << std::endl;
+            if (region_sv_count > 0) {
+                std::cout << "Detected " << region_sv_count << " SVs from " << sub_region << "..." << std::endl;
+            }
 
-            // Run copy number variant detection from the SVs detected from the
+            // Run copy number variant predictions on the SVs detected from the
             // CIGAR string, using a minimum CNV length threshold
-            std::cout << "Detecting copy number variants from CIGAR string SVs..." << std::endl;
+            // std::cout << "Detecting copy number variants from CIGAR string SVs..." << std::endl;
             std::map<SVCandidate, SVInfo>& cigar_svs = sv_calls_region.getChromosomeSVs(chr);
-            cnv_caller.runCopyNumberPrediction(chr, cigar_svs, min_cnv_length);
+            if (cigar_svs.size() > 0) {
+                std::cout << "Running copy number variant detection from CIGAR string SVs..." << std::endl;
+                cnv_caller.runCIGARCopyNumberPrediction(chr, cigar_svs, min_cnv_length);
+            }
+            // std::cout << "Running copy number variant detection from CIGAR string SVs..." << std::endl;
+            // cnv_caller.runCIGARCopyNumberPrediction(chr, cigar_svs, min_cnv_length);
 
-            // Run split-read SV detection in a single thread
+            // Run split-read SV detection in a single thread, combined with
+            // copy number variant predictions
             std::cout << "Detecting copy number variants from split reads..." << std::endl;
             this->detectSVsFromSplitReads(sv_calls_region, primary_map, supp_map, cnv_caller);
 
@@ -481,7 +490,8 @@ SVData SVCaller::run()
 
         // Increment the region count
         region_count++;
-        std::cout << "Extracted aligments for " << region_count << " of " << chr_count << " chromosome(s)..." << std::endl;
+        std::cout << "Completed " << region_count << " of " << chr_count << " chromosome(s)..." << std::endl;
+        // std::cout << "Extracted aligments for " << region_count << " of " << chr_count << " chromosome(s)..." << std::endl;
     }
 
     auto end1 = std::chrono::high_resolution_clock::now();
@@ -588,7 +598,9 @@ void SVCaller::detectSVsFromSplitReads(SVData& sv_calls, PrimaryMap& primary_map
                 }
 
                 // Determine which SV to keep based on HMM prediction likelihood
-                cnv_caller.updateSVsFromCopyNumberPrediction(sv_calls, sv_list, supp_chr);
+                if (sv_list.size() > 0) {
+                    cnv_caller.updateSVsFromCopyNumberPrediction(sv_calls, sv_list, supp_chr);
+                }
                 
             } else if (supp_start > primary_end && supp_end > primary_end) {
                 // Gap with supplementary after primary:
@@ -612,7 +624,9 @@ void SVCaller::detectSVsFromSplitReads(SVData& sv_calls, PrimaryMap& primary_map
                 }
 
                 // Determine which SV to keep based on HMM prediction likelihood
-                cnv_caller.updateSVsFromCopyNumberPrediction(sv_calls, sv_list, supp_chr);
+                if (sv_list.size() > 0) {
+                    cnv_caller.updateSVsFromCopyNumberPrediction(sv_calls, sv_list, supp_chr);
+                }
             }
         }
     }

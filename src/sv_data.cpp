@@ -161,24 +161,17 @@ void SVData::saveToVCF(FASTAQuery& ref_genome, std::string output_dir)
     // Write the header lines
     vcf_writer.writeHeader(header_lines);
 
-    // Iterate over the SV calls
-    std::cout << "Saving SV calls to " << output_vcf << "..." << std::endl;
+    // Save the SV calls
+    std::cout << "Saving SV calls to " << output_vcf << std::endl;
     std::string sv_method = "CONTEXTSVv0.1";
     int num_sv_calls = this->totalCalls();
     int skip_count = 0;
-
-    // Iterate over the chromosomes
     std::set<std::string> chrs = this->getChromosomes();
     for (auto const& chr : chrs) {
-        // Skip the chromosome if there are no SV calls
         if (this->sv_calls.find(chr) == this->sv_calls.end()) {
             continue;
         }
-
-        // Print the chromosome and number of SV calls
         std::cout << "Saving SV calls for " << chr << " (" << this->sv_calls[chr].size() << " SV calls)..." << std::endl;
-
-        // Iterate over the SV calls
         for (auto const& sv_call : this->sv_calls[chr]) {
 
             // Get the SV candidate and SV info
@@ -268,26 +261,15 @@ void SVData::saveToVCF(FASTAQuery& ref_genome, std::string output_dir)
                 }
             }
 
-            // Get the clipped base support
+            // Create the VCF parameter strings
             int clipped_base_support = this->getClippedBaseSupport(chr, pos, end);
-
-            // Get the SV type string
             std::string sv_type_str = this->sv_type_map[sv_type];
-
-            // Create the INFO string (TODO: Read depth is currently set to 1,
-            // needs implementation to get the actual read depth from the BAM
-            // file)
             std::string info_str = "END=" + std::to_string(end) + ";SVTYPE=" + sv_type_str + \
                 ";SVLEN=" + std::to_string(sv_length) + ";SUPPORT=" + std::to_string(read_support) + \
                 ";SVMETHOD=" + sv_method + ";ALN=" + data_type_str + ";CLIPSUP=" + std::to_string(clipped_base_support) + \
                 ";REPTYPE=" + repeat_type + ";HMM=" + std::to_string(hmm_likelihood);
                 
-            // std::string info_str = "END=" + std::to_string(end) + ";SVTYPE=" + sv_type_str + ";SVLEN=" + std::to_string(sv_length) + ";SUPPORT=" + std::to_string(read_support) + ";SVMETHOD=" + sv_method + ";ALN=" + data_type_str + ";CLIPSUP=" + std::to_string(clipped_base_support);
-
-            // Create the FORMAT string for the sample (GT:DP)
             std::string format_str = "GT:DP";
-
-            // Create the sample string (genotype and read depth)
             std::string sample_str = genotype + ":" + std::to_string(read_depth);
             std::vector<std::string> samples = {sample_str};
 

@@ -55,6 +55,7 @@ class CNVCaller {
         SNPData snp_data;
         SNPInfo snp_info;
         double mean_chr_cov = 0.0;
+        std::unordered_map<uint32_t, int> pos_depth_map;
 
         // Define a map of CNV genotypes by HMM predicted state.
         // We only use the first 3 genotypes (0/0, 0/1, 1/1) for the VCF output.
@@ -93,10 +94,10 @@ class CNVCaller {
         std::pair<std::vector<int>, double> runViterbi(CHMM hmm, SNPData &snp_data);
 
         // Query a region for SNPs and return the SNP data
-        std::pair<SNPData, bool> querySNPRegion(std::string chr, int64_t start_pos, int64_t end_pos, SNPInfo &snp_info, std::unordered_map<uint64_t, int> &pos_depth_map, double mean_chr_cov);
+        std::pair<SNPData, bool> querySNPRegion(std::string chr, int64_t start_pos, int64_t end_pos, SNPInfo &snp_info, std::unordered_map<uint32_t, int> &pos_depth_map, double mean_chr_cov);
 
-        // Run copy number prediction for a chunk of SV candidates
-        void runCopyNumberPredictionChunk(std::string chr, std::map<SVCandidate, SVInfo>& sv_candidates, std::vector<SVCandidate> sv_chunk, SNPInfo& snp_info, CHMM hmm, int window_size, double mean_chr_cov, std::unordered_map<uint64_t, int>& pos_depth_map);
+        // Run copy number prediction for a chunk of SV candidates from CIGAR strings
+        void runCIGARCopyNumberPredictionChunk(std::string chr, std::map<SVCandidate, SVInfo>& sv_candidates, std::vector<SVCandidate> sv_chunk, SNPInfo& snp_info, CHMM hmm, int window_size, double mean_chr_cov, std::unordered_map<uint32_t, int>& pos_depth_map);
 
         void updateSVCopyNumber(std::map<SVCandidate, SVInfo>& sv_candidates, SVCandidate key, int sv_type_update, std::string data_type, std::string genotype, double hmm_likelihood);
 
@@ -109,7 +110,7 @@ class CNVCaller {
         std::vector<std::vector<SVCandidate>> splitSVCandidatesIntoChunks(std::map<SVCandidate, SVInfo>& sv_candidates, int chunk_count);
 
         // Merge the read depths from a chunk into the main read depth map
-        void mergePosDepthMaps(std::unordered_map<uint64_t, int>& pos_depth_map, std::unordered_map<uint64_t, int>& pos_depth_map_chunk);
+        void mergePosDepthMaps(std::unordered_map<uint32_t, int>& main_map, std::unordered_map<uint32_t, int>& map_update);
 
     public:
         CNVCaller(InputData& input_data);
@@ -121,10 +122,8 @@ class CNVCaller {
         // the SV candidate with the highest likelihood
         std::tuple<int, double, int, std::string, bool> runCopyNumberPredictionPair(std::string chr, SVCandidate sv_one, SVCandidate sv_two);
 
-        // Run copy number prediction for SVs meeting the minimum length threshold
-        SNPData runCopyNumberPrediction(std::string chr, std::map<SVCandidate, SVInfo>& sv_candidates, int min_length);
-
-        std::tuple<double, int, std::string, bool> runSingleCopyNumberPrediction(std::string chr, SVCandidate sv_candidate);
+        // Run copy number prediction for SVs meeting the minimum length threshold obtained from CIGAR strings
+        SNPData runCIGARCopyNumberPrediction(std::string chr, std::map<SVCandidate, SVInfo>& sv_candidates, int min_length);
 
         void updateSVsFromCopyNumberPrediction(SVData& sv_calls, std::vector<std::pair<SVCandidate, std::string>>& sv_list, std::string chr);
 
@@ -136,7 +135,7 @@ class CNVCaller {
 
         // Calculate the log2 ratio for a region given the read depths and mean
         // chromosome coverage
-        double calculateLog2Ratio(int start_pos, int end_pos, std::unordered_map<uint64_t, int>& pos_depth_map, double mean_chr_cov);
+        double calculateLog2Ratio(uint32_t start_pos, uint32_t end_pos, std::unordered_map<uint32_t, int>& pos_depth_map, double mean_chr_cov);
 
         // Read SNP positions and BAF values from the VCF file of SNP calls
         void readSNPAlleleFrequencies(std::string chr, std::string filepath, SNPInfo& snp_info);
