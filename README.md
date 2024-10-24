@@ -5,11 +5,8 @@ tests](https://github.com/WGLab/ContextSV/actions/workflows/build-tests.yml/badg
 ![contextsv_small_15p](https://github.com/WGLab/ContextSV/assets/14855676/79d70c76-a34a-472e-a14c-e49489ae0f09)
 
 # ContextSV
-> [!NOTE]
-> This is a work in progress, software is under development and not ready for official release.
 
-An alignment-based, generalized structural variant caller for long-read
-sequencing/mapping data.
+Whole-genome structural variant caller for long read sequencing data.
 
 ContextSV takes as input a long read alignments file (BAM), a 
 corresponding reference genome file (FASTA), a VCF file with high-quality SNPs 
@@ -112,13 +109,13 @@ thread_count=40
 python contextsv --threads $thread_count -o $output_dir -lr $long_read_bam --snps $snps_file --reference $ref_file --pfb $pfb_file
 
 # The output VCF filepath is located here:
-output_vcf=$output_dir/sv_calls.vcf
+output_vcf=$output_dir/output.vcf
 
 # Merge SVs (~3-4 hours for whole-genome, 40 cores)
 python contextsv --merge $output_vcf
 
 # The final merged VCF filepath is located here:
-merged_vcf=$output_dir/sv_calls.merged.vcf
+merged_vcf=$output_dir/output.merged.vcf
 ```
 
 ## Input arguments
@@ -153,4 +150,7 @@ options:
 For release history, please visit [here](https://github.com/WGLab/ContextSV/releases). 
 
 ## Getting help
-Please refer to the [contextSV issue pages](https://github.com/WGLab/ContextSV/issues) for posting your issues. We will also respond your questions quickly. Your comments are critical to improve our tool and will benefit other users.
+Please refer to the [contextSV issue
+pages](https://github.com/WGLab/ContextSV/issues) for posting your issues, we
+will respond quickly. Your comments will
+benefit other users, and are crucial to improving this tool.
