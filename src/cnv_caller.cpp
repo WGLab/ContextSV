@@ -349,7 +349,7 @@ SNPData CNVCaller::runCIGARCopyNumberPrediction(std::string chr, std::map<SVCand
 
 void CNVCaller::runCIGARCopyNumberPredictionChunk(std::string chr, std::map<SVCandidate, SVInfo>& sv_candidates, std::vector<SVCandidate> sv_chunk, SNPInfo& snp_info, CHMM hmm, int window_size, double mean_chr_cov, std::unordered_map<uint32_t, int>& pos_depth_map)
 {
-    printMessage("Running copy number prediction for " + std::to_string(sv_chunk.size()) + " SV candidates on chromosome " + chr + "...");
+    // printMessage("Running copy number prediction for " + std::to_string(sv_chunk.size()) + " SV candidates on chromosome " + chr + "...");
     // Map with counts for each CNV type
     std::map<int, int> cnv_type_counts;
     for (int i = 0; i < 6; i++)
@@ -467,13 +467,6 @@ void CNVCaller::runCIGARCopyNumberPredictionChunk(std::string chr, std::map<SVCa
             printMessage("Saving SV CIGAR copy number predictions to " + sv_filename);
             this->saveSVCopyNumberToTSV(sv_snps, sv_filename, chr, start_pos, end_pos, cnv_type_str, likelihood);
         }
-    }
-
-    // Summarize the CNV type counts
-    for (const auto& cnv_type : cnv_type_counts)
-    {
-        printMessage("CNV type " + std::to_string(cnv_type.first) + ": " + std::to_string(cnv_type.second));
-        // std::cout << "CNV type " << cnv_type.first << ": " << cnv_type.second << std::endl;
     }
 }
 
