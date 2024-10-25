@@ -87,10 +87,6 @@ class InputData {
         std::pair<int32_t, int32_t> getRegion();
         bool isRegionSet();
 
-        // Set entire-chromosome mean coverage values to speed up the log2 ratio calculations.
-        void setMeanChromosomeCoverage(std::string chr_cov);
-        double getMeanChromosomeCoverage(std::string chr);
-
         // Set the output directory where the results will be written.
         void setOutputDir(std::string dirpath);
         std::string getOutputDir();
@@ -122,7 +118,6 @@ class InputData {
         std::string chr;  // Chromosome to analyze
         std::pair<int32_t, int32_t> start_end;  // Region to analyze
         bool region_set;  // True if a region is set
-        std::map<std::string, double> chr_cov;  // Map of pre-calculated mean coverage values for each chromosome
         int thread_count;
         std::string hmm_filepath;
         std::string cnv_filepath;

@@ -165,13 +165,6 @@ def main():
         required=False,
         help=argparse.SUPPRESS
     )
-
-    # Chromosome mean coverage values passed in as a comma-separated list (e.g. chr1:100,chr2:200,chr3:300)
-    parser.add_argument(
-        "--chr-cov",
-        required=False,
-        help=argparse.SUPPRESS
-    )
     
     # ----------------------------------------------------------------------- #
 
@@ -229,7 +222,6 @@ def main():
     input_data.setThreadCount(args.threads)
     input_data.setChromosome(args.chr)
     input_data.setRegion(args.region)
-    input_data.setMeanChromosomeCoverage(args.chr_cov)
     input_data.setAlleleFreqFilepaths(args.pfb)
     input_data.setHMMFilepath(args.hmm)
     input_data.setOutputDir(args.output)

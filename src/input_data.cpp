@@ -212,65 +212,6 @@ bool InputData::isRegionSet()
     return this->region_set;
 }
 
-void InputData::setMeanChromosomeCoverage(std::string chr_cov)
-{
-    // Update the chromosome coverage map if the string is not empty
-    if (chr_cov != "")
-    {
-        // Split the string by commas
-        std::istringstream ss(chr_cov);
-        std::string token;
-        std::vector<std::string> chr_cov_pairs;
-
-        while (std::getline(ss, token, ','))
-        {
-            chr_cov_pairs.push_back(token);
-        }
-
-        // Iterate over the pairs
-        for (auto const &pair : chr_cov_pairs)
-        {
-            // Split the pair by colon
-            std::istringstream ss(pair);
-            std::string token;
-            std::vector<std::string> chr_cov;
-
-            while (std::getline(ss, token, ':'))
-            {
-                chr_cov.push_back(token);
-            }
-
-            // Check if the pair is valid
-            if (chr_cov.size() == 2)
-            {
-                // Get the chromosome and coverage
-                std::string chr = chr_cov[0];
-                double cov = std::stod(chr_cov[1]);
-
-                // Add the pair to the map
-                this->chr_cov[chr] = cov;
-
-                // Print the pair
-                std::cout << "Set mean coverage for " << chr << " to " << cov << std::endl;
-            }
-        }
-    }
-}
-
-double InputData::getMeanChromosomeCoverage(std::string chr)
-{
-    // Using find to check if the key exists
-    auto it = chr_cov.find(chr);
-
-    // If key is not found, throw an error
-    if (it == chr_cov.end()) {
-        throw std::out_of_range("Key not found in the map.");
-    }
-
-    // Key exists, return the corresponding double value
-    return it->second;
-}
-
 void InputData::setAlleleFreqFilepaths(std::string filepath)
 {
     // this->pfb_filepath = filepath;

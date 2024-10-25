@@ -581,19 +581,6 @@ void CNVCaller::loadChromosomeData(std::string chr)
     printMessage("Calculating mean chromosome coverage for " + chr + "...");
     mean_chr_cov = calculateMeanChromosomeCoverage(chr);
     printMessage("Mean chromosome coverage for " + chr + ": " + std::to_string(mean_chr_cov));
-    // double mean_chr_cov = 0;
-    // try
-    // {
-    //     mean_chr_cov = this->input_data->getMeanChromosomeCoverage(chr);
-    //     printMessage("User-provided mean chromosome coverage for " + chr + ": " + std::to_string(mean_chr_cov));
-    // }
-    // catch(const std::out_of_range& e)
-    // {
-    //     // No user-provided mean chromosome coverage
-    //     printMessage("Calculating mean chromosome coverage for " + chr + "...");
-    //     mean_chr_cov = calculateMeanChromosomeCoverage(chr);
-    //     printMessage("Mean chromosome coverage for " + chr + ": " + std::to_string(mean_chr_cov));
-    // }
     this->mean_chr_cov = mean_chr_cov;
 
     // Read the SNP positions and B-allele frequency values from the VCF file
