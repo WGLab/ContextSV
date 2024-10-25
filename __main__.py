@@ -59,6 +59,31 @@ def main():
         required=False
     )
 
+    parser.add_argument(
+        '-c', '--chr',
+        help="chromosome to analyze (e.g. 1, 2, 3, ..., X, Y)",
+        required=False,
+        default="",
+        type=str
+    )
+
+    parser.add_argument(
+        "-r", "--region",
+        help="region to analyze (e.g. 1:1000-2000)",
+        required=False,
+        default="",
+        type=str
+    )
+
+    # Specify the ethnicity of the sample for obtaining population allele
+    # frequencies from a database such as gnomAD. If not provided, the allele
+    # frequencies will be obtained for all populations.
+    parser.add_argument(
+        "-e", "--ethnicity",
+        help="ethnicity of the sample (e.g. afr, amr, eas, fin, nfe, oth, sas, asj)",
+        required=False
+    )
+
     # Text file with VCF filepaths of SNP population allele frequencies for each
     # chromosome from a database such as gnomAD (e.g. 1=chr1.vcf.gz\n2=chr2.vcf.gz\n...).
     parser.add_argument(
@@ -71,12 +96,6 @@ def main():
         "-o", "--output",
         help="path to the output directory",
         required=True
-    )
-
-    parser.add_argument(
-        "-r", "--region",
-        help="region to analyze (e.g. chr1, chr1:1000-2000). If not provided, the entire genome will be analyzed",
-        required=False,
     )
 
     # Thread count.
@@ -98,10 +117,19 @@ def main():
     # Window size for calculating log2 ratios for CNV predictions.
     parser.add_argument(
         "--window-size",
-        help="window size for calculating log2 ratios for CNV predictions (default: 10 kb)",
+        help="window size for calculating log2 ratios for CNV predictions (default: 2500 bp)",
         required=False,
         type=int,
-        default=10000
+        default=2500
+    )
+
+    # Minimum SV length for copy number variation (CNV) predictions.
+    parser.add_argument(
+        "--min-cnv-length",
+        help="minimum SV length for CNV predictions (default: 1000 bp)",
+        required=False,
+        type=int,
+        default=1000
     )
 
     # Verbose mode.
@@ -137,31 +165,6 @@ def main():
         required=False,
         help=argparse.SUPPRESS
     )
-
-    # Chromosome mean coverage values passed in as a comma-separated list (e.g. chr1:100,chr2:200,chr3:300)
-    parser.add_argument(
-        "--chr-cov",
-        required=False,
-        help=argparse.SUPPRESS
-    )
-
-    # Turn off CIGAR string SV detection (split-read only)
-    parser.add_argument(
-        "--disable-cigar",
-        required=False,
-        action="store_true",
-        default=False,
-        help=argparse.SUPPRESS
-    )
-
-    # Turn off SNP-based CNV predictions for SV classification.
-    parser.add_argument(
-        "--disable-snp-cnv",
-        required=False,
-        action="store_true",
-        default=False,
-        help=argparse.SUPPRESS
-    )
     
     # ----------------------------------------------------------------------- #
 
@@ -186,8 +189,8 @@ def main():
         log.warning("Short read alignment file not provided. Using long read alignment file in its place.")
         args.short_read = args.long_read
 
-    # SNPs file is required unless SNP-based CNV predictions are disabled.
-    if (args.snps is None and not args.disable_snp_cnv):
+    # SNPs file is required
+    if (args.snps is None):
         log.error("Please provide the SNPs file.")
         arg_error = True
 
@@ -208,39 +211,49 @@ def main():
         if value is None:
             setattr(args, key, "")
 
-    # Set input parameters.
+    # Set input parameters
     input_data = contextsv.InputData()
     input_data.setVerbose(args.debug)
     input_data.setShortReadBam(args.short_read)
     input_data.setLongReadBam(args.long_read)
     input_data.setRefGenome(args.reference)
     input_data.setSNPFilepath(args.snps)
-    input_data.setRegion(args.region)
+    input_data.setEthnicity(args.ethnicity)
     input_data.setThreadCount(args.threads)
-    input_data.setMeanChromosomeCoverage(args.chr_cov)
+    input_data.setChromosome(args.chr)
+    input_data.setRegion(args.region)
     input_data.setAlleleFreqFilepaths(args.pfb)
     input_data.setHMMFilepath(args.hmm)
     input_data.setOutputDir(args.output)
-    input_data.setDisableCIGAR(args.disable_cigar)
-    input_data.setDisableSNPCNV(args.disable_snp_cnv)
     input_data.saveCNVData(args.save_cnv)
     input_data.setWindowSize(args.window_size)
+    input_data.setMinCNVLength(args.min_cnv_length)
 
-    # Run the analysis.
+    # Run the analysis
     contextsv.run(input_data)
 
     # Determine the data paths for downstream analysis.
-    vcf_path = os.path.join(args.output, "sv_calls.vcf")
+    vcf_path = os.path.join(args.output, "output.vcf")
     output_dir = args.output
-    region = args.region
-    cnv_data_path = os.path.join(args.output, "cnv_data.tsv")
+    # cnv_data_path = os.path.join(args.output, "cnv_data.tsv")
 
-    # Generate python-based CNV plots if SNP-based CNV predictions are enabled.
-    if (args.save_cnv and not args.disable_snp_cnv):
+    # Generate python-based CNV plots if SNP-based CNV predictions are enabled
+    if (args.save_cnv):
         log.info("Generating CNV plots...")
-        cnv_plots.run(vcf_path, cnv_data_path, output_dir, region)
 
-    log.info("Complete. Thank you for using contextSV!")
+        # Find all TSV files in the output directory
+        for file in os.listdir(output_dir):
+            if file.endswith(".tsv"):
+                cnv_data_path = os.path.join(output_dir, file)
+
+                # Set the HTML output path by changing the file extension
+                output_html = os.path.splitext(cnv_data_path)[0] + ".html"
+
+                # Generate the CNV plot for the current TSV file
+                cnv_plots.run(cnv_data_path, output_html)
+        # cnv_plots.run(vcf_path, cnv_data_path, output_dir, region)
+
+    log.info("Complete. File saved to %s\nThank you for using ContextSV!", vcf_path)
 
 if __name__ == '__main__':
 

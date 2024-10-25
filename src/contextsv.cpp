@@ -1,5 +1,4 @@
 #include "contextsv.h"
-#include "cnv_caller.h"
 #include "sv_caller.h"
 
 #include <htslib/sam.h>
@@ -32,21 +31,12 @@ int ContextSV::run()
     SVCaller sv_caller(*this->input_data);
     SVData sv_calls = sv_caller.run();
 
-    // Classify SVs based on SNP CNV predictions if enabled
-    if (this->input_data->getDisableSNPCNV() == false) {
-        // Call CNVs at SNP positions
-        std::cout << "Running CNV predictions..." << std::endl;
-        CNVCaller cnv_caller(*this->input_data);
-        cnv_caller.run(sv_calls);
-        std::cout << "CNV predictions complete." << std::endl;
-    }
-
     // Print the total number of SVs called
     std::cout << "Total SVs called: " << sv_calls.totalCalls() << std::endl;
 
     // Write SV calls to file
     std::string output_dir = this->input_data->getOutputDir();
-    std::cout << "Writing SV calls to file " << output_dir << "/sv_calls.vcf..." << std::endl;
+    std::cout << "Writing SV calls to file " << output_dir << "/output.vcf..." << std::endl;
     sv_calls.saveToVCF(ref_genome, output_dir);
 
     // Format and print the time taken to call SVs

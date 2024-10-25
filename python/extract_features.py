@@ -20,10 +20,9 @@ import pandas as pd
 
 def read_vcf(filepath):
     """Read in the VCF file."""
-    vcf_df = pd.read_csv(filepath, sep='\t', comment='#', header=None, \
-                         names=['CHROM', 'POS', 'ID', 'REF', 'ALT', 'QUAL', 'FILTER', 'INFO', 'FORMAT', 'SAMPLE'], \
-                            dtype={'CHROM': str, 'POS': np.int64, 'ID': str, 'REF': str, 'ALT': str, 'QUAL': str, \
-                                   'FILTER': str, 'INFO': str, 'FORMAT': str, 'SAMPLE': str})
+    vcf_df = pd.read_csv(filepath, sep='\t', comment='#', header=None, usecols=[0, 1, 7], \
+                         names=['CHROM', 'POS', 'INFO'], \
+                            dtype={'CHROM': str, 'POS': np.int64, 'INFO': str})
     return vcf_df
 
 def extract_features(input_vcf):
@@ -49,27 +48,25 @@ def extract_features(input_vcf):
     # Get the array of chromosome names.
     chrom = vcf_df['CHROM']
 
-    # Keep only chromosomes 1-22, X, Y, and MT.
-    chrom = chrom[chrom.isin(['chr' + str(i) for i in range(1, 23)] + ['chrX', 'chrY', 'chrMT'])]
+    # Create a key to map the chromosome names to a unique integer.
 
-    # If empty, try without the 'chr' prefix.
-    if chrom.empty:
-        chrom = vcf_df['CHROM']
-        chrom = chrom[chrom.isin([str(i) for i in range(1, 23)] + ['X', 'Y', 'MT'])]
+    # First, get all unique chromosome names.
+    chrom_unique = chrom.unique()
 
-    # Remove the 'chr' prefix.
-    chrom = chrom.str.replace('chr', '')
+    # Next, create a dictionary to map the chromosome names to integers.
+    chrom_dict = {chrom: i for i, chrom in enumerate(chrom_unique)}
 
-    # Convert the chromosome names to integers.
-    chrom = chrom.replace('X', '23')
-    chrom = chrom.replace('Y', '24')
-    chrom = chrom.replace('MT', '25')
-    chrom = chrom.astype(np.int32)
+    # Finally, map the chromosome names to integers.
+    chrom = chrom.map(chrom_dict)
+
 
     # Check if any chromosome names are missing.
     if chrom.isnull().values.any():
         logging.error('Chromosome name is missing.')
         sys.exit(1)
+    else:
+        # Print space-separated chromosome names.
+        logging.info('Chromosomes: ' + ' '.join(chrom.unique().astype(str)))
 
     # Get the start and end positions.
     start = vcf_df['POS']
@@ -77,13 +74,6 @@ def extract_features(input_vcf):
     # Check if any start positions are missing.
     if start.isnull().values.any():
         logging.error('Start position is missing.')
-        sys.exit(1)
-
-    end = vcf_df['INFO'].str.extract(r'END=(\d+)', expand=False).astype(np.int32)
-
-    # Check if any end positions are missing.
-    if end.isnull().values.any():
-        logging.error('End position is missing.')
         sys.exit(1)
 
     # Get the SV length from the INFO column.
@@ -106,7 +96,6 @@ def extract_features(input_vcf):
     sv_type = sv_type.replace('INV', '2')
     sv_type = sv_type.replace('INS', '3')
     sv_type = sv_type.replace('BND', '4')
-    sv_type = sv_type.replace('CNV', '5')
     sv_type = sv_type.astype(np.int32)
 
     # Check if any SV types are missing.
@@ -116,14 +105,34 @@ def extract_features(input_vcf):
 
     # Loop through the columns and check if any values are missing for all of
     # the feature arrays.
-    for col in [chrom, start, end, sv_length, sv_type, read_support, clipped_bases]:
+    for col in [chrom, start, sv_length, sv_type, read_support, clipped_bases]:
         if col.isnull().values.all():
             logging.error('All values are missing for a feature.')
             logging.error(col)
             sys.exit(1)
 
+    # Print the first 4 rows of the features.
+    logging.info('Features:')
+    logging.info(pd.DataFrame({'chrom': chrom.head(4), 'start': start.head(4), 'sv_length': sv_length.head(4), \
+                               'sv_type': sv_type.head(4), 'read_support': read_support.head(4), \
+                               'clipped_bases': clipped_bases.head(4)}))
+    
+    # Check that all features have the same length.
+    if not all(len(col) == len(chrom) for col in [start, sv_length, sv_type, read_support, clipped_bases]):
+        logging.error('Features do not have the same length.')
+
+        # Print the length of each feature.
+        logging.error('Chromosomes: ' + str(len(chrom)))
+        logging.error('Start positions: ' + str(len(start)))
+        logging.error('SV lengths: ' + str(len(sv_length)))
+        logging.error('SV types: ' + str(len(sv_type)))
+        logging.error('Read support: ' + str(len(read_support)))
+        logging.error('Clipped bases: ' + str(len(clipped_bases)))
+
+        sys.exit(1)
+
     # Create a dataframe of the features.
-    features = pd.DataFrame({'chrom': chrom, 'start': start, 'end': end, 'sv_length': sv_length, 'sv_type': sv_type, \
+    features = pd.DataFrame({'chrom': chrom, 'start': start, 'sv_length': sv_length, 'sv_type': sv_type, \
                              'read_support': read_support, 'clipped_bases': clipped_bases})
 
     # Check if any features are missing.

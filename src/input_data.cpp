@@ -20,18 +20,14 @@ InputData::InputData()
     this->long_read_bam = "";
     this->ref_filepath = "";
     this->snp_vcf_filepath = "";
-    this->output_dir = "";
-    this->region = "";
-    this->window_size = 10000;
-    this->region_chr = "";
-    this->region_start = 0;
-    this->region_end = 0;
+    this->chr = "";
+    this->start_end = std::make_pair(0, 0);
     this->region_set = false;
+    this->output_dir = "";
+    this->window_size = 2500;
+    this->min_cnv_length = 1000;
     this->thread_count = 1;
     this->hmm_filepath = "data/wgs.hmm";
-    this->whole_genome = true;
-    this->disable_cigar = false;
-    this->disable_snp_cnv = false;
     this->verbose = false;
     this->save_cnv_data = false;
 }
@@ -126,96 +122,6 @@ void InputData::setOutputDir(std::string dirpath)
     system(cmd.c_str());
 }
 
-std::string InputData::getRegion()
-{
-    return this->region;
-}
-
-void InputData::setRegion(std::string region)
-{
-    this->region = region;
-    
-    // Check if empty string. This means all chromosomes will be used
-    if (region == "")
-    {
-        std::cout << "No region specified. Using all chromosomes" << std::endl;
-        this->whole_genome = true;
-        return;
-    }
-
-    // Parse the region
-    char *tok = strtok((char *)region.c_str(), ":");
-    int col = 0;
-    while (tok != NULL)
-    {
-        // Get the chromosome
-        if (col == 0)
-        {
-            this->region_chr = tok;
-        }
-
-        // Get the start and end positions
-        else if (col == 1)
-        {
-            // Check if empty
-            if (strcmp(tok, "") == 0)
-            {
-                break;
-            }
-
-            // Split the start and end positions
-            char *start_tok = strtok(tok, "-");
-            char *end_tok = strtok(NULL, "-");
-
-            // Get the start position
-            if (start_tok != NULL)
-            {
-                this->region_start = atoi(start_tok);
-            }
-
-            // Get the end position
-            if (end_tok != NULL)
-            {
-                this->region_end = atoi(end_tok);
-            }
-        }
-        tok = strtok(NULL, ":");
-        col++;
-    }
-
-    // Check if a valid chromosome was parsed
-    if (this->region_chr == "")
-    {
-        std::cerr << "Error: Could not parse region" << std::endl;
-        exit(1);
-    }
-
-    // Check if only a chromosome was parsed
-    if (this->region_start == 0 && this->region_end == 0)
-    {
-        // Use the entire chromosome as the region
-        this->region_set = true;
-
-        // Set the whole genome flag to false
-        this->whole_genome = false;
-        std::cout << "Parsed region = " << this->region_chr << std::endl;
-    } else {
-        // Check if a valid chromosome start and end position were parsed
-        if (this->region_start == 0 || this->region_end == 0 || this->region_start > this->region_end)
-        {
-            std::cerr << "Error: Region start and end positions not set" << std::endl;
-            exit(1);
-        } else {
-            // Set the region
-            this->region_set = true;
-
-            // Set the whole genome flag to false
-            this->whole_genome = false;
-            std::cout << "Parsed region = " << this->region_chr << ":" << this->region_start << "-" << this->region_end << std::endl;
-        }
-    }
-}
-
 int InputData::getWindowSize()
 {
     return this->window_size;
@@ -236,83 +142,74 @@ void InputData::setSNPFilepath(std::string filepath)
     this->snp_vcf_filepath = filepath;
 }
 
-std::string InputData::getRegionChr()
+std::string InputData::getEthnicity()
 {
-    return this->region_chr;
+    return this->ethnicity;
 }
 
-int InputData::getRegionStart()
+void InputData::setEthnicity(std::string ethnicity)
 {
-    return this->region_start;
+    this->ethnicity = ethnicity;
 }
 
-int InputData::getRegionEnd()
+int InputData::getMinCNVLength()
 {
-    return this->region_end;
+    return this->min_cnv_length;
 }
 
-bool InputData::getRegionSet()
+void InputData::setMinCNVLength(int min_cnv_length)
+{
+    this->min_cnv_length = min_cnv_length;
+}
+
+void InputData::setChromosome(std::string chr)
+{
+    this->chr = chr;
+}
+
+std::string InputData::getChromosome()
+{
+    return this->chr;
+}
+
+void InputData::setRegion(std::string region)
+{
+    // Check if the region is valid
+    if (region != "")
+    {
+        // Split the region by colon
+        std::istringstream ss(region);
+        std::string token;
+        std::vector<std::string> region_tokens;
+
+        while (std::getline(ss, token, '-'))
+        {
+            region_tokens.push_back(token);
+        }
+
+        // Check if the region is valid
+        if (region_tokens.size() == 2)
+        {
+            // Get the start and end positions
+            int32_t start = std::stoi(region_tokens[0]);
+            int32_t end = std::stoi(region_tokens[1]);
+
+            // Set the region
+            this->start_end = std::make_pair(start, end);
+            this->region_set = true;
+        }
+    }
+    std::cout << "Region set to " << this->start_end.first << "-" << this->start_end.second << std::endl;
+}
+
+std::pair<int32_t, int32_t> InputData::getRegion()
+{
+    return this->start_end;
+}
+
+bool InputData::isRegionSet()
 {
     return this->region_set;
-}
-
-void InputData::setMeanChromosomeCoverage(std::string chr_cov)
-{
-    // Update the chromosome coverage map if the string is not empty
-    if (chr_cov != "")
-    {
-        // Split the string by commas
-        std::istringstream ss(chr_cov);
-        std::string token;
-        std::vector<std::string> chr_cov_pairs;
-
-        while (std::getline(ss, token, ','))
-        {
-            chr_cov_pairs.push_back(token);
-        }
-
-        // Iterate over the pairs
-        for (auto const &pair : chr_cov_pairs)
-        {
-            // Split the pair by colon
-            std::istringstream ss(pair);
-            std::string token;
-            std::vector<std::string> chr_cov;
-
-            while (std::getline(ss, token, ':'))
-            {
-                chr_cov.push_back(token);
-            }
-
-            // Check if the pair is valid
-            if (chr_cov.size() == 2)
-            {
-                // Get the chromosome and coverage
-                std::string chr = chr_cov[0];
-                double cov = std::stod(chr_cov[1]);
-
-                // Add the pair to the map
-                this->chr_cov[chr] = cov;
-
-                // Print the pair
-                std::cout << "Set mean coverage for " << chr << " to " << cov << std::endl;
-            }
-        }
-    }
-}
-
-double InputData::getMeanChromosomeCoverage(std::string chr)
-{
-    // Using find to check if the key exists
-    auto it = chr_cov.find(chr);
-
-    // If key is not found, throw an error
-    if (it == chr_cov.end()) {
-        throw std::out_of_range("Key not found in the map.");
-    }
-
-    // Key exists, return the corresponding double value
-    return it->second;
 }
 
 void InputData::setAlleleFreqFilepaths(std::string filepath)
@@ -335,9 +232,9 @@ void InputData::setAlleleFreqFilepaths(std::string filepath)
 
         // If a region is set, load only the chromosome in the region
         std::string target_chr;
-        if (this->region_set)
+        if (this->chr != "")
         {
-            target_chr = this->region_chr;
+            target_chr = this->chr;
 
             // Check if the region is in chr notation
             if (target_chr.find("chr") != std::string::npos)
@@ -446,36 +343,6 @@ void InputData::setHMMFilepath(std::string filepath)
             std::cout << "Using HMM file: " << this->hmm_filepath << std::endl;
         }
     }
-}
-
-void InputData::setDisableCIGAR(bool disable_cigar)
-{
-    this->disable_cigar = disable_cigar;
-}
-
-bool InputData::getDisableCIGAR()
-{
-    return this->disable_cigar;
-}
-
-void InputData::setDisableSNPCNV(bool disable_snp_cnv)
-{
-    this->disable_snp_cnv = disable_snp_cnv;
-}
-
-bool InputData::getDisableSNPCNV()
-{
-    return this->disable_snp_cnv;
-}
-
-void InputData::setWholeGenome(bool whole_genome)
-{
-    this->whole_genome = whole_genome;
-}
-
-bool InputData::getWholeGenome()
-{
-    return this->whole_genome;
 }
 
 void InputData::setVerbose(bool verbose)

@@ -21,6 +21,8 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
+# import plotly
+import plotly.graph_objects as go
 
 def generate_sv_size_plot(input_vcf, output_png, plot_title="SV Caller"):
     # Read VCF file into a pandas DataFrame
@@ -33,14 +35,39 @@ def generate_sv_size_plot(input_vcf, output_png, plot_title="SV Caller"):
     sv_sizes = {}
 
     # Iterate over each record in the VCF file
+    print("SV CALLER: ", plot_title)
     for _, record in vcf_df.iterrows():
 
-        # Check if INFO/SVLEN is present. These are not present in BND and imprecise calls
-        if 'SVLEN' not in record['INFO']:
-            continue
+        # Get the POS
+        pos = record['POS']
 
-        # Get the SV type
-        sv_type = record['INFO'].split('SVTYPE=')[1].split(';')[0]
+        # Get the SV data by splitting semi-colon separated INFO field and
+        # extracting SVTYPE and SVLEN
+        info_fields = record['INFO'].split(';')
+        sv_type = None
+        sv_len = None  # INFO/SVLEN
+        sv_span = None  # INFO/END - POS
+        alignment = "NA"
+        for field in info_fields:
+            if field.startswith('SVTYPE='):
+                sv_type = field.split('=')[1]                
+            elif field.startswith('SVLEN='):
+                sv_len = abs(int(field.split('=')[1]))
+            elif field.startswith('END='):
+                sv_span = int(field.split('=')[1]) - pos
+            elif field.startswith('ALN='):
+                alignment = field.split('=')[1]
+
+        # Continue if SV type is BND (no SV size)
+        if sv_type == "BND":
+            continue
+        # If the SV caller is DELLY, then we use the second SV size for non-INS
+        # (they don't have SVLEN) and the first SV size for INS
+        sv_size = None
+        if plot_title == "DELLY" and sv_type != "INS":
+            sv_size = sv_span
+        else:
+            sv_size = sv_len
 
         # If the plot title is GIAB, then we need to convert INS to DUP if
         # INFO/SVTYPE is INS and INFO/REPTYPE is DUP
@@ -48,13 +75,7 @@ def generate_sv_size_plot(input_vcf, output_png, plot_title="SV Caller"):
             if 'REPTYPE=DUP' in record['INFO']:
                 sv_type = "DUP"
 
-        # Get the SV size
-        sv_size = int(record['INFO'].split('SVLEN=')[1].split(';')[0])
-
-        # Print the SV type and size
-        # print(f'SV type: {sv_type}, SV size: {sv_size}')
-
-        # If the SV type is not in the dictionary, add it
+        # Add the SV type if it's not in the dictionary
         if sv_type not in sv_sizes:
             sv_sizes[sv_type] = []
 
@@ -65,12 +86,11 @@ def generate_sv_size_plot(input_vcf, output_png, plot_title="SV Caller"):
     # different SV type
     sv_type_count = len(sv_sizes)
     fig, axes = plt.subplots(sv_type_count, 1, figsize=(10, 5 * sv_type_count))
+    print(f'Number of SV types: {sv_type_count}')
 
-    # Create a dictionary of SV types and their corresponding colors. Use light
-    # colors to make the plot more readable, such as 'skyblue' for deletions,
-    # 'lightgreen' for duplications, 'lightcoral' for inversions, and 'violet'
-    # for insertions
-    sv_colors = {'DEL': 'skyblue', 'DUP': 'lightgreen', 'INV': 'lightcoral', 'INS': 'violet'}
+    # Create a dictionary of SV types and their corresponding colors.
+    # From: https://davidmathlogic.com/colorblind/
+    sv_colors = {'DEL': '#D81B60', 'DUP': '#1E88E5', 'INV': '#FFC107', 'INS': '#004D40'}
 
     # Create a dictionary of SV types and their corresponding labels
     sv_labels = {'DEL': 'Deletion', 'DUP': 'Duplication', 'INV': 'Inversion', 'INS': 'Insertion'}
@@ -80,14 +100,34 @@ def generate_sv_size_plot(input_vcf, output_png, plot_title="SV Caller"):
 
     # Print the number of SVs for each type, starting with the label
     print("SV Caller: ", plot_title)
+    print("Total number of SVs: ", len(vcf_df))
+
     print('Number of SVs for each type:')
+    total_sv_count = 0
     for sv_type in sv_types:
         print(f'{sv_labels[sv_type]}: {len(sv_sizes[sv_type])}')
+        total_sv_count += len(sv_sizes[sv_type])
+
+    print(f'Total number of SVs (sum): {total_sv_count}')
 
     # Print the number of SVs for each type with size > 50kb
     print('Number of SVs for each type with size > 50kb:')
     for sv_type in sv_types:
         print(f'{sv_labels[sv_type]}: {len([x for x in sv_sizes[sv_type] if abs(x) > 50000])}')
+
+    # Summary statistics
+    all_sv_sizes = []
+    for sv_type in sv_types:
+        all_sv_sizes.extend(sv_sizes[sv_type])
+    print('Summary statistics:')
+    print(f'Minimum SV size: {min(all_sv_sizes)}')
+    print(f'Maximum SV size: {max(all_sv_sizes)}')
+    print(f'Mean SV size: {np.mean(all_sv_sizes)}')
+    print(f'Median SV size: {np.median(all_sv_sizes)}')
+    print(f'Standard deviation of SV sizes: {np.std(all_sv_sizes)}')
+    print(f'Number of SVs >10kb: {len([x for x in all_sv_sizes if abs(x) > 10000])}')
+    print(f'Number of SVs >50kb: {len([x for x in all_sv_sizes if abs(x) > 50000])}')
+    print(f'Number of SVs >100kb: {len([x for x in all_sv_sizes if abs(x) > 100000])}')
 
     # Plot the SV size distributions
     size_scale = 1000 # Convert SV sizes from bp to kb. Use abs() to handle negative deletion sizes
@@ -101,34 +141,70 @@ def generate_sv_size_plot(input_vcf, output_png, plot_title="SV Caller"):
         # Use a log scale for the y-axis
         axes[i].set_yscale('log')
 
+        # # In the same axis, plot a known duplication if within the range of the plot
+        if sv_type == 'DUP':
+            print("TEST: Found DUP")
+            cnv_size = 776237 / size_scale
+            x_min, x_max = axes[i].get_xlim()
+            if cnv_size > x_min and cnv_size < x_max:
+                axes[i].axvline(x=cnv_size, color='black', linestyle='--')
+            else:
+                # Print the values
+                print(f'CNV size: {cnv_size}, x_min: {x_min}, x_max: {x_max}')
+
+        # Refresh the plot
+        plt.draw()
+
     # Save the plot as a PNG file
     plt.tight_layout()
     plt.savefig(output_png)
 
     # Plot an additional plot with suffix _full.png that includes all SV types
-    fig, ax = plt.subplots(figsize=(10, 5))
-    # Sort the SV types in order DEL, DUP, INS
-    sv_types_rearrange = ['DEL', 'DUP', 'INS']
-    for sv_type in sv_types_rearrange:
-        sizes = np.array(sv_sizes[sv_type])
-        ax.hist(np.abs(sizes) / size_scale, bins=100, color=sv_colors[sv_type], alpha=1.0, label=sv_labels[sv_type],
-                edgecolor='black')
+    # (using plotly to avoid overlapping histograms)
+    max_size = np.max(np.abs(all_sv_sizes))
+    max_bin_edge = np.max([1000000, max_size])  # Set the maximum bin edge to 1Mb or the max size
+    bin_edges = [0, 1000, 5000, 10000, 50000, 100000, 500000, max_bin_edge]  # Bin edges
+    bin_edges = np.array(bin_edges) / size_scale  # Convert to kb
+    bin_labels = ['0-1kb', '1-5kb', '5-10kb', '10-50kb', '50-100kb', '100-500kb', '500kb+']
+    x_values = np.arange(len(bin_edges) - 1)  # x values for the histogram
 
-    # # In the same axis, plot several landmarks of SV sizes from a list
-    # # of known SVs (CNV1, CNV2, CNV3, CNV4, CNV5) from Gracia-Diaz et al. 2024 if within the range of the plot
-    # akizu_5_cnv_sizes = [143033, 776238, 247758, 131964, 157440]
-    # x_min, x_max = ax.get_xlim()
-    # for cnv_size in akizu_5_cnv_sizes:
-    #     if cnv_size / size_scale > x_min and cnv_size / size_scale < x_max:
-    #         ax.axvline(x=cnv_size / size_scale, color='black', linestyle='--')
-        
-    ax.set_xlabel('SV size (kb)')
-    ax.set_ylabel('Frequency (log scale)')
-    ax.set_title(f'{plot_title}: All SV types')
-    ax.set_yscale('log')
-    plt.legend()
-    plt.tight_layout()
-    plt.savefig(output_png.replace('.png', '_full.png'))
+    # Create histograms using the bin edges
+    fig = go.Figure()
+    for sv_type in sv_types:
+        sizes = np.array(np.abs(sv_sizes[sv_type])) / size_scale
+
+        counts, _ = np.histogram(sizes, bins=bin_edges)
+        fig.add_trace(go.Bar(x=x_values, y=counts, name=sv_labels[sv_type], marker_color=sv_colors[sv_type]))
+
+
+    # Update the layout to group the bars side by side
+    fig.update_layout(
+        barmode='group',
+        title=f'{plot_title}: All SV types',
+        xaxis_title='SV size (kb)',
+        yaxis_title='Frequency (log scale)',
+        yaxis_type='log',
+        bargap=0.3,
+    )
+
+    # Add the bin edges to the x-axis ticks as a range
+    fig.update_xaxes(tickvals=x_values, ticktext=bin_labels)
+
+    # Move the legend to the top right inside the plot
+    fig.update_layout(legend=dict(
+        orientation='v',
+        yanchor='top',
+        y=0.75,
+        xanchor='right',
+        x=0.75,
+    ))
+
+    # Set a larger font size for all text in the plot
+    fig.update_layout(font=dict(size=26))
+    
+    # # Save the plot as a high-resolution PNG file for using in posters
+    fig.write_image(output_png.replace('.png', '_full.png'), width=1200, height=800)
+    print(f'Saved plot to {output_png.replace(".png", "_full.png")}')
 
 
 if __name__ == '__main__':

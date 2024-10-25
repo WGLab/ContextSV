@@ -21,6 +21,7 @@ using BST = std::set<std::tuple<int64_t, double>, SNPCompare>;
 
 class SNPInfo {
 public:
+    SNPInfo() {}
 
     // Insert a SNP into the map with its position and B-allele frequency
     void insertSNPAlleleFrequency(std::string chr, int64_t pos, double baf);
@@ -34,6 +35,7 @@ public:
 
     // Get the range of SNP positions for a given chromosome
     std::pair<int64_t, int64_t> getSNPRange(std::string chr);
+
 
 private:
     // Mutex for reading SNP information

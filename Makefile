@@ -8,4 +8,4 @@ all:
 	swig -c++ -python -I$(INCL_DIR) -o $(SRC_DIR)/swig_wrapper.cpp -outdir $(LIB_DIR) $(SRC_DIR)/swig_wrapper.i
 
 	# Compile the SWIG wrapper using setuptools
-	python setup.py build_ext --build-lib $(LIB_DIR)
+	python3 setup.py build_ext --build-lib $(LIB_DIR)

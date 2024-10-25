@@ -1,22 +1,16 @@
-
 [![build
 tests](https://github.com/WGLab/ContextSV/actions/workflows/build-tests.yml/badge.svg)](https://github.com/WGLab/ContextSV/actions/workflows/build-tests.yml)
 
-![contextsv_small_15p](https://github.com/WGLab/ContextSV/assets/14855676/79d70c76-a34a-472e-a14c-e49489ae0f09)
-
 # ContextSV
-> [!NOTE]
-> This is a work in progress, software is under development and not ready for official release.
 
-An alignment-based, generalized structural variant caller for long-read
-sequencing/mapping data.
-
-ContextSV takes as input a long read alignments file (BAM), a 
-corresponding reference genome file (FASTA), a VCF file with high-quality SNPs 
- (e.g. via GATK, Deepvariant, [NanoCaller](https://github.com/WGLab/NanoCaller)), and [gnomAD](https://gnomad.broadinstitute.org/downloads) database
+<p>
+<img src="https://github.com/user-attachments/assets/b6dca03c-11f8-4882-852f-d06c23bebebb" alt="ContextSV" align="left" style="width:100px;"/>
+A long-read, whole-genome structural variant (SV) caller. It takes as input long read alignments (BAM), the 
+corresponding reference genome (FASTA), a VCF with high-quality SNPs 
+ (e.g. via GATK, Deepvariant, <a href="https://github.com/WGLab/NanoCaller">NanoCaller</a>, and <a href="https://gnomad.broadinstitute.org/downloads">gnomAD</a> database
  VCF files with SNP population frequencies for each chromosome.
-
-Class documentation is available at [https://wglab.openbioinformatics.org/ContextSV](https://wglab.openbioinformatics.org/ContextSV)
+Class documentation is available at <a href="https://wglab.openbioinformatics.org/ContextSV">https://wglab.openbioinformatics.org/ContextSV</a>
+</p>
 
 ## Installation (Linux)
 ### Using Anaconda (recommended)
