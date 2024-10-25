@@ -1,19 +1,16 @@
-
 [![build
 tests](https://github.com/WGLab/ContextSV/actions/workflows/build-tests.yml/badge.svg)](https://github.com/WGLab/ContextSV/actions/workflows/build-tests.yml)
 
-![contextsv_small_15p](https://github.com/WGLab/ContextSV/assets/14855676/79d70c76-a34a-472e-a14c-e49489ae0f09)
-
 # ContextSV
 
-Whole-genome structural variant caller for long read sequencing data.
-
-ContextSV takes as input a long read alignments file (BAM), a 
-corresponding reference genome file (FASTA), a VCF file with high-quality SNPs 
- (e.g. via GATK, Deepvariant, [NanoCaller](https://github.com/WGLab/NanoCaller)), and [gnomAD](https://gnomad.broadinstitute.org/downloads) database
+<p>
+<img src="https://github.com/user-attachments/assets/b6dca03c-11f8-4882-852f-d06c23bebebb" alt="ContextSV" align="left" style="width:100px;"/>
+A long-read, whole-genome structural variant (SV) caller. It takes as input long read alignments (BAM), the 
+corresponding reference genome (FASTA), a VCF with high-quality SNPs 
+ (e.g. via GATK, Deepvariant, <a href="https://github.com/WGLab/NanoCaller">NanoCaller</a>, and <a href="https://gnomad.broadinstitute.org/downloads">gnomAD</a> database
  VCF files with SNP population frequencies for each chromosome.
-
-Class documentation is available at [https://wglab.openbioinformatics.org/ContextSV](https://wglab.openbioinformatics.org/ContextSV)
+Class documentation is available at <a href="https://wglab.openbioinformatics.org/ContextSV">https://wglab.openbioinformatics.org/ContextSV</a>
+</p>
 
 ## Installation (Linux)
 ### Using Anaconda (recommended)
@@ -109,13 +106,13 @@ thread_count=40
 python contextsv --threads $thread_count -o $output_dir -lr $long_read_bam --snps $snps_file --reference $ref_file --pfb $pfb_file
 
 # The output VCF filepath is located here:
-output_vcf=$output_dir/output.vcf
+output_vcf=$output_dir/sv_calls.vcf
 
 # Merge SVs (~3-4 hours for whole-genome, 40 cores)
 python contextsv --merge $output_vcf
 
 # The final merged VCF filepath is located here:
-merged_vcf=$output_dir/output.merged.vcf
+merged_vcf=$output_dir/sv_calls.merged.vcf
 ```
 
 ## Input arguments
@@ -150,7 +147,4 @@ options:
 For release history, please visit [here](https://github.com/WGLab/ContextSV/releases). 
 
 ## Getting help
-Please refer to the [contextSV issue
-pages](https://github.com/WGLab/ContextSV/issues) for posting your issues, we
-will respond quickly. Your comments will
-benefit other users, and are crucial to improving this tool.
+Please refer to the [contextSV issue pages](https://github.com/WGLab/ContextSV/issues) for posting your issues. We will also respond your questions quickly. Your comments are critical to improve our tool and will benefit other users.
