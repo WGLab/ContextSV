@@ -168,22 +168,12 @@ std::tuple<int, double, int, std::string, bool> CNVCaller::runCopyNumberPredicti
     int best_index = 0;
     std::pair<int64_t, int64_t> best_pos;
     SNPData best_snp_data;
-
-    // Get read depths for the SV candidate region
-    // int64_t region_start_pos = std::min(std::get<0>(sv_one), std::get<0>(sv_two));
-    // int64_t region_end_pos = std::max(std::get<1>(sv_one), std::get<1>(sv_two));
-    // std::unordered_map<uint64_t, int> pos_depth_map;
-    // calculateDepthsForSNPRegion(chr, region_start_pos, region_end_pos, pos_depth_map);
-
     int current_index = 0;
     int predicted_cnv_type = sv_types::UNKNOWN;
     std::string genotype = "./.";
     for (const auto& sv_call : {sv_one, sv_two})
     {
-        // Get the SV candidate
         const SVCandidate& candidate = sv_call;
-
-        // Get the start and end positions of the SV call
         int64_t start_pos = std::get<0>(candidate);
         int64_t end_pos = std::get<1>(candidate);
 
@@ -191,10 +181,6 @@ std::tuple<int, double, int, std::string, bool> CNVCaller::runCopyNumberPredicti
         if (start_pos == 0) {
             continue;
         }
-
-        // Get the depth at the start position, which is used as the FORMAT/DP
-        // value
-        // int dp_value = pos_depth_map[start_pos];
 
         // Run the Viterbi algorithm on SNPs in the SV region +/- 1/2
         // the SV length
@@ -262,9 +248,14 @@ std::tuple<int, double, int, std::string, bool> CNVCaller::runCopyNumberPredicti
     }
 
     // Save the SV calls as a TSV file if enabled
+    bool found_cnv = false;
+    if (predicted_cnv_type != sv_types::UNKNOWN && predicted_cnv_type != sv_types::NEUT)
+    {
+        found_cnv = true;
+    }
     int64_t sv_start_pos = std::get<0>(best_pos);
     int64_t sv_end_pos = std::get<1>(best_pos);
-    if (this->input_data->getSaveCNVData() && predicted_cnv_type != sv_types::UNKNOWN && (sv_end_pos - sv_start_pos) > 10000)
+    if (this->input_data->getSaveCNVData() && found_cnv && (sv_end_pos - sv_start_pos) > 10000)
     {
         std::string cnv_type_str = SVTypeString[predicted_cnv_type];
         std::string sv_filename = this->input_data->getOutputDir() + "/" + cnv_type_str + "_" + chr + "_" + std::to_string((int) sv_start_pos) + "-" + std::to_string((int) sv_end_pos) + "_SPLITALN.tsv";

@@ -83,8 +83,8 @@ class CNVCaller {
             {0, sv_types::UNKNOWN},
             {1, sv_types::DEL},
             {2, sv_types::DEL},
-            {3, sv_types::UNKNOWN},
-            {4, sv_types::UNKNOWN},
+            {3, sv_types::NEUT},
+            {4, sv_types::NEUT},
             {5, sv_types::DUP},
             {6, sv_types::DUP}
         };

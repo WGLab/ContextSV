@@ -84,19 +84,20 @@ RegionData SVCaller::detectSVsFromRegion(std::string region)
             // Process primary alignments
             if (!(bam1->core.flag & BAM_FSUPPLEMENTARY)) {
 
-                // Get the primary alignment chromosome, start, end, and depth
+                // Get the primary alignment chromosome, start, end, depth, and strand
                 std::string chr = bamHdr->target_name[bam1->core.tid];
                 int64_t start = bam1->core.pos;
                 int64_t end = bam_endpos(bam1);  // This is the first position after the alignment
+                bool is_forward_strand = !(bam1->core.flag & BAM_FREVERSE);
 
                 // Call SVs directly from the CIGAR string
                 std::tuple<std::unordered_map<int, int>, int32_t, int32_t> query_info = this->detectSVsFromCIGAR(bamHdr, bam1, sv_calls, true);
-                std::unordered_map<int, int> match_map = std::get<0>(query_info);
+                std::unordered_map<int, int>& match_map = std::get<0>(query_info);
                 int32_t query_start = std::get<1>(query_info);
                 int32_t query_end = std::get<2>(query_info);
 
                 // Add the primary alignment to the map
-                AlignmentData alignment(chr, start, end, ".", query_start, query_end, match_map);
+                AlignmentData alignment(chr, start, end, ".", query_start, query_end, std::move(match_map), is_forward_strand);
                 primary_alignments[qname] = std::move(alignment);
 
             // Process supplementary alignments
@@ -106,6 +107,7 @@ RegionData SVCaller::detectSVsFromRegion(std::string region)
                 std::string chr = bamHdr->target_name[bam1->core.tid];
                 int32_t start = bam1->core.pos;
                 int32_t end = bam_endpos(bam1);
+                bool is_forward_strand = !(bam1->core.flag & BAM_FREVERSE);
 
                 // Get CIGAR string information, but don't call SVs
                 std::tuple<std::unordered_map<int, int>, int32_t, int32_t> query_info = this->detectSVsFromCIGAR(bamHdr, bam1, sv_calls, false);
@@ -113,8 +115,9 @@ RegionData SVCaller::detectSVsFromRegion(std::string region)
                 int32_t query_start = std::get<1>(query_info);
                 int32_t query_end = std::get<2>(query_info);
 
-                // Add the supplementary alignment to the map
-                AlignmentData alignment(chr, start, end, ".", query_start, query_end, std::move(match_map));
+                // Add the supplementary alignment to the map, and sort by chr,
+                // start, end positions
+                AlignmentData alignment(chr, start, end, ".", query_start, query_end, std::move(match_map), is_forward_strand);
                 supplementary_alignments[qname].emplace_back(alignment);
 
                 // If Read ID == 8873acc1-eb84-415d-8557-a32a8f52ccee, print the
@@ -458,7 +461,7 @@ SVData SVCaller::run()
         std::cout << "Processing " << region_chunks.size() << " region(s) for chromosome " << chr << "..." << std::endl;
         for (const auto& sub_region : region_chunks) {
             // Detect SVs from the sub-region
-            // std::cout << "Detecting CIGAR string SVs from " << sub_region << "..." << std::endl;
+e           // std::cout << "Detecting CIGAR string SVs from " << sub_region << "..." << std::endl;
             RegionData region_data = this->detectSVsFromRegion(sub_region);
             SVData& sv_calls_region = std::get<0>(region_data);
             PrimaryMap& primary_map = std::get<1>(region_data);
@@ -481,7 +484,7 @@ SVData SVCaller::run()
 
             // Run split-read SV detection in a single thread, combined with
             // copy number variant predictions
-            std::cout << "Detecting copy number variants from split reads..." << std::endl;
+//            std::cout << "Detecting copy number variants from split reads..." << std::endl;
             this->detectSVsFromSplitReads(sv_calls_region, primary_map, supp_map, cnv_caller);
 
             // Add the SV calls to the main SV calls object
@@ -494,8 +497,8 @@ SVData SVCaller::run()
         // std::cout << "Extracted aligments for " << region_count << " of " << chr_count << " chromosome(s)..." << std::endl;
     }
 
-    auto end1 = std::chrono::high_resolution_clock::now();
-    std::cout << "Finished detecting " << sv_calls.totalCalls() << " SVs from " << chr_count << " chromosome(s). Elapsed time: " << getElapsedTime(start1, end1) << std::endl;
+//    auto end1 = std::chrono::high_resolution_clock::now();
+//    std::cout << "Finished detecting " << sv_calls.totalCalls() << " SVs from " << chr_count << " chromosome(s). Elapsed time: " << getElapsedTime(start1, end1) << std::endl;
 
     return sv_calls;
 }
@@ -515,10 +518,81 @@ void SVCaller::detectSVsFromSplitReads(SVData& sv_calls, PrimaryMap& primary_map
         int32_t primary_end = std::get<2>(primary_alignment);
         int32_t primary_query_start = std::get<4>(primary_alignment);
         int32_t primary_query_end = std::get<5>(primary_alignment);
+        bool is_primary_forward = std::get<6>(primary_alignment);
         std::unordered_map<int, int> primary_match_map = std::get<6>(primary_alignment);
 
-        // Loop through the supplementary alignments and find gaps and overlaps
+        // Sort supplementary alignments by chr, start, and end positions
         AlignmentVector supp_alignments = supp_map[qname];
+        std::sort(supp_alignments.begin(), supp_alignments.end(), [](const AlignmentData& a, const AlignmentData& b) {
+            if (std::get<0>(a) != std::get<0>(b)) {
+                return std::get<0>(a) < std::get<0>(b);
+            }
+            if (std::get<1>(a) != std::get<1>(b)) {
+                return std::get<1>(a) < std::get<1>(b);
+            }
+            return std::get<2>(a) < std::get<2>(b);
+        });
+
+        // Use a vector to store strandness information, we want to detect
+        // when there is a FWD-REV-FWD or REV-FWD-REV pattern
+        
+        // Step 1: Detect complex events, and if any are found, remove this
+        // QNAME from the next step (simple events)
+        // Loop through the supplementary alignments and find inversions and
+        // combined events
+        // Loop through 2 or more supplementary alignments to find complex
+        // events, continue to the next step if there are less than 2
+        // TODO: Keep only the highest scoring SV event for each QNAME
+        SVCandidate complex_sv_candidate;
+        if (supp_alignments.size() > 1) {
+            // Loop through pairs of supplementary alignments
+            for (size_t i = 0; i < supp_alignments.size(); i++) {
+                for (size_t j = i + 1; j < supp_alignments.size(); j++) {
+                    // Get the supplementary alignments
+                    AlignmentData supp_a = supp_alignments[i];
+                    AlignmentData supp_b = supp_alignments[j];
+
+                    // Get the supplementary alignment chromosome
+                    std::string supp_chr_a = std::get<0>(supp_a);
+                    std::string supp_chr_b = std::get<0>(supp_b);
+
+                    // Skip supplementary alignments that are on a different chromosome
+                    // than the primary alignment
+                    if (primary_chr != supp_chr_a || primary_chr != supp_chr_b) {
+                        continue;
+                    }
+
+                    // Get the start and end positions of the supplementary
+                    // alignments
+                    int32_t supp_start_a = std::get<1>(supp_a);
+                    int32_t supp_end_a = std::get<2>(supp_a);
+                    int32_t supp_start_b = std::get<1>(supp_b);
+                    int32_t supp_end_b = std::get<2>(supp_b);
+                    bool is_supp_a_forward = std::get<6>(supp_a);
+                    bool is_supp_b_forward = std::get<6>(supp_b);
+
+                    // Determine if this is a possible inversion (FWD-REV-FWD or
+                    // REV-FWD-REV)
+                    if ((is_primary_forward && !is_supp_a_forward && is_supp_b_forward) ||
+                        (!is_primary_forward && is_supp_a_forward && !is_supp_b_forward)) {
+                        std::cout << "Possible inversion detected for read " << qname << std::endl;
+
+                        // TODO: Remove overlapping read sequence
+
+                        // Check if the supplementary alignments are adjacent
+                        if (supp_end_a + 1 == supp_start_b) {
+                            // Create an inversion SV candidate
+                            complex_sv_candidate = SVCandidate(supp_start_a, supp_end_b, ".");
+                            sv_calls.add(primary_chr, complex_sv_candidate.start, complex_sv_candidate.end, INV, ".", "SUPPLEMENTARY", "./.", 0.0);
+                            sv_count++;
+                        }
+                    }
+                }
+            }
+        }
+
+        // Step 2: Loop through pairs of supplementary alignments and find simple SV events
+        // TODO: Keep only the highest scoring SV event for each QNAME
         for (const auto& supp_alignment : supp_alignments) {
 
             // Get the supplementary alignment chromosome

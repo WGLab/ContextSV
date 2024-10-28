@@ -15,12 +15,11 @@ namespace sv_types {
     static const int DUP = 1;
     static const int INV = 2;
     static const int INS = 3;
-    static const int BND = 4;
-    static const int TANDUP = 5;  // Tandem duplication
+    static const int NEUT = 4;  // SV with neutral copy number
     static const int UNKNOWN = -1;
 
     // Define SVTypeString for SV types
-    static const std::string SVTypeString[] = {"DEL", "DUP", "INV", "INS", "BND", "DUP"};
+    static const std::string SVTypeString[] = {"DEL", "DUP", "INV", "INS", "NEUT"};
 
     // Create a struct for storing SV information
     struct SVInfo {
