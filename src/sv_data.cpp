@@ -133,11 +133,30 @@ int SVData::getClippedBaseSupport(std::string chr, int64_t pos, int64_t end)
 void SVData::saveToVCF(FASTAQuery& ref_genome, std::string output_dir)
 {
     // Create a VCF writer
+    std::cout << "Creating VCF writer..." << std::endl;
     std::string output_vcf = output_dir + "/output.vcf";
     VcfWriter vcf_writer(output_vcf);
+    std::cout << "Writing VCF file to " << output_vcf << std::endl;
 
     // Set the sample name
     std::string sample_name = "SAMPLE";
+
+    std::cout << "Getting reference genome filepath..." << std::endl;
+    try {
+        std::string ref_fp = ref_genome.getFilepath();
+        std::cout << "Reference genome filepath: " << ref_fp << std::endl;
+    } catch (const std::exception& e) {
+        std::cerr << "Error: " << e.what() << std::endl;
+        return;
+    }
+
+    std::cout << "Getting reference genome header..." << std::endl;
+    try {
+        ref_genome.getContigHeader();
+    } catch (const std::exception& e) {
+        std::cerr << "Error: " << e.what() << std::endl;
+        return;
+    }
 
     // Set the header lines
     std::vector<std::string> header_lines = {
@@ -159,6 +178,7 @@ void SVData::saveToVCF(FASTAQuery& ref_genome, std::string output_dir)
     };
 
     // Write the header lines
+    std::cout << "Writing VCF header..." << std::endl;
     vcf_writer.writeHeader(header_lines);
 
     // Save the SV calls
@@ -251,12 +271,6 @@ void SVData::saveToVCF(FASTAQuery& ref_genome, std::string output_dir)
                     alt_allele = "<DUP>";
 
                     // Set the repeat type as an interspersed duplication
-                    repeat_type = "INTERSPERSED";
-                } else if (sv_type == TANDUP) {
-                    // Use a symbolic allele for tandem duplications
-                    alt_allele = "<DUP>";
-
-                    // Set the repeat type
                     repeat_type = "TANDEM";
                 }
             }
@@ -301,10 +315,12 @@ std::set<std::string> SVData::getChromosomes()
 
 int SVData::totalCalls()
 {
+    std::cout << "Calculating total SV calls..." << std::endl;
     int sv_calls = 0;
     for (auto const& sv_call : this->sv_calls) {
         sv_calls += sv_call.second.size();
     }
+    std::cout << "Total SV calls: " << sv_calls << std::endl;
 
     return sv_calls;
 }

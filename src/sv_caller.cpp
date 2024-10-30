@@ -411,12 +411,13 @@ SVData SVCaller::run()
     }
     int chr_count = chromosomes.size();
 
-    // Loop through each region and detect SVs
+    // Loop through each region and detect SVs (Note: The main loop is
+    // single-threaded)
     std::cout << "Detecting SVs from " << chr_count << " chromosome(s)..." << std::endl;
+    int chunk_count = 100;  // Number of chunks to split the chromosome into
     int region_count = 0;
     auto start1 = std::chrono::high_resolution_clock::now();
     SVData sv_calls;
-    int chunk_count = 10000;  // Number of chunks to split the chromosome into
     int min_cnv_length = this->input_data->getMinCNVLength();
     for (const auto& chr : chromosomes) {
         std::cout << "Running SV detection for chromosome " << chr << "..." << std::endl;
@@ -433,10 +434,14 @@ SVData SVCaller::run()
             // Use one chunk for the region
             std::string chunk = chr + ":" + std::to_string(region_start) + "-" + std::to_string(region_end);
             region_chunks.push_back(chunk);
+            std::cout << "Using specified region " << chunk << "..." << std::endl;
             
         } else {
             int chr_len = this->input_data->getRefGenomeChromosomeLength(chr);
-            int chunk_size = chr_len / chunk_count;
+            std::cout << "Chromosome length: " << chr_len << std::endl;
+            std::cout << "Chunk count: " << chunk_count << std::endl;
+            int chunk_size = std::ceil((double)chr_len / chunk_count);
+            std::cout << "Chunk size: " << chunk_size << std::endl;
             for (int i = 0; i < chunk_count; i++) {
                 int start = i * chunk_size + 1;  // 1-based
                 int end = start + chunk_size;
@@ -446,6 +451,7 @@ SVData SVCaller::run()
                 std::string chunk = chr + ":" + std::to_string(start) + "-" + std::to_string(end);
                 region_chunks.push_back(chunk);
             }
+            std::cout << "Split chromosome " << chr << " into " << region_chunks.size() << " chunks." << std::endl;
         }
 
         // Load chromosome data for copy number predictions
@@ -494,8 +500,10 @@ SVData SVCaller::run()
         // std::cout << "Extracted aligments for " << region_count << " of " << chr_count << " chromosome(s)..." << std::endl;
     }
 
-    auto end1 = std::chrono::high_resolution_clock::now();
-    std::cout << "Finished detecting " << sv_calls.totalCalls() << " SVs from " << chr_count << " chromosome(s). Elapsed time: " << getElapsedTime(start1, end1) << std::endl;
+    // auto end1 = std::chrono::high_resolution_clock::now();
+    std::cout << "SV calling completed." << std::endl;
+    // int total_sv_calls = sv_calls.totalCalls();
+    // std::cout << "Finished detecting " << sv_calls.totalCalls() << " SVs from " << chr_count << " chromosome(s). Elapsed time: " << getElapsedTime(start1, end1) << std::endl;
 
     return sv_calls;
 }
@@ -582,12 +590,12 @@ void SVCaller::detectSVsFromSplitReads(SVData& sv_calls, PrimaryMap& primary_map
                 std::vector<std::pair<SVCandidate, std::string>> sv_list;  // SV candidate and alignment type
 
                 // Use the gap ends as the SV endpoints
-                if (primary_start - supp_end >= min_cnv_length) {
-                    SVCandidate sv_candidate(supp_end+1, primary_start+1, ".");
-                    std::pair<SVCandidate, std::string> sv_pair(sv_candidate, "GAPINNER_A");
-                    sv_list.push_back(sv_pair);
-                    sv_count++;
-                }
+                // if (primary_start - supp_end >= min_cnv_length) {
+                //     SVCandidate sv_candidate(supp_end+1, primary_start+1, ".");
+                //     std::pair<SVCandidate, std::string> sv_pair(sv_candidate, "GAPINNER_A");
+                //     sv_list.push_back(sv_pair);
+                //     sv_count++;
+                // }
 
                 // Also use the alignment ends as the SV endpoints
                 if (primary_end - supp_start >= min_cnv_length) {
@@ -608,12 +616,12 @@ void SVCaller::detectSVsFromSplitReads(SVData& sv_calls, PrimaryMap& primary_map
                 std::vector<std::pair<SVCandidate, std::string>> sv_list;  // SV candidate and alignment type
 
                 // Use the gap ends as the SV endpoints
-                if (supp_start - primary_end >= min_cnv_length) {
-                    SVCandidate sv_candidate(primary_end+1, supp_start+1, ".");
-                    std::pair<SVCandidate, std::string> sv_pair(sv_candidate, "GAPINNER_B");
-                    sv_list.push_back(sv_pair);
-                    sv_count++;
-                }
+                // if (supp_start - primary_end >= min_cnv_length) {
+                //     SVCandidate sv_candidate(primary_end+1, supp_start+1, ".");
+                //     std::pair<SVCandidate, std::string> sv_pair(sv_candidate, "GAPINNER_B");
+                //     sv_list.push_back(sv_pair);
+                //     sv_count++;
+                // }
 
                 // Also use the alignment ends as the SV endpoints
                 if (supp_end - primary_start >= min_cnv_length) {

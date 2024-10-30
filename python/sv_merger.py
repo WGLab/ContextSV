@@ -89,6 +89,12 @@ def update_support(record, cluster_size):
 
     return record
 
+def weighted_score(read_support, hmm_score, sv_len, weight_hmm, weight_sv_len):
+    """
+    Calculate a weighted score based on read support and HMM score.
+    """
+    return (1 - weight_hmm) * read_support + weight_hmm * hmm_score
+
 def cluster_breakpoints(vcf_df, sv_type, cluster_size_min):
     """
     Cluster SV breakpoints using HDBSCAN.
@@ -131,22 +137,24 @@ def cluster_breakpoints(vcf_df, sv_type, cluster_size_min):
     cluster_labels = []
 
     # dbscan = DBSCAN(eps=30000, min_samples=3)
-    dbscan = HDBSCAN(min_cluster_size=cluster_size_min, min_samples=3)
+    logging.info("Clustering %d SV breakpoints with parameters: min_cluster_size=%d", len(breakpoints), cluster_size_min)
+    dbscan = HDBSCAN(min_cluster_size=cluster_size_min, min_samples=2)
     if len(breakpoints) > 0:
         logging.info("Clustering %d SV breakpoints...", len(breakpoints))
         cluster_labels = dbscan.fit_predict(breakpoints)
 
         logging.info("Label counts: %d", len(np.unique(cluster_labels)))
 
-    # Set all 0 values to NaN
-    hmm_scores[hmm_scores == 0] = np.nan
-
     # Merge SVs with the same label
     unique_labels = np.unique(cluster_labels)
+    logging.info("Unique labels: %s", unique_labels)
+
     for label in unique_labels:
 
         # Skip label -1 (outliers)
-        if label == -1:
+        # if label == -1:
+        # Skip label -1 (outliers) only if there are no other clusters
+        if label == -1 and len(unique_labels) > 1:
             # # Print the positions if any are within a certain range
             # pos_min = 180915940
             # pos_max = 180950356
@@ -171,9 +179,10 @@ def cluster_breakpoints(vcf_df, sv_type, cluster_size_min):
         idx = cluster_labels == label
 
         # Get HMM and read support values for the cluster
-        max_score_idx = 0  # Default to the first SV in the cluster
+        # max_score_idx = 0  # Default to the first SV in the cluster
         cluster_hmm_scores = np.array(hmm_scores[idx])
         cluster_depth_scores = np.array(sv_support[idx])
+        cluster_sv_lengths = np.array(breakpoints[idx][:, 1] - breakpoints[idx][:, 0] + 1)
         max_hmm = None
         max_support = None
         max_hmm_idx = None
@@ -189,20 +198,40 @@ def cluster_breakpoints(vcf_df, sv_type, cluster_size_min):
             max_support_idx = np.argmax(cluster_depth_scores)
             max_support = cluster_depth_scores[max_support_idx]
 
-        # For deletions, choose the SV with the highest HMM score if available
-        if sv_type == 'DEL':
-            if max_hmm is not None:
-                max_score_idx = max_hmm_idx
-            elif max_support is not None:
-                max_score_idx = max_support_idx
+        # Use a weighted approach to choose the best SV based on HMM and
+        # support. Deletions have higher priority for HMM scores, while
+        # insertions and duplications have higher priority for read alignment
+        # support.
+        # hmm_weight = 0.7 if sv_type == 'DEL' else 0.3
+        hmm_weight = 0.4
+        sv_len_weight = 0.4
+        max_score_idx = 0  # Default to the first SV in the cluster
+        max_score = weighted_score(cluster_depth_scores[max_score_idx], cluster_hmm_scores[max_score_idx], cluster_sv_lengths[max_score_idx], hmm_weight, sv_len_weight)
+        for k, hmm_loglh in enumerate(cluster_hmm_scores):
+            sv_len = cluster_sv_lengths[k] / 1000  # Normalize SV length to kilobases
+            read_support = cluster_depth_scores[k]
+            score = weighted_score(read_support, hmm_loglh, sv_len, hmm_weight, sv_len_weight)
+            if score > max_score:
+                max_score = score
+                max_score_idx = k
 
-        # For insertions and duplications, choose the SV with the highest read
-        # support if available
-        elif sv_type == 'INS/DUP':
-            if max_support is not None:
-                max_score_idx = max_support_idx
-            elif max_hmm is not None:
-                max_score_idx = max_hmm_idx
+        # Get the VCF record with the highest depth score
+        max_record = vcf_df.iloc[idx, :].iloc[max_score_idx, :]
+
+        # # For deletions, choose the SV with the highest HMM score if available
+        # if sv_type == 'DEL':
+        #     if max_hmm is not None:
+        #         max_score_idx = max_hmm_idx
+        #     elif max_support is not None:
+        #         max_score_idx = max_support_idx
+
+        # # For insertions and duplications, choose the SV with the highest read
+        # # support if available
+        # elif sv_type == 'INS/DUP':
+        #     if max_support is not None:
+        #         max_score_idx = max_support_idx
+        #     elif max_hmm is not None:
+        #         max_score_idx = max_hmm_idx
 
         # Get the VCF record with the highest depth score
         max_record = vcf_df.iloc[idx, :].iloc[max_score_idx, :]
