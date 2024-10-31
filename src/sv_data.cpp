@@ -50,7 +50,7 @@ int SVData::add(std::string chr, int64_t start, int64_t end, int sv_type, std::s
         // For insertions and duplications, the SV length is the length of the
         // inserted sequence, not including the insertion position
         int sv_length = 0;
-        if (sv_type == INS || sv_type == DUP || sv_type == TANDUP) {
+        if (sv_type == INS || sv_type == DUP) {
             sv_length = end - start;
         } else {
             // For deletions, the SV length is the length of the deletion
@@ -216,7 +216,7 @@ void SVData::saveToVCF(FASTAQuery& ref_genome, std::string output_dir)
             int64_t end = std::get<1>(candidate);
 
             // If the SV type is unknown, skip it
-            if (sv_type == UNKNOWN) {
+            if (sv_type == UNKNOWN || sv_type == NEUTRAL) {
                 skip_count += 1;
                 continue;
             }
@@ -247,7 +247,7 @@ void SVData::saveToVCF(FASTAQuery& ref_genome, std::string output_dir)
                 pos = preceding_pos;
 
             // Duplications and insertions
-            } else if (sv_type == INS || sv_type == DUP || sv_type == TANDUP) {
+            } else if (sv_type == INS || sv_type == DUP) {
                 // Use the preceding base as the reference allele
                 int64_t preceding_pos = (int64_t) std::max(1, (int) pos-1);  // Make sure the position is not negative
                 ref_allele = ref_genome.query(chr, preceding_pos, preceding_pos);

@@ -83,8 +83,8 @@ class CNVCaller {
             {0, sv_types::UNKNOWN},
             {1, sv_types::DEL},
             {2, sv_types::DEL},
-            {3, sv_types::UNKNOWN},
-            {4, sv_types::UNKNOWN},
+            {3, sv_types::NEUTRAL},
+            {4, sv_types::NEUTRAL},
             {5, sv_types::DUP},
             {6, sv_types::DUP}
         };
@@ -125,7 +125,7 @@ class CNVCaller {
         // Run copy number prediction for SVs meeting the minimum length threshold obtained from CIGAR strings
         SNPData runCIGARCopyNumberPrediction(std::string chr, std::map<SVCandidate, SVInfo>& sv_candidates, int min_length);
 
-        void updateSVsFromCopyNumberPrediction(SVData& sv_calls, std::vector<std::pair<SVCandidate, std::string>>& sv_list, std::string chr);
+        void updateSVsFromCopyNumberPrediction(SVData& sv_calls, std::vector<std::pair<SVCandidate, std::string>>& sv_list, std::string chr, bool inversion);
 
         // Calculate the mean chromosome coverage
         double calculateMeanChromosomeCoverage(std::string chr);

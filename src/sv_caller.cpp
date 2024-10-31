@@ -89,6 +89,9 @@ RegionData SVCaller::detectSVsFromRegion(std::string region)
                 int64_t start = bam1->core.pos;
                 int64_t end = bam_endpos(bam1);  // This is the first position after the alignment
 
+                // Get the strand
+                bool fwd_strand = !(bam1->core.flag & BAM_FREVERSE);
+
                 // Call SVs directly from the CIGAR string
                 std::tuple<std::unordered_map<int, int>, int32_t, int32_t> query_info = this->detectSVsFromCIGAR(bamHdr, bam1, sv_calls, true);
                 std::unordered_map<int, int> match_map = std::get<0>(query_info);
@@ -96,7 +99,7 @@ RegionData SVCaller::detectSVsFromRegion(std::string region)
                 int32_t query_end = std::get<2>(query_info);
 
                 // Add the primary alignment to the map
-                AlignmentData alignment(chr, start, end, ".", query_start, query_end, match_map);
+                AlignmentData alignment(chr, start, end, ".", query_start, query_end, std::move(match_map), fwd_strand);
                 primary_alignments[qname] = std::move(alignment);
 
             // Process supplementary alignments
@@ -107,6 +110,9 @@ RegionData SVCaller::detectSVsFromRegion(std::string region)
                 int32_t start = bam1->core.pos;
                 int32_t end = bam_endpos(bam1);
 
+                // Get the strand
+                bool fwd_strand = !(bam1->core.flag & BAM_FREVERSE);
+
                 // Get CIGAR string information, but don't call SVs
                 std::tuple<std::unordered_map<int, int>, int32_t, int32_t> query_info = this->detectSVsFromCIGAR(bamHdr, bam1, sv_calls, false);
                 const std::unordered_map<int, int>& match_map = std::get<0>(query_info);
@@ -114,7 +120,7 @@ RegionData SVCaller::detectSVsFromRegion(std::string region)
                 int32_t query_end = std::get<2>(query_info);
 
                 // Add the supplementary alignment to the map
-                AlignmentData alignment(chr, start, end, ".", query_start, query_end, std::move(match_map));
+                AlignmentData alignment(chr, start, end, ".", query_start, query_end, std::move(match_map), fwd_strand);
                 supplementary_alignments[qname].emplace_back(alignment);
 
                 // If Read ID == 8873acc1-eb84-415d-8557-a32a8f52ccee, print the
@@ -438,10 +444,10 @@ SVData SVCaller::run()
             
         } else {
             int chr_len = this->input_data->getRefGenomeChromosomeLength(chr);
-            std::cout << "Chromosome length: " << chr_len << std::endl;
-            std::cout << "Chunk count: " << chunk_count << std::endl;
+            // std::cout << "Chromosome length: " << chr_len << std::endl;
+            // std::cout << "Chunk count: " << chunk_count << std::endl;
             int chunk_size = std::ceil((double)chr_len / chunk_count);
-            std::cout << "Chunk size: " << chunk_size << std::endl;
+            // std::cout << "Chunk size: " << chunk_size << std::endl;
             for (int i = 0; i < chunk_count; i++) {
                 int start = i * chunk_size + 1;  // 1-based
                 int end = start + chunk_size;
@@ -451,7 +457,7 @@ SVData SVCaller::run()
                 std::string chunk = chr + ":" + std::to_string(start) + "-" + std::to_string(end);
                 region_chunks.push_back(chunk);
             }
-            std::cout << "Split chromosome " << chr << " into " << region_chunks.size() << " chunks." << std::endl;
+            std::cout << "Split chromosome " << chr << " into " << region_chunks.size() << " chunks of size " << chunk_size << "..." << std::endl;
         }
 
         // Load chromosome data for copy number predictions
@@ -524,6 +530,7 @@ void SVCaller::detectSVsFromSplitReads(SVData& sv_calls, PrimaryMap& primary_map
         int32_t primary_query_start = std::get<4>(primary_alignment);
         int32_t primary_query_end = std::get<5>(primary_alignment);
         std::unordered_map<int, int> primary_match_map = std::get<6>(primary_alignment);
+        bool primary_strand = std::get<7>(primary_alignment);
 
         // Loop through the supplementary alignments and find gaps and overlaps
         AlignmentVector supp_alignments = supp_map[qname];
@@ -543,9 +550,9 @@ void SVCaller::detectSVsFromSplitReads(SVData& sv_calls, PrimaryMap& primary_map
             int32_t supp_query_start = std::get<4>(supp_alignment);
             int32_t supp_query_end = std::get<5>(supp_alignment);
             std::unordered_map<int, int> supp_match_map = std::get<6>(supp_alignment);
+            bool supp_strand = std::get<7>(supp_alignment);
 
-            // Determine if there is overlap between the primary and
-            // supplementary query sequences
+            // Resolve overlaps between the primary and supplementary query sequences
             int32_t overlap_start = std::max(primary_query_start, supp_query_start);
             int32_t overlap_end = std::min(primary_query_end, supp_query_end);
             int32_t overlap_length = overlap_end - overlap_start;
@@ -582,8 +589,36 @@ void SVCaller::detectSVsFromSplitReads(SVData& sv_calls, PrimaryMap& primary_map
                 }
             }
 
-            // Gap analysis (deletion or duplication)
-            if (supp_start < primary_start && supp_end < primary_start) {
+            // [1] Inversion detection from primary and supplementary alignments
+            // on opposite strands
+            if (primary_strand != supp_strand) {
+                // std::cout << "Inversion detected for read " << qname << std::endl;
+                // std::cout << "Primary read position: " << primary_start << "-" << primary_end << std::endl;
+                // std::cout << "Supplementary read position: " << supp_start << "-" << supp_end << std::endl;
+
+                std::vector<std::pair<SVCandidate, std::string>> sv_list;  // SV candidate and alignment type
+
+                // Use the supplementary alignment coordinates as the SV
+                // endpoints
+                if (supp_end - supp_start >= min_cnv_length) {
+                    SVCandidate sv_candidate(supp_start+1, supp_end+1, ".");
+                    std::pair<SVCandidate, std::string> sv_pair(sv_candidate, "INVERSION");
+                    sv_list.push_back(sv_pair);
+                    sv_count++;
+                    // SVCandidate sv_candidate(supp_start+1, primary_end+1, ".");
+                    // std::pair<SVCandidate, std::string> sv_pair(sv_candidate, "INVERSION");
+                    // sv_list.push_back(sv_pair);
+                    // sv_count++;
+                }
+
+                // Determine which SV to keep based on HMM prediction likelihood
+                if (sv_list.size() > 0) {
+                    cnv_caller.updateSVsFromCopyNumberPrediction(sv_calls, sv_list, supp_chr, true);
+                }
+            }
+
+            // [2] CNV detection based on primary and supplementary alignment boundaries
+            else if (supp_start < primary_start && supp_end < primary_start) {
 
                 // Gap with supplementary before primary:
                 // [supp_start] [supp_end] -- [primary_start] [primary_end]
@@ -607,7 +642,7 @@ void SVCaller::detectSVsFromSplitReads(SVData& sv_calls, PrimaryMap& primary_map
 
                 // Determine which SV to keep based on HMM prediction likelihood
                 if (sv_list.size() > 0) {
-                    cnv_caller.updateSVsFromCopyNumberPrediction(sv_calls, sv_list, supp_chr);
+                    cnv_caller.updateSVsFromCopyNumberPrediction(sv_calls, sv_list, supp_chr, false);
                 }
                 
             } else if (supp_start > primary_end && supp_end > primary_end) {
@@ -633,7 +668,7 @@ void SVCaller::detectSVsFromSplitReads(SVData& sv_calls, PrimaryMap& primary_map
 
                 // Determine which SV to keep based on HMM prediction likelihood
                 if (sv_list.size() > 0) {
-                    cnv_caller.updateSVsFromCopyNumberPrediction(sv_calls, sv_list, supp_chr);
+                    cnv_caller.updateSVsFromCopyNumberPrediction(sv_calls, sv_list, supp_chr, false);
                 }
             }
         }

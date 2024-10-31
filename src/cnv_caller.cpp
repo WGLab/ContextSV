@@ -35,6 +35,10 @@ using namespace sv_types;
 std::pair<std::vector<int>, double> CNVCaller::runViterbi(CHMM hmm, SNPData& snp_data)
 {
     int data_count = (int) snp_data.pos.size();
+    if (data_count == 0)
+    {
+        throw std::runtime_error("Error: No SNP data found for Viterbi algorithm.");
+    }
     std::lock_guard<std::mutex> lock(this->hmm_mtx);  // Lock the mutex for the HMM
     std::pair<std::vector<int>, double> state_sequence = testVit_CHMM(hmm, data_count, snp_data.log2_cov, snp_data.baf, snp_data.pfb);
     return state_sequence;
@@ -47,12 +51,6 @@ std::pair<SNPData, bool> CNVCaller::querySNPRegion(std::string chr, int64_t star
     bool snps_found = false;
     int window_size = this->input_data->getWindowSize();
 
-    // std::cout << "Querying SNPs for region " << chr << ":" << start_pos <<
-    // "-" << end_pos << "..." << std::endl;
-    // TEST
-    if (start_pos == 43593639 && end_pos == 43608172) {
-        printMessage("Querying SNPs for region " + chr + ":" + std::to_string(start_pos) + "-" + std::to_string(end_pos) + "...");
-    }
     // printMessage("Querying SNPs for region " + chr + ":" + std::to_string(start_pos) + "-" + std::to_string(end_pos) + "...");
     for (int64_t i = start_pos; i <= end_pos; i += window_size)
     {
@@ -117,7 +115,7 @@ std::pair<SNPData, bool> CNVCaller::querySNPRegion(std::string chr, int64_t star
     return std::make_pair(snp_data, snps_found);
 }
 
-void CNVCaller::updateSVsFromCopyNumberPrediction(SVData &sv_calls, std::vector<std::pair<SVCandidate, std::string>> &sv_list, std::string chr)
+void CNVCaller::updateSVsFromCopyNumberPrediction(SVData &sv_calls, std::vector<std::pair<SVCandidate, std::string>> &sv_list, std::string chr, bool inversion)
 {
     // Throw an error if there are more than two SV candidates
     if (sv_list.size() > 2) {
@@ -153,6 +151,21 @@ void CNVCaller::updateSVsFromCopyNumberPrediction(SVData &sv_calls, std::vector<
         aln_type += "_SNPS";
     } else {
         aln_type += "_NOSNPS";
+    }
+
+    // Update the SV type if inversion is detected and the best CNV type is
+    // copy neutral
+    if (inversion && (best_cnv_type == sv_types::NEUTRAL))
+    {
+        best_cnv_type = sv_types::INV;
+        printMessage("Inversion detected for SV candidate " + std::to_string(start_pos) + "-" + std::to_string(end_pos) + "...");
+    }
+
+    // If the dummy call was used, then throw an error if the best SV type
+    // is unknown
+    if (std::get<0>(best_sv_candidate) == 0 && std::get<1>(best_sv_candidate) == 0)
+    {
+        throw std::runtime_error("Error: No valid SV type found for copy number prediction.");
     }
 
     // Add the SV call to the main SV data
@@ -204,7 +217,7 @@ std::tuple<int, double, int, std::string, bool> CNVCaller::runCopyNumberPredicti
 
         // Query the SNP region for the SV candidate
         std::pair<SNPData, bool> snp_call = querySNPRegion(chr, snp_start_pos, snp_end_pos, this->snp_info, this->pos_depth_map, this->mean_chr_cov);
-        SNPData sv_snps = snp_call.first;
+        SNPData& sv_snps = snp_call.first;
         bool sv_snps_found = snp_call.second;
 
         // Run the Viterbi algorithm
@@ -264,7 +277,8 @@ std::tuple<int, double, int, std::string, bool> CNVCaller::runCopyNumberPredicti
     // Save the SV calls as a TSV file if enabled
     int64_t sv_start_pos = std::get<0>(best_pos);
     int64_t sv_end_pos = std::get<1>(best_pos);
-    if (this->input_data->getSaveCNVData() && predicted_cnv_type != sv_types::UNKNOWN && (sv_end_pos - sv_start_pos) > 10000)
+    bool copy_number_change = (predicted_cnv_type != sv_types::UNKNOWN && predicted_cnv_type != sv_types::NEUTRAL);
+    if (this->input_data->getSaveCNVData() && copy_number_change && (sv_end_pos - sv_start_pos) > 10000)
     {
         std::string cnv_type_str = SVTypeString[predicted_cnv_type];
         std::string sv_filename = this->input_data->getOutputDir() + "/" + cnv_type_str + "_" + chr + "_" + std::to_string((int) sv_start_pos) + "-" + std::to_string((int) sv_end_pos) + "_SPLITALN.tsv";

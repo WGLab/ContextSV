@@ -17,8 +17,8 @@
 /// @endcond
 
 // SV candidate alignment data (chr, start, end, sequence, query start, query
-// end, mismatch map)
-using AlignmentData   = std::tuple<std::string, int64_t, int64_t, std::string, int32_t, int32_t, std::unordered_map<int, int>>;
+// end, mismatch map, strand)
+using AlignmentData   = std::tuple<std::string, int64_t, int64_t, std::string, int32_t, int32_t, std::unordered_map<int, int>, bool>;
 using AlignmentVector = std::vector<AlignmentData>;
 
 // Query map (query name, alignment vector)
