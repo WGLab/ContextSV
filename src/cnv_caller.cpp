@@ -115,180 +115,79 @@ std::pair<SNPData, bool> CNVCaller::querySNPRegion(std::string chr, int64_t star
     return std::make_pair(snp_data, snps_found);
 }
 
-void CNVCaller::updateSVsFromCopyNumberPrediction(SVData &sv_calls, std::vector<std::pair<SVCandidate, std::string>> &sv_list, std::string chr, bool inversion)
-{
-    // Throw an error if there are more than two SV candidates
-    if (sv_list.size() > 2) {
-        throw std::runtime_error("Error: More than two SV candidates found for copy number prediction comparisons.");
-    }
-
-    // Add a dummy call to the SV list if there is only one SV candidate
-    if (sv_list.size() == 1) {
-        SVCandidate dummy(0, 0, ".");
-        sv_list.push_back(std::make_pair(dummy, "."));
-    }
-    
-    // Run copy number prediction for the SV pair and add only the SV
-    // candidate with the highest likelihood
-    SVCandidate& sv_one = sv_list[0].first;
-    SVCandidate& sv_two = sv_list[1].first;
-    std::tuple<int, double, SVType, std::string, bool> cnv_prediction = this->runCopyNumberPredictionPair(chr, sv_one, sv_two);
-
-    // Get the SV info
-    int best_index = std::get<0>(cnv_prediction);
-    SVCandidate& best_sv_candidate = sv_list[best_index].first;
-    int64_t start_pos = std::get<0>(best_sv_candidate);
-    int64_t end_pos = std::get<1>(best_sv_candidate);
-    std::string aln_type = sv_list[best_index].second;
-
-    // Get the prediction data
-    double best_likelihood = std::get<1>(cnv_prediction);
-    SVType best_cnv_type = std::get<2>(cnv_prediction);
-    std::string best_genotype = std::get<3>(cnv_prediction);
-    bool snps_found = std::get<4>(cnv_prediction);
-    if (snps_found)
-    {
-        aln_type += "_SNPS";
-    } else {
-        aln_type += "_NOSNPS";
-    }
-
-    // Update the SV type if inversion is detected and the best CNV type is
-    // copy neutral or duplication
-    if (inversion) // && (best_cnv_type == sv_types::NEUTRAL))
-    {
-        if (best_cnv_type == SVType::NEUTRAL)
-        {
-            best_cnv_type = SVType::INV;
-        } else if (best_cnv_type == SVType::DUP)
-        {
-            best_cnv_type = SVType::INV_DUP;
-            printMessage("INVDUP detected for SV candidate " + std::to_string(start_pos) + "-" + std::to_string(end_pos) + "...");
-        }
-        // best_cnv_type = sv_types::INV;
-        // printMessage("Inversion detected for SV candidate " + std::to_string(start_pos) + "-" + std::to_string(end_pos) + "...");
-    }
-
-    // If the dummy call was used, then throw an error if the best SV type
-    // is unknown
-    if (std::get<0>(best_sv_candidate) == 0 && std::get<1>(best_sv_candidate) == 0)
-    {
-        throw std::runtime_error("Error: No valid SV type found for copy number prediction.");
-    }
-
-    // Add the SV call to the main SV data
-    sv_calls.add(chr, start_pos, end_pos, best_cnv_type, ".", aln_type, best_genotype, best_likelihood);
-}
-
-std::tuple<int, double, SVType, std::string, bool> CNVCaller::runCopyNumberPredictionPair(std::string chr, SVCandidate sv_one, SVCandidate sv_two)
+std::tuple<double, SVType, std::string, bool> CNVCaller::runCopyNumberPrediction(std::string chr, SVCandidate& candidate)
 {
     // std::cout << "Running copy number prediction for SV pair " << chr << ":" << std::get<0>(sv_one) << "-" << std::get<1>(sv_one) << " and " << std::get<0>(sv_two) << "-" << std::get<1>(sv_two) << "..." << std::endl;
-    double best_likelihood = 0.0;
-    bool best_likelihood_set = false;
-    bool snps_found = false;
-    int best_index = 0;
-    std::pair<int64_t, int64_t> best_pos;
-    SNPData best_snp_data;
-    int current_index = 0;
+     // Get the start and end positions of the SV call
+    int64_t start_pos = std::get<0>(candidate);
+    int64_t end_pos = std::get<1>(candidate);
+
+    // Run the Viterbi algorithm on SNPs in the SV region +/- 1/2
+    // the SV length
+    int64_t sv_length = (end_pos - start_pos) / 2.0;
+    int64_t snp_start_pos = std::max((int64_t) 1, start_pos - sv_length);
+    int64_t snp_end_pos = end_pos + sv_length;
+
+    // Query the SNP region for the SV candidate
+    std::pair<SNPData, bool> snp_call = querySNPRegion(chr, snp_start_pos, snp_end_pos, this->snp_info, this->pos_depth_map, this->mean_chr_cov);
+    SNPData& sv_snps = snp_call.first;
+    bool sv_snps_found = snp_call.second;
+
+    // Run the Viterbi algorithm
+    std::pair<std::vector<int>, double> prediction = runViterbi(this->hmm, sv_snps);
+    std::vector<int>& state_sequence = prediction.first;
+    double likelihood = prediction.second;
+
+    // Get all the states in the SV region
+    std::vector<int> sv_states;
+    for (size_t i = 0; i < state_sequence.size(); i++)
+    {
+        if (sv_snps.pos[i] >= start_pos && sv_snps.pos[i] <= end_pos)
+        {
+            sv_states.push_back(state_sequence[i]);
+        }
+    }
+
+    // Determine if there is a majority state within the SV region and if it
+    // is greater than 75%
+    double pct_threshold = 0.75;
+    int max_state = 0;
+    int max_count = 0;
+    for (int i = 0; i < 6; i++)
+    {
+        int state_count = std::count(sv_states.begin(), sv_states.end(), i+1);
+        if (state_count > max_count)
+        {
+            max_state = i+1;
+            max_count = state_count;
+        }
+    }
+    
+    // Update SV type and genotype based on the majority state
     SVType predicted_cnv_type = SVType::UNKNOWN;
     std::string genotype = "./.";
-    for (const auto& sv_call : {sv_one, sv_two})
+    int state_count = (int) sv_states.size();
+    if ((double) max_count / (double) state_count > pct_threshold)
     {
-        // Get the SV candidate
-        const SVCandidate& candidate = sv_call;
-
-        // Get the start and end positions of the SV call
-        int64_t start_pos = std::get<0>(candidate);
-        int64_t end_pos = std::get<1>(candidate);
-
-        // Skip if the start position equals zero (dummy call)
-        if (start_pos == 0) {
-            continue;
-        }
-
-        // Get the depth at the start position, which is used as the FORMAT/DP
-        // value
-        // int dp_value = pos_depth_map[start_pos];
-
-        // Run the Viterbi algorithm on SNPs in the SV region +/- 1/2
-        // the SV length
-        int64_t sv_length = (end_pos - start_pos) / 2.0;
-        int64_t snp_start_pos = std::max((int64_t) 1, start_pos - sv_length);
-        int64_t snp_end_pos = end_pos + sv_length;
-
-        // Query the SNP region for the SV candidate
-        std::pair<SNPData, bool> snp_call = querySNPRegion(chr, snp_start_pos, snp_end_pos, this->snp_info, this->pos_depth_map, this->mean_chr_cov);
-        SNPData& sv_snps = snp_call.first;
-        bool sv_snps_found = snp_call.second;
-
-        // Run the Viterbi algorithm
-        std::pair<std::vector<int>, double> prediction = runViterbi(this->hmm, sv_snps);
-        std::vector<int>& state_sequence = prediction.first;
-        double likelihood = prediction.second;
-
-        // Get all the states in the SV region
-        std::vector<int> sv_states;
-        for (size_t i = 0; i < state_sequence.size(); i++)
-        {
-            if (sv_snps.pos[i] >= start_pos && sv_snps.pos[i] <= end_pos)
-            {
-                sv_states.push_back(state_sequence[i]);
-            }
-        }
-
-        // Determine if there is a majority state within the SV region and if it
-        // is greater than 75%
-        double pct_threshold = 0.75;
-        int max_state = 0;
-        int max_count = 0;
-        for (int i = 0; i < 6; i++)
-        {
-            int state_count = std::count(sv_states.begin(), sv_states.end(), i+1);
-            if (state_count > max_count)
-            {
-                max_state = i+1;
-                max_count = state_count;
-            }
-        }
-        
-        // Update SV type and genotype based on the majority state
-        int state_count = (int) sv_states.size();
-        if ((double) max_count / (double) state_count > pct_threshold)
-        {
-            predicted_cnv_type = getSVTypeFromCNState(max_state);
-            genotype = cnv_genotype_map[max_state];
-        }
-
-        // Update the best SV call based on the likelihood
-        if (!best_likelihood_set || (likelihood > best_likelihood))
-        {
-            best_likelihood = likelihood;
-            best_likelihood_set = true;
-            snps_found = sv_snps_found;
-            best_index = current_index;
-
-            // Add the state sequence to the SNP data (avoid copying the data)
-            sv_snps.state_sequence = std::move(state_sequence);
-            best_snp_data = std::move(sv_snps);
-            best_pos = std::make_pair(start_pos, end_pos);
-        }
-        current_index++;
+        predicted_cnv_type = getSVTypeFromCNState(max_state);
+        genotype = cnv_genotype_map[max_state];
     }
+    sv_snps.state_sequence = std::move(state_sequence);  // Move the state sequence to the SNP data
 
     // Save the SV calls as a TSV file if enabled
-    int64_t sv_start_pos = std::get<0>(best_pos);
-    int64_t sv_end_pos = std::get<1>(best_pos);
     bool copy_number_change = (predicted_cnv_type != SVType::UNKNOWN && predicted_cnv_type != SVType::NEUTRAL);
-    if (this->input_data->getSaveCNVData() && copy_number_change && (sv_end_pos - sv_start_pos) > 10000)
+    if (this->input_data->getSaveCNVData() && copy_number_change && (end_pos - start_pos) > 10000)
     {
         std::string cnv_type_str = getSVTypeString(predicted_cnv_type);
-        std::string sv_filename = this->input_data->getOutputDir() + "/" + cnv_type_str + "_" + chr + "_" + std::to_string((int) sv_start_pos) + "-" + std::to_string((int) sv_end_pos) + "_SPLITALN.tsv";
+        std::string sv_filename = this->input_data->getOutputDir() + "/" + cnv_type_str + "_" + chr + "_" + std::to_string((int) start_pos) + "-" + std::to_string((int) end_pos) + "_SPLITALN.tsv";
         std::cout << "Saving SV split-alignment copy number predictions to " << sv_filename << std::endl;
-        this->saveSVCopyNumberToTSV(best_snp_data, sv_filename, chr, best_pos.first, best_pos.second, cnv_type_str, best_likelihood);
+        this->saveSVCopyNumberToTSV(sv_snps, sv_filename, chr, start_pos, end_pos, cnv_type_str, likelihood);
+        // this->saveSVCopyNumberToTSV(best_snp_data, sv_filename, chr, best_pos.first, best_pos.second, cnv_type_str, best_likelihood);
     }
 
-    return std::make_tuple(best_index, best_likelihood, predicted_cnv_type, genotype, snps_found);
+    return std::make_tuple(likelihood, predicted_cnv_type, genotype, sv_snps_found);
 }
+
 
 SNPData CNVCaller::runCIGARCopyNumberPrediction(std::string chr, std::map<SVCandidate, SVInfo> &sv_candidates, int min_length)
 {

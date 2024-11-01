@@ -16,6 +16,7 @@
 #include <chrono>
 #include <future>
 #include <cmath>
+#include <algorithm>
 
 #include "utils.h"
 #include "sv_types.h"
@@ -433,6 +434,11 @@ void SVCaller::detectSVsFromSplitReads(SVData& sv_calls, PrimaryMap& primary_map
         std::unordered_map<int, int> primary_match_map = std::get<6>(primary_alignment);
         bool primary_strand = std::get<7>(primary_alignment);
 
+        // Sort the supplementary alignments by chr, start, and end
+        std::sort(supp_map[qname].begin(), supp_map[qname].end(), [](const AlignmentData& a, const AlignmentData& b) {
+            return std::get<0>(a) < std::get<0>(b) || (std::get<0>(a) == std::get<0>(b) && std::get<1>(a) < std::get<1>(b)) || (std::get<0>(a) == std::get<0>(b) && std::get<1>(a) == std::get<1>(b) && std::get<2>(a) < std::get<2>(b));
+        });
+
         // Loop through the supplementary alignments and find gaps and overlaps
         AlignmentVector supp_alignments = supp_map[qname];
         for (const auto& supp_alignment : supp_alignments) {
@@ -497,7 +503,7 @@ void SVCaller::detectSVsFromSplitReads(SVData& sv_calls, PrimaryMap& primary_map
             // subsections = split_coordinates(entire_coordinate)
             // likelihoods_subsections = [hmm_model.predict_likelihood(sub) for sub in subsections]
 
-            // # Determine best likelihood from subsections
+            // # Determine best (or worst?) likelihood from subsections (also print all likelihoods for each component)
             // best_likelihood_split = max(likelihoods_subsections)
 
             // # Compare and decide
@@ -505,6 +511,10 @@ void SVCaller::detectSVsFromSplitReads(SVData& sv_calls, PrimaryMap& primary_map
             //     best_choice = "entire coordinate"
             // else:
             //     best_choice = "split coordinates"
+            bool find_complex_events = true;
+            if (find_complex_events) {
+                // std::cout << "Complex event detection not implemented yet" << std::endl;
+            }
 
             // [1] Inversion detection from primary and supplementary alignments
             // on opposite strands
@@ -512,21 +522,34 @@ void SVCaller::detectSVsFromSplitReads(SVData& sv_calls, PrimaryMap& primary_map
                 // std::cout << "Inversion detected for read " << qname << std::endl;
                 // std::cout << "Primary read position: " << primary_start << "-" << primary_end << std::endl;
                 // std::cout << "Supplementary read position: " << supp_start << "-" << supp_end << std::endl;
-
-                std::vector<std::pair<SVCandidate, std::string>> sv_list;  // SV candidate and alignment type
-
-                // Use the supplementary alignment coordinates as the SV
-                // endpoints
                 if (supp_end - supp_start >= min_cnv_length) {
                     SVCandidate sv_candidate(supp_start+1, supp_end+1, ".");
-                    std::pair<SVCandidate, std::string> sv_pair(sv_candidate, "INVERSION");
-                    sv_list.push_back(sv_pair);
-                    sv_count++;
-                }
+                    std::tuple<double, SVType, std::string, bool> result = cnv_caller.runCopyNumberPrediction(supp_chr, sv_candidate);
+                    double likelihood = std::get<0>(result);
+                    SVType cnv_type = std::get<1>(result);
+                    std::string genotype = std::get<2>(result);
+                    bool snps_found = std::get<3>(result);
+                    std::string aln_type = "LOG2";
+                    if (snps_found) {
+                        aln_type += "_SNPS";
+                    } else {
+                        aln_type += "_NOSNPS";
+                    }
 
-                // Determine which SV to keep based on HMM prediction likelihood
-                if (sv_list.size() > 0) {
-                    cnv_caller.updateSVsFromCopyNumberPrediction(sv_calls, sv_list, supp_chr, true);
+                    // Update the SV type for inversions
+                    if (cnv_type == SVType::NEUTRAL) {
+                        cnv_type = SVType::INV;
+                    } else if (cnv_type == SVType::DUP) {
+                        cnv_type = SVType::INV_DUP;
+                    } else {
+                        cnv_type = SVType::UNKNOWN;
+                    }
+                    
+                    // Add the SV call to the main SV data if not unknown
+                    if (cnv_type != SVType::UNKNOWN) {
+                        sv_calls.add(supp_chr, supp_start, supp_end, cnv_type, ".", aln_type, genotype, likelihood);
+                    }
+                    sv_count++;
                 }
             }
 
@@ -535,37 +558,54 @@ void SVCaller::detectSVsFromSplitReads(SVData& sv_calls, PrimaryMap& primary_map
 
                 // Gap with supplementary before primary:
                 // [supp_start] [supp_end] -- [primary_start] [primary_end]
-                std::vector<std::pair<SVCandidate, std::string>> sv_list;  // SV candidate and alignment type
-
-                // Use the alignment ends as the SV endpoints
                 if (primary_end - supp_start >= min_cnv_length) {
                     SVCandidate sv_candidate(supp_start+1, primary_end+1, ".");
-                    std::pair<SVCandidate, std::string> sv_pair(sv_candidate, "GAPOUTER_A");
-                    sv_list.push_back(sv_pair);
-                    sv_count++;
-                }
 
-                // Determine which SV to keep based on HMM prediction likelihood
-                if (sv_list.size() > 0) {
-                    cnv_caller.updateSVsFromCopyNumberPrediction(sv_calls, sv_list, supp_chr, false);
+                    // Run copy number prediction for the SV candidate
+                    std::tuple<double, SVType, std::string, bool> result = cnv_caller.runCopyNumberPrediction(supp_chr, sv_candidate);
+                    double likelihood = std::get<0>(result);
+                    SVType cnv_type = std::get<1>(result);
+                    std::string genotype = std::get<2>(result);
+                    bool snps_found = std::get<3>(result);
+                    std::string aln_type = "GAPOUTER_A";
+                    if (snps_found) {
+                        aln_type += "_SNPS";
+                    } else {
+                        aln_type += "_NOSNPS";
+                    }
+
+                    // Add the SV call to the main SV data if not unknown
+                    if (cnv_type != SVType::UNKNOWN) {
+                        sv_calls.add(supp_chr, supp_start, primary_end, cnv_type, ".", aln_type, genotype, likelihood);
+                    }
+                    sv_count++;
                 }
                 
             } else if (supp_start > primary_end && supp_end > primary_end) {
                 // Gap with supplementary after primary:
                 // [primary_start] [primary_end] -- [supp_start] [supp_end]
-                std::vector<std::pair<SVCandidate, std::string>> sv_list;  // SV candidate and alignment type
 
-                // Use the alignment ends as the SV endpoints
                 if (supp_end - primary_start >= min_cnv_length) {
                     SVCandidate sv_candidate(primary_start+1, supp_end+1, ".");
-                    std::pair<SVCandidate, std::string> sv_pair(sv_candidate, "GAPOUTER_B");
-                    sv_list.push_back(sv_pair);
-                    sv_count++;
-                }
 
-                // Determine which SV to keep based on HMM prediction likelihood
-                if (sv_list.size() > 0) {
-                    cnv_caller.updateSVsFromCopyNumberPrediction(sv_calls, sv_list, supp_chr, false);
+                    // Run copy number prediction for the SV candidate
+                    std::tuple<double, SVType, std::string, bool> result = cnv_caller.runCopyNumberPrediction(supp_chr, sv_candidate);
+                    double likelihood = std::get<0>(result);
+                    SVType cnv_type = std::get<1>(result);
+                    std::string genotype = std::get<2>(result);
+                    bool snps_found = std::get<3>(result);
+                    std::string aln_type = "GAPOUTER_B";
+                    if (snps_found) {
+                        aln_type += "_SNPS";
+                    } else {
+                        aln_type += "_NOSNPS";
+                    }
+
+                    // Add the SV call to the main SV data if not unknown
+                    if (cnv_type != SVType::UNKNOWN) {
+                        sv_calls.add(supp_chr, primary_start, supp_end, cnv_type, ".", aln_type, genotype, likelihood);
+                    }
+                    sv_count++;
                 }
             }
         }

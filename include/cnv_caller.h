@@ -107,14 +107,12 @@ class CNVCaller {
         // Load file data for a chromosome (SNP positions, BAF values, and PFB values)
         void loadChromosomeData(std::string chr);
 
-        // Run copy number prediction for a pair of SV candidates, and add only
-        // the SV candidate with the highest likelihood
-        std::tuple<int, double, SVType, std::string, bool> runCopyNumberPredictionPair(std::string chr, SVCandidate sv_one, SVCandidate sv_two);
+        // Run copy number prediction for a single SV candidate, returning the
+        // likelihood, predicted CNV type, genotype, and whether SNPs were found
+        std::tuple<double, SVType, std::string, bool> runCopyNumberPrediction(std::string chr, SVCandidate& sv_candidate);
 
         // Run copy number prediction for SVs meeting the minimum length threshold obtained from CIGAR strings
         SNPData runCIGARCopyNumberPrediction(std::string chr, std::map<SVCandidate, SVInfo>& sv_candidates, int min_length);
-
-        void updateSVsFromCopyNumberPrediction(SVData& sv_calls, std::vector<std::pair<SVCandidate, std::string>>& sv_list, std::string chr, bool inversion);
 
         // Calculate the mean chromosome coverage
         double calculateMeanChromosomeCoverage(std::string chr);
