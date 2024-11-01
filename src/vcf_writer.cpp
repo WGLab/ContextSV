@@ -7,14 +7,18 @@
 
 VcfWriter::VcfWriter(const std::string &filename)
 {
-    // Remove the file if it already exists
-    std::remove(filename.c_str());
-
-    // Open the VCF file
-    this->file_stream.open(filename);
+    // Open the VCF file, overwrite if it already exists
+    this->file_stream.open(filename, std::ios::out);
     if (!this->file_stream.is_open()) {
         std::cerr << "Error: Unable to open " << filename << std::endl;
         exit(1);
+    }
+}
+
+VcfWriter::~VcfWriter()
+{
+    if (this->file_stream.is_open()) {
+        this->file_stream.close();
     }
 }
 
@@ -54,10 +58,4 @@ void VcfWriter::writeRecord(const std::string &chrom, int pos, const std::string
 {
     // Write a record to the VCF file
     this->file_stream << chrom << "\t" << pos << "\t" << id << "\t" << ref << "\t" << alt << "\t" << qual << "\t" << filter << "\t" << info << "\t" << format << "\t" << samples[0] << std::endl;
-}
-
-void VcfWriter::close()
-{
-    // Close the VCF file
-    this->file_stream.close();
 }

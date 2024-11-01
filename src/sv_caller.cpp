@@ -589,6 +589,24 @@ void SVCaller::detectSVsFromSplitReads(SVData& sv_calls, PrimaryMap& primary_map
                 }
             }
 
+            // TODO:
+            // if (find_complex_events)
+            // # Calculate likelihood for entire coordinate
+            // likelihood_entire = hmm_model.predict_likelihood(entire_coordinate)
+
+            // # Split coordinates into smaller sections and calculate likelihoods
+            // subsections = split_coordinates(entire_coordinate)
+            // likelihoods_subsections = [hmm_model.predict_likelihood(sub) for sub in subsections]
+
+            // # Determine best likelihood from subsections
+            // best_likelihood_split = max(likelihoods_subsections)
+
+            // # Compare and decide
+            // if likelihood_entire > best_likelihood_split:
+            //     best_choice = "entire coordinate"
+            // else:
+            //     best_choice = "split coordinates"
+
             // [1] Inversion detection from primary and supplementary alignments
             // on opposite strands
             if (primary_strand != supp_strand) {

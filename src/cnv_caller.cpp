@@ -154,11 +154,19 @@ void CNVCaller::updateSVsFromCopyNumberPrediction(SVData &sv_calls, std::vector<
     }
 
     // Update the SV type if inversion is detected and the best CNV type is
-    // copy neutral
-    if (inversion && (best_cnv_type == sv_types::NEUTRAL))
+    // copy neutral or duplication
+    if (inversion) // && (best_cnv_type == sv_types::NEUTRAL))
     {
-        best_cnv_type = sv_types::INV;
-        printMessage("Inversion detected for SV candidate " + std::to_string(start_pos) + "-" + std::to_string(end_pos) + "...");
+        if (best_cnv_type == sv_types::NEUTRAL)
+        {
+            best_cnv_type = sv_types::INV;
+        } else if (best_cnv_type == sv_types::DUP)
+        {
+            best_cnv_type = sv_types::INV_DUP;
+            printMessage("INVDUP detected for SV candidate " + std::to_string(start_pos) + "-" + std::to_string(end_pos) + "...");
+        }
+        // best_cnv_type = sv_types::INV;
+        // printMessage("Inversion detected for SV candidate " + std::to_string(start_pos) + "-" + std::to_string(end_pos) + "...");
     }
 
     // If the dummy call was used, then throw an error if the best SV type

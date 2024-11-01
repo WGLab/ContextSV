@@ -10,17 +10,40 @@
 /// @endcond
 
 namespace sv_types {
-    // Define constants for SV types
-    static const int DEL = 0;
-    static const int DUP = 1;
-    static const int INV = 2;
-    static const int INS = 3;
-    static const int BND = 4;
-    static const int NEUTRAL = 5;  // Neutral copy number with unknown type
-    static const int UNKNOWN = -1;
 
-    // Define SVTypeString for SV types
-    static const std::string SVTypeString[] = {"DEL", "DUP", "INV", "INS", "BND", "NEUT"};
+    // Define constants for SV types
+    enum SVType {
+        UNKNOWN = -1,
+        DEL = 0,
+        DUP = 1,
+        INV = 2,
+        INS = 3,
+        BND = 4,
+        NEUTRAL = 5,  // Neutral copy number with unknown type
+        INV_DUP = 6  // Inversion duplication
+    };
+
+    // Mapping of SV types to strings
+    const std::unordered_map<int, std::string> SVTypeString = {
+        {DEL, "DEL"},
+        {DUP, "DUP"},
+        {INV, "INV"},
+        {INS, "INS"},
+        {BND, "BND"},
+        {NEUTRAL, "NEUT"},
+        {INV_DUP, "INVDUP"}
+    };
+    // static const int UNKNOWN = -1;
+    // static const int DEL = 0;
+    // static const int DUP = 1;
+    // static const int INV = 2;
+    // static const int INS = 3;
+    // static const int BND = 4;
+    // static const int NEUTRAL = 5;  // Neutral copy number with unknown type
+    // static const int INV_DUP = 6;  // Inversion duplication
+
+    // // Define SVTypeString for SV types (for VCF output)
+    // static const std::string SVTypeString[] = {"DEL", "DUP", "INV", "INS", "BND", "NEUT", "INVDUP"};
 
     // Create a struct for storing SV information
     struct SVInfo {

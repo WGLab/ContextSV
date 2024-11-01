@@ -43,6 +43,8 @@ int ContextSV::run()
     // auto end_sv = std::chrono::high_resolution_clock::now();
     // std::string elapsed_time = getElapsedTime(start_sv, end_sv);
     std::cout << "SV calling complete." << std::endl;
+    // int sv_count = sv_calls.totalCalls();
+    // std::cout << "Found " << sv_count << " total SVs." << std::endl;
     // std::cout << "SV calling complete. Found " << sv_calls.totalCalls() << " total SVs. Time taken (h:m:s) = " << elapsed_time << std::endl;
 
     return 0;

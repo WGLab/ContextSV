@@ -135,6 +135,7 @@ void SVData::saveToVCF(FASTAQuery& ref_genome, std::string output_dir)
     // Create a VCF writer
     std::cout << "Creating VCF writer..." << std::endl;
     std::string output_vcf = output_dir + "/output.vcf";
+    std::cout << "Writing VCF file to " << output_vcf << std::endl;
     VcfWriter vcf_writer(output_vcf);
     std::cout << "Writing VCF file to " << output_vcf << std::endl;
 
@@ -184,8 +185,8 @@ void SVData::saveToVCF(FASTAQuery& ref_genome, std::string output_dir)
     // Save the SV calls
     std::cout << "Saving SV calls to " << output_vcf << std::endl;
     std::string sv_method = "CONTEXTSVv0.1";
-    int num_sv_calls = this->totalCalls();
     int skip_count = 0;
+    int total_count = 0;
     std::set<std::string> chrs = this->getChromosomes();
     for (auto const& chr : chrs) {
         if (this->sv_calls.find(chr) == this->sv_calls.end()) {
@@ -219,6 +220,8 @@ void SVData::saveToVCF(FASTAQuery& ref_genome, std::string output_dir)
             if (sv_type == UNKNOWN || sv_type == NEUTRAL) {
                 skip_count += 1;
                 continue;
+            } else {
+                total_count += 1;
             }
 
             // Process by SV type
@@ -277,7 +280,8 @@ void SVData::saveToVCF(FASTAQuery& ref_genome, std::string output_dir)
 
             // Create the VCF parameter strings
             int clipped_base_support = this->getClippedBaseSupport(chr, pos, end);
-            std::string sv_type_str = this->sv_type_map[sv_type];
+            // std::string sv_type_str = this->sv_type_map[sv_type];
+            std::string sv_type_str = sv_types::SVTypeString[sv_type];
             std::string info_str = "END=" + std::to_string(end) + ";SVTYPE=" + sv_type_str + \
                 ";SVLEN=" + std::to_string(sv_length) + ";SUPPORT=" + std::to_string(read_support) + \
                 ";SVMETHOD=" + sv_method + ";ALN=" + data_type_str + ";CLIPSUP=" + std::to_string(clipped_base_support) + \
@@ -293,10 +297,13 @@ void SVData::saveToVCF(FASTAQuery& ref_genome, std::string output_dir)
     }
 
     // Print the number of SV calls skipped
-    std::cout << "Skipped " << skip_count << " of " << num_sv_calls << " SV calls because the SV type is unknown" << std::endl;
+    std::cout << "Finished writing VCF file." << std::endl;
+    // int num_sv_calls = this->totalCalls();
+    // std::cout << "Skipped " << skip_count << " of " << num_sv_calls << " SV calls because the SV type is unknown" << std::endl;
+    // std::cout << "Finished writing VCF file with " << num_sv_calls - skip_count << " SV calls" << std::endl;
 
     // Close the output stream
-    vcf_writer.close();
+    // vcf_writer.close();
 }
 
 std::map<SVCandidate, SVInfo>& SVData::getChromosomeSVs(std::string chr)
@@ -315,12 +322,12 @@ std::set<std::string> SVData::getChromosomes()
 
 int SVData::totalCalls()
 {
-    std::cout << "Calculating total SV calls..." << std::endl;
+    // std::cout << "Calculating total SV calls..." << std::endl;
     int sv_calls = 0;
     for (auto const& sv_call : this->sv_calls) {
         sv_calls += sv_call.second.size();
     }
-    std::cout << "Total SV calls: " << sv_calls << std::endl;
+    // std::cout << "Total SV calls: " << sv_calls << std::endl;
 
     return sv_calls;
 }

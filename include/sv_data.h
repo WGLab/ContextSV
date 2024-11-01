@@ -24,14 +24,14 @@ class SVData {
         std::map<std::pair<std::string, int64_t>, int> clipped_base_support;
 
         // SV type to string map for VCF output
-        std::map<int, std::string> sv_type_map = {
-            {0, "DEL"},
-            {1, "DUP"},
-            {2, "INV"},
-            {3, "INS"},
-            {4, "BND"},
-            {5, "DUP"}
-        };
+        // std::map<int, std::string> sv_type_map = {
+        //     {0, "DEL"},
+        //     {1, "DUP"},
+        //     {2, "INV"},
+        //     {3, "INS"},
+        //     {4, "BND"},
+        //     {5, "DUP"}
+        // };
         
     public:
         SVData() {};

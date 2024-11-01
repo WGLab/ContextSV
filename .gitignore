@@ -84,3 +84,6 @@ data/hg19ToHg38.over.chain.gz
 # Test images
 python/dbscan_clustering*.png
 python/dist_plots
+
+# Temporary files
+lib/.nfs*
