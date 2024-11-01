@@ -261,18 +261,15 @@ std::tuple<std::unordered_map<int, int>, int32_t, int32_t> SVCaller::detectSVsFr
 
         // Update match/mismatch query map
         if (op == BAM_CEQUAL) {
-            // match_count += op_len;
             for (int j = 0; j < op_len; j++) {
                 query_match_map[query_pos + j] = 1;
             }
         } else if (op == BAM_CDIFF) {
-            // mismatch_count += op_len;
             for (int j = 0; j < op_len; j++) {
                 query_match_map[query_pos + j] = 0;
             }
         } else if (op == BAM_CMATCH) {
-            // Compare read and reference sequences
-            // Get the sequence from the query
+            // Get the read sequence
             uint8_t* seq_ptr = bam_get_seq(alignment);
             std::string cmatch_seq_str = "";
             for (int j = 0; j < op_len; j++) {
@@ -433,180 +430,168 @@ void SVCaller::detectSVsFromSplitReads(SVData& sv_calls, PrimaryMap& primary_map
         int32_t primary_query_end = std::get<5>(primary_alignment);
         std::unordered_map<int, int> primary_match_map = std::get<6>(primary_alignment);
         bool primary_strand = std::get<7>(primary_alignment);
+        if (supp_map.find(qname) == supp_map.end()) {
+            continue;
+        }
 
-        // Sort the supplementary alignments by chr, start, and end
-        std::sort(supp_map[qname].begin(), supp_map[qname].end(), [](const AlignmentData& a, const AlignmentData& b) {
-            return std::get<0>(a) < std::get<0>(b) || (std::get<0>(a) == std::get<0>(b) && std::get<1>(a) < std::get<1>(b)) || (std::get<0>(a) == std::get<0>(b) && std::get<1>(a) == std::get<1>(b) && std::get<2>(a) < std::get<2>(b));
-        });
-
-        // Loop through the supplementary alignments and find gaps and overlaps
-        AlignmentVector supp_alignments = supp_map[qname];
-        for (const auto& supp_alignment : supp_alignments) {
-
-            // Skip supplementary alignments that are on a different chromosome
-            // for now (TODO: Use for identifying trans-chromosomal SVs such as
-            // translocations)
-            std::string supp_chr = std::get<0>(supp_alignment);
-            if (primary_chr != supp_chr) {
-                continue;
+        // Find the largest alignment on the primary chromosome
+        AlignmentData supp_alignment = supp_map[qname][0];
+        int32_t largest_supp_length = 0;
+        auto largest_supp_it = supp_map[qname].end();
+        for (auto it = supp_map[qname].begin(); it != supp_map[qname].end();) {
+            const auto& supp_chr = std::get<0>(*it);
+            if (supp_chr != primary_chr) {
+                it = supp_map[qname].erase(it);
+            } else {
+                int32_t supp_length = std::get<2>(*it) - std::get<1>(*it);
+                if (supp_length > largest_supp_length) {
+                    largest_supp_length = supp_length;
+                    largest_supp_it = it;
+                }
+                ++it;
             }
-            int32_t supp_start = std::get<1>(supp_alignment);
-            int32_t supp_end = std::get<2>(supp_alignment);
-            int32_t supp_query_start = std::get<4>(supp_alignment);
-            int32_t supp_query_end = std::get<5>(supp_alignment);
-            std::unordered_map<int, int> supp_match_map = std::get<6>(supp_alignment);
-            bool supp_strand = std::get<7>(supp_alignment);
+        }
+        if (largest_supp_it == supp_map[qname].end()) {
+            continue;  // No primary chromosome alignments
+        }
+        supp_alignment = *largest_supp_it;
+       
+        // Run SV detection from the primary and supplementary alignment
+        std::string supp_chr = std::get<0>(supp_alignment);
+        int32_t supp_start = std::get<1>(supp_alignment);
+        int32_t supp_end = std::get<2>(supp_alignment);
+        int32_t supp_query_start = std::get<4>(supp_alignment);
+        int32_t supp_query_end = std::get<5>(supp_alignment);
+        std::unordered_map<int, int> supp_match_map = std::get<6>(supp_alignment);
+        bool supp_strand = std::get<7>(supp_alignment);
 
-            // Resolve overlaps between the primary and supplementary query sequences
-            int32_t overlap_start = std::max(primary_query_start, supp_query_start);
-            int32_t overlap_end = std::min(primary_query_end, supp_query_end);
-            int32_t overlap_length = overlap_end - overlap_start;
-            if (overlap_length > 0) {
-                // std::cout << "Overlap detected for read " << qname << std::endl;
-                // std::cout << "Primary read position: " << primary_query_start << "-" << primary_query_end << std::endl;
-                // std::cout << "Supplementary read position: " << supp_query_start << "-" << supp_query_end << std::endl;
-                // std::cout << "Overlap range: " << overlap_start << "-" << overlap_end << std::endl;
-                // std::cout << "Overlap length: " << overlap_length << std::endl;
-                // std::cout << "Primary reference position: " << primary_start << "-" << primary_end << std::endl;
-                // std::cout << "Supplementary reference position: " << supp_start << "-" << supp_end << std::endl;
+        // Resolve overlaps between the primary and supplementary query sequences
+        int32_t overlap_start = std::max(primary_query_start, supp_query_start);
+        int32_t overlap_end = std::min(primary_query_end, supp_query_end);
+        int32_t overlap_length = overlap_end - overlap_start;
+        if (overlap_length > 0) {
+            // std::cout << "Overlap detected for read " << qname << std::endl;
+            // std::cout << "Primary read position: " << primary_query_start << "-" << primary_query_end << std::endl;
+            // std::cout << "Supplementary read position: " << supp_query_start << "-" << supp_query_end << std::endl;
+            // std::cout << "Overlap range: " << overlap_start << "-" << overlap_end << std::endl;
+            // std::cout << "Overlap length: " << overlap_length << std::endl;
+            // std::cout << "Primary reference position: " << primary_start << "-" << primary_end << std::endl;
+            // std::cout << "Supplementary reference position: " << supp_start << "-" << supp_end << std::endl;
 
-                // Calculate the mismatch rate for each alignment at the overlap
-                double primary_mismatch_rate = this->calculateMismatchRate(primary_match_map, overlap_start, overlap_end-1);
-                double supp_mismatch_rate = this->calculateMismatchRate(supp_match_map, overlap_start, overlap_end-1);
-                // std::cout << "Primary mismatch rate: " << primary_mismatch_rate << std::endl;
-                // std::cout << "Supplementary mismatch rate: " << supp_mismatch_rate << std::endl;
+            // Calculate the mismatch rate for each alignment at the overlap
+            double primary_mismatch_rate = this->calculateMismatchRate(primary_match_map, overlap_start, overlap_end-1);
+            double supp_mismatch_rate = this->calculateMismatchRate(supp_match_map, overlap_start, overlap_end-1);
+            // std::cout << "Primary mismatch rate: " << primary_mismatch_rate << std::endl;
+            // std::cout << "Supplementary mismatch rate: " << supp_mismatch_rate << std::endl;
 
-                // Trim the overlap from the alignment with the higher mismatch
-                // rate
-                if (primary_mismatch_rate > supp_mismatch_rate) {
-                    if (overlap_start == primary_query_start) {
-                        primary_start += overlap_length;
-                    } else if (overlap_end == primary_query_end) {
-                        primary_end -= overlap_length;
-                    }
+            // Trim the overlap from the alignment with the higher mismatch
+            // rate
+            if (primary_mismatch_rate > supp_mismatch_rate) {
+                if (overlap_start == primary_query_start) {
+                    primary_start += overlap_length;
+                } else if (overlap_end == primary_query_end) {
+                    primary_end -= overlap_length;
+                }
 
+            } else {
+                if (overlap_start == supp_query_start) {
+                    supp_start += overlap_length;
+                } else if (overlap_end == supp_query_end) {
+                    supp_end -= overlap_length;
+                }
+            }
+        }
+
+        // [1] Inversion detection from primary and supplementary alignments
+        // on opposite strands
+        if (primary_strand != supp_strand) {
+            // std::cout << "Inversion detected for read " << qname << std::endl;
+            // std::cout << "Primary read position: " << primary_start << "-" << primary_end << std::endl;
+            // std::cout << "Supplementary read position: " << supp_start << "-" << supp_end << std::endl;
+            if (supp_end - supp_start >= min_cnv_length) {
+                SVCandidate sv_candidate(supp_start+1, supp_end+1, ".");
+                std::tuple<double, SVType, std::string, bool> result = cnv_caller.runCopyNumberPrediction(supp_chr, sv_candidate);
+                double likelihood = std::get<0>(result);
+                SVType cnv_type = std::get<1>(result);
+                std::string genotype = std::get<2>(result);
+                bool snps_found = std::get<3>(result);
+                std::string aln_type = "LOG2";
+                if (snps_found) {
+                    aln_type += "_SNPS";
                 } else {
-                    if (overlap_start == supp_query_start) {
-                        supp_start += overlap_length;
-                    } else if (overlap_end == supp_query_end) {
-                        supp_end -= overlap_length;
-                    }
+                    aln_type += "_NOSNPS";
                 }
-            }
 
-            // TODO:
-            // if (find_complex_events)
-            // # Calculate likelihood for entire coordinate
-            // likelihood_entire = hmm_model.predict_likelihood(entire_coordinate)
-
-            // # Split coordinates into smaller sections and calculate likelihoods
-            // subsections = split_coordinates(entire_coordinate)
-            // likelihoods_subsections = [hmm_model.predict_likelihood(sub) for sub in subsections]
-
-            // # Determine best (or worst?) likelihood from subsections (also print all likelihoods for each component)
-            // best_likelihood_split = max(likelihoods_subsections)
-
-            // # Compare and decide
-            // if likelihood_entire > best_likelihood_split:
-            //     best_choice = "entire coordinate"
-            // else:
-            //     best_choice = "split coordinates"
-            bool find_complex_events = true;
-            if (find_complex_events) {
-                // std::cout << "Complex event detection not implemented yet" << std::endl;
-            }
-
-            // [1] Inversion detection from primary and supplementary alignments
-            // on opposite strands
-            if (primary_strand != supp_strand) {
-                // std::cout << "Inversion detected for read " << qname << std::endl;
-                // std::cout << "Primary read position: " << primary_start << "-" << primary_end << std::endl;
-                // std::cout << "Supplementary read position: " << supp_start << "-" << supp_end << std::endl;
-                if (supp_end - supp_start >= min_cnv_length) {
-                    SVCandidate sv_candidate(supp_start+1, supp_end+1, ".");
-                    std::tuple<double, SVType, std::string, bool> result = cnv_caller.runCopyNumberPrediction(supp_chr, sv_candidate);
-                    double likelihood = std::get<0>(result);
-                    SVType cnv_type = std::get<1>(result);
-                    std::string genotype = std::get<2>(result);
-                    bool snps_found = std::get<3>(result);
-                    std::string aln_type = "LOG2";
-                    if (snps_found) {
-                        aln_type += "_SNPS";
-                    } else {
-                        aln_type += "_NOSNPS";
-                    }
-
-                    // Update the SV type for inversions
-                    if (cnv_type == SVType::NEUTRAL) {
-                        cnv_type = SVType::INV;
-                    } else if (cnv_type == SVType::DUP) {
-                        cnv_type = SVType::INV_DUP;
-                    } else {
-                        cnv_type = SVType::UNKNOWN;
-                    }
-                    
-                    // Add the SV call to the main SV data if not unknown
-                    if (cnv_type != SVType::UNKNOWN) {
-                        sv_calls.add(supp_chr, supp_start, supp_end, cnv_type, ".", aln_type, genotype, likelihood);
-                    }
-                    sv_count++;
-                }
-            }
-
-            // [2] CNV detection based on primary and supplementary alignment boundaries
-            else if (supp_start < primary_start && supp_end < primary_start) {
-
-                // Gap with supplementary before primary:
-                // [supp_start] [supp_end] -- [primary_start] [primary_end]
-                if (primary_end - supp_start >= min_cnv_length) {
-                    SVCandidate sv_candidate(supp_start+1, primary_end+1, ".");
-
-                    // Run copy number prediction for the SV candidate
-                    std::tuple<double, SVType, std::string, bool> result = cnv_caller.runCopyNumberPrediction(supp_chr, sv_candidate);
-                    double likelihood = std::get<0>(result);
-                    SVType cnv_type = std::get<1>(result);
-                    std::string genotype = std::get<2>(result);
-                    bool snps_found = std::get<3>(result);
-                    std::string aln_type = "GAPOUTER_A";
-                    if (snps_found) {
-                        aln_type += "_SNPS";
-                    } else {
-                        aln_type += "_NOSNPS";
-                    }
-
-                    // Add the SV call to the main SV data if not unknown
-                    if (cnv_type != SVType::UNKNOWN) {
-                        sv_calls.add(supp_chr, supp_start, primary_end, cnv_type, ".", aln_type, genotype, likelihood);
-                    }
-                    sv_count++;
+                // Update the SV type for inversions
+                if (cnv_type == SVType::NEUTRAL) {
+                    cnv_type = SVType::INV;
+                } else if (cnv_type == SVType::DUP) {
+                    cnv_type = SVType::INV_DUP;
+                } else {
+                    cnv_type = SVType::UNKNOWN;
                 }
                 
-            } else if (supp_start > primary_end && supp_end > primary_end) {
-                // Gap with supplementary after primary:
-                // [primary_start] [primary_end] -- [supp_start] [supp_end]
-
-                if (supp_end - primary_start >= min_cnv_length) {
-                    SVCandidate sv_candidate(primary_start+1, supp_end+1, ".");
-
-                    // Run copy number prediction for the SV candidate
-                    std::tuple<double, SVType, std::string, bool> result = cnv_caller.runCopyNumberPrediction(supp_chr, sv_candidate);
-                    double likelihood = std::get<0>(result);
-                    SVType cnv_type = std::get<1>(result);
-                    std::string genotype = std::get<2>(result);
-                    bool snps_found = std::get<3>(result);
-                    std::string aln_type = "GAPOUTER_B";
-                    if (snps_found) {
-                        aln_type += "_SNPS";
-                    } else {
-                        aln_type += "_NOSNPS";
-                    }
-
-                    // Add the SV call to the main SV data if not unknown
-                    if (cnv_type != SVType::UNKNOWN) {
-                        sv_calls.add(supp_chr, primary_start, supp_end, cnv_type, ".", aln_type, genotype, likelihood);
-                    }
-                    sv_count++;
+                // Add the SV call to the main SV data if not unknown
+                if (cnv_type != SVType::UNKNOWN) {
+                    sv_calls.add(supp_chr, supp_start, supp_end, cnv_type, ".", aln_type, genotype, likelihood);
                 }
+                sv_count++;
+            }
+        }
+
+        // [2] CNV detection based on primary and supplementary alignment boundaries
+        else if (supp_start < primary_start && supp_end < primary_start) {
+
+            // Gap with supplementary before primary:
+            // [supp_start] [supp_end] -- [primary_start] [primary_end]
+            if (primary_end - supp_start >= min_cnv_length) {
+                SVCandidate sv_candidate(supp_start+1, primary_end+1, ".");
+
+                // Run copy number prediction for the SV candidate
+                std::tuple<double, SVType, std::string, bool> result = cnv_caller.runCopyNumberPrediction(supp_chr, sv_candidate);
+                double likelihood = std::get<0>(result);
+                SVType cnv_type = std::get<1>(result);
+                std::string genotype = std::get<2>(result);
+                bool snps_found = std::get<3>(result);
+                std::string aln_type = "GAPOUTER_A";
+                if (snps_found) {
+                    aln_type += "_SNPS";
+                } else {
+                    aln_type += "_NOSNPS";
+                }
+
+                // Add the SV call to the main SV data if not unknown
+                if (cnv_type != SVType::UNKNOWN) {
+                    sv_calls.add(supp_chr, supp_start, primary_end, cnv_type, ".", aln_type, genotype, likelihood);
+                }
+                sv_count++;
+            }
+            
+        } else if (supp_start > primary_end && supp_end > primary_end) {
+            // Gap with supplementary after primary:
+            // [primary_start] [primary_end] -- [supp_start] [supp_end]
+
+            if (supp_end - primary_start >= min_cnv_length) {
+                SVCandidate sv_candidate(primary_start+1, supp_end+1, ".");
+
+                // Run copy number prediction for the SV candidate
+                std::tuple<double, SVType, std::string, bool> result = cnv_caller.runCopyNumberPrediction(supp_chr, sv_candidate);
+                double likelihood = std::get<0>(result);
+                SVType cnv_type = std::get<1>(result);
+                std::string genotype = std::get<2>(result);
+                bool snps_found = std::get<3>(result);
+                std::string aln_type = "GAPOUTER_B";
+                if (snps_found) {
+                    aln_type += "_SNPS";
+                } else {
+                    aln_type += "_NOSNPS";
+                }
+
+                // Add the SV call to the main SV data if not unknown
+                if (cnv_type != SVType::UNKNOWN) {
+                    sv_calls.add(supp_chr, primary_start, supp_end, cnv_type, ".", aln_type, genotype, likelihood);
+                }
+                sv_count++;
             }
         }
     }
