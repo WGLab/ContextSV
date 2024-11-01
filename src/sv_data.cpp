@@ -21,7 +21,8 @@ int SVData::add(std::string chr, int64_t start, int64_t end, SVType sv_type, std
     // Check if the SV candidate already exists in the map
     SVCandidate candidate(start, end, alt_allele);
     if (this->sv_calls[chr].find(candidate) != this->sv_calls[chr].end()) {
-        // Update the alignment-based support count (+1)
+        
+        // Update the alignment-based support count
         SVInfo& sv_info = this->sv_calls[chr][candidate];
         sv_info.read_support += 1;
 
@@ -39,9 +40,7 @@ int SVData::add(std::string chr, int64_t start, int64_t end, SVType sv_type, std
         if ((sv_info.hmm_likelihood == 0.0) || (hmm_likelihood > sv_info.hmm_likelihood)) {
             sv_info.hmm_likelihood = hmm_likelihood;
         }
-
-        // Add the alignment type used to call the SV
-        sv_info.data_type.insert(data_type);
+        sv_info.data_type.insert(data_type);  // Add the alignment type to the set
 
         return 0;  // SV call already exists
 
@@ -54,11 +53,8 @@ int SVData::add(std::string chr, int64_t start, int64_t end, SVType sv_type, std
             sv_length++;
         }
 
-        // Create a new SVInfo object (SV type, alignment support, read depth, data type, SV length, genotype)
         SVInfo sv_info(sv_type, 1, 0, data_type, sv_length, genotype, hmm_likelihood);
-
-        // Add the SV candidate to the map
-        this->sv_calls[chr][candidate] = sv_info;
+        this->sv_calls[chr][candidate] = sv_info;  // Add the SV candidate to the map
 
         return 1;  // SV call added
     }
@@ -88,10 +84,8 @@ void SVData::updateClippedBaseSupport(std::string chr, int64_t pos)
     // Update clipped base support
     std::pair<std::string, int64_t> key(chr, pos);
     if (this->clipped_base_support.find(key) != this->clipped_base_support.end()) {
-        // Update the depth
         this->clipped_base_support[key] += 1;
     } else {
-        // Add the depth
         this->clipped_base_support[key] = 1;
     }
 }
@@ -175,11 +169,9 @@ void SVData::saveToVCF(FASTAQuery& ref_genome, std::string output_dir)
         "##FORMAT=<ID=DP,Number=1,Type=Integer,Description=\"Read depth\">"
     };
 
-    // Write the header lines
     std::cout << "Writing VCF header..." << std::endl;
     vcf_writer.writeHeader(header_lines);
 
-    // Save the SV calls
     std::cout << "Saving SV calls to " << output_vcf << std::endl;
     std::string sv_method = "CONTEXTSVv0.1";
     int skip_count = 0;
@@ -240,11 +232,9 @@ void SVData::saveToVCF(FASTAQuery& ref_genome, std::string output_dir)
                     std::cerr << "Warning: Reference allele is empty for deletion at " << chr << ":" << pos << "-" << end << std::endl;
                 }
 
-                // Make the SV length negative
-                sv_length = -1 * sv_length;
+                sv_length = -1 * sv_length;  // Negative length for deletions
 
-                // Update the position
-                pos = preceding_pos;
+                pos = preceding_pos;  // Update the position to the preceding base
 
             // Other types (duplications, insertions, inversions)
             } else {
@@ -258,8 +248,7 @@ void SVData::saveToVCF(FASTAQuery& ref_genome, std::string output_dir)
                     alt_allele = std::get<2>(candidate);
                     alt_allele.insert(0, ref_allele);
 
-                    // Update the position
-                    pos = preceding_pos;
+                    pos = preceding_pos;  // Update the position to the preceding base
 
                     // Update the end position to the start position to change from
                     // query to reference coordinates for insertions
@@ -307,12 +296,10 @@ std::set<std::string> SVData::getChromosomes()
 
 int SVData::totalCalls()
 {
-    // std::cout << "Calculating total SV calls..." << std::endl;
     int sv_calls = 0;
     for (auto const& sv_call : this->sv_calls) {
         sv_calls += sv_call.second.size();
     }
-    // std::cout << "Total SV calls: " << sv_calls << std::endl;
 
     return sv_calls;
 }

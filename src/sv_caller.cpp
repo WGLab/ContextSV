@@ -189,31 +189,12 @@ SVCaller::SVCaller(InputData &input_data)
 
 std::tuple<std::unordered_map<int, int>, int32_t, int32_t> SVCaller::detectSVsFromCIGAR(bam_hdr_t* header, bam1_t* alignment, SVData& sv_calls, bool is_primary)
 {
-    // Get the chromosome
-    std::string chr = header->target_name[alignment->core.tid];
-
-    // Get the position of the alignment in the reference genome
-    int32_t pos = alignment->core.pos;
-
-    // Get the CIGAR string
-    uint32_t* cigar = bam_get_cigar(alignment);
-
-    // Get the CIGAR length
+    std::string chr = header->target_name[alignment->core.tid];  // Chromosome name
+    int32_t pos = alignment->core.pos;  // Leftmost position of the alignment in the reference genome (0-based)
+    uint32_t* cigar = bam_get_cigar(alignment);  // CIGAR array
     int cigar_len = alignment->core.n_cigar;
-
-    // Track the query position
     int query_pos = 0;
-
-    // Loop through the CIGAR string (0-based) and detect insertions and deletions in
-    // reference coordinates (1-based)
-    // POS is the leftmost position of where the alignment maps to the reference:
-    // https://genome.sph.umich.edu/wiki/SAM
-    // std::vector<std::thread> threads;
-    // std::vector<SVData> sv_calls_vec;
-
-    // Create a map of query position to match/mismatch (1/0) for calculating
-    // the mismatch rate at alignment overlaps
-    std::unordered_map<int, int> query_match_map;
+    std::unordered_map<int, int> query_match_map;  // Query position to match/mismatch (1/0) map
 
     // Loop through the CIGAR string, process operations, detect SVs (primary
     // only), update clipped base support, calculate sequence identity for
@@ -226,24 +207,14 @@ std::tuple<std::unordered_map<int, int>, int32_t, int32_t> SVCaller::detectSVsFr
     bool first_op = false;  // First alignment operation for the query
     for (int i = 0; i < cigar_len; i++) {
 
-        // Get the CIGAR operation
-        int op = bam_cigar_op(cigar[i]);
-
-        // Get the CIGAR operation length
-        int op_len = bam_cigar_oplen(cigar[i]);
+        int op = bam_cigar_op(cigar[i]);  // CIGAR operation
+        int op_len = bam_cigar_oplen(cigar[i]);  // CIGAR operation length
         
-        // Check if the CIGAR operation is an insertion
+        // Process the CIGAR operation
         if (op == BAM_CINS && is_primary) {
-
-            // Add the SV if greater than the minimum SV size
             if (op_len >= this->min_sv_size) {
 
                 // Get the sequence of the insertion from the query
-                // std::string ins_seq_str = "";
-                // uint8_t* seq_ptr = bam_get_seq(alignment);
-                // for (int j = 0; j < op_len; j++) {
-                //     ins_seq_str += seq_nt16_str[bam_seqi(seq_ptr, query_pos + j)];
-                // }
                 std::string ins_seq_str(op_len, ' ');
                 for (int j = 0; j < op_len; j++) {
                     ins_seq_str[j] = seq_nt16_str[bam_seqi(bam_get_seq(alignment), query_pos + j)];
@@ -293,9 +264,6 @@ std::tuple<std::unordered_map<int, int>, int32_t, int32_t> SVCaller::detectSVsFr
                 // Add to SV calls (1-based) with the appropriate SV type
                 ref_pos = pos+1;
                 ref_end = ref_pos + op_len -1;
-
-                // Lock the SV calls object and add the insertion
-                std::lock_guard<std::mutex> lock(this->sv_mtx);
                 if (is_duplication) {
                     sv_calls.add(chr, ref_pos, ref_end, SVType::DUP, ins_seq_str, "CIGARDUP", "./.", 0.0);
                 } else {
@@ -307,23 +275,17 @@ std::tuple<std::unordered_map<int, int>, int32_t, int32_t> SVCaller::detectSVsFr
         } else if (op == BAM_CDEL && is_primary) {
 
             // Add the SV if greater than the minimum SV size
-            if (op_len >= this->min_sv_size) {
-                
-                // Add the deletion to the SV calls (1-based)
+            if (op_len >= this->min_sv_size)
+            {
                 ref_pos = pos+1;
                 ref_end = ref_pos + op_len -1;
-
-                // Lock the SV calls object and add the deletion
-                // std::lock_guard<std::mutex> lock(this->sv_mtx);
-                sv_calls.add(chr, ref_pos, ref_end, SVType::DEL, ".", "CIGARDEL", "./.", 0.0);
+                sv_calls.add(chr, ref_pos, ref_end, SVType::DEL, ".", "CIGARDEL", "./.", 0.0);  // Add the deletion
             }
 
         // Check if the CIGAR operation is a clipped base
         } else if (op == BAM_CSOFT_CLIP || op == BAM_CHARD_CLIP) {
 
-            // Update the clipped base support
-            // std::lock_guard<std::mutex> lock(this->sv_mtx);
-            sv_calls.updateClippedBaseSupport(chr, pos);
+            sv_calls.updateClippedBaseSupport(chr, pos);  // Update clipped base support
 
             // Update the query alignment start position
             if (!first_op) {
@@ -394,21 +356,14 @@ std::tuple<std::unordered_map<int, int>, int32_t, int32_t> SVCaller::detectSVsFr
         }
     }
 
-    // Update the query end position
-    query_end = query_pos;
+    query_end = query_pos;  // Last alignment position in the query
 
-    // Return the mismatch map and the query start and end positions
     return std::tuple<std::unordered_map<int, int>, int32_t, int32_t>(query_match_map, query_start, query_end);
 }
 
-// Detect SVs from split read alignments (primary and supplementary) and
-// directly from the CIGAR string
 SVData SVCaller::run()
 {
-    // Open the BAM file
-    std::string bam_filepath = this->input_data->getLongReadBam();
-
-    // Get the region data
+    // Get the chromosomes to process
     std::vector<std::string> chromosomes;
     if (this->input_data->getChromosome() != "") {
         chromosomes.push_back(this->input_data->getChromosome());
@@ -417,8 +372,7 @@ SVData SVCaller::run()
     }
     int chr_count = chromosomes.size();
 
-    // Loop through each region and detect SVs (Note: The main loop is
-    // single-threaded)
+    // Loop through each region and detect SVs in chunks
     std::cout << "Detecting SVs from " << chr_count << " chromosome(s)..." << std::endl;
     int chunk_count = 100;  // Number of chunks to split the chromosome into
     int region_count = 0;
@@ -430,11 +384,11 @@ SVData SVCaller::run()
         // Split the chromosome into chunks
         std::vector<std::string> region_chunks;
         if (this->input_data->isRegionSet()) {
+
+            // Use one chunk for the specified region
             std::pair<int32_t, int32_t> region = this->input_data->getRegion();
             int region_start = region.first;
             int region_end = region.second;
-
-            // Use one chunk for the region
             std::string chunk = chr + ":" + std::to_string(region_start) + "-" + std::to_string(region_end);
             region_chunks.push_back(chunk);
             std::cout << "Using specified region " << chunk << "..." << std::endl;
@@ -485,9 +439,7 @@ SVData SVCaller::run()
             // copy number variant predictions
             std::cout << "Detecting copy number variants from split reads..." << std::endl;
             this->detectSVsFromSplitReads(sv_calls_region, primary_map, supp_map, cnv_caller);
-
-            // Add the SV calls to the main SV calls object
-            sv_calls.concatenate(sv_calls_region);
+            sv_calls.concatenate(sv_calls_region);  // Add the calls to the main set
         }
 
         // Increment the region count
