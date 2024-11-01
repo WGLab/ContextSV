@@ -34,36 +34,34 @@ int SVCaller::readNextAlignment(samFile *fp_in, hts_itr_t *itr, bam1_t *bam1)
 
 RegionData SVCaller::detectSVsFromRegion(std::string region)
 {
-    SVData sv_calls;
+    // Open the BAM file
     std::string bam_filepath = this->input_data->getLongReadBam();
-
-    // Open the BAM file in a thread-safe manner
     samFile *fp_in = sam_open(bam_filepath.c_str(), "r");
     if (fp_in == NULL) {
         std::cerr << "ERROR: failed to open " << bam_filepath << std::endl;
         exit(1);
     }
 
-    // Get the header in a thread-safe manner
+    // Load the header for the BAM file
     bam_hdr_t *bamHdr = sam_hdr_read(fp_in);
     if (bamHdr == NULL) {
         std::cerr << "ERROR: failed to read header for " << bam_filepath << std::endl;
         exit(1);
     }
 
-    // Get the index in a thread-safe manner
+    // Load the index for the BAM file
     hts_idx_t *idx = sam_index_load(fp_in, bam_filepath.c_str());
     if (idx == NULL) {
         std::cerr << "ERROR: failed to load index for " << bam_filepath << std::endl;
         exit(1);
     }
 
-    // Create a read and iterator for the region in a thread-safe manner
+    // Create a read and iterator for the region
     bam1_t *bam1 = bam_init1();
     hts_itr_t *itr = sam_itr_querys(idx, bamHdr, region.c_str());
 
-    // Loop through the alignments
-    // Create a map of primary and supplementary alignments by QNAME (query template name)
+    // Main loop to process the alignments
+    SVData sv_calls;
     int num_alignments = 0;
     PrimaryMap primary_alignments;
     SuppMap supplementary_alignments;
@@ -78,18 +76,15 @@ RegionData SVCaller::detectSVsFromRegion(std::string region)
             // Do nothing
 
         } else {
-            // Get the QNAME (query template name) for associating split reads
-            std::string qname = bam_get_qname(bam1);
+            std::string qname = bam_get_qname(bam1);  // Query template name
 
             // Process primary alignments
             if (!(bam1->core.flag & BAM_FSUPPLEMENTARY)) {
 
-                // Get the primary alignment chromosome, start, end, and depth
+                // Get the primary alignment information
                 std::string chr = bamHdr->target_name[bam1->core.tid];
                 int64_t start = bam1->core.pos;
                 int64_t end = bam_endpos(bam1);  // This is the first position after the alignment
-
-                // Get the strand
                 bool fwd_strand = !(bam1->core.flag & BAM_FREVERSE);
 
                 // Call SVs directly from the CIGAR string
@@ -105,12 +100,10 @@ RegionData SVCaller::detectSVsFromRegion(std::string region)
             // Process supplementary alignments
             } else if (bam1->core.flag & BAM_FSUPPLEMENTARY) {
 
-                // Add the supplementary alignment to the map
+                // Get the supplementary alignment information
                 std::string chr = bamHdr->target_name[bam1->core.tid];
                 int32_t start = bam1->core.pos;
                 int32_t end = bam_endpos(bam1);
-
-                // Get the strand
                 bool fwd_strand = !(bam1->core.flag & BAM_FREVERSE);
 
                 // Get CIGAR string information, but don't call SVs
@@ -122,49 +115,24 @@ RegionData SVCaller::detectSVsFromRegion(std::string region)
                 // Add the supplementary alignment to the map
                 AlignmentData alignment(chr, start, end, ".", query_start, query_end, std::move(match_map), fwd_strand);
                 supplementary_alignments[qname].emplace_back(alignment);
-
-                // If Read ID == 8873acc1-eb84-415d-8557-a32a8f52ccee, print the
-                // alignment
-                // if (qname == "8873acc1-eb84-415d-8557-a32a8f52ccee") {
-                //     std::cout << "Supplementary alignment: " << chr << ":" << start << "-" << end << std::endl;
-                //     std::cout << "Query start: " << query_start << ", Query end: " << query_end << std::endl;
-                //     std::cout << "Match map: ";
-                //     for (const auto& entry : match_map) {
-                //         std::cout << entry.first << ":" << entry.second << " ";
-                //     }
-                //     std::cout << std::endl;
-                // }
             }
         }
 
-        // Increment the number of alignment records processed
         num_alignments++;
     }
 
-    // Destroy the iterator
     hts_itr_destroy(itr);
-
-    // Destroy the read
     bam_destroy1(bam1);
-
-    // Close the BAM file
     sam_close(fp_in);
-
-    // Destroy the header
     bam_hdr_destroy(bamHdr);
-
-    // Destroy the index
     hts_idx_destroy(idx);
 
     // Return the SV calls and the primary and supplementary alignments
-    // return std::make_tuple(sv_calls, primary_alignments,
-    // supplementary_alignments);
     return std::make_tuple(std::move(sv_calls), std::move(primary_alignments), std::move(supplementary_alignments));
 }
 
 double SVCaller::calculateMismatchRate(std::unordered_map<int, int> &match_map, int32_t start, int32_t end)
 {
-    // Calculate the mismatch rate
     int match_count = 0;
     int mismatch_count = 0;
     for (int i = start; i <= end; i++) {
@@ -178,7 +146,6 @@ double SVCaller::calculateMismatchRate(std::unordered_map<int, int> &match_map, 
     }
     double mismatch_rate = (double)mismatch_count / (double)(match_count + mismatch_count);
 
-    // Return the mismatch rate
     return mismatch_rate;
 }
 
