@@ -189,13 +189,6 @@ std::tuple<int, double, SVType, std::string, bool> CNVCaller::runCopyNumberPredi
     int best_index = 0;
     std::pair<int64_t, int64_t> best_pos;
     SNPData best_snp_data;
-
-    // Get read depths for the SV candidate region
-    // int64_t region_start_pos = std::min(std::get<0>(sv_one), std::get<0>(sv_two));
-    // int64_t region_end_pos = std::max(std::get<1>(sv_one), std::get<1>(sv_two));
-    // std::unordered_map<uint64_t, int> pos_depth_map;
-    // calculateDepthsForSNPRegion(chr, region_start_pos, region_end_pos, pos_depth_map);
-
     int current_index = 0;
     SVType predicted_cnv_type = SVType::UNKNOWN;
     std::string genotype = "./.";
@@ -377,31 +370,17 @@ void CNVCaller::runCIGARCopyNumberPredictionChunk(std::string chr, std::map<SVCa
     {
         // Get the SV candidate
         const SVCandidate& candidate = sv_call;
-
-        // Get the start and end positions of the SV call
         int64_t start_pos = std::get<0>(candidate);
         int64_t end_pos = std::get<1>(candidate);
-
-        // // [TEST] Skip if not in the following list of SVs
-        // std::vector<std::string> sv_list = {"chr19:53013528-53051102", "chr1:43593639-43617165", "chr6:35786784-35799012", "chr1:152787870-152798352", "chr17:41265461-41275765", "chr5:180950357-181003515"};
-        // std::string sv_key = chr + ":" + std::to_string((int)start_pos) + "-" + std::to_string((int)end_pos);
-        // if (std::find(sv_list.begin(), sv_list.end(), sv_key) == sv_list.end())
-        // {
-        //     continue;
-        // }
 
         // Get the depth at the start position. This is used as the FORMAT/DP
         // value in the VCF file
         int dp_value = pos_depth_map[start_pos];
         this->updateDPValue(sv_candidates, sv_call, dp_value);
 
-        // Loop through the SV region, calculate the log2 ratios, and run the
-        // Viterbi algorithm to predict the copy number states
-
-        // We will run the Viterbi algorithm on SNPs in the SV region +/- 1/2
-        // the SV length
+        // Loop through the SV region +/- 1/2 SV length and run copy number
+        // predictions
         int64_t sv_half_length = (end_pos - start_pos) / 2.0;
-        // std::cout << "SV half length: " << sv_half_length << std::endl;
         int64_t query_start = std::max((int64_t) 1, start_pos - sv_half_length);
         int64_t query_end = end_pos + sv_half_length;
 
@@ -514,10 +493,7 @@ void CNVCaller::updateSVCopyNumber(std::map<SVCandidate, SVInfo> &sv_candidates,
 
 void CNVCaller::updateDPValue(std::map<SVCandidate,SVInfo>& sv_candidates, SVCandidate key, int dp_value)
 {
-    // Lock the SV candidate map
     std::lock_guard<std::mutex> lock(this->sv_candidates_mtx);
-
-    // Update the DP value
     sv_candidates[key].read_depth = dp_value;
 }
 
@@ -540,8 +516,6 @@ std::vector<std::string> CNVCaller::splitRegionIntoChunks(std::string chr, int64
 
         // Add the region chunk to the vector
         region_chunks.push_back(chr + ":" + std::to_string(chunk_start) + "-" + std::to_string(chunk_end));
-
-        // Update the chunk start
         chunk_start = chunk_end + 1;
     }
 
@@ -558,7 +532,6 @@ std::vector<std::vector<SVCandidate>> CNVCaller::splitSVCandidatesIntoChunks(std
     std::vector<SVCandidate> current_sv_chunk;
     for (auto const& sv_call : sv_candidates)
     {
-        // Add the SV candidate to the current chunk
         current_sv_chunk.push_back(sv_call.first);
 
         // If the current chunk size is reached, then add the chunk to the
@@ -587,23 +560,19 @@ CNVCaller::CNVCaller(InputData &input_data)
 
 void CNVCaller::loadChromosomeData(std::string chr)
 {
-    // Read the HMM from file
     std::string hmm_filepath = this->input_data->getHMMFilepath();
     std::cout << "Reading HMM from file: " << hmm_filepath << std::endl;
     this->hmm = ReadCHMM(hmm_filepath.c_str());
 
-    // Calculate the mean chromosome coverage and generate the position-depth map
     printMessage("Calculating mean chromosome coverage for " + chr + "...");
     mean_chr_cov = calculateMeanChromosomeCoverage(chr);
     printMessage("Mean chromosome coverage for " + chr + ": " + std::to_string(mean_chr_cov));
     this->mean_chr_cov = mean_chr_cov;
 
-    // Read the SNP positions and B-allele frequency values from the VCF file
     std::cout << "Reading SNP allele frequencies for chromosome " << chr << " from VCF file..." << std::endl;
     std::string snp_filepath = this->input_data->getSNPFilepath();
     readSNPAlleleFrequencies(chr, snp_filepath, this->snp_info);
 
-    // Get the population frequencies for each SNP
     std::cout << "Obtaining SNP population frequencies for chromosome " << chr << "..." << std::endl;
     getSNPPopulationFrequencies(chr, this->snp_info);
     std::cout << "Finished loading chromosome data for " << chr << std::endl;
@@ -685,107 +654,6 @@ double CNVCaller::calculateMeanChromosomeCoverage(std::string chr)
     return mean_chr_cov;
 }
 
-void CNVCaller::calculateDepthsForSNPRegion(std::string chr, int64_t start_pos, int64_t end_pos, std::unordered_map<uint64_t, int>& pos_depth_map)
-{
-    std::cout << "Calculating read depths for SV region " << chr << ":" << start_pos << "-" << end_pos << "..." << std::endl;
-
-    // // If extending the CNV regions, then extend the SV region by window size *
-    // // N. Otherwise, log2 ratios will be zero due to missing read depth data
-    // // before/after the first/last SV positions
-    // if (this->input_data->getSaveCNVData())
-    // {
-    //     int extend_factor = 100;
-    //     int window_size = this->input_data->getWindowSize();
-    //     start_pos = std::max((int64_t) 1, start_pos - (window_size * extend_factor));
-    //     end_pos = end_pos + (window_size * extend_factor);
-    // }
-
-    // // Split the region into equal parts for each thread if the region is larger
-    // // than 100 kb
-    // int num_threads = this->input_data->getThreadCount();
-    // std::vector<std::string> region_chunks;
-    // int64_t region_size = end_pos - start_pos;
-    // if (region_size < 100000)
-    // {
-    //     region_chunks.push_back(chr + ":" + std::to_string(start_pos) + "-" + std::to_string(end_pos));
-    // } else {
-    //     region_chunks = splitRegionIntoChunks(chr, start_pos, end_pos, num_threads);
-    // }
-
-    // // Loop through each region chunk and get the mean chromosome coverage in
-    // // parallel
-    // std::string input_filepath = this->input_data->getShortReadBam();
-    // std::vector<std::future<std::unordered_map<uint64_t, int>>> futures;
-    // for (const auto& region_chunk : region_chunks)
-    // {
-    //     // Create a lambda function to get the mean chromosome coverage for the
-    //     // region chunk
-    //     auto get_pos_depth_map = [region_chunk, input_filepath]() -> std::unordered_map<uint64_t, int>
-    //     {
-    //         // Run samtools depth on the entire region, and print positions and
-    //         // depths (not chromosome)
-    //         const int cmd_size = 256;
-    //         char cmd[cmd_size];
-    //         snprintf(cmd, cmd_size,
-    //             "samtools depth -r %s %s | awk '{print $2, $3}'",
-    //             region_chunk.c_str(), input_filepath.c_str());
-
-    //         // Open a pipe to read the output of the command
-    //         FILE *fp = popen(cmd, "r");
-    //         if (fp == NULL)
-    //         {
-    //             std::cerr << "ERROR: Could not open pipe for command: " << cmd << std::endl;
-    //             exit(EXIT_FAILURE);
-    //         }
-
-    //         // Create a map of positions and depths
-    //         std::unordered_map<uint64_t, int> pos_depth_map;
-    //         const int line_size = 1024;
-    //         char line[line_size];
-    //         while (fgets(line, line_size, fp) != NULL)
-    //         {
-    //             // Parse the line
-    //             uint64_t pos;
-    //             int depth;
-    //             if (sscanf(line, "%ld%d", &pos, &depth) == 2)
-    //             {
-    //                 // Add the position and depth to the map
-    //                 pos_depth_map[pos] = depth;
-    //             } else {
-    //                 // No reads
-    //             }
-    //         }
-
-    //         // Close the pipe
-    //         pclose(fp);
-
-    //         return pos_depth_map;
-    //     };
-
-    //     // Create a future for the thread
-    //     std::future<std::unordered_map<uint64_t, int>> future = std::async(std::launch::async, get_pos_depth_map);
-
-    //     // Add the future to the vector
-    //     futures.push_back(std::move(future));
-    // }
-
-    // // Loop through the futures and get the results
-    // int current_chunk = 0;
-    // for (auto& future : futures)
-    // {
-    //     current_chunk++;
-    //     future.wait();
-    //     std::unordered_map<uint64_t, int> result = std::move(future.get());
-
-    //     // Merge the position depth maps
-    //     this->mergePosDepthMaps(pos_depth_map, result);
-    //     if (this->input_data->getVerbose())
-    //     {
-    //         printMessage("Completed region chunk " + std::to_string(current_chunk) + " of " + std::to_string(region_chunks.size()) + "...");
-    //     }
-    // }
-}
-
 void CNVCaller::mergePosDepthMaps(std::unordered_map<uint32_t, int>& main_map, std::unordered_map<uint32_t, int>& map_update)
 {
     // Merge the second depth map into the first
@@ -857,16 +725,14 @@ void CNVCaller::readSNPAlleleFrequencies(std::string chr, std::string filepath, 
         std::cerr << "ERROR: " << index_error << std::endl;
         exit(1);
     }
-
-    // Close the pipe
-    pclose(index_fp);
+    pclose(index_fp);  // Close the process
 
     // Filter variants by depth, quality, and region
     if (this->input_data->getVerbose()) {
         std::cout << "Filtering SNPs by depth, quality, and region..." << std::endl;
     }
 
-    // // Check if a region was specified by the user
+    // Check if a region was specified by the user
     std::string region_str = chr;
     if (this->input_data->isRegionSet())
     {
@@ -947,8 +813,7 @@ void CNVCaller::readSNPAlleleFrequencies(std::string chr, std::string filepath, 
         snp_info.insertSNPAlleleFrequency(chr, pos, baf);
     }
 
-    // Close the pipe
-    pclose(fp);
+    pclose(fp);  // Close the process
 
     if (this->input_data->getVerbose()) {
         std::cout << "Finished extracting B-allele frequency data from filtered SNPs" << std::endl;
@@ -1033,12 +898,6 @@ void CNVCaller::getSNPPopulationFrequencies(std::string chr, SNPInfo& snp_info)
             // Run bcftools query to get the population frequencies for the
             // chromosome within the SNP region, filtering for SNPS only,
             // and within the MIN-MAX range of frequencies.
-            // TODO: Update to use ethnicity-specific population frequencies
-            // Example from gnomAD:
-            // ##INFO=<ID=AF_asj,Number=A,Type=Float,Description="Alternate
-            // allele frequency in samples of Ashkenazi Jewish ancestry">
-            // std::string ethnicity_suffix = "_asj";  // Ashkenazi Jewish
-            // (leave empty for all populations)
             std::string filter_criteria = "INFO/variant_type=\"snv\" && " + AF_key + " >= " + std::to_string(MIN_PFB) + " && " + AF_key + " <= " + std::to_string(MAX_PFB);
             std::string cmd = \
                 "bcftools query -r " + region_chunk + " -f '%POS\t%" + AF_key + "\n' -i '" + filter_criteria + "' " + pfb_filepath + " 2>/dev/null";
@@ -1065,8 +924,7 @@ void CNVCaller::getSNPPopulationFrequencies(std::string chr, SNPInfo& snp_info)
                 double pfb;
                 if (sscanf(line, "%d%lf", &pos, &pfb) == 2)
                 {
-                    // Add the position and population frequency to the map
-                    pos_pfb_map[pos] = pfb;
+                    pos_pfb_map[pos] = pfb;  // Add the position and population frequency to the map
                 }
             }
             pclose(fp);
@@ -1083,10 +941,7 @@ void CNVCaller::getSNPPopulationFrequencies(std::string chr, SNPInfo& snp_info)
     int pfb_count = 0;
     for (auto& future : futures)
     {
-        // Wait for the future to finish
         future.wait();
-
-        // Get the result from the future
         std::unordered_map<int, double> result = std::move(future.get());
 
         // Loop through the result and add to SNPInfo
@@ -1096,12 +951,10 @@ void CNVCaller::getSNPPopulationFrequencies(std::string chr, SNPInfo& snp_info)
             int pos = pair.first;
             double pfb = pair.second;
 
-            // Lock the SNPInfo mutex
+            // Add the population frequency to the SNPInfo
             this->snp_data_mtx.lock();
             snp_info.insertSNPPopulationFrequency(chr_snp, pos, pfb);
             this->snp_data_mtx.unlock();
-
-            // Increment the population frequency count
             pfb_count++;
 
             // [TEST] Print 15 values

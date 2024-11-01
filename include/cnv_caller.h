@@ -119,9 +119,6 @@ class CNVCaller {
         // Calculate the mean chromosome coverage
         double calculateMeanChromosomeCoverage(std::string chr);
 
-        // Calculate read depths for a region
-        void calculateDepthsForSNPRegion(std::string chr, int64_t start_pos, int64_t end_pos, std::unordered_map<uint64_t, int>& pos_depth_map);
-
         // Calculate the log2 ratio for a region given the read depths and mean
         // chromosome coverage
         double calculateLog2Ratio(uint32_t start_pos, uint32_t end_pos, std::unordered_map<uint32_t, int>& pos_depth_map, double mean_chr_cov);
@@ -133,7 +130,7 @@ class CNVCaller {
         // of population frequencies for each SNP location
         void getSNPPopulationFrequencies(std::string chr, SNPInfo& snp_info);
 
-        // Save a TSV with B-allele frequencies, log 2 ratios, and copy number predictions
+        // Save a TSV with B-allele frequencies, log2 ratios, and copy number predictions
         void saveSVCopyNumberToTSV(SNPData& snp_data, std::string filepath, std::string chr, int64_t start, int64_t end, std::string sv_type, double likelihood);
 };
 

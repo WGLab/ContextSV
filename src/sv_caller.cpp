@@ -25,10 +25,7 @@
 
 int SVCaller::readNextAlignment(samFile *fp_in, hts_itr_t *itr, bam1_t *bam1)
 {
-    // Read the next alignment
     int ret = sam_itr_next(fp_in, itr, bam1);
-
-    // Return the result of reading the next alignment
     return ret;
 }
 
@@ -409,7 +406,6 @@ SVData SVCaller::run()
             sv_calls.concatenate(sv_calls_region);  // Add the calls to the main set
         }
 
-        // Increment the region count
         region_count++;
         std::cout << "Completed " << region_count << " of " << chr_count << " chromosome(s)..." << std::endl;
     }
@@ -441,12 +437,10 @@ void SVCaller::detectSVsFromSplitReads(SVData& sv_calls, PrimaryMap& primary_map
         AlignmentVector supp_alignments = supp_map[qname];
         for (const auto& supp_alignment : supp_alignments) {
 
-            // Get the supplementary alignment chromosome
-            std::string supp_chr = std::get<0>(supp_alignment);
-
             // Skip supplementary alignments that are on a different chromosome
             // for now (TODO: Use for identifying trans-chromosomal SVs such as
             // translocations)
+            std::string supp_chr = std::get<0>(supp_alignment);
             if (primary_chr != supp_chr) {
                 continue;
             }
@@ -528,10 +522,6 @@ void SVCaller::detectSVsFromSplitReads(SVData& sv_calls, PrimaryMap& primary_map
                     std::pair<SVCandidate, std::string> sv_pair(sv_candidate, "INVERSION");
                     sv_list.push_back(sv_pair);
                     sv_count++;
-                    // SVCandidate sv_candidate(supp_start+1, primary_end+1, ".");
-                    // std::pair<SVCandidate, std::string> sv_pair(sv_candidate, "INVERSION");
-                    // sv_list.push_back(sv_pair);
-                    // sv_count++;
                 }
 
                 // Determine which SV to keep based on HMM prediction likelihood
@@ -547,15 +537,7 @@ void SVCaller::detectSVsFromSplitReads(SVData& sv_calls, PrimaryMap& primary_map
                 // [supp_start] [supp_end] -- [primary_start] [primary_end]
                 std::vector<std::pair<SVCandidate, std::string>> sv_list;  // SV candidate and alignment type
 
-                // Use the gap ends as the SV endpoints
-                // if (primary_start - supp_end >= min_cnv_length) {
-                //     SVCandidate sv_candidate(supp_end+1, primary_start+1, ".");
-                //     std::pair<SVCandidate, std::string> sv_pair(sv_candidate, "GAPINNER_A");
-                //     sv_list.push_back(sv_pair);
-                //     sv_count++;
-                // }
-
-                // Also use the alignment ends as the SV endpoints
+                // Use the alignment ends as the SV endpoints
                 if (primary_end - supp_start >= min_cnv_length) {
                     SVCandidate sv_candidate(supp_start+1, primary_end+1, ".");
                     std::pair<SVCandidate, std::string> sv_pair(sv_candidate, "GAPOUTER_A");
@@ -573,15 +555,7 @@ void SVCaller::detectSVsFromSplitReads(SVData& sv_calls, PrimaryMap& primary_map
                 // [primary_start] [primary_end] -- [supp_start] [supp_end]
                 std::vector<std::pair<SVCandidate, std::string>> sv_list;  // SV candidate and alignment type
 
-                // Use the gap ends as the SV endpoints
-                // if (supp_start - primary_end >= min_cnv_length) {
-                //     SVCandidate sv_candidate(primary_end+1, supp_start+1, ".");
-                //     std::pair<SVCandidate, std::string> sv_pair(sv_candidate, "GAPINNER_B");
-                //     sv_list.push_back(sv_pair);
-                //     sv_count++;
-                // }
-
-                // Also use the alignment ends as the SV endpoints
+                // Use the alignment ends as the SV endpoints
                 if (supp_end - primary_start >= min_cnv_length) {
                     SVCandidate sv_candidate(primary_start+1, supp_end+1, ".");
                     std::pair<SVCandidate, std::string> sv_pair(sv_candidate, "GAPOUTER_B");
