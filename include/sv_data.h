@@ -1,7 +1,6 @@
 #ifndef SV_DATA_H
 #define SV_DATA_H
 
-#include "fasta_query.h"  // For querying the reference genome
 
 /// @cond
 #include <string>
@@ -10,6 +9,7 @@
 #include <mutex>
 
 #include "sv_types.h"
+#include "fasta_query.h"
 /// @endcond
 
 // Include the SV types namespace
@@ -36,7 +36,7 @@ class SVData {
     public:
         SVData() {};
 
-        int add(std::string chr, int64_t start, int64_t end, int sv_type, std::string alt_allele, std::string data_type, std::string genotype, double hmm_likelihood);
+        int add(std::string chr, int64_t start, int64_t end, SVType sv_type, std::string alt_allele, std::string data_type, std::string genotype, double hmm_likelihood);
 
         void concatenate(const SVData& sv_data);
 

@@ -78,17 +78,6 @@ class CNVCaller {
             {6, "1/1"}
         };
 
-        // Define a map of CNV types by HMM predicted state (0=No predicted state)
-        std ::map<int, int> cnv_type_map = {
-            {0, sv_types::UNKNOWN},
-            {1, sv_types::DEL},
-            {2, sv_types::DEL},
-            {3, sv_types::NEUTRAL},
-            {4, sv_types::NEUTRAL},
-            {5, sv_types::DUP},
-            {6, sv_types::DUP}
-        };
-
         void updateSNPData(SNPData& snp_data, int64_t pos, double pfb, double baf, double log2_cov, bool is_snp);
 
         std::pair<std::vector<int>, double> runViterbi(CHMM hmm, SNPData &snp_data);
@@ -99,7 +88,7 @@ class CNVCaller {
         // Run copy number prediction for a chunk of SV candidates from CIGAR strings
         void runCIGARCopyNumberPredictionChunk(std::string chr, std::map<SVCandidate, SVInfo>& sv_candidates, std::vector<SVCandidate> sv_chunk, SNPInfo& snp_info, CHMM hmm, int window_size, double mean_chr_cov, std::unordered_map<uint32_t, int>& pos_depth_map);
 
-        void updateSVCopyNumber(std::map<SVCandidate, SVInfo>& sv_candidates, SVCandidate key, int sv_type_update, std::string data_type, std::string genotype, double hmm_likelihood);
+        void updateSVCopyNumber(std::map<SVCandidate, SVInfo>& sv_candidates, SVCandidate key, SVType sv_type_update, std::string data_type, std::string genotype, double hmm_likelihood);
 
         void updateDPValue(std::map<SVCandidate, SVInfo>& sv_candidates, SVCandidate key, int dp_value);
 
@@ -120,7 +109,7 @@ class CNVCaller {
 
         // Run copy number prediction for a pair of SV candidates, and add only
         // the SV candidate with the highest likelihood
-        std::tuple<int, double, int, std::string, bool> runCopyNumberPredictionPair(std::string chr, SVCandidate sv_one, SVCandidate sv_two);
+        std::tuple<int, double, SVType, std::string, bool> runCopyNumberPredictionPair(std::string chr, SVCandidate sv_one, SVCandidate sv_two);
 
         // Run copy number prediction for SVs meeting the minimum length threshold obtained from CIGAR strings
         SNPData runCIGARCopyNumberPrediction(std::string chr, std::map<SVCandidate, SVInfo>& sv_candidates, int min_length);

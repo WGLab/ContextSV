@@ -12,7 +12,7 @@
 namespace sv_types {
 
     // Define constants for SV types
-    enum SVType {
+    enum class SVType {
         UNKNOWN = -1,
         DEL = 0,
         DUP = 1,
@@ -24,15 +24,38 @@ namespace sv_types {
     };
 
     // Mapping of SV types to strings
-    const std::unordered_map<int, std::string> SVTypeString = {
-        {DEL, "DEL"},
-        {DUP, "DUP"},
-        {INV, "INV"},
-        {INS, "INS"},
-        {BND, "BND"},
-        {NEUTRAL, "NEUT"},
-        {INV_DUP, "INVDUP"}
+    const std::unordered_map<SVType, std::string> SVTypeString = {
+        {SVType::UNKNOWN, "UNKNOWN"},
+        {SVType::DEL, "DEL"},
+        {SVType::DUP, "DUP"},
+        {SVType::INV, "INV"},
+        {SVType::INS, "INS"},
+        {SVType::BND, "BND"},
+        {SVType::NEUTRAL, "NEUTRAL"},
+        {SVType::INV_DUP, "INV_DUP"}
     };
+
+    // Mapping of 6 copy number states to SV types
+    const std::unordered_map<int, SVType> CNVTypeMap = {
+        {0, SVType::UNKNOWN},
+        {1, SVType::DEL},
+        {2, SVType::DEL},
+        {3, SVType::NEUTRAL},
+        {4, SVType::NEUTRAL},
+        {5, SVType::DUP},
+        {6, SVType::DUP}
+    };
+
+    // Function to get the SV type string
+    inline std::string getSVTypeString(SVType sv_type) {
+        return SVTypeString.at(sv_type);
+    }
+
+    // Function to get the SV type from the CNV state
+    inline SVType getSVTypeFromCNState(int cn_state) {
+        return CNVTypeMap.at(cn_state);
+    }
+
     // static const int UNKNOWN = -1;
     // static const int DEL = 0;
     // static const int DUP = 1;
@@ -47,7 +70,7 @@ namespace sv_types {
 
     // Create a struct for storing SV information
     struct SVInfo {
-        int sv_type;
+        SVType sv_type;
         int read_support;  // Number of reads supporting the SV breakpoints
         int read_depth;  // Read depth at the SV start position
         std::set<std::string> data_type;  // Alignment type used to call the SV
@@ -55,25 +78,17 @@ namespace sv_types {
         std::string genotype = "./.";  // Default genotype (no call)
         double hmm_likelihood = 0.0;  // HMM likelihood score for the state sequence
 
-        SVInfo() :
-            sv_type(-1), read_support(0), read_depth(0), data_type({}), sv_length(0), genotype("./."), hmm_likelihood(0.0){}
+        SVInfo() = default;
+        // SVInfo() :
+        //     sv_type(-1), read_support(0), read_depth(0), data_type({}), sv_length(0), genotype("./."), hmm_likelihood(0.0){}
             
-        SVInfo(int sv_type, int read_support, int read_depth, std::string data_type, int sv_length, std::string genotype, double hmm_likelihood) :
+        SVInfo(SVType sv_type, int read_support, int read_depth, std::string data_type, int sv_length, std::string genotype, double hmm_likelihood) :
             sv_type(sv_type), read_support(read_support), read_depth(read_depth), data_type({data_type}), sv_length(sv_length), genotype(genotype), hmm_likelihood(hmm_likelihood) {}
     };
 
-    // SV (start, end, alt_allele)
-    using SVCandidate = std::tuple<int64_t, int64_t, std::string>;
-    
-    // Chromosome to SV candidate to read depth map
-    using SVDepthMap = std::unordered_map<std::string, std::map<SVCandidate, SVInfo>>;
-
-    // Define a map for storing copy number calls by SV candidate
-    using SVCopyNumberMap = std::map<SVCandidate, std::tuple<int, std::string, std::string>>;
-
-    // Create a type for storing SV update information from copy number caller
-    // (SVCandidate, SV type, genotype, data type)
-    using SVUpdate = std::tuple<SVCandidate, int, std::string, std::string>;
+    // Type definition for SV-related structures
+    using SVCandidate = std::tuple<int64_t, int64_t, std::string>;  // SV (start, end, alt_allele)
+    using SVDepthMap = std::unordered_map<std::string, std::map<SVCandidate, SVInfo>>;  // Chromosome -> SV candidate -> SV info
 }
 
 #endif // SV_TYPES_H

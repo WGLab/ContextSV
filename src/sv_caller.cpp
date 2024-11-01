@@ -297,9 +297,9 @@ std::tuple<std::unordered_map<int, int>, int32_t, int32_t> SVCaller::detectSVsFr
                 // Lock the SV calls object and add the insertion
                 std::lock_guard<std::mutex> lock(this->sv_mtx);
                 if (is_duplication) {
-                    sv_calls.add(chr, ref_pos, ref_end, DUP, ins_seq_str, "CIGARDUP", "./.", 0.0);
+                    sv_calls.add(chr, ref_pos, ref_end, SVType::DUP, ins_seq_str, "CIGARDUP", "./.", 0.0);
                 } else {
-                    sv_calls.add(chr, ref_pos, ref_end, INS, ins_seq_str, "CIGARINS", "./.", 0.0);
+                    sv_calls.add(chr, ref_pos, ref_end, SVType::INS, ins_seq_str, "CIGARINS", "./.", 0.0);
                 }
             }
 
@@ -315,7 +315,7 @@ std::tuple<std::unordered_map<int, int>, int32_t, int32_t> SVCaller::detectSVsFr
 
                 // Lock the SV calls object and add the deletion
                 // std::lock_guard<std::mutex> lock(this->sv_mtx);
-                sv_calls.add(chr, ref_pos, ref_end, DEL, ".", "CIGARDEL", "./.", 0.0);
+                sv_calls.add(chr, ref_pos, ref_end, SVType::DEL, ".", "CIGARDEL", "./.", 0.0);
             }
 
         // Check if the CIGAR operation is a clipped base
@@ -422,7 +422,6 @@ SVData SVCaller::run()
     std::cout << "Detecting SVs from " << chr_count << " chromosome(s)..." << std::endl;
     int chunk_count = 100;  // Number of chunks to split the chromosome into
     int region_count = 0;
-    auto start1 = std::chrono::high_resolution_clock::now();
     SVData sv_calls;
     int min_cnv_length = this->input_data->getMinCNVLength();
     for (const auto& chr : chromosomes) {
@@ -430,8 +429,6 @@ SVData SVCaller::run()
 
         // Split the chromosome into chunks
         std::vector<std::string> region_chunks;
-
-        // Get the region start and end positions
         if (this->input_data->isRegionSet()) {
             std::pair<int32_t, int32_t> region = this->input_data->getRegion();
             int region_start = region.first;
@@ -444,10 +441,7 @@ SVData SVCaller::run()
             
         } else {
             int chr_len = this->input_data->getRefGenomeChromosomeLength(chr);
-            // std::cout << "Chromosome length: " << chr_len << std::endl;
-            // std::cout << "Chunk count: " << chunk_count << std::endl;
             int chunk_size = std::ceil((double)chr_len / chunk_count);
-            // std::cout << "Chunk size: " << chunk_size << std::endl;
             for (int i = 0; i < chunk_count; i++) {
                 int start = i * chunk_size + 1;  // 1-based
                 int end = start + chunk_size;
@@ -464,12 +458,10 @@ SVData SVCaller::run()
         std::cout << "Loading chromosome data for copy number predictions..." << std::endl;
         CNVCaller cnv_caller(*this->input_data);
         cnv_caller.loadChromosomeData(chr);
-        // std::cout << "Loaded chromosome data for copy number predictions." << std::endl;
 
         // Process each chunk one at a time
         std::cout << "Processing " << region_chunks.size() << " region(s) for chromosome " << chr << "..." << std::endl;
         for (const auto& sub_region : region_chunks) {
-            // Detect SVs from the sub-region
             // std::cout << "Detecting CIGAR string SVs from " << sub_region << "..." << std::endl;
             RegionData region_data = this->detectSVsFromRegion(sub_region);
             SVData& sv_calls_region = std::get<0>(region_data);
@@ -488,8 +480,6 @@ SVData SVCaller::run()
                 std::cout << "Running copy number variant detection from CIGAR string SVs..." << std::endl;
                 cnv_caller.runCIGARCopyNumberPrediction(chr, cigar_svs, min_cnv_length);
             }
-            // std::cout << "Running copy number variant detection from CIGAR string SVs..." << std::endl;
-            // cnv_caller.runCIGARCopyNumberPrediction(chr, cigar_svs, min_cnv_length);
 
             // Run split-read SV detection in a single thread, combined with
             // copy number variant predictions
@@ -503,13 +493,9 @@ SVData SVCaller::run()
         // Increment the region count
         region_count++;
         std::cout << "Completed " << region_count << " of " << chr_count << " chromosome(s)..." << std::endl;
-        // std::cout << "Extracted aligments for " << region_count << " of " << chr_count << " chromosome(s)..." << std::endl;
     }
 
-    // auto end1 = std::chrono::high_resolution_clock::now();
     std::cout << "SV calling completed." << std::endl;
-    // int total_sv_calls = sv_calls.totalCalls();
-    // std::cout << "Finished detecting " << sv_calls.totalCalls() << " SVs from " << chr_count << " chromosome(s). Elapsed time: " << getElapsedTime(start1, end1) << std::endl;
 
     return sv_calls;
 }

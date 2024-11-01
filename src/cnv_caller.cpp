@@ -132,7 +132,7 @@ void CNVCaller::updateSVsFromCopyNumberPrediction(SVData &sv_calls, std::vector<
     // candidate with the highest likelihood
     SVCandidate& sv_one = sv_list[0].first;
     SVCandidate& sv_two = sv_list[1].first;
-    std::tuple<int, double, int, std::string, bool> cnv_prediction = this->runCopyNumberPredictionPair(chr, sv_one, sv_two);
+    std::tuple<int, double, SVType, std::string, bool> cnv_prediction = this->runCopyNumberPredictionPair(chr, sv_one, sv_two);
 
     // Get the SV info
     int best_index = std::get<0>(cnv_prediction);
@@ -143,7 +143,7 @@ void CNVCaller::updateSVsFromCopyNumberPrediction(SVData &sv_calls, std::vector<
 
     // Get the prediction data
     double best_likelihood = std::get<1>(cnv_prediction);
-    int best_cnv_type = std::get<2>(cnv_prediction);
+    SVType best_cnv_type = std::get<2>(cnv_prediction);
     std::string best_genotype = std::get<3>(cnv_prediction);
     bool snps_found = std::get<4>(cnv_prediction);
     if (snps_found)
@@ -157,12 +157,12 @@ void CNVCaller::updateSVsFromCopyNumberPrediction(SVData &sv_calls, std::vector<
     // copy neutral or duplication
     if (inversion) // && (best_cnv_type == sv_types::NEUTRAL))
     {
-        if (best_cnv_type == sv_types::NEUTRAL)
+        if (best_cnv_type == SVType::NEUTRAL)
         {
-            best_cnv_type = sv_types::INV;
-        } else if (best_cnv_type == sv_types::DUP)
+            best_cnv_type = SVType::INV;
+        } else if (best_cnv_type == SVType::DUP)
         {
-            best_cnv_type = sv_types::INV_DUP;
+            best_cnv_type = SVType::INV_DUP;
             printMessage("INVDUP detected for SV candidate " + std::to_string(start_pos) + "-" + std::to_string(end_pos) + "...");
         }
         // best_cnv_type = sv_types::INV;
@@ -180,7 +180,7 @@ void CNVCaller::updateSVsFromCopyNumberPrediction(SVData &sv_calls, std::vector<
     sv_calls.add(chr, start_pos, end_pos, best_cnv_type, ".", aln_type, best_genotype, best_likelihood);
 }
 
-std::tuple<int, double, int, std::string, bool> CNVCaller::runCopyNumberPredictionPair(std::string chr, SVCandidate sv_one, SVCandidate sv_two)
+std::tuple<int, double, SVType, std::string, bool> CNVCaller::runCopyNumberPredictionPair(std::string chr, SVCandidate sv_one, SVCandidate sv_two)
 {
     // std::cout << "Running copy number prediction for SV pair " << chr << ":" << std::get<0>(sv_one) << "-" << std::get<1>(sv_one) << " and " << std::get<0>(sv_two) << "-" << std::get<1>(sv_two) << "..." << std::endl;
     double best_likelihood = 0.0;
@@ -197,7 +197,7 @@ std::tuple<int, double, int, std::string, bool> CNVCaller::runCopyNumberPredicti
     // calculateDepthsForSNPRegion(chr, region_start_pos, region_end_pos, pos_depth_map);
 
     int current_index = 0;
-    int predicted_cnv_type = sv_types::UNKNOWN;
+    SVType predicted_cnv_type = SVType::UNKNOWN;
     std::string genotype = "./.";
     for (const auto& sv_call : {sv_one, sv_two})
     {
@@ -262,7 +262,7 @@ std::tuple<int, double, int, std::string, bool> CNVCaller::runCopyNumberPredicti
         int state_count = (int) sv_states.size();
         if ((double) max_count / (double) state_count > pct_threshold)
         {
-            predicted_cnv_type = cnv_type_map[max_state];
+            predicted_cnv_type = getSVTypeFromCNState(max_state);
             genotype = cnv_genotype_map[max_state];
         }
 
@@ -285,10 +285,10 @@ std::tuple<int, double, int, std::string, bool> CNVCaller::runCopyNumberPredicti
     // Save the SV calls as a TSV file if enabled
     int64_t sv_start_pos = std::get<0>(best_pos);
     int64_t sv_end_pos = std::get<1>(best_pos);
-    bool copy_number_change = (predicted_cnv_type != sv_types::UNKNOWN && predicted_cnv_type != sv_types::NEUTRAL);
+    bool copy_number_change = (predicted_cnv_type != SVType::UNKNOWN && predicted_cnv_type != SVType::NEUTRAL);
     if (this->input_data->getSaveCNVData() && copy_number_change && (sv_end_pos - sv_start_pos) > 10000)
     {
-        std::string cnv_type_str = SVTypeString[predicted_cnv_type];
+        std::string cnv_type_str = getSVTypeString(predicted_cnv_type);
         std::string sv_filename = this->input_data->getOutputDir() + "/" + cnv_type_str + "_" + chr + "_" + std::to_string((int) sv_start_pos) + "-" + std::to_string((int) sv_end_pos) + "_SPLITALN.tsv";
         std::cout << "Saving SV split-alignment copy number predictions to " << sv_filename << std::endl;
         this->saveSVCopyNumberToTSV(best_snp_data, sv_filename, chr, best_pos.first, best_pos.second, cnv_type_str, best_likelihood);
@@ -323,14 +323,7 @@ SNPData CNVCaller::runCIGARCopyNumberPrediction(std::string chr, std::map<SVCand
         return snp_data;
     }
 
-    // Get read depths for the SV candidate region
-    // int64_t first_pos = std::get<0>(sv_candidates.begin()->first);
-    // int64_t last_pos = std::get<1>(sv_candidates.rbegin()->first);
-    // std::unordered_map<uint64_t, int> pos_depth_map;
-    // calculateDepthsForSNPRegion(chr, first_pos, last_pos, pos_depth_map);
-    
-    // Run copy number prediction for the SV candidates
-    // Loop through each SV candidate and predict the copy number state
+   
     printMessage("Predicting CIGAR string copy number states for chromosome " + chr + "...");
 
     // Create a map with counts for each CNV type
@@ -457,7 +450,7 @@ void CNVCaller::runCIGARCopyNumberPredictionChunk(std::string chr, std::map<SVCa
         }
 
         // Update the SV calls with the CNV type and genotype
-        int cnv_type = cnv_type_map[max_state];
+        SVType cnv_type = getSVTypeFromCNState(max_state);
         std::string genotype = cnv_genotype_map[max_state];
 
         // Determine the SV calling method used to call the SV
@@ -475,14 +468,14 @@ void CNVCaller::runCIGARCopyNumberPredictionChunk(std::string chr, std::map<SVCa
 
         // Save the SV calls as a TSV file if enabled, if the SV type is
         // known, and the length is greater than 10 kb
-        int updated_sv_type = sv_candidates[sv_call].sv_type;
-        if (this->input_data->getSaveCNVData() && updated_sv_type != sv_types::UNKNOWN && (end_pos - start_pos) > 10000)
+        SVType updated_sv_type = sv_candidates[sv_call].sv_type;
+        if (this->input_data->getSaveCNVData() && updated_sv_type != SVType::UNKNOWN && (end_pos - start_pos) > 10000)
         {
             // Add the state sequence to the SNP data (avoid copying the data)
             sv_snps.state_sequence = std::move(state_sequence);
 
             // Save the SV calls as a TSV file
-            std::string cnv_type_str = SVTypeString[updated_sv_type];
+            std::string cnv_type_str = getSVTypeString(updated_sv_type);
             std::string sv_filename = this->input_data->getOutputDir() + "/" + cnv_type_str + "_" + chr + "_" + std::to_string((int) start_pos) + "-" + std::to_string((int) end_pos) + "_CIGAR.tsv";
             // std::cout << "Saving SV CIGAR copy number predictions to " <<
             // sv_filename << std::endl;
@@ -492,16 +485,16 @@ void CNVCaller::runCIGARCopyNumberPredictionChunk(std::string chr, std::map<SVCa
     }
 }
 
-void CNVCaller::updateSVCopyNumber(std::map<SVCandidate, SVInfo> &sv_candidates, SVCandidate key, int sv_type_update, std::string data_type, std::string genotype, double hmm_likelihood)
+void CNVCaller::updateSVCopyNumber(std::map<SVCandidate, SVInfo> &sv_candidates, SVCandidate key, SVType sv_type_update, std::string data_type, std::string genotype, double hmm_likelihood)
 {
     // Update SV data from the HMM copy number prediction
     // Lock the SV candidate map
     std::lock_guard<std::mutex> lock(this->sv_candidates_mtx);
 
     // Update the SV type if the update is not unknown, and if the types don't
-    // conflict (To avoid overwriting CIGAR-based SV calls with SNP-based calls)
-    int current_sv_type = sv_candidates[key].sv_type;
-    if ((sv_type_update != sv_types::UNKNOWN) && ((current_sv_type == sv_type_update) || (current_sv_type == sv_types::UNKNOWN)))
+    // conflict (To avoid overwriting previous calls)
+    SVType current_sv_type = sv_candidates[key].sv_type;
+    if ((sv_type_update != SVType::UNKNOWN) && ((current_sv_type == sv_type_update) || (current_sv_type == SVType::UNKNOWN)))
     {
         sv_candidates[key].sv_type = sv_type_update;  // Update the SV type
         sv_candidates[key].data_type.insert(data_type);  // Update the data type
