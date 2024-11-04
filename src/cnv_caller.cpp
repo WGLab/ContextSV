@@ -182,9 +182,8 @@ std::tuple<double, SVType, std::string, bool> CNVCaller::runCopyNumberPrediction
         std::string sv_filename = this->input_data->getOutputDir() + "/" + cnv_type_str + "_" + chr + "_" + std::to_string((int) start_pos) + "-" + std::to_string((int) end_pos) + "_SPLITALN.tsv";
         std::cout << "Saving SV split-alignment copy number predictions to " << sv_filename << std::endl;
         this->saveSVCopyNumberToTSV(sv_snps, sv_filename, chr, start_pos, end_pos, cnv_type_str, likelihood);
-        // this->saveSVCopyNumberToTSV(best_snp_data, sv_filename, chr, best_pos.first, best_pos.second, cnv_type_str, best_likelihood);
     }
-
+    
     return std::make_tuple(likelihood, predicted_cnv_type, genotype, sv_snps_found);
 }
 

@@ -137,6 +137,10 @@ def cluster_breakpoints(vcf_df, sv_type, cluster_size_min):
     cluster_labels = []
 
     # dbscan = DBSCAN(eps=30000, min_samples=3)
+    
+    if len(breakpoints) == 1:
+        return merged_records
+    
     logging.info("Clustering %d SV breakpoints with parameters: min_cluster_size=%d", len(breakpoints), cluster_size_min)
     dbscan = HDBSCAN(min_cluster_size=cluster_size_min, min_samples=2)
     if len(breakpoints) > 0:
@@ -144,6 +148,7 @@ def cluster_breakpoints(vcf_df, sv_type, cluster_size_min):
         cluster_labels = dbscan.fit_predict(breakpoints)
 
         logging.info("Label counts: %d", len(np.unique(cluster_labels)))
+       
 
     # Merge SVs with the same label
     unique_labels = np.unique(cluster_labels)

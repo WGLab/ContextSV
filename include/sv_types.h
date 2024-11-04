@@ -20,7 +20,8 @@ namespace sv_types {
         INS = 3,
         BND = 4,
         NEUTRAL = 5,  // Neutral copy number with unknown type
-        INV_DUP = 6  // Inversion duplication
+        INV_DUP = 6,  // Inversion duplication
+        COMPLEX = 7  // Complex SV
     };
 
     // Mapping of SV types to strings
@@ -32,7 +33,8 @@ namespace sv_types {
         {SVType::INS, "INS"},
         {SVType::BND, "BND"},
         {SVType::NEUTRAL, "NEUTRAL"},
-        {SVType::INV_DUP, "INV_DUP"}
+        {SVType::INV_DUP, "INVDUP"},
+        {SVType::COMPLEX, "COMPLEX"}
     };
 
     // Mapping of 6 copy number states to SV types
@@ -56,18 +58,6 @@ namespace sv_types {
         return CNVTypeMap.at(cn_state);
     }
 
-    // static const int UNKNOWN = -1;
-    // static const int DEL = 0;
-    // static const int DUP = 1;
-    // static const int INV = 2;
-    // static const int INS = 3;
-    // static const int BND = 4;
-    // static const int NEUTRAL = 5;  // Neutral copy number with unknown type
-    // static const int INV_DUP = 6;  // Inversion duplication
-
-    // // Define SVTypeString for SV types (for VCF output)
-    // static const std::string SVTypeString[] = {"DEL", "DUP", "INV", "INS", "BND", "NEUT", "INVDUP"};
-
     // Create a struct for storing SV information
     struct SVInfo {
         SVType sv_type;
@@ -79,9 +69,6 @@ namespace sv_types {
         double hmm_likelihood = 0.0;  // HMM likelihood score for the state sequence
 
         SVInfo() = default;
-        // SVInfo() :
-        //     sv_type(-1), read_support(0), read_depth(0), data_type({}), sv_length(0), genotype("./."), hmm_likelihood(0.0){}
-            
         SVInfo(SVType sv_type, int read_support, int read_depth, std::string data_type, int sv_length, std::string genotype, double hmm_likelihood) :
             sv_type(sv_type), read_support(read_support), read_depth(read_depth), data_type({data_type}), sv_length(sv_length), genotype(genotype), hmm_likelihood(hmm_likelihood) {}
     };

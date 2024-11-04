@@ -10,6 +10,12 @@
 
 int SVData::add(std::string chr, int64_t start, int64_t end, SVType sv_type, std::string alt_allele, std::string data_type, std::string genotype, double hmm_likelihood)
 {
+    // Throw an error if the genotype is not valid
+    if (genotype != "./." && genotype != "0/0" && genotype != "0/1" && genotype != "1/1") {
+        std::cerr << "Error: Invalid genotype " << genotype << std::endl;
+        return -1;
+    }
+
     // Check if the alternate allele contains ambiguous bases
     const std::unordered_set<char> ambiguous_bases = {'R', 'Y', 'W', 'S', 'K', 'M', 'B', 'D', 'H', 'V'};
     for (char c : alt_allele) {
