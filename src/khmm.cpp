@@ -378,8 +378,12 @@ std::pair<std::vector<int>, double> ViterbiLogNP_CHMM(CHMM hmm, int T, std::vect
 	free_dmatrix(biot, 1, hmm.N, 1, T);
 	free_dmatrix(A1, 1, hmm.N, 1, hmm.N);
 
+	// Normalize the log likelihood by the sample size
+	double min_prob_normalized = min_prob / (double)T;
+
 	// Return the state sequence and its likelihood
-	return std::make_pair(q, min_prob);
+	// return std::make_pair(q, min_prob);
+	return std::make_pair(q, min_prob_normalized);
 }
 
 CHMM ReadCHMM(const char *filename)

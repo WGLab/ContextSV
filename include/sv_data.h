@@ -36,7 +36,7 @@ class SVData {
     public:
         SVData() {};
 
-        int add(std::string chr, int64_t start, int64_t end, SVType sv_type, std::string alt_allele, std::string data_type, std::string genotype, double hmm_likelihood);
+        int add(std::string chr, int32_t start, int32_t end, SVType sv_type, std::string alt_allele, std::string data_type, std::string genotype, double hmm_likelihood);
 
         void concatenate(const SVData& sv_data);
 

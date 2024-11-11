@@ -74,7 +74,7 @@ namespace sv_types {
     };
 
     // Type definition for SV-related structures
-    using SVCandidate = std::tuple<int64_t, int64_t, std::string>;  // SV (start, end, alt_allele)
+    using SVCandidate = std::tuple<int32_t, int32_t, std::string>;  // SV (start, end, alt_allele)
     using SVDepthMap = std::unordered_map<std::string, std::map<SVCandidate, SVInfo>>;  // Chromosome -> SV candidate -> SV info
 }
 

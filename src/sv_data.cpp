@@ -8,7 +8,7 @@
 /// @endcond
 
 
-int SVData::add(std::string chr, int64_t start, int64_t end, SVType sv_type, std::string alt_allele, std::string data_type, std::string genotype, double hmm_likelihood)
+int SVData::add(std::string chr, int32_t start, int32_t end, SVType sv_type, std::string alt_allele, std::string data_type, std::string genotype, double hmm_likelihood)
 {
     // Throw an error if the genotype is not valid
     if (genotype != "./." && genotype != "0/0" && genotype != "0/1" && genotype != "1/1") {
@@ -16,9 +16,14 @@ int SVData::add(std::string chr, int64_t start, int64_t end, SVType sv_type, std
         return -1;
     }
 
+    // Trim the alternate allele if it is too long
+    if (alt_allele.length() > 100) {
+        alt_allele = alt_allele.substr(0, 100);
+    }
+
     // Check if the alternate allele contains ambiguous bases
     const std::unordered_set<char> ambiguous_bases = {'R', 'Y', 'W', 'S', 'K', 'M', 'B', 'D', 'H', 'V'};
-    for (char c : alt_allele) {
+    for (char &c : alt_allele) {
         if (ambiguous_bases.count(c) > 0) {
             c = 'N';
         }

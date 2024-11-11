@@ -491,6 +491,17 @@ void SVCaller::detectSVsFromSplitReads(SVData& sv_calls, PrimaryMap& primary_map
             }
         }
 
+        // Run copy number variant predictions on the primary alignment
+        SVType primary_type = SVType::UNKNOWN;
+        double primary_log_likelihood = std::numeric_limits<double>::lowest();
+        if (primary_end - primary_start >= min_cnv_length) {
+            SVCandidate sv_candidate(primary_start+1, primary_end+1, ".");
+            std::tuple<double, SVType, std::string, bool> result = cnv_caller.runCopyNumberPrediction(primary_chr, sv_candidate);
+            primary_log_likelihood = std::get<0>(result);
+            // primary_log_likelihood /= (double)(primary_end - primary_start);  // Normalize the log likelihood by the length
+            primary_type = std::get<1>(result);
+        }
+
         // Loop through the supplementary alignments, find the largest
         // supplementary alignment, and the closest non-overlapping
         // supplementary alignment to the primary alignment
@@ -498,6 +509,7 @@ void SVCaller::detectSVsFromSplitReads(SVData& sv_calls, PrimaryMap& primary_map
         AlignmentData closest_supp_alignment = supp_map[qname][0];
         int32_t largest_supp_length = 0;
         int32_t closest_supp_distance = std::numeric_limits<int32_t>::max();
+        int32_t closest_supp_length = 0;
         for (auto it = supp_map[qname].begin(); it != supp_map[qname].end(); ++it) {
             const auto& supp_chr = std::get<0>(*it);
             int32_t supp_start = std::get<1>(*it);
@@ -514,249 +526,124 @@ void SVCaller::detectSVsFromSplitReads(SVData& sv_calls, PrimaryMap& primary_map
                 largest_supp_alignment = *it;
             }
             if (supp_distance < closest_supp_distance) {
-                closest_supp_distance = supp_distance;
+                closest_supp_length = supp_length;
                 closest_supp_alignment = *it;
+                closest_supp_distance = supp_distance;
             }
         }
 
-        // Find if there are any reverse strand alignments between the primary
-        // and supplementary alignment
-        bool complex_sv_found = false;
-        int32_t largest_supp_start = std::get<1>(largest_supp_alignment);
-        int32_t largest_supp_end = std::get<2>(largest_supp_alignment);
+        // Run copy number variant predictions on the largest supplementary
+        // alignment
+        double largest_supp_log_likelihood = std::numeric_limits<double>::lowest();
+        SVType largest_supp_type = SVType::UNKNOWN;
+        if (largest_supp_length >= min_cnv_length) {
+            SVCandidate sv_candidate(std::get<1>(largest_supp_alignment)+1, std::get<2>(largest_supp_alignment)+1, ".");
+            std::tuple<double, SVType, std::string, bool> result = cnv_caller.runCopyNumberPrediction(primary_chr, sv_candidate);
+            largest_supp_log_likelihood = std::get<0>(result);
+            // largest_supp_log_likelihood /= (double)largest_supp_length;  // Normalize the log likelihood by the length
+            largest_supp_type = std::get<1>(result);
+        }
+
+        // Run copy number variant predictions on the closest non-overlapping
+        // supplementary alignment (if not the same as the largest)
+        double closest_supp_log_likelihood = std::numeric_limits<double>::lowest();
+        SVType closest_supp_type = SVType::UNKNOWN;
+        if (largest_supp_alignment != closest_supp_alignment) {
+            if (closest_supp_length >= min_cnv_length) {
+                SVCandidate sv_candidate(std::get<1>(closest_supp_alignment)+1, std::get<2>(closest_supp_alignment)+1, ".");
+                std::tuple<double, SVType, std::string, bool> result = cnv_caller.runCopyNumberPrediction(primary_chr, sv_candidate);
+                closest_supp_log_likelihood = std::get<0>(result);
+                // closest_supp_log_likelihood /= (double)closest_supp_length;  // Normalize the log likelihood by the length
+                closest_supp_type = std::get<1>(result);
+            }
+        }
+
+        // Loop through all the supplementary alignments and find the highest
+        // likelihood prediction
+        double best_supp_log_likelihood = std::numeric_limits<double>::lowest();
+        SVType best_supp_type = SVType::UNKNOWN;
+        std::pair<int32_t, int32_t> best_supp_candidate;
         for (auto it = supp_map[qname].begin(); it != supp_map[qname].end(); ++it) {
-            if (std::get<7>(*it) != std::get<7>(primary_alignment)) {  // Check if the strands are different
-                // Check if it is between the primary and supplementary
-                // alignment
-                int32_t rev_supp_start = std::get<1>(*it);
-                int32_t rev_supp_end = std::get<2>(*it);
-                if ((rev_supp_start > primary_end && rev_supp_end < largest_supp_start) || (rev_supp_start > largest_supp_end && rev_supp_end < primary_start)) {
-                    // [primary_end] -- [supp_reverse] -- [supp_start]
-                    // Or: [supp_end] -- [supp_reverse] -- [primary_start]
+            int32_t supp_start = std::get<1>(*it);
+            int32_t supp_end = std::get<2>(*it);
 
-                    // Detect CNVs at the primary alignment
-                    SVType primary_type = SVType::UNKNOWN;
-                    if (primary_end - primary_start >= this->input_data->getMinCNVLength()) {
-                        SVCandidate sv_candidate(primary_start+1, primary_end+1, ".");
-                        std::tuple<double, SVType, std::string, bool> result = cnv_caller.runCopyNumberPrediction(primary_chr, sv_candidate);
-                        double primary_likelihood = std::get<0>(result);
-                        primary_type = std::get<1>(result);
+            // Create the SV candidate as the boundary of the supplementary
+            // and primary alignment
+            // int32_t sv_start = std::min(primary_start, std::get<1>(*it));
+            // int32_t sv_end = std::max(primary_end, std::get<2>(*it));
+            int32_t sv_start = std::min(primary_start, supp_start);
+            int32_t sv_end = std::max(primary_end, supp_end);
+            SVCandidate sv_candidate(sv_start+1, sv_end+1, ".");
 
-                        // Break if prediction is unknown
-                        if (primary_type == SVType::UNKNOWN) {
-                            continue;
-                        }
-                    }
+            // Determine if the strand is the same as the primary alignment
+            bool same_strand = std::get<7>(*it) == std::get<7>(primary_alignment);
 
-                    // Detect CNVs at the largest supplementary alignment
-                    SVType largest_supp_type = SVType::UNKNOWN;
-                    if (largest_supp_end - largest_supp_start >= this->input_data->getMinCNVLength()) {
-                        SVCandidate sv_candidate(largest_supp_start+1, largest_supp_end+1, ".");
-                        std::tuple<double, SVType, std::string, bool> result = cnv_caller.runCopyNumberPrediction(primary_chr, sv_candidate);
-                        double largest_supp_likelihood = std::get<0>(result);
-                        largest_supp_type = std::get<1>(result);
-                        
-                        // Break if prediction is unknown
-                        if (largest_supp_type == SVType::UNKNOWN) {
-                            continue;
-                        }
-                    }
+            // SVCandidate sv_candidate(std::get<1>(*it)+1, std::get<2>(*it)+1, ".");
+            std::tuple<double, SVType, std::string, bool> result = cnv_caller.runCopyNumberPrediction(primary_chr, sv_candidate);
+            double supp_likelihood = std::get<0>(result);
+            SVType supp_type = std::get<1>(result);
 
-                    // Predict between the primary and largest supplementary
-                    // alignment
-                    int32_t left_start = std::min(primary_end, largest_supp_end);
-                    int32_t right_end = std::max(primary_start, largest_supp_start);
-
-                    // Detect CNVs between the left and reverse supplementary
-                    // alignment
-                    SVType left_type = SVType::UNKNOWN;
-                    // if (rev_supp_start - primary_end >=
-                    // this->input_data->getMinCNVLength()) {
-                    if (rev_supp_start - left_start >= this->input_data->getMinCNVLength()) {
-                        // SVCandidate sv_candidate(primary_end+1,
-                        // rev_supp_start+1, ".");
-                        SVCandidate sv_candidate(left_start+1, rev_supp_start+1, ".");
-                        std::tuple<double, SVType, std::string, bool> result = cnv_caller.runCopyNumberPrediction(primary_chr, sv_candidate);
-                        double left_likelihood = std::get<0>(result);
-                        left_type = std::get<1>(result);
-
-                        // Break if prediction is unknown
-                        if (left_type == SVType::UNKNOWN) {
-                            continue;
-                        }
-                    }
-
-                    // Detect CNVs at the reverse alignment
-                    SVType rev_type = SVType::UNKNOWN;
-                    if (rev_supp_end - rev_supp_start >= this->input_data->getMinCNVLength()) {
-                        SVCandidate sv_candidate(rev_supp_start+1, rev_supp_end+1, ".");
-                        std::tuple<double, SVType, std::string, bool> result = cnv_caller.runCopyNumberPrediction(primary_chr, sv_candidate);
-                        double inv_likelihood = std::get<0>(result);
-                        rev_type = std::get<1>(result);
-                        if (rev_type == SVType::NEUTRAL) {
-                            rev_type = SVType::INV;
-                        } else if (rev_type == SVType::DUP) {
-                            rev_type = SVType::INV_DUP;
-                        }
-
-                        // Break if prediction is unknown
-                        if (rev_type == SVType::UNKNOWN) {
-                            continue;
-                        }
-                    }
-
-                    // Detect CNVs between the reverse supplementary and the
-                    // supplementary alignment (right side)
-                    SVType right_type = SVType::UNKNOWN;
-                    // if (supp_start - rev_supp_end >=
-                    // this->input_data->getMinCNVLength()) {
-                    if (right_end - rev_supp_end >= this->input_data->getMinCNVLength()) {
-                        SVCandidate sv_candidate(rev_supp_end+1, right_end+1, ".");
-                        std::tuple<double, SVType, std::string, bool> result = cnv_caller.runCopyNumberPrediction(primary_chr, sv_candidate);
-                        double right_likelihood = std::get<0>(result);
-                        right_type = std::get<1>(result);
-
-                        // Break if prediction is unknown
-                        if (right_type == SVType::UNKNOWN) {
-                            continue;
-                        }
-                    }
-
-                    // Resolve the SV type and coordinates
-                    std::string sv_type_str = "";
-                    int32_t sv_start_pos = left_start;
-                    int32_t sv_end_pos = left_start;
-
-                    // Alignment predictions
-                    if (primary_start < left_start) {
-                        if (primary_type != SVType::NEUTRAL && primary_type != SVType::UNKNOWN) {
-                            sv_type_str += getSVTypeString(primary_type) + "+";
-                            sv_end_pos = primary_end;
-                        } else {
-                            sv_start_pos = primary_start;
-                        }
-                    } else {
-                        if (largest_supp_type != SVType::NEUTRAL && largest_supp_type != SVType::UNKNOWN) {
-                            sv_type_str += getSVTypeString(largest_supp_type) + "+";
-                            sv_end_pos = largest_supp_end;
-                        } else {
-                            sv_start_pos = largest_supp_start;
-                        }
-                    }
-
-                    // Between-alignments predictions
-                    if (left_type != SVType::NEUTRAL && left_type != SVType::UNKNOWN) {
-                        sv_type_str += getSVTypeString(left_type) + "+";
-                        sv_end_pos = rev_supp_start;
-                    } else {
-                        sv_start_pos = rev_supp_start;
-                    }
-
-                    if (rev_type != SVType::NEUTRAL && rev_type != SVType::UNKNOWN) {
-                        sv_type_str += getSVTypeString(rev_type) + "+";
-                        sv_end_pos = rev_supp_end;
-                    } else {
-                        sv_start_pos = rev_supp_end;
-                    }
-
-                    if (right_type != SVType::NEUTRAL && right_type != SVType::UNKNOWN) {
-                        sv_end_pos = right_end;
-                        sv_type_str += getSVTypeString(right_type) + "+";
-                    }
-
-                    // Alignments predictions
-                    if (primary_end > right_end) {
-                        if (primary_type != SVType::NEUTRAL && primary_type != SVType::UNKNOWN) {
-                            sv_type_str += getSVTypeString(primary_type) + "+";
-                            sv_end_pos = primary_end;
-                        } else {
-                            sv_start_pos = primary_start;
-                        }
-                    } else {
-                        if (largest_supp_type != SVType::NEUTRAL && largest_supp_type != SVType::UNKNOWN) {
-                            sv_type_str += getSVTypeString(largest_supp_type) + "+";
-                            sv_end_pos = largest_supp_end;
-                        } else {
-                            sv_start_pos = largest_supp_start;
-                        }
-                    }
-
-                    if (sv_type_str != "") {
-                        sv_type_str.pop_back();  // Remove the last '+'
-
-                        // Add the complex SV
-                        complex_sv_found = true;
-                        std::cout << "Complex SV detected of type " << sv_type_str << " at positions " << primary_chr << ":" << left_start << "-" << right_end << std::endl;
-                        sv_count++;
-
-                        // Add the complex SV
-                        sv_calls.add(primary_chr, sv_start_pos+2, sv_end_pos+1, SVType::COMPLEX, ".", "COMPLEX", "./.", 0.0);
-                    }
+            // If opposite strand, set the type to INV or INV_DUP
+            if (!same_strand) {
+                if (supp_type == SVType::NEUTRAL) {
+                    supp_type = SVType::INV;
+                } else if (supp_type == SVType::DUP) {
+                    supp_type = SVType::INV_DUP;
                 }
+            }
+
+            if (supp_type != SVType::UNKNOWN && supp_likelihood > best_supp_log_likelihood) {
+                best_supp_log_likelihood = supp_likelihood;
+                // best_supp_log_likelihood /= (double)(sv_end - sv_start);  // Normalize the log likelihood by the length
+                best_supp_type = supp_type;
+                best_supp_candidate = std::make_pair(supp_start, supp_end);
             }
         }
 
-        if (complex_sv_found) {
-            continue;  // Continue to the next alignment
-        }
+        // Add the SV call with the highest likelihood prediction
+        if (best_supp_log_likelihood > primary_log_likelihood || best_supp_log_likelihood > largest_supp_log_likelihood || best_supp_log_likelihood > closest_supp_log_likelihood) {
+            int32_t sv_start = best_supp_candidate.first;
+            int32_t sv_end = best_supp_candidate.second;
+            sv_calls.add(primary_chr, sv_start, sv_end, best_supp_type, ".", "SPLITREAD", "./.", best_supp_log_likelihood);
+            sv_count++;
+        } else {
+            // Resolve complex SVs
+            // Simplest case: Largest supplementary is also the closest
+            if (largest_supp_alignment == closest_supp_alignment) {
+                // [primary] -- [supp_start] -- [supp_end]
+                // Determine if opposite strands
+                bool opposite_strands = std::get<7>(largest_supp_alignment) != std::get<7>(primary_alignment);
 
-        // [2] CNV detection based on primary and largest supplementary
-        // alignment boundaries
-        // else if (largest_supp_start < primary_start && largest_supp_end <
-        // primary_start) {
-        std::string largest_supp_chr = std::get<0>(largest_supp_alignment);
-        if (largest_supp_start < primary_start && largest_supp_end < primary_start) {
+                // Determine if the supplementary alignment is an inversion
+                if (opposite_strands) {
+                    if (largest_supp_type == SVType::NEUTRAL) {
+                        largest_supp_type = SVType::INV;
+                    } else if (largest_supp_type == SVType::DUP) {
+                        largest_supp_type = SVType::INV_DUP;
+                    }
+                }
 
-            // Gap with supplementary before primary:
-            // [supp_start] [supp_end] -- [primary_start] [primary_end]
-            if (primary_end - largest_supp_start >= min_cnv_length) {
-                SVCandidate sv_candidate(largest_supp_start+1, primary_end+1, ".");
+                // Get the SV type strings
+                std::string primary_type_str = getSVTypeString(primary_type);
+                std::string supp_type_str = getSVTypeString(largest_supp_type);
 
-                // Run copy number prediction for the SV candidate
-                std::tuple<double, SVType, std::string, bool> result = cnv_caller.runCopyNumberPrediction(largest_supp_chr, sv_candidate);
-                double likelihood = std::get<0>(result);
-                SVType cnv_type = std::get<1>(result);
-                std::string genotype = std::get<2>(result);
-                bool snps_found = std::get<3>(result);
-                std::string aln_type = "GAPOUTER_A";
-                if (snps_found) {
-                    aln_type += "_SNPS";
+                // Determine the order of the primary and supplementary
+                // alignment to resolve the SV
+                if (std::get<1>(largest_supp_alignment) < primary_start) {
+                    // [supp_start] -- [supp_end] -- [primary]
+                    std::string complex_sv_type_str = supp_type_str + "+" + primary_type_str;
+
+                    // Add the complex SV call
+                    sv_calls.add(primary_chr, std::get<1>(largest_supp_alignment), primary_end, SVType::COMPLEX, ".", complex_sv_type_str, "./.", 0.0);
+                    sv_count++;
                 } else {
-                    aln_type += "_NOSNPS";
-                }
+                    // [primary] -- [supp_start] -- [supp_end]
+                    std::string complex_sv_type_str = primary_type_str + "+" + supp_type_str;
 
-                // Add the SV call to the main SV data if not unknown
-                if (cnv_type != SVType::UNKNOWN) {
-                    sv_calls.add(largest_supp_chr, largest_supp_start+1, primary_end+1, cnv_type, ".", aln_type, genotype, likelihood);
+                    // Add the complex SV call
+                    sv_calls.add(primary_chr, primary_start, std::get<2>(largest_supp_alignment), SVType::COMPLEX, ".", complex_sv_type_str, "./.", 0.0);
+                    sv_count++;
                 }
-                sv_count++;
-            }
-            
-        } else if (largest_supp_start > primary_end && largest_supp_end > primary_end) {
-            // Gap with supplementary after primary:
-            // [primary_start] [primary_end] -- [supp_start] [supp_end]
-
-            if (largest_supp_end - primary_start >= min_cnv_length) {
-                SVCandidate sv_candidate(primary_start+1, largest_supp_end+1, ".");
-
-                // Run copy number prediction for the SV candidate
-                std::tuple<double, SVType, std::string, bool> result = cnv_caller.runCopyNumberPrediction(largest_supp_chr, sv_candidate);
-                double likelihood = std::get<0>(result);
-                SVType cnv_type = std::get<1>(result);
-                std::string genotype = std::get<2>(result);
-                bool snps_found = std::get<3>(result);
-                std::string aln_type = "GAPOUTER_B";
-                if (snps_found) {
-                    aln_type += "_SNPS";
-                } else {
-                    aln_type += "_NOSNPS";
-                }
-
-                // Add the SV call to the main SV data if not unknown
-                if (cnv_type != SVType::UNKNOWN) {
-                    sv_calls.add(largest_supp_chr, primary_start+1, largest_supp_end+1, cnv_type, ".", aln_type, genotype, likelihood);
-                }
-                sv_count++;
             }
         }
     }
