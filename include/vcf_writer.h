@@ -1,3 +1,6 @@
+#ifndef VCF_WRITER_H
+#define VCF_WRITER_H
+
 /// @cond
 #include <string>
 #include <vector>
@@ -6,9 +9,14 @@
 
 class VcfWriter {
 public:
-    // Constructor
-    VcfWriter(const std::string& filename);
+    explicit VcfWriter(const std::string& filename);
+    // VcfWriter(const std::string& filename);
     ~VcfWriter();
+
+    // Delete copy constructor and assignment operator
+    VcfWriter(const VcfWriter&) = delete;
+    VcfWriter& operator=(const VcfWriter&) = delete;
+
     void writeHeader(const std::vector<std::string>& headerLines);
     void writeRecord(const std::string& chrom, int pos, const std::string& id,
                      const std::string& ref, const std::string& alt,
@@ -19,3 +27,5 @@ public:
 private:
     std::ofstream file_stream;
 };
+
+#endif  // VCF_WRITER_H

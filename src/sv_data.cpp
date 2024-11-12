@@ -139,9 +139,6 @@ void SVData::saveToVCF(FASTAQuery& ref_genome, std::string output_dir)
     std::string output_vcf = output_dir + "/output.vcf";
     std::cout << "Writing VCF file to " << output_vcf << std::endl;
     VcfWriter vcf_writer(output_vcf);
-    std::cout << "Writing VCF file to " << output_vcf << std::endl;
-
-    // Set the sample name
     std::string sample_name = "SAMPLE";
 
     std::cout << "Getting reference genome filepath..." << std::endl;

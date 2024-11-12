@@ -429,7 +429,7 @@ void SVCaller::detectSVsFromSplitReads(SVData& sv_calls, PrimaryMap& primary_map
         int32_t primary_query_start = std::get<4>(primary_alignment);
         int32_t primary_query_end = std::get<5>(primary_alignment);
         std::unordered_map<int, int> primary_match_map = std::get<6>(primary_alignment);
-        bool primary_strand = std::get<7>(primary_alignment);
+        // bool primary_strand = std::get<7>(primary_alignment);
         if (supp_map.find(qname) == supp_map.end()) {
             continue;
         }
@@ -443,7 +443,7 @@ void SVCaller::detectSVsFromSplitReads(SVData& sv_calls, PrimaryMap& primary_map
             int32_t supp_query_start = std::get<4>(*it);
             int32_t supp_query_end = std::get<5>(*it);
             std::unordered_map<int, int> supp_match_map = std::get<6>(*it);
-            bool supp_strand = std::get<7>(*it);
+            // bool supp_strand = std::get<7>(*it);
 
             // Resolve overlaps between the primary and supplementary query
             // sequences
@@ -511,7 +511,7 @@ void SVCaller::detectSVsFromSplitReads(SVData& sv_calls, PrimaryMap& primary_map
         int32_t closest_supp_distance = std::numeric_limits<int32_t>::max();
         int32_t closest_supp_length = 0;
         for (auto it = supp_map[qname].begin(); it != supp_map[qname].end(); ++it) {
-            const auto& supp_chr = std::get<0>(*it);
+            // const auto& supp_chr = std::get<0>(*it);
             int32_t supp_start = std::get<1>(*it);
             int32_t supp_end = std::get<2>(*it);
             int32_t supp_length = supp_end - supp_start;
@@ -644,6 +644,76 @@ void SVCaller::detectSVsFromSplitReads(SVData& sv_calls, PrimaryMap& primary_map
                     sv_calls.add(primary_chr, primary_start, std::get<2>(largest_supp_alignment), SVType::COMPLEX, ".", complex_sv_type_str, "./.", 0.0);
                     sv_count++;
                 }
+            } else {
+                // Resolve complex SVs with multiple supplementary alignments
+                // Determine the order of the primary and supplementary
+                // alignments
+                // [primary] -- [closest_supp] -- [largest_supp]
+                // [closest_supp] -- [primary] -- [largest_supp]
+                // [largest_supp] -- [closest_supp] -- [primary]
+                // [largest_supp] -- [primary] -- [closest_supp]
+                // Only consider case 1 for efficiency:
+                if (primary_end < std::get<1>(closest_supp_alignment) && std::get<2>(closest_supp_alignment) < std::get<1>(largest_supp_alignment)) {
+                    // [primary] -- [closest_supp] -- [largest_supp]
+                    // Determine if the closest supplementary alignment is an
+                    // inversion
+                    if (std::get<7>(closest_supp_alignment) != std::get<7>(primary_alignment)) {
+                        if (closest_supp_type == SVType::NEUTRAL) {
+                            closest_supp_type = SVType::INV;
+                        } else if (closest_supp_type == SVType::DUP) {
+                            closest_supp_type = SVType::INV_DUP;
+                        }
+                    }
+
+                    // Run copy number variant predictions on the region between
+                    // the closest supplementary alignment and the largest
+                    // supplementary alignment
+                    SVCandidate sv_candidate(std::get<2>(closest_supp_alignment)+1, std::get<1>(largest_supp_alignment)+1, ".");
+                    std::tuple<double, SVType, std::string, bool> result = cnv_caller.runCopyNumberPrediction(primary_chr, sv_candidate);
+                    // double complex_log_likelihood = std::get<0>(result);
+                    SVType complex_type = std::get<1>(result);
+
+                    // if (std::get<7>(largest_supp_alignment) != std::get<7>(primary_alignment)) {
+                    //     if (largest_supp_type == SVType::NEUTRAL) {
+                    //         largest_supp_type = SVType::INV;
+                    //     } else if (largest_supp_type == SVType::DUP) {
+                    //         largest_supp_type = SVType::INV_DUP;
+                    //     }
+                    // }
+
+                    std::string primary_type_str = getSVTypeString(primary_type);
+                    std::string closest_supp_type_str = getSVTypeString(closest_supp_type);
+                    // std::string largest_supp_type_str = getSVTypeString(largest_supp_type);
+                    // std::string complex_sv_type_str = primary_type_str + "+" + closest_supp_type_str;
+
+
+                    // Combine the types if equal and not unknown/neutral
+                    std::string complex_sv_type_str = "";
+                    if (primary_type != SVType::UNKNOWN && primary_type != SVType::NEUTRAL) {
+                        complex_sv_type_str += primary_type_str;
+                    }
+                    if (closest_supp_type != primary_type && closest_supp_type != SVType::UNKNOWN && closest_supp_type != SVType::NEUTRAL) {
+                        if (complex_sv_type_str != "") {
+                            complex_sv_type_str += "+";
+                        }
+                        complex_sv_type_str += closest_supp_type_str;
+                    }
+                    if (complex_type != closest_supp_type && complex_type != primary_type && complex_type != SVType::UNKNOWN && complex_type != SVType::NEUTRAL) {
+                        if (complex_sv_type_str != "") {
+                            complex_sv_type_str += "+";
+                        }
+                        complex_sv_type_str += getSVTypeString(complex_type);
+                    }
+
+                    // Add the complex SV call if not empty
+                    if (complex_sv_type_str != "") {
+                        std::cout << "Found complex SV type: " << complex_sv_type_str << std::endl;
+                        sv_calls.add(primary_chr, primary_start, std::get<2>(largest_supp_alignment), SVType::COMPLEX, ".", complex_sv_type_str, "./.", 0.0);
+                        sv_count++;
+                    }
+                }
+
+                
             }
         }
     }

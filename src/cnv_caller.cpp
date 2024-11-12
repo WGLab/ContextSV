@@ -197,22 +197,22 @@ SNPData CNVCaller::runCIGARCopyNumberPrediction(std::string chr, std::map<SVCand
     SNPData snp_data;
 
     // Filter the SV candidates by length
-    std::map<SVCandidate, SVInfo> filtered_sv_candidates;
-    for (const auto& sv_call : sv_candidates)
-    {
-        int64_t start_pos = std::get<0>(sv_call.first);
-        int64_t end_pos = std::get<1>(sv_call.first);
-        if ((end_pos - start_pos) >= min_length)
-        {
-            filtered_sv_candidates[sv_call.first] = sv_call.second;
-        }
-    }
-    sv_candidates = std::move(filtered_sv_candidates);
-    int sv_count = (int) sv_candidates.size();
-    if (sv_count == 0)
-    {
-        return snp_data;
-    }
+    // std::map<SVCandidate, SVInfo> filtered_sv_candidates;
+    // for (const auto& sv_call : sv_candidates)
+    // {
+    //     int64_t start_pos = std::get<0>(sv_call.first);
+    //     int64_t end_pos = std::get<1>(sv_call.first);
+    //     if ((end_pos - start_pos) >= min_length)
+    //     {
+    //         filtered_sv_candidates[sv_call.first] = sv_call.second;
+    //     }
+    // }
+    // sv_candidates = std::move(filtered_sv_candidates);
+    // int sv_count = (int) sv_candidates.size();
+    // if (sv_count == 0)
+    // {
+    //     return snp_data;
+    // }
 
    
     printMessage("Predicting CIGAR string copy number states for chromosome " + chr + "...");
@@ -270,6 +270,12 @@ void CNVCaller::runCIGARCopyNumberPredictionChunk(std::string chr, std::map<SVCa
         const SVCandidate& candidate = sv_call;
         int64_t start_pos = std::get<0>(candidate);
         int64_t end_pos = std::get<1>(candidate);
+
+        // Skip if not the minimum length for CNV predictions
+        if ((end_pos - start_pos) < this->input_data->getMinCNVLength())
+        {
+            continue;
+        }
 
         // Get the depth at the start position. This is used as the FORMAT/DP
         // value in the VCF file
@@ -479,8 +485,16 @@ void CNVCaller::loadChromosomeData(std::string chr)
 // Calculate the mean chromosome coverage
 double CNVCaller::calculateMeanChromosomeCoverage(std::string chr)
 {
-    // Split the chromosome into equal parts for each thread
+
+    // Use a maximum of 8 threads to avoid overloading the system with too many
+    // parallel processes
     int num_threads = this->input_data->getThreadCount();
+    if (num_threads > 8)
+    {
+        num_threads = 8;
+    }
+
+    // Split the chromosome into equal parts for each thread
     uint32_t chr_len = this->input_data->getRefGenomeChromosomeLength(chr);
     std::vector<std::string> region_chunks = splitRegionIntoChunks(chr, 1, chr_len, num_threads);
 
@@ -780,12 +794,19 @@ void CNVCaller::getSNPPopulationFrequencies(std::string chr, SNPInfo& snp_info)
         }
     }
 
+    // Use a maximum of 8 threads to avoid overloading the system with too many
+    // processes
+    int num_threads = this->input_data->getThreadCount();
+    if (num_threads > 8)
+    {
+        num_threads = 8;
+    }
+
     // Split region into chunks and get the population frequencies in parallel
     std::cout << "SNP range for chromosome " << chr << ": " << snp_start << "-" << snp_end << std::endl;
-    int num_threads = this->input_data->getThreadCount();
     std::vector<std::string> region_chunks = splitRegionIntoChunks(chr_gnomad, snp_start, snp_end, num_threads);
     std::unordered_map<int, double> pos_pfb_map;
-    std::vector<std::thread> threads;
+    // std::vector<std::thread> threads;
     std::vector<std::future<std::unordered_map<int, double>>> futures;
     for (const auto& region_chunk : region_chunks)
     {
@@ -800,7 +821,8 @@ void CNVCaller::getSNPPopulationFrequencies(std::string chr, SNPInfo& snp_info)
             std::string cmd = \
                 "bcftools query -r " + region_chunk + " -f '%POS\t%" + AF_key + "\n' -i '" + filter_criteria + "' " + pfb_filepath + " 2>/dev/null";
 
-            std::cout << "Command: " << cmd << std::endl;
+            // std::cout << "Command: " << cmd << std::endl;
+            printMessage("Running command: " + cmd);
 
             // Open a pipe to read the output of the command
             FILE *fp = popen(cmd.c_str(), "r");
@@ -812,6 +834,7 @@ void CNVCaller::getSNPPopulationFrequencies(std::string chr, SNPInfo& snp_info)
 
             // Loop through the BCFTOOLS output and populate the map of population
             // frequencies
+            // printMessage("Parsing population frequencies for chromosome " + chr + "...");
             std::unordered_map<int, double> pos_pfb_map;
             const int line_size = 256;
             char line[line_size];
@@ -826,6 +849,7 @@ void CNVCaller::getSNPPopulationFrequencies(std::string chr, SNPInfo& snp_info)
                 }
             }
             pclose(fp);
+            // printMessage("Finished parsing population frequencies for chromosome " + chr + "...");
 
             return pos_pfb_map;
         };

@@ -90,10 +90,12 @@ def generate_sv_size_plot(input_vcf, output_png, plot_title="SV Caller"):
 
     # Create a dictionary of SV types and their corresponding colors.
     # From: https://davidmathlogic.com/colorblind/
-    sv_colors = {'DEL': '#D81B60', 'DUP': '#1E88E5', 'INV': '#FFC107', 'INS': '#004D40'}
+    # sv_colors = {'DEL': '#D81B60', 'DUP': '#1E88E5', 'INV': '#FFC107', 'INS': '#004D40'}
+    # WONG colors
+    sv_colors = {'DEL': '#E69F00', 'DUP': '#56B4E9', 'INV': '#009E73', 'INS': '#F0E442', 'INVDUP': '#D55E00', 'COMPLEX': '#CC79A7'}
 
     # Create a dictionary of SV types and their corresponding labels
-    sv_labels = {'DEL': 'Deletion', 'DUP': 'Duplication', 'INV': 'Inversion', 'INS': 'Insertion'}
+    sv_labels = {'DEL': 'Deletion', 'DUP': 'Duplication', 'INV': 'Inversion', 'INS': 'Insertion', 'INVDUP': 'Inverted Duplication', 'COMPLEX': 'Complex'}
 
     # Get the list of SV types and sort them in the order of the labels
     sv_types = sorted(sv_sizes.keys(), key=lambda x: sv_labels[x])

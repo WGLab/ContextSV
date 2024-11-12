@@ -197,9 +197,10 @@ void InputData::setRegion(std::string region)
             // Set the region
             this->start_end = std::make_pair(start, end);
             this->region_set = true;
+
+            std::cout << "Region set to " << this->chr << ":" << start << "-" << end << std::endl;
         }
     }
-    std::cout << "Region set to " << this->start_end.first << "-" << this->start_end.second << std::endl;
 }
 
 std::pair<int32_t, int32_t> InputData::getRegion()

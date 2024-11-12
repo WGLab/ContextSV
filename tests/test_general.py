@@ -64,7 +64,7 @@ def test_run():
 
     # Check that the VCF file has the correct number of lines.
     with open(output_file, 'r', encoding='utf-8') as f:
-        assert len(f.readlines()) == 25
+        assert len(f.readlines()) == 41
 
     # Check that the VCF file has the correct header, and the correct
     # VCF CHROM, POS, and INFO fields in the next 2 lines.
