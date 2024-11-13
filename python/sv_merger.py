@@ -152,7 +152,7 @@ def cluster_breakpoints(vcf_df, sv_type, cluster_size_min):
 
     # Merge SVs with the same label
     unique_labels = np.unique(cluster_labels)
-    logging.info("Unique labels: %s", unique_labels)
+    # logging.info("Unique labels: %s", unique_labels)
 
     for label in unique_labels:
 

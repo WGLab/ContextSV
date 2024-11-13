@@ -332,12 +332,17 @@ SVData SVCaller::run()
     } else {
         chromosomes = this->input_data->getRefGenomeChromosomes();
     }
-    int chr_count = chromosomes.size();
+
+    // [TEST] Only process the last N chromosomes
+    // last_n = 10;
+    // chromosomes = std::vector<std::string>(chromosomes.end()-last_n, chromosomes.end());
+    // chromosomes = std::vector<std::string>(chromosomes.end()-3, chromosomes.end());
 
     // Loop through each region and detect SVs in chunks
+    int chr_count = chromosomes.size();
+    int current_chr = 0;
     std::cout << "Detecting SVs from " << chr_count << " chromosome(s)..." << std::endl;
     int chunk_count = 100;  // Number of chunks to split the chromosome into
-    int region_count = 0;
     SVData sv_calls;
     int min_cnv_length = this->input_data->getMinCNVLength();
     for (const auto& chr : chromosomes) {
@@ -377,6 +382,8 @@ SVData SVCaller::run()
 
         // Process each chunk one at a time
         std::cout << "Processing " << region_chunks.size() << " region(s) for chromosome " << chr << "..." << std::endl;
+        int region_count = region_chunks.size();
+        int current_region = 0;
         for (const auto& sub_region : region_chunks) {
             // std::cout << "Detecting CIGAR string SVs from " << sub_region << "..." << std::endl;
             RegionData region_data = this->detectSVsFromRegion(sub_region);
@@ -385,7 +392,7 @@ SVData SVCaller::run()
             SuppMap& supp_map = std::get<2>(region_data);
             int region_sv_count = sv_calls_region.totalCalls();
             if (region_sv_count > 0) {
-                std::cout << "Detected " << region_sv_count << " SVs from " << sub_region << "..." << std::endl;
+                std::cout << "Detected " << region_sv_count << " CIGAR SVs from " << sub_region << "..." << std::endl;
             }
 
             // Run copy number variant predictions on the SVs detected from the
@@ -402,11 +409,13 @@ SVData SVCaller::run()
             std::cout << "Detecting copy number variants from split reads..." << std::endl;
             this->detectSVsFromSplitReads(sv_calls_region, primary_map, supp_map, cnv_caller);
             sv_calls.concatenate(sv_calls_region);  // Add the calls to the main set
+            std::cout << "Completed " << ++current_region << " of " << region_count << " region(s)..." << std::endl;
         }
 
-        region_count++;
-        std::cout << "Completed " << region_count << " of " << chr_count << " chromosome(s)..." << std::endl;
+        std::cout << "Completed " << ++current_chr << " of " << chr_count << " chromosome(s)..." << std::endl;
+        // std::cout << "Completed " << region_count << " of " << chr_count << " chromosome(s)" << std::endl;
     }
+    
 
     std::cout << "SV calling completed." << std::endl;
 

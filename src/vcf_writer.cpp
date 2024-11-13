@@ -6,15 +6,21 @@
 #include <stdexcept>
 /// @endcond
 
-VcfWriter::VcfWriter(const std::string &filename)
+VcfWriter::VcfWriter(std::string filename)
 {
     try {
+    	std::cout << "Opening file..." << std::endl;
         this->file_stream.exceptions(std::ofstream::failbit | std::ofstream::badbit);  // Enable exceptions
         this->file_stream.open(filename, std::ios::out | std::ios::trunc);  // Open the file for writing
-    } catch (const std::ofstream::failure &e) {
-        std::cerr << "Error opening file " << filename << ": " << e.what() << std::endl;
-        exit(EXIT_FAILURE);
-    }
+    	std::cout << "File opened." << std::endl;
+     } catch (std::exception &e) {
+         std::cerr << "Error: " << e.what() << std::endl;
+         exit(EXIT_FAILURE);
+     }
+    //} catch (const std::ofstream::failure &e) {
+    //    std::cerr << "Error opening file " << filename << ": " << e.what() << std::endl;
+    //    exit(EXIT_FAILURE);
+    //}
     // // Open the VCF file, overwrite if it already exists
     // try {
     //     this->file_stream.open(filename, std::ios::out);

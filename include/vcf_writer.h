@@ -9,7 +9,7 @@
 
 class VcfWriter {
 public:
-    explicit VcfWriter(const std::string& filename);
+    explicit VcfWriter(std::string filename);
     // VcfWriter(const std::string& filename);
     ~VcfWriter();
 
