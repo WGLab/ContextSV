@@ -27,7 +27,7 @@ def plot_venn(AB, Ab, aB, output, title_AB, title_Ab, title_aB):
     venn.get_label_by_id('11').set_text(str(AB))
 
     # Update the title
-    plt.title("ContextSV and " + title_aB.capitalize() + " Venn Diagram (All SV types)")
+    plt.title("contextsv and " + title_aB + " venn diagram (all SV types)")
     plt.savefig(output)
     plt.close()
 

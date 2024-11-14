@@ -1,5 +1,4 @@
 #include "sv_data.h"
-#include "vcf_writer.h"
 
 /// @cond
 #include <unordered_set>
@@ -138,7 +137,10 @@ void SVData::saveToVCF(FASTAQuery& ref_genome, std::string output_dir)
     std::cout << "Creating VCF writer..." << std::endl;
     std::string output_vcf = output_dir + "/output.vcf";
     std::cout << "Writing VCF file to " << output_vcf << std::endl;
-    VcfWriter vcf_writer(output_vcf);
+	std::ofstream vcf_stream(output_vcf);
+    if (!vcf_stream.is_open()) {
+        throw std::runtime_error("Failed to open VCF file for writing.");
+    }
     std::string sample_name = "SAMPLE";
 
     std::cout << "Getting reference genome filepath..." << std::endl;
@@ -178,7 +180,35 @@ void SVData::saveToVCF(FASTAQuery& ref_genome, std::string output_dir)
     };
 
     std::cout << "Writing VCF header..." << std::endl;
-    vcf_writer.writeHeader(header_lines);
+
+    // Add the file format
+    std::string file_format = "##fileformat=VCFv4.2";
+    vcf_stream << file_format << std::endl;
+
+    // Add date and time
+    time_t rawtime;
+    struct tm * timeinfo;
+    char buffer[80];
+    time (&rawtime);
+    timeinfo = localtime(&rawtime);
+    strftime(buffer, sizeof(buffer), "%Y%m%d", timeinfo);
+    vcf_stream << "##fileDate=" << buffer << std::endl;
+
+    // Add source
+    std::string source = "##source=ContexSV";
+    vcf_stream << source << std::endl;
+
+    // Loop over the header metadata lines
+    for (const auto &line : header_lines) {
+        vcf_stream << line << std::endl;
+    }
+
+    // Add the header line
+    std::string header_line = "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tSAMPLE";
+    vcf_stream << header_line << std::endl;
+
+    // Flush the stream to ensure that the header is written
+    //this->file_stream.flush();
 
     std::cout << "Saving SV calls to " << output_vcf << std::endl;
     std::string sv_method = "CONTEXTSVv0.1";
@@ -280,7 +310,11 @@ void SVData::saveToVCF(FASTAQuery& ref_genome, std::string output_dir)
             std::vector<std::string> samples = {sample_str};
 
             // Write the SV call to the file (CHROM, POS, ID, REF, ALT, QUAL, FILTER, INFO, FORMAT, SAMPLES)
-            vcf_writer.writeRecord(chr, pos, ".", ref_allele, alt_allele, ".", "PASS", info_str, format_str, samples);
+            vcf_stream << chr << "\t" << pos << "\t" << "." << "\t" << ref_allele << "\t" << alt_allele << "\t" << "." << "\t" << "PASS" << "\t" << info_str << "\t" << format_str << "\t" << samples[0] << std::endl;
+            if (total_count % 1000 == 0)
+            {
+            	std::cout << "Wrote SV at " << chr << ": " << pos << ", total=" << total_count << std::endl;
+        	}
         }
     }
 
