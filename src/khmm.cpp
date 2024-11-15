@@ -339,12 +339,12 @@ std::pair<std::vector<int>, double> ViterbiLogNP_CHMM(CHMM hmm, int T, std::vect
 	// of the state sequence ending in state i at time T, along with observing
 	// the sequence O1, O2.
 	q[T] = 1;
-	double min_prob = -VITHUGE;
+	double final_lh = -VITHUGE;
 	for (i = 1; i <= hmm.N; i++)
 	{
-		if (delta[T][i] > min_prob)
+		if (delta[T][i] > final_lh)
 		{
-			min_prob = delta[T][i];
+			final_lh = delta[T][i];
 			q[T] = i;
 		}
 	}
@@ -378,12 +378,7 @@ std::pair<std::vector<int>, double> ViterbiLogNP_CHMM(CHMM hmm, int T, std::vect
 	free_dmatrix(biot, 1, hmm.N, 1, T);
 	free_dmatrix(A1, 1, hmm.N, 1, hmm.N);
 
-	// Normalize the log likelihood by the sample size
-	double min_prob_normalized = min_prob / (double)T;
-
-	// Return the state sequence and its likelihood
-	// return std::make_pair(q, min_prob);
-	return std::make_pair(q, min_prob_normalized);
+	return std::make_pair(q, final_lh);
 }
 
 CHMM ReadCHMM(const char *filename)

@@ -109,7 +109,7 @@ class CNVCaller {
 
         // Run copy number prediction for a single SV candidate, returning the
         // likelihood, predicted CNV type, genotype, and whether SNPs were found
-        std::tuple<double, SVType, std::string, bool> runCopyNumberPrediction(std::string chr, SVCandidate& sv_candidate);
+        std::tuple<double, SVType, std::string, bool> runCopyNumberPrediction(std::string chr, const SVCandidate& sv_candidate);
 
         // Run copy number prediction for SVs meeting the minimum length threshold obtained from CIGAR strings
         SNPData runCIGARCopyNumberPrediction(std::string chr, std::map<SVCandidate, SVInfo>& sv_candidates, int min_length);

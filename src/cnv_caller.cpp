@@ -115,9 +115,8 @@ std::pair<SNPData, bool> CNVCaller::querySNPRegion(std::string chr, int64_t star
     return std::make_pair(snp_data, snps_found);
 }
 
-std::tuple<double, SVType, std::string, bool> CNVCaller::runCopyNumberPrediction(std::string chr, SVCandidate& candidate)
+std::tuple<double, SVType, std::string, bool> CNVCaller::runCopyNumberPrediction(std::string chr, const SVCandidate& candidate)
 {
-    // std::cout << "Running copy number prediction for SV pair " << chr << ":" << std::get<0>(sv_one) << "-" << std::get<1>(sv_one) << " and " << std::get<0>(sv_two) << "-" << std::get<1>(sv_two) << "..." << std::endl;
      // Get the start and end positions of the SV call
     int64_t start_pos = std::get<0>(candidate);
     int64_t end_pos = std::get<1>(candidate);
@@ -127,6 +126,7 @@ std::tuple<double, SVType, std::string, bool> CNVCaller::runCopyNumberPrediction
     int64_t sv_length = (end_pos - start_pos) / 2.0;
     int64_t snp_start_pos = std::max((int64_t) 1, start_pos - sv_length);
     int64_t snp_end_pos = end_pos + sv_length;
+    // printMessage("Running copy number prediction for SV candidate " + chr + ":" + std::to_string(start_pos) + "-" + std::to_string(end_pos) + " with SNP region " + chr + ":" + std::to_string(snp_start_pos) + "-" + std::to_string(snp_end_pos) + "...");
 
     // Query the SNP region for the SV candidate
     std::pair<SNPData, bool> snp_call = querySNPRegion(chr, snp_start_pos, snp_end_pos, this->snp_info, this->pos_depth_map, this->mean_chr_cov);
@@ -153,12 +153,15 @@ std::tuple<double, SVType, std::string, bool> CNVCaller::runCopyNumberPrediction
     double pct_threshold = 0.75;
     int max_state = 0;
     int max_count = 0;
-    for (int i = 0; i < 6; i++)
+
+    // Combine counts for states 1 and 2, states 3 and 4, and states 5 and 6
+    for (int i = 0; i < 6; i += 2)
     {
-        int state_count = std::count(sv_states.begin(), sv_states.end(), i+1);
+        // Combine counts for states 1 and 2, states 3 and 4, and states 5 and 6
+        int state_count = std::count(sv_states.begin(), sv_states.end(), i+1) + std::count(sv_states.begin(), sv_states.end(), i+2);
         if (state_count > max_count)
         {
-            max_state = i+1;
+            max_state = i+1;  // Set the state to the first state in the pair (sequence remains intact)
             max_count = state_count;
         }
     }
@@ -195,24 +198,6 @@ SNPData CNVCaller::runCIGARCopyNumberPrediction(std::string chr, std::map<SVCand
     int window_size = this->input_data->getWindowSize();
     double mean_chr_cov = this->mean_chr_cov;
     SNPData snp_data;
-
-    // Filter the SV candidates by length
-    // std::map<SVCandidate, SVInfo> filtered_sv_candidates;
-    // for (const auto& sv_call : sv_candidates)
-    // {
-    //     int64_t start_pos = std::get<0>(sv_call.first);
-    //     int64_t end_pos = std::get<1>(sv_call.first);
-    //     if ((end_pos - start_pos) >= min_length)
-    //     {
-    //         filtered_sv_candidates[sv_call.first] = sv_call.second;
-    //     }
-    // }
-    // sv_candidates = std::move(filtered_sv_candidates);
-    // int sv_count = (int) sv_candidates.size();
-    // if (sv_count == 0)
-    // {
-    //     return snp_data;
-    // }
 
    
     printMessage("Predicting CIGAR string copy number states for chromosome " + chr + "...");

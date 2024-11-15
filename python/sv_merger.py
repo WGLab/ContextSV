@@ -89,7 +89,7 @@ def update_support(record, cluster_size):
 
     return record
 
-def weighted_score(read_support, hmm_score, sv_len, weight_hmm, weight_sv_len):
+def weighted_score(read_support, hmm_score, weight_hmm):
     """
     Calculate a weighted score based on read support and HMM score.
     """
@@ -209,13 +209,11 @@ def cluster_breakpoints(vcf_df, sv_type, cluster_size_min):
         # support.
         # hmm_weight = 0.7 if sv_type == 'DEL' else 0.3
         hmm_weight = 0.4
-        sv_len_weight = 0.4
         max_score_idx = 0  # Default to the first SV in the cluster
-        max_score = weighted_score(cluster_depth_scores[max_score_idx], cluster_hmm_scores[max_score_idx], cluster_sv_lengths[max_score_idx], hmm_weight, sv_len_weight)
+        max_score = weighted_score(cluster_depth_scores[max_score_idx], cluster_hmm_scores[max_score_idx], hmm_weight)
         for k, hmm_loglh in enumerate(cluster_hmm_scores):
-            sv_len = cluster_sv_lengths[k] / 1000  # Normalize SV length to kilobases
             read_support = cluster_depth_scores[k]
-            score = weighted_score(read_support, hmm_loglh, sv_len, hmm_weight, sv_len_weight)
+            score = weighted_score(read_support, hmm_loglh, hmm_weight)
             if score > max_score:
                 max_score = score
                 max_score_idx = k
