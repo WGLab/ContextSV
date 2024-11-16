@@ -1,0 +1,43 @@
+# Directories
+INCL_DIR := $(CURDIR)/include
+SRC_DIR := $(CURDIR)/src
+BUILD_DIR := $(CURDIR)/build
+LIB_DIR := $(CURDIR)/lib
+
+# Conda environment directories
+CONDA_PREFIX := $(shell echo $$CONDA_PREFIX)
+CONDA_INCL_DIR := $(CONDA_PREFIX)/include
+CONDA_LIB_DIR := $(CONDA_PREFIX)/lib
+
+# Compiler and Flags
+CXX := g++
+CXXFLAGS := -std=c++11 -I$(INCL_DIR) -I$(CONDA_INCL_DIR)
+LDFLAGS := -L$(LIB_DIR) -L$(CONDA_LIB_DIR) -Wl,-rpath=$(CONDA_LIB_DIR)  # Add rpath for shared libraries
+
+# Link htslib
+LDLIBS := -lhts  # Link with libhts.a or libhts.so
+# LDLIBS := -lmylib  # Link with libraries in LIB_DIR, e.g., libmylib.a or libmylib.so
+
+# Sources and Output
+# SOURCES := $(wildcard $(SRC_DIR)/*.cpp)
+SOURCES := $(filter-out $(SRC_DIR)/swig_wrapper.cpp, $(wildcard $(SRC_DIR)/*.cpp))  # Filter out the SWIG wrapper from the sources
+OBJECTS := $(patsubst $(SRC_DIR)/%.cpp,$(BUILD_DIR)/%.o,$(SOURCES))
+TARGET := $(BUILD_DIR)/cpp_module
+
+# Default target
+all: $(TARGET)
+
+# Link the executable
+$(TARGET): $(OBJECTS)
+	@mkdir -p $(BUILD_DIR)
+	$(CXX) $(CXXFLAGS) -o $@ $^ $(LDFLAGS) $(LDLIBS)
+
+# Compile source files
+$(BUILD_DIR)/%.o: $(SRC_DIR)/%.cpp
+	@mkdir -p $(BUILD_DIR)
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+# Clean the build directory
+clean:
+	rm -rf $(BUILD_DIR)
+	

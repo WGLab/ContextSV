@@ -67,6 +67,7 @@ python/dbscan
 python/agglo
 linktoscripts
 tests/data
+tests/cpp_module_out
 
 # Population allele frequency filepaths
 data/gnomadv2_filepaths.txt
