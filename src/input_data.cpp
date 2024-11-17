@@ -42,7 +42,7 @@ void InputData::setShortReadBam(std::string filepath)
     this->short_read_bam = filepath;
 
     // Check if empty string
-    if (filepath == "")
+    if (filepath.empty())
     {
         return;
         
@@ -51,8 +51,9 @@ void InputData::setShortReadBam(std::string filepath)
         FILE *fp = fopen(filepath.c_str(), "r");
         if (fp == NULL)
         {
-            std::cerr << "Short read BAM file does not exist: " << filepath << std::endl;
-            exit(1);
+            throw std::runtime_error("Short read BAM file does not exist: " + filepath);
+        } else {
+            fclose(fp);
         }
     }
 }
@@ -67,7 +68,7 @@ void InputData::setLongReadBam(std::string filepath)
     this->long_read_bam = filepath;
 
     // Check if empty string
-    if (filepath == "")
+    if (filepath.empty())
     {
         return;
         
@@ -76,8 +77,9 @@ void InputData::setLongReadBam(std::string filepath)
         FILE *fp = fopen(filepath.c_str(), "r");
         if (fp == NULL)
         {
-            std::cerr << "Long read BAM file does not exist: " << filepath << std::endl;
-            exit(1);
+            throw std::runtime_error("Long read BAM file does not exist: " + filepath);
+        } else {
+            fclose(fp);
         }
     }
 }

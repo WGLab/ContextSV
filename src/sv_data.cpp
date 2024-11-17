@@ -6,7 +6,6 @@
 #include <fstream>
 /// @endcond
 
-
 int SVData::add(std::string chr, int32_t start, int32_t end, SVType sv_type, std::string alt_allele, std::string data_type, std::string genotype, double hmm_likelihood)
 {
     // Throw an error if the genotype is not valid
@@ -72,19 +71,28 @@ int SVData::add(std::string chr, int32_t start, int32_t end, SVType sv_type, std
 
 void SVData::concatenate(const SVData &sv_data)
 {
+    if (sv_data.sv_calls.empty()) {
+        std::cerr << "Error: SVData object is empty." << std::endl;
+        return;
+    }
+
     // Iterate over the chromosomes in the other SVData object
     for (auto const& chr_sv_calls : sv_data.sv_calls) {
-        std::string chr = chr_sv_calls.first;
+        const auto &chr = chr_sv_calls.first;
+        // std::string chr = chr_sv_calls.first;
+        auto &current_chr_calls = this->sv_calls[chr];
 
         // Iterate over the SV calls in the other SVData object
         for (auto const& sv_call : chr_sv_calls.second) {
 
-            // Add the SV call to the map of candidate locations. Since the region
-            // is unique (per chromosome), there is no need to check if the SV
-            // candidate already exists in the map.
-            SVCandidate candidate = sv_call.first;  // (start, end, alt_allele)
-            SVInfo info = sv_call.second;  // (sv_type, read_support, data_type, sv_length)
-            this->sv_calls[chr][candidate] = info;
+            // Add the SV call to the map of candidate locations
+            std::pair<std::map<SVCandidate, SVInfo>::iterator, bool> result = current_chr_calls.emplace(sv_call);
+            bool inserted = result.second;
+
+            // Throw a warning if the SV candidate already exists
+            if (!inserted) {
+                std::cerr << "Warning: SV candidate already exists in the map." << std::endl;
+            }
         }
     }
 }

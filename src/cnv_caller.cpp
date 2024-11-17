@@ -481,7 +481,17 @@ double CNVCaller::calculateMeanChromosomeCoverage(std::string chr)
 
     // Split the chromosome into equal parts for each thread
     uint32_t chr_len = this->input_data->getRefGenomeChromosomeLength(chr);
+    if (chr_len == 0)
+    {
+    	printError("ERROR: Chromosome length is zero for: " + chr);
+        return 0.0;
+    }
     std::vector<std::string> region_chunks = splitRegionIntoChunks(chr, 1, chr_len, num_threads);
+    if (region_chunks.empty())
+    {
+        printError("ERROR: Failed to split chromosome into regions.");
+        return 0.0;
+    }
 
     // Calculate the mean chromosome coverage in parallel
     uint32_t pos_count = 0;
@@ -496,23 +506,22 @@ double CNVCaller::calculateMeanChromosomeCoverage(std::string chr)
         {
             // Run samtools depth on the entire region, and print positions and
             // depths (not chromosome)
-            const int cmd_size = 256;
-            char cmd[cmd_size];
-            snprintf(cmd, cmd_size,\
+            size_t cmd_size = input_filepath.size() + 256;
+            std::vector<char> cmd(cmd_size);
+            snprintf(cmd.data(), cmd_size,\
                 "samtools depth -r %s %s | awk '{print $2, $3}'",\
                 region_chunk.c_str(), input_filepath.c_str());
 
             // Open a pipe to read the output of the command
-            FILE *fp = popen(cmd, "r");
+            FILE *fp = popen(cmd.data(), "r");
             if (fp == NULL)
             {
-                printError("ERROR: Could not open pipe for command: " + std::string(cmd));
-                exit(EXIT_FAILURE);
+                throw std::runtime_error("ERROR: Could not open pipe for command: " + std::string(cmd.data()));
             }
 
             // Parse the outputs (position and depth)
             std::unordered_map<uint32_t, int> pos_depth_map;
-            const int line_size = 256;
+            const int line_size = 1024;
             char line[line_size];
             uint32_t pos;
             int depth;
@@ -527,26 +536,53 @@ double CNVCaller::calculateMeanChromosomeCoverage(std::string chr)
                     cum_depth += depth;
                 }
             }
-            pclose(fp);  // Close the process
+            
+            // Check if pclose fails
+            if (pclose(fp) == -1)
+            {
+                throw std::runtime_error("ERROR: Failed to close pipe for command: " + std::string(cmd.data()));
+            }
+            //pclose(fp);  // Close the process
 
             return std::make_tuple(pos_count, cum_depth, pos_depth_map);
         };
-        std::future<std::tuple<uint32_t, uint32_t, std::unordered_map<uint32_t, int>>> future = std::async(std::launch::async, get_mean_chr_cov);
-        futures.push_back(std::move(future));
+        
+        futures.emplace_back(std::async(std::launch::async, get_mean_chr_cov));
+        //std::future<std::tuple<uint32_t, uint32_t, std::unordered_map<uint32_t, int>>> future = std::async(std::launch::async, get_mean_chr_cov);
+        //futures.push_back(std::move(future));
     }
 
-    // Loop through the futures and get the results
+    // Thread-safe map merging (using mutex)
+    std::mutex merge_mutex;
     for (auto& future : futures)
     {
-        future.wait();
-        std::tuple<uint32_t, uint32_t, std::unordered_map<uint32_t, int>> result = std::move(future.get());
+        try
+        {
+            future.wait();
+            auto result = std::move(future.get());
 
-        // Update the position count, cumulative depth, and merge the position-depth maps
-        pos_count += std::get<0>(result);
-        cum_depth += std::get<1>(result);
-        this->mergePosDepthMaps(this->pos_depth_map, std::get<2>(result));
+            // Safely merge results
+            std::lock_guard<std::mutex> lock(merge_mutex);
+            pos_count += std::get<0>(result);
+            cum_depth += std::get<1>(result);
+            this->mergePosDepthMaps(this->pos_depth_map, std::get<2>(result));
+        }
+        catch (const std::exception& ex)
+        {
+            printError("ERROR: Exception in thread execution - " + std::string(ex.what()));
+            return 0.0;
+        }
     }
-    double mean_chr_cov = (double) cum_depth / (double) pos_count;
+    
+    // Validate and calculate mean chromosome coverage
+    if (pos_count == 0)
+    {
+        printError("ERROR: No positions found in chromosome coverage calculation.");
+        return 0.0;
+    }
+    
+    double mean_chr_cov = static_cast<double>(cum_depth) / static_cast<double>(pos_count);
+
 
     return mean_chr_cov;
 }

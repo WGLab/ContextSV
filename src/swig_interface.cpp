@@ -1,7 +1,3 @@
-//
-// Created by jperdomo on 1/8/2023.
-//
-
 #include "swig_interface.h"
 #include "contextsv.h"
 

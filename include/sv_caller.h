@@ -31,7 +31,6 @@ class SVCaller {
         int min_sv_size = 50;       // Minimum SV size to be considered
         int min_mapq = 20;          // Minimum mapping quality to be considered
         InputData* input_data;
-        std::mutex sv_mtx;  // Mutex for locking the SV data
 
         // Detect SVs from the CIGAR string of a read alignment, and return the
         // mismatch rate, and the start and end positions of the query sequence

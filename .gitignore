@@ -88,3 +88,4 @@ python/dist_plots
 
 # Temporary files
 lib/.nfs*
+valgrind.log

@@ -3,10 +3,13 @@
 
 /// @cond
 #include <iostream>
+#include <fstream>
 #include <sstream>
 #include <vector>
 #include <map>
 #include <iomanip>
+#include <stdexcept>
+#include <limits>
 /// @endcond
 
 #define STATE_CHANGE 100000.0 /*this is the expected changes (D value) in the transition matrix*/
@@ -50,30 +53,53 @@ std::pair<std::vector<int>, double> testVit_CHMM(CHMM hmm, int T, std::vector<do
 	return state_sequence;
 }
 
-double b1iot(int state, double *mean, double *sd, double uf, double o)
+// double b1iot(int state, double *mean, double *sd, double uf, double o)
+double b1iot(int state, std::vector<double> mean, std::vector<double> sd, double uf, double o)
 {
-	if (o < mean[1])
+	// if (o < mean[1])
+	// {
+	// 	o = mean[1];
+	// }
+	// double p = uf + ((1 - uf) * pdf_normal(o, mean[state], sd[state]));
+
+	// Get the values (0-based indexing)
+	if (o < mean[0])
 	{
-		o = mean[1];
+		o = mean[0];
 	}
-	double p = uf + ((1 - uf) * pdf_normal(o, mean[state], sd[state]));
+	double p = uf + ((1 - uf) * pdf_normal(o, mean[state-1], sd[state-1]));
 
 	return log(p);
 }
 
-double b2iot(int state, double *mean, double *sd, double uf, double pfb, double b)
+// double b2iot(int state, double *mean, double *sd, double uf, double pfb, double b)
+double b2iot(int state, const std::vector<double> mean, const std::vector<double> sd, double uf, double pfb, double b)
 {
+	// double p = 0;
+	// double mean0 = mean[1];  // mean[1] = 0
+	// double mean25 = mean[2];  // mean[2] = 0.25
+	// double mean33 = mean[3];  // mean[3] = 0.33
+	// double mean50 = mean[4];  // mean[4] = 0.5
+	// double mean50_state1 = mean[5];  // mean[5] = 0.5
+	// double sd0 = sd[1];  // sd[1] = 0
+	// double sd25 = sd[2];  // sd[2] = 0.25
+	// double sd33 = sd[3];  // sd[3] = 0.33
+	// double sd50 = sd[4];  // sd[4] = 0.5
+	// double sd50_state1 = sd[5];  // sd[5] = 0.5
+	// p = uf;  // UF = previous alpha (transition probability)
+
+	// Get the values (0-based indexing)
 	double p = 0;
-	double mean0 = mean[1];  // mean[1] = 0
-	double mean25 = mean[2];  // mean[2] = 0.25
-	double mean33 = mean[3];  // mean[3] = 0.33
-	double mean50 = mean[4];  // mean[4] = 0.5
-	double mean50_state1 = mean[5];  // mean[5] = 0.5
-	double sd0 = sd[1];  // sd[1] = 0
-	double sd25 = sd[2];  // sd[2] = 0.25
-	double sd33 = sd[3];  // sd[3] = 0.33
-	double sd50 = sd[4];  // sd[4] = 0.5
-	double sd50_state1 = sd[5];  // sd[5] = 0.5
+	double mean0 = mean[0];  // mean[0] = 0
+	double mean25 = mean[1];  // mean[1] = 0.25
+	double mean33 = mean[2];  // mean[2] = 0.33
+	double mean50 = mean[3];  // mean[3] = 0.5
+	double mean50_state1 = mean[4];  // mean[4] = 0.5
+	double sd0 = sd[0];  // sd[0] = 0
+	double sd25 = sd[1];  // sd[1] = 0.25
+	double sd33 = sd[2];  // sd[2] = 0.33
+	double sd50 = sd[3];  // sd[3] = 0.5
+	double sd50_state1 = sd[4];  // sd[4] = 0.5
 	p = uf;  // UF = previous alpha (transition probability)
 
 	// PDF normal is the transition probability distrubution a_ij (initialized
@@ -247,7 +273,9 @@ std::pair<std::vector<int>, double> ViterbiLogNP_CHMM(CHMM hmm, int T, std::vect
 	{
 		for (j = 1; j <= hmm.N; j++)
 		{
-			A1[i][j] = hmm.A[i][j];
+			// A1[i][j] = hmm.A[i][j];
+			// Update for 0-based indexing
+			A1[i][j] = hmm.A[i-1][j-1];
 		}
 	}
 
@@ -257,9 +285,15 @@ std::pair<std::vector<int>, double> ViterbiLogNP_CHMM(CHMM hmm, int T, std::vect
 	// Threshold any zero values to avoid calculation issues.
 	for (i = 1; i <= hmm.N; i++)
 	{
-		if (hmm.pi[i] == 0)
-			hmm.pi[i] = 1e-9; /*eliminate problems with zero probability*/
-		hmm.pi[i] = log(hmm.pi[i]);  // Convert to log probability due to underflow
+		// if (hmm.pi[i] == 0)
+		// 	hmm.pi[i] = 1e-9; /*eliminate problems with zero probability*/
+		// hmm.pi[i] = log(hmm.pi[i]);  // Convert to log probability due to underflow
+
+		// Update to 0-based indexing
+		if (hmm.pi[i-1] == 0) {
+			hmm.pi[i-1] = 1e-9; /*eliminate problems with zero probability*/
+		}
+		hmm.pi[i-1] = log(hmm.pi[i-1]);  // Convert to log probability due to underflow
 	}
 
 	// Biot is the NxT matrix of state observation likelihoods.
@@ -302,7 +336,12 @@ std::pair<std::vector<int>, double> ViterbiLogNP_CHMM(CHMM hmm, int T, std::vect
 	/* 1. Initialization  */
 	for (i = 1; i <= hmm.N; i++)
 	{
-		delta[1][i] = hmm.pi[i] + biot[i][1];  // Initialize the delta matrix (log probability) to the initial state distribution + the emission probability
+		// delta[1][i] = hmm.pi[i] + biot[i][1];  // Initialize the delta matrix
+		// (log probability) to the initial state distribution + the emission
+		// probability
+		
+		// Update to 0-based indexing
+		delta[1][i] = hmm.pi[i-1] + biot[i][1];  // Initialize the delta matrix
 		psi[1][i] = 0;  // Initialize the psi matrix (state sequence) to 0 (no state)
 	}
 
@@ -372,7 +411,9 @@ std::pair<std::vector<int>, double> ViterbiLogNP_CHMM(CHMM hmm, int T, std::vect
 
 	for (i = 1; i <= hmm.N; i++)
 	{ /*recover the HMM model as original*/
-		hmm.pi[i] = exp(hmm.pi[i]);
+		// hmm.pi[i] = exp(hmm.pi[i]);
+		// Update to 0-based indexing
+		hmm.pi[i-1] = exp(hmm.pi[i-1]);
 	}
 
 	free_dmatrix(biot, 1, hmm.N, 1, T);
@@ -381,155 +422,209 @@ std::pair<std::vector<int>, double> ViterbiLogNP_CHMM(CHMM hmm, int T, std::vect
 	return std::make_pair(q, final_lh);
 }
 
-CHMM ReadCHMM(const char *filename)
+CHMM ReadCHMM(const std::string filename)
 {
-	FILE *fp;
+	std::ifstream file(filename);
+	if (!file.is_open())
+	{
+		throw std::runtime_error("Error opening file");
+	}
 	CHMM hmm;
-	int i, j, k;
 
-	fp = fopen(filename, "r");
-	if (!fp)
-		fprintf(stderr, "Error: cannot read from HMM file %s\n", filename);
 
-	if (fscanf(fp, "M=%d\n", &(hmm.M)) == EOF)
-		fprintf(stderr, "khmm::ReadCHMM: cannot read M annotation from HMM file");
-	if (fscanf(fp, "N=%d\n", &(hmm.N)) == EOF)
-		fprintf(stderr, "khmm::ReadCHMM: cannot read N annotation from HMM file");
-
-	if (fscanf(fp, "A:\n") == EOF)
-		fprintf(stderr, "khmm::ReadCHMM: cannot read A annotation from HMM file");
-	hmm.A = (double **)dmatrix(1, hmm.N, 1, hmm.N);
-	for (i = 1; i <= hmm.N; i++)
+	// Read M
+	std::string line;
+	std::getline(file, line);
+	if (sscanf(line.c_str(), "M=%d", &hmm.M) != 1)
 	{
-		for (j = 1; j <= hmm.N; j++)
-		{
-			if (fscanf(fp, "%lf", &(hmm.A[i][j])) == EOF)
-				fprintf(stderr, "khmm::ReadCHMM: cannot read A matrix from HMM file");
-		}
-		if (fscanf(fp, "\n") == EOF)
-			fprintf(stderr, "khmm::ReadCHMM: cannot read return character from HMM file");
+		throw std::runtime_error("Error reading M");
 	}
 
-	if (fscanf(fp, "B:\n") == EOF)
-		fprintf(stderr, "khmm::ReadCHMM: cannot read B annotation from HMM file");
-	hmm.B = (double **)dmatrix(1, hmm.N, 1, hmm.M);
-	for (j = 1; j <= hmm.N; j++)
+	// Read N
+	std::getline(file, line);
+	if (sscanf(line.c_str(), "N=%d", &hmm.N) != 1)
 	{
-		for (k = 1; k <= hmm.M; k++)
-		{
-			if (fscanf(fp, "%lf", &(hmm.B[j][k])) == EOF)
-				fprintf(stderr, "khmm::ReadCHMM: cannot read B matrix from HMM file");
-		}
-		if (fscanf(fp, "\n") == EOF)
-			fprintf(stderr, "khmm::ReadCHMM: cannot read return character from HMM file");
+		throw std::runtime_error("Error reading N");
 	}
 
-	if (fscanf(fp, "pi:\n") == EOF)
-		fprintf(stderr, "khmm::ReadCHMM: cannot read PI annotation from HMM file");
-	hmm.pi = (double *)dvector(1, hmm.N);
-	for (i = 1; i <= hmm.N; i++)
+	// Read A
+	std::getline(file, line);
+	if (line != "A:")
 	{
-		if (fscanf(fp, "%lf", &(hmm.pi[i])) == EOF)
-			fprintf(stderr, "khmm::ReadCHMM: cannot read PI vector from HMM file");
-		if (hmm.pi[i] < 1e-6)
-			hmm.pi[i] = 1e-6;
+		throw std::runtime_error("Error reading A");
 	}
-	if (fscanf(fp, "\n") == EOF)
-		fprintf(stderr, "khmm::ReadCHMM: cannot read return character from HMM file");
-
-	if (fscanf(fp, "B1_mean:\n") == EOF)
-		fprintf(stderr, "khmm::ReadCHMM: cannot read B1_mean annotation from HMM file");
-	hmm.B1_mean = (double *)dvector(1, hmm.N);
-	for (i = 1; i <= hmm.N; i++)
-		if (fscanf(fp, "%lf", &(hmm.B1_mean[i])) == EOF)
-			fprintf(stderr, "khmm::ReadCHMM: cannot read B1_mean vector from HMM file");
-	if (fscanf(fp, "\n") == EOF)
-		fprintf(stderr, "khmm::ReadCHMM: cannot read return character from HMM file");
-
-	if (fscanf(fp, "B1_sd:\n") == EOF)
-		fprintf(stderr, "khmm::ReadCHMM: cannot read B1_sd annotation from HMM file");
-	hmm.B1_sd = (double *)dvector(1, hmm.N);
-	for (i = 1; i <= hmm.N; i++)
-		if (fscanf(fp, "%lf", &(hmm.B1_sd[i])) == EOF)
-			fprintf(stderr, "khmm::ReadCHMM: cannot read B1_sd from HMM file");
-	if (fscanf(fp, "\n") == EOF)
-		fprintf(stderr, "khmm::ReadCHMM: cannot read return character from HMM file");
-
-	if (fscanf(fp, "B1_uf:\n") == EOF)
-		fprintf(stderr, "khmm::ReadCHMM: cannot read B1_uf annotation from HMM file");
-	if (fscanf(fp, "%lf", &(hmm.B1_uf)) == EOF)
-		fprintf(stderr, "khmm::ReadCHMM: cannot read B1_uf from HMM file");
-	if (fscanf(fp, "\n") == EOF)
-		fprintf(stderr, "khmm::ReadCHMM: cannot read return character from HMM file");
-
-	if (fscanf(fp, "B2_mean:\n") == EOF)
-		fprintf(stderr, "khmm::ReadCHMM: cannot read B2_mean annotation from HMM file");
-	hmm.B2_mean = (double *)dvector(1, 5);
-	for (i = 1; i <= 5; i++)
-		if (fscanf(fp, "%lf", &(hmm.B2_mean[i])) == EOF)
-			fprintf(stderr, "khmm::ReadCHMM: cannot read B2_mean from HMM file");
-	if (fscanf(fp, "\n") == EOF)
-		fprintf(stderr, "khmm::ReadCHMM: cannot read return character from HMM file");
-
-	if (fscanf(fp, "B2_sd:\n") == EOF)
-		fprintf(stderr, "khmm::ReadCHMM: cannot read B2_sd annotation from HMM file");
-	hmm.B2_sd = (double *)dvector(1, 5);
-	for (i = 1; i <= 5; i++)
-		if (fscanf(fp, "%lf", &(hmm.B2_sd[i])) == EOF)
-			fprintf(stderr, "khmm::ReadCHMM: cannot read B2_sd from HMM file");
-	if (fscanf(fp, "\n") == EOF)
-		fprintf(stderr, "khmm::ReadCHMM: cannot read return character from HMM file");
-
-	if (fscanf(fp, "B2_uf:\n") == EOF)
-		fprintf(stderr, "khmm::ReadCHMM: cannot read B2_uf annotation from HMM file");
-	if (fscanf(fp, "%lf", &(hmm.B2_uf)) == EOF)
-		fprintf(stderr, "khmm::ReadCHMM: cannot read B2_uf from HMM file");
-	if (fscanf(fp, "\n") == EOF)
-		fprintf(stderr, "khmm::ReadCHMM: cannot read return character from HMM file");
-
-	if (fscanf(fp, "B3_mean:\n") != EOF)
+	hmm.A = readMatrix(file, hmm.N, hmm.N);
+	if (hmm.A.size() != (size_t)hmm.N || hmm.A[0].size() != (size_t)hmm.N)
 	{
-		hmm.NP_flag = 1;
-		hmm.B3_mean = (double *)dvector(1, hmm.N);
-		for (i = 1; i <= hmm.N; i++)
-			if (fscanf(fp, "%lf", &(hmm.B3_mean[i])) == EOF)
-				fprintf(stderr, "khmm::ReadCHMM: cannot read B3_mean from HMM file");
-		if (fscanf(fp, "\n") == EOF)
-			fprintf(stderr, "khmm::ReadCHMM: cannot read return character from HMM file");
-		if (fscanf(fp, "B3_sd:\n") == EOF)
-			fprintf(stderr, "khmm::ReadCHMM: cannot read B3_sd annotation from HMM file");
-		hmm.B3_sd = (double *)dvector(1, hmm.N);
-		for (i = 1; i <= hmm.N; i++)
-			if (fscanf(fp, "%lf", &(hmm.B3_sd[i])) == EOF)
-				fprintf(stderr, "khmm::ReadCHMM: cannot read B3_sd from HMM file");
-		if (fscanf(fp, "\n") == EOF)
-			fprintf(stderr, "khmm::ReadCHMM: cannot read return character from HMM file");
-		if (fscanf(fp, "B3_uf:\n") == EOF)
-			fprintf(stderr, "khmm::ReadCHMM: cannot read B3_uf annotation from HMM file");
-		if (fscanf(fp, "%lf", &(hmm.B3_uf)) == EOF)
-			fprintf(stderr, "khmm::ReadCHMM: cannot read B3_uf from HMM file");
-		if (fscanf(fp, "\n") == EOF)
-			fprintf(stderr, "khmm::ReadCHMM: cannot read return character from HMM file");
-	}
-	else
-	{
-		hmm.NP_flag = 0;
+		throw std::runtime_error("Error reading A");
 	}
 
-	if (fscanf(fp, "DIST:\n") != EOF)
+	// Print A
+	// std::cout << "A: " << std::endl;
+	// for (int i = 0; i < hmm.N; i++)
+	// {
+	// 	for (int j = 0; j < hmm.N; j++)
+	// 	{
+	// 		std::cout << std::setprecision(10) << hmm.A[i][j] << " ";
+	// 	}
+	// 	std::cout << std::endl;
+	// }
+
+	// Read B
+	std::getline(file, line);
+	if (line != "B:")
 	{
-		if (fscanf(fp, "%d", &(hmm.dist)) == EOF)
-			fprintf(stderr, "khmm:ReadCHMM: cannot read DIST from HMM file");
+		throw std::runtime_error("Error reading B");
 	}
-	else
+	hmm.B = readMatrix(file, hmm.N, hmm.M);
+	if (hmm.B.size() != (size_t)hmm.N || hmm.B[0].size() != (size_t)hmm.M)
 	{
-		// hmm.dist = STATE_CHANGE;
-		//  snp_dist is the default distance between two SNPs in the same state
-		//  (not used in this implementation)
-		//  Set it to 1 to disable the distance model
-		hmm.dist = 1;
+		throw std::runtime_error("Error reading B");
 	}
 
-	fclose(fp);
+	// Read pi
+	std::getline(file, line);
+	if (line != "pi:")
+	{
+		throw std::runtime_error("Error reading pi");
+	}
+	hmm.pi = readVector(file, hmm.N);
+	if (hmm.pi.size() != (size_t)hmm.N)
+	{
+		throw std::runtime_error("Error reading pi");
+	}
+
+	// Print pi
+	// std::cout << "pi: ";
+	// for (int i = 0; i < hmm.N; i++)
+	// {
+	// 	std::cout << std::setprecision(10) << hmm.pi[i] << " ";
+	// }
+
+	// Read B1_mean
+	std::getline(file, line);
+	if (line != "B1_mean:")
+	{
+		throw std::runtime_error("Error reading B1_mean");
+	}
+	hmm.B1_mean = readVector(file, hmm.N);
+	if (hmm.B1_mean.size() != (size_t)hmm.N)
+	{
+		throw std::runtime_error("Error reading B1_mean");
+	}
+
+	// Print B1_mean
+	// std::cout << "B1_mean: ";
+	// for (int i = 0; i < hmm.N; i++)
+	// {
+	// 	std::cout << std::setprecision(10) << hmm.B1_mean[i] << " ";
+	// }
+
+	// Read B1_sd
+	std::getline(file, line);
+	if (line != "B1_sd:")
+	{
+		throw std::runtime_error("Error reading B1_sd");
+	}
+	hmm.B1_sd = readVector(file, hmm.N);
+	if (hmm.B1_sd.size() != (size_t)hmm.N)
+	{
+		throw std::runtime_error("Error reading B1_sd");
+	}
+
+	// Print B1_sd
+	// std::cout << "B1_sd: ";
+	// for (int i = 0; i < hmm.N; i++)
+	// {
+	// 	std::cout << std::setprecision(10) << hmm.B1_sd[i] << " ";
+	// }
+
+	// Read B1_uf
+	std::getline(file, line);
+	if (line != "B1_uf:")
+	{
+		throw std::runtime_error("Error reading B1_uf");
+	}
+	std::getline(file, line);
+	try {
+		hmm.B1_uf = std::stod(line);
+	} catch (const std::invalid_argument& e) {
+		throw std::runtime_error("Error reading B1_uf");
+	}
+
+	// Print B1_uf
+	// std::cout << "B1_uf: " << std::setprecision(10) << hmm.B1_uf << std::endl;
+
+	// Read B2_mean
+	std::getline(file, line);
+	if (line != "B2_mean:")
+	{
+		throw std::runtime_error("Error reading B2_mean");
+	}
+	hmm.B2_mean = readVector(file, 5);
+	if (hmm.B2_mean.size() != (size_t)5)
+	{
+		throw std::runtime_error("Error reading B2_mean");
+	}
+
+	// Read B2_sd
+	std::getline(file, line);
+	if (line != "B2_sd:")
+	{
+		throw std::runtime_error("Error reading B2_sd");
+	}
+	hmm.B2_sd = readVector(file, 5);
+	if (hmm.B2_sd.size() != (size_t)5)
+	{
+		throw std::runtime_error("Error reading B2_sd");
+	}
+
+	// Read B2_uf
+	std::getline(file, line);
+	if (line != "B2_uf:")
+	{
+		throw std::runtime_error("Error reading B2_uf");
+	}
+	std::getline(file, line);
+	try {
+		hmm.B2_uf = std::stod(line);
+	} catch (const std::invalid_argument& e) {
+		throw std::runtime_error("Error reading B2_uf");
+	}
+
+	// Print B2_uf
+	// std::cout << "B2_uf: " << std::setprecision(10) << hmm.B2_uf << std::endl;
+
 	return hmm;
+}
+
+std::vector<std::vector<double>> readMatrix(std::ifstream &file, int rows, int cols)
+{
+    std::vector<std::vector<double>> matrix(rows, std::vector<double>(cols));
+	for (int i = 0; i < rows; i++)
+	{
+		for (int j = 0; j < cols; j++)
+		{
+			if (!(file >> matrix[i][j]))
+			{
+				throw std::runtime_error("Error reading matrix");
+			}
+		}
+	}
+	file.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+	return matrix;
+}
+
+std::vector<double> readVector(std::ifstream &file, int size)
+{
+	std::vector<double> vector(size);
+	for (int i = 0; i < size; i++)
+	{
+		if (!(file >> vector[i]))
+		{
+			throw std::runtime_error("Error reading vector");
+		}
+	}
+	file.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+	return vector;
 }
