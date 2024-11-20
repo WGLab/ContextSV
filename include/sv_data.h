@@ -35,7 +35,7 @@ class SVData {
 
         int getClippedBaseSupport(std::string chr, int64_t pos, int64_t end);
         
-        void saveToVCF(FASTAQuery& ref_genome, std::string output_dir);
+        void saveToVCF(ReferenceGenome& ref_genome, std::string output_dir);
 
         std::map<SVCandidate, SVInfo>& getChromosomeSVs(std::string chr);
 

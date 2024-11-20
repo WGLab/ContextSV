@@ -31,6 +31,11 @@
 
 using namespace sv_types;
 
+CNVCaller::CNVCaller(InputData &input_data)
+    : input_data(input_data)  // Initialize the input data
+{
+}
+
 // Function to call the Viterbi algorithm for the CHMM
 std::pair<std::vector<int>, double> CNVCaller::runViterbi(CHMM hmm, SNPData& snp_data)
 {
@@ -39,7 +44,7 @@ std::pair<std::vector<int>, double> CNVCaller::runViterbi(CHMM hmm, SNPData& snp
     {
         throw std::runtime_error("Error: No SNP data found for Viterbi algorithm.");
     }
-    std::lock_guard<std::mutex> lock(this->hmm_mtx);  // Lock the mutex for the HMM
+    // std::lock_guard<std::mutex> lock(this->hmm_mtx);  // Lock the mutex for the HMM
     std::pair<std::vector<int>, double> state_sequence = testVit_CHMM(hmm, data_count, snp_data.log2_cov, snp_data.baf, snp_data.pfb);
     return state_sequence;
 }
@@ -49,7 +54,7 @@ std::pair<SNPData, bool> CNVCaller::querySNPRegion(std::string chr, int64_t star
 {
     SNPData snp_data;
     bool snps_found = false;
-    int window_size = this->input_data->getWindowSize();
+    int window_size = this->input_data.getWindowSize();
 
     // printMessage("Querying SNPs for region " + chr + ":" + std::to_string(start_pos) + "-" + std::to_string(end_pos) + "...");
     for (int64_t i = start_pos; i <= end_pos; i += window_size)
@@ -61,9 +66,9 @@ std::pair<SNPData, bool> CNVCaller::querySNPRegion(std::string chr, int64_t star
 
         // Get the SNP info for the window
         // std::cout << "Querying SNPs for window " << chr << ":" << window_start << "-" << window_end << "..." << std::endl;
-        this->snp_data_mtx.lock();
+        // this->snp_data_mtx.lock();
         std::tuple<std::vector<int64_t>, std::vector<double>, std::vector<double>> window_snps = snp_info.querySNPs(chr, window_start, window_end);
-        this->snp_data_mtx.unlock();
+        // this->snp_data_mtx.unlock();
         std::vector<int64_t>& snp_window_pos = std::get<0>(window_snps);  // SNP positions
         std::vector<double>& snp_window_bafs = std::get<1>(window_snps);  // B-allele frequencies
         std::vector<double>& snp_window_pfbs = std::get<2>(window_snps);  // Population frequencies of the B allele
@@ -134,6 +139,7 @@ std::tuple<double, SVType, std::string, bool> CNVCaller::runCopyNumberPrediction
     bool sv_snps_found = snp_call.second;
 
     // Run the Viterbi algorithm
+    // printMessage("[TEST] Running Viterbi algorithm for SV candidate " + chr + ":" + std::to_string(start_pos) + "-" + std::to_string(end_pos) + "...");
     std::pair<std::vector<int>, double> prediction = runViterbi(this->hmm, sv_snps);
     std::vector<int>& state_sequence = prediction.first;
     double likelihood = prediction.second;
@@ -179,10 +185,10 @@ std::tuple<double, SVType, std::string, bool> CNVCaller::runCopyNumberPrediction
 
     // Save the SV calls as a TSV file if enabled
     bool copy_number_change = (predicted_cnv_type != SVType::UNKNOWN && predicted_cnv_type != SVType::NEUTRAL);
-    if (this->input_data->getSaveCNVData() && copy_number_change && (end_pos - start_pos) > 10000)
+    if (this->input_data.getSaveCNVData() && copy_number_change && (end_pos - start_pos) > 10000)
     {
         std::string cnv_type_str = getSVTypeString(predicted_cnv_type);
-        std::string sv_filename = this->input_data->getOutputDir() + "/" + cnv_type_str + "_" + chr + "_" + std::to_string((int) start_pos) + "-" + std::to_string((int) end_pos) + "_SPLITALN.tsv";
+        std::string sv_filename = this->input_data.getOutputDir() + "/" + cnv_type_str + "_" + chr + "_" + std::to_string((int) start_pos) + "-" + std::to_string((int) end_pos) + "_SPLITALN.tsv";
         std::cout << "Saving SV split-alignment copy number predictions to " << sv_filename << std::endl;
         this->saveSVCopyNumberToTSV(sv_snps, sv_filename, chr, start_pos, end_pos, cnv_type_str, likelihood);
     }
@@ -191,54 +197,58 @@ std::tuple<double, SVType, std::string, bool> CNVCaller::runCopyNumberPrediction
 }
 
 
-SNPData CNVCaller::runCIGARCopyNumberPrediction(std::string chr, std::map<SVCandidate, SVInfo> &sv_candidates, int min_length)
+void CNVCaller::runCIGARCopyNumberPrediction(std::string chr, std::set<SVCall> &sv_candidates, int min_length)
 {
-    SNPInfo& snp_info = this->snp_info;
     CHMM& hmm = this->hmm;
-    int window_size = this->input_data->getWindowSize();
-    double mean_chr_cov = this->mean_chr_cov;
-    SNPData snp_data;
-
-   
+    int window_size = this->input_data.getWindowSize();
+    double mean_chr_cov = this->mean_chr_cov;  
     printMessage("Predicting CIGAR string copy number states for chromosome " + chr + "...");
 
     // Create a map with counts for each CNV type
-    std::map<int, int> cnv_type_counts;
-    for (int i = 0; i < 6; i++)
-    {
-        cnv_type_counts[i] = 0;
-    }
+    // std::map<int, int> cnv_type_counts;
+    // for (int i = 0; i < 6; i++)
+    // {
+    //     cnv_type_counts[i] = 0;
+    // }
 
-    // Split the SV candidates into chunks for each thread
-    int chunk_count = this->input_data->getThreadCount();
-    std::vector<std::vector<SVCandidate>> sv_chunks = splitSVCandidatesIntoChunks(sv_candidates, chunk_count);
+    runCIGARCopyNumberPredictionChunk(chr, sv_candidates, this->snp_info, hmm, window_size, mean_chr_cov, this->pos_depth_map);
+    // // Split the SV candidates into chunks for each thread
+    // int chunk_count = this->input_data.getThreadCount();
+    // // std::vector<std::vector<SVCandidate>> sv_chunks = splitSVCandidatesIntoChunks(sv_candidates, chunk_count);
+    // std::vector<std::set<SVCall>> sv_chunks = splitSVsIntoChunks(sv_candidates, chunk_count);
 
-    // Loop through each SV chunk and run the copy number prediction in parallel
-    std::vector<std::future<SNPData>> futures;
-    for (const auto& sv_chunk : sv_chunks)
-    {
-        // Run the copy number prediction for the SV chunk
-        std::async(std::launch::async, &CNVCaller::runCIGARCopyNumberPredictionChunk, this, chr, std::ref(sv_candidates), sv_chunk, std::ref(snp_info), hmm, window_size, mean_chr_cov, std::ref(this->pos_depth_map));
-    }
+    // // Loop through each SV chunk and run the copy number prediction in parallel
+    // // std::vector<std::future<SNPData>> futures;
+    // std::vector<std::future<void>> futures;
+    // for (auto& sv_chunk : sv_chunks)
+    // {
+    //     // Run the copy number prediction for the SV chunk
+    //     futures.emplace_back(std::async(std::launch::async, &CNVCaller::runCIGARCopyNumberPredictionChunk, this, chr, std::ref(sv_chunk), std::ref(this->snp_info), hmm, window_size, mean_chr_cov, std::ref(this->pos_depth_map)));
+    //     // futures.emplace_back(std::async(std::launch::async, &CNVCaller::runCIGARCopyNumberPredictionChunk, this, chr, std::ref(sv_chunk), std::ref(this->snp_info), hmm, window_size, mean_chr_cov, std::ref(this->pos_depth_map)));
+    //     // std::async(std::launch::async, &CNVCaller::runCIGARCopyNumberPredictionChunk, this, chr, sv_chunk, std::ref(this->snp_info), hmm, window_size, mean_chr_cov, std::ref(this->pos_depth_map));
+    // }
 
-    // Get the SNP data for each SV chunk
-    int current_chunk = 0;
-    for (auto& future : futures)
-    {
-        current_chunk++;
-        SNPData chunk_snp_data = std::move(future.get());
-        if (this->input_data->getVerbose())
-        {
-            printMessage("Finished processing SV chunk " + std::to_string(current_chunk) + " of " + std::to_string(chunk_count) + "...");
-        }
-    }
+    // // Wait for all the futures to finish
+    // int current_chunk = 0;
+    // for (auto& future : futures)
+    // {
+    //     current_chunk++;
+    //     try {
+    //         future.wait();
+    //         // SNPData chunk_snp_data = std::move(future.get());
+    //         if (this->input_data.getVerbose())
+    //         {
+    //             printMessage("Finished processing SV chunk " + std::to_string(current_chunk) + " of " + std::to_string(chunk_count) + "...");
+    //         }
+    //     } catch (const std::exception& e) {
+    //         printError("Error processing SV chunk " + std::to_string(current_chunk) + " of " + std::to_string(chunk_count) + ": " + e.what());
+    //     }
+    // }
 
     printMessage("Finished predicting copy number states for chromosome " + chr + "...");
-
-    return snp_data;
 }
 
-void CNVCaller::runCIGARCopyNumberPredictionChunk(std::string chr, std::map<SVCandidate, SVInfo>& sv_candidates, std::vector<SVCandidate> sv_chunk, SNPInfo& snp_info, CHMM hmm, int window_size, double mean_chr_cov, std::unordered_map<uint32_t, int>& pos_depth_map)
+void CNVCaller::runCIGARCopyNumberPredictionChunk(std::string chr, std::set<SVCall>& sv_chunk, SNPInfo& snp_info, CHMM hmm, int window_size, double mean_chr_cov, std::unordered_map<uint32_t, int>& pos_depth_map)
 {
     // printMessage("Running copy number prediction for " + std::to_string(sv_chunk.size()) + " SV candidates on chromosome " + chr + "...");
     // Map with counts for each CNV type
@@ -249,23 +259,25 @@ void CNVCaller::runCIGARCopyNumberPredictionChunk(std::string chr, std::map<SVCa
     }
     
     // Loop through each SV candidate and predict the copy number state
-    for (const auto& sv_call : sv_chunk)
+    for (auto& sv_call : sv_chunk)
     {
         // Get the SV candidate
-        const SVCandidate& candidate = sv_call;
-        int64_t start_pos = std::get<0>(candidate);
-        int64_t end_pos = std::get<1>(candidate);
+        // const SVCandidate& candidate = sv_call;
+        // int64_t start_pos = std::get<0>(candidate);
+        // int64_t end_pos = std::get<1>(candidate);
+        uint32_t start_pos = sv_call.start;
+        uint32_t end_pos = sv_call.end;
 
         // Skip if not the minimum length for CNV predictions
-        if ((end_pos - start_pos) < this->input_data->getMinCNVLength())
+        if ((int)(end_pos - start_pos) < this->input_data.getMinCNVLength())
         {
             continue;
         }
 
         // Get the depth at the start position. This is used as the FORMAT/DP
         // value in the VCF file
-        int dp_value = pos_depth_map[start_pos];
-        this->updateDPValue(sv_candidates, sv_call, dp_value);
+        // int dp_value = pos_depth_map[start_pos];
+        // this->updateDPValue(sv_candidates, sv_call, dp_value);
 
         // Loop through the SV region +/- 1/2 SV length and run copy number
         // predictions
@@ -273,19 +285,21 @@ void CNVCaller::runCIGARCopyNumberPredictionChunk(std::string chr, std::map<SVCa
         int64_t query_start = std::max((int64_t) 1, start_pos - sv_half_length);
         int64_t query_end = end_pos + sv_half_length;
 
-        // printMessage("Querying SNPs for SV " + chr + ":" +
-        // std::to_string((int)start_pos) + "-" + std::to_string((int)end_pos) +
-        // "...");
+        // printMessage("Querying SNPs for SV " + chr + ":" + std::to_string((int)start_pos) + "-" + std::to_string((int)end_pos) + ", qstart = " + std::to_string(query_start) + ", qend = " + std::to_string(query_end));
         std::pair<SNPData, bool> snp_call = this->querySNPRegion(chr, query_start, query_end, snp_info, pos_depth_map, mean_chr_cov);
+        // printMessage("Finished querying SNPs for SV " + chr + ":" + std::to_string((int)start_pos) + "-" + std::to_string((int)end_pos));
         SNPData& sv_snps = snp_call.first;
         bool snps_found = snp_call.second;
 
         // Run the Viterbi algorithm
+        // printMessage("[TEST2] Running Viterbi algorithm for SV " + chr + ":" + std::to_string((int)start_pos) + "-" + std::to_string((int)end_pos) + "...");
         std::pair<std::vector<int>, double> prediction = runViterbi(hmm, sv_snps);
         std::vector<int>& state_sequence = prediction.first;
         double likelihood = prediction.second;
+        // printMessage("Finished running Viterbi algorithm for SV " + chr + ":" + std::to_string((int)start_pos) + "-" + std::to_string((int)end_pos) + "...");
 
         // Get all the states in the SV region
+        // printMessage("Getting states for SV " + chr + ":" + std::to_string((int)start_pos) + "-" + std::to_string((int)end_pos) + "...");
         std::vector<int> sv_states;
         for (size_t i = 0; i < state_sequence.size(); i++)
         {
@@ -318,7 +332,7 @@ void CNVCaller::runCIGARCopyNumberPredictionChunk(std::string chr, std::map<SVCa
         }
 
         // Update the SV calls with the CNV type and genotype
-        SVType cnv_type = getSVTypeFromCNState(max_state);
+        SVType updated_sv_type = getSVTypeFromCNState(max_state);
         std::string genotype = cnv_genotype_map[max_state];
 
         // Determine the SV calling method used to call the SV
@@ -331,20 +345,31 @@ void CNVCaller::runCIGARCopyNumberPredictionChunk(std::string chr, std::map<SVCa
             data_type = "Log2CNV";
         }
 
-        // Update the SV copy number data
-        this->updateSVCopyNumber(sv_candidates, sv_call, cnv_type, data_type, genotype, likelihood);
+        // Update the SV copy number data if not unknown
+        // printMessage("Updating SV copy number data for SV " + chr + ":" + std::to_string((int)start_pos) + "-" + std::to_string((int)end_pos) + "...");
+        if (updated_sv_type != SVType::UNKNOWN)
+        {
+            std::string sv_type_str = getSVTypeString(updated_sv_type);
+            addSVCall(sv_chunk, sv_call.start, sv_call.end, sv_type_str, ".", data_type, genotype, likelihood);
+            // std::string sv_type_str = getSVTypeString(updated_sv_type);
+            // sv_call.sv_type = sv_type_str;
+            // sv_call.data_type += "," + data_type;
+            // sv_call.genotype = genotype;
+            // sv_call.hmm_likelihood = likelihood;
+        }
+        // this->updateSVCopyNumber(sv_candidates, sv_call, cnv_type, data_type, genotype, likelihood);
 
         // Save the SV calls as a TSV file if enabled, if the SV type is
         // known, and the length is greater than 10 kb
-        SVType updated_sv_type = sv_candidates[sv_call].sv_type;
-        if (this->input_data->getSaveCNVData() && updated_sv_type != SVType::UNKNOWN && (end_pos - start_pos) > 10000)
+        // SVType updated_sv_type = sv_candidates[sv_call].sv_type;
+        if (this->input_data.getSaveCNVData() && updated_sv_type != SVType::UNKNOWN && (end_pos - start_pos) > 10000)
         {
             // Add the state sequence to the SNP data (avoid copying the data)
             sv_snps.state_sequence = std::move(state_sequence);
 
             // Save the SV calls as a TSV file
             std::string cnv_type_str = getSVTypeString(updated_sv_type);
-            std::string sv_filename = this->input_data->getOutputDir() + "/" + cnv_type_str + "_" + chr + "_" + std::to_string((int) start_pos) + "-" + std::to_string((int) end_pos) + "_CIGAR.tsv";
+            std::string sv_filename = this->input_data.getOutputDir() + "/" + cnv_type_str + "_" + chr + "_" + std::to_string((int) start_pos) + "-" + std::to_string((int) end_pos) + "_CIGAR.tsv";
             // std::cout << "Saving SV CIGAR copy number predictions to " <<
             // sv_filename << std::endl;
             printMessage("Saving SV CIGAR copy number predictions to " + sv_filename);
@@ -442,14 +467,9 @@ std::vector<std::vector<SVCandidate>> CNVCaller::splitSVCandidatesIntoChunks(std
     return sv_chunks;
 }
 
-CNVCaller::CNVCaller(InputData &input_data)
-{
-    this->input_data = &input_data;
-}
-
 void CNVCaller::loadChromosomeData(std::string chr)
 {
-    std::string hmm_filepath = this->input_data->getHMMFilepath();
+    std::string hmm_filepath = this->input_data.getHMMFilepath();
     std::cout << "Reading HMM from file: " << hmm_filepath << std::endl;
     this->hmm = ReadCHMM(hmm_filepath.c_str());
 
@@ -459,7 +479,7 @@ void CNVCaller::loadChromosomeData(std::string chr)
     this->mean_chr_cov = mean_chr_cov;
 
     std::cout << "Reading SNP allele frequencies for chromosome " << chr << " from VCF file..." << std::endl;
-    std::string snp_filepath = this->input_data->getSNPFilepath();
+    std::string snp_filepath = this->input_data.getSNPFilepath();
     readSNPAlleleFrequencies(chr, snp_filepath, this->snp_info);
 
     std::cout << "Obtaining SNP population frequencies for chromosome " << chr << "..." << std::endl;
@@ -471,16 +491,21 @@ void CNVCaller::loadChromosomeData(std::string chr)
 double CNVCaller::calculateMeanChromosomeCoverage(std::string chr)
 {
 
+	bool test=true;
+	if (test) {
+		return 30.0;
+	}
+
     // Use a maximum of 8 threads to avoid overloading the system with too many
     // parallel processes
-    int num_threads = this->input_data->getThreadCount();
+    int num_threads = this->input_data.getThreadCount();
     if (num_threads > 8)
     {
         num_threads = 8;
     }
 
     // Split the chromosome into equal parts for each thread
-    uint32_t chr_len = this->input_data->getRefGenomeChromosomeLength(chr);
+    uint32_t chr_len = this->input_data.getRefGenomeChromosomeLength(chr);
     if (chr_len == 0)
     {
     	printError("ERROR: Chromosome length is zero for: " + chr);
@@ -497,7 +522,7 @@ double CNVCaller::calculateMeanChromosomeCoverage(std::string chr)
     uint32_t pos_count = 0;
     uint64_t cum_depth = 0;
     std::vector<std::future<std::tuple<uint32_t, uint32_t, std::unordered_map<uint32_t, int>>>> futures;
-    std::string input_filepath = this->input_data->getShortReadBam();
+    std::string input_filepath = this->input_data.getShortReadBam();
     for (const auto& region_chunk : region_chunks)
     {
         // Create a lambda function to get the mean chromosome coverage for the
@@ -638,7 +663,7 @@ void CNVCaller::readSNPAlleleFrequencies(std::string chr, std::string filepath, 
     // Check that the SNP file is sorted by running bcftools index and reading
     // the error output
     std::string index_cmd = "bcftools index " + filepath + " 2>&1 | grep -i error";
-    if (this->input_data->getVerbose()) {
+    if (this->input_data.getVerbose()) {
         std::cout << "Command: " << index_cmd << std::endl;
     }
 
@@ -661,33 +686,33 @@ void CNVCaller::readSNPAlleleFrequencies(std::string chr, std::string filepath, 
     pclose(index_fp);  // Close the process
 
     // Filter variants by depth, quality, and region
-    if (this->input_data->getVerbose()) {
+    if (this->input_data.getVerbose()) {
         std::cout << "Filtering SNPs by depth, quality, and region..." << std::endl;
     }
 
     // Check if a region was specified by the user
     std::string region_str = chr;
-    if (this->input_data->isRegionSet())
+    if (this->input_data.isRegionSet())
     {
-        std::pair<int32_t, int32_t> region = this->input_data->getRegion();
+        std::pair<int32_t, int32_t> region = this->input_data.getRegion();
         region_str = chr + ":" + std::to_string(region.first) + "-" + std::to_string(region.second);
     }
 
-    std::string filtered_snp_vcf_filepath = this->input_data->getOutputDir() + "/filtered_snps.vcf";
+    std::string filtered_snp_vcf_filepath = this->input_data.getOutputDir() + "/filtered_snps.vcf";
     std::string cmd = "bcftools view -r " + region_str + " -v snps -i 'QUAL > 30 && DP > 10 && FILTER = \"PASS\"' " + filepath + " > " + filtered_snp_vcf_filepath;
-    if (this->input_data->getVerbose()) {
+    if (this->input_data.getVerbose()) {
         std::cout << "Filtering SNPs by depth and quality..." << std::endl;
         std::cout << "Command: " << cmd << std::endl;
     }
     system(cmd.c_str());
     
-    if (this->input_data->getVerbose()) {
+    if (this->input_data.getVerbose()) {
         std::cout << "Filtered SNPs written to " << filtered_snp_vcf_filepath << std::endl;
     }
 
     // Extract B-allele frequency data from the VCF file and sort by chromosome
     // and position
-    if (this->input_data->getVerbose()) {
+    if (this->input_data.getVerbose()) {
         std::cout << "Extracting B-allele frequency data from filtered SNPs..." << std::endl;
     }
     cmd = "bcftools query -f '%POS,[%AD]\n' " + filtered_snp_vcf_filepath + " 2>/dev/null";
@@ -748,7 +773,7 @@ void CNVCaller::readSNPAlleleFrequencies(std::string chr, std::string filepath, 
 
     pclose(fp);  // Close the process
 
-    if (this->input_data->getVerbose()) {
+    if (this->input_data.getVerbose()) {
         std::cout << "Finished extracting B-allele frequency data from filtered SNPs" << std::endl;
     }
 }
@@ -756,7 +781,7 @@ void CNVCaller::readSNPAlleleFrequencies(std::string chr, std::string filepath, 
 void CNVCaller::getSNPPopulationFrequencies(std::string chr, SNPInfo& snp_info)
 {
     // Get the population frequency file for the chromosome
-    std::string pfb_filepath = this->input_data->getAlleleFreqFilepath(chr);
+    std::string pfb_filepath = this->input_data.getAlleleFreqFilepath(chr);
     if (pfb_filepath == "")
     {
         std::cout << "No population frequency file provided for chromosome " << chr << std::endl;
@@ -765,9 +790,9 @@ void CNVCaller::getSNPPopulationFrequencies(std::string chr, SNPInfo& snp_info)
 
     // Determine the ethnicity-specific allele frequency key
     std::string AF_key = "AF";
-    if (this->input_data->getEthnicity() != "")
+    if (this->input_data.getEthnicity() != "")
     {
-        AF_key += "_" + this->input_data->getEthnicity();
+        AF_key += "_" + this->input_data.getEthnicity();
     }
 
     // Check if the filepath uses the 'chr' prefix notations based on the
@@ -804,10 +829,10 @@ void CNVCaller::getSNPPopulationFrequencies(std::string chr, SNPInfo& snp_info)
     std::pair<int64_t, int64_t> snp_range = snp_info.getSNPRange(chr);
     int64_t snp_start = snp_range.first;
     int64_t snp_end = snp_range.second;
-    if (this->input_data->isRegionSet())
+    if (this->input_data.isRegionSet())
     {
         // Get the user-defined region
-        std::pair<int32_t, int32_t> region = this->input_data->getRegion();
+        std::pair<int32_t, int32_t> region = this->input_data.getRegion();
         if (snp_start < region.first) {
             snp_start = region.first;
         } else if (snp_end > region.second) {
@@ -817,7 +842,7 @@ void CNVCaller::getSNPPopulationFrequencies(std::string chr, SNPInfo& snp_info)
 
     // Use a maximum of 8 threads to avoid overloading the system with too many
     // processes
-    int num_threads = this->input_data->getThreadCount();
+    int num_threads = this->input_data.getThreadCount();
     if (num_threads > 8)
     {
         num_threads = 8;
@@ -876,8 +901,9 @@ void CNVCaller::getSNPPopulationFrequencies(std::string chr, SNPInfo& snp_info)
         };
 
         // Create a future for the thread
-        std::future<std::unordered_map<int, double>> future = std::async(std::launch::async, get_pfb);
-        futures.push_back(std::move(future));
+        futures.emplace_back(std::async(std::launch::async, get_pfb));
+        // std::future<std::unordered_map<int, double>> future = std::async(std::launch::async, get_pfb);
+        // futures.push_back(std::move(future));
     }
 
     // Loop through the futures and get the results
@@ -895,9 +921,9 @@ void CNVCaller::getSNPPopulationFrequencies(std::string chr, SNPInfo& snp_info)
             double pfb = pair.second;
 
             // Add the population frequency to the SNPInfo
-            this->snp_data_mtx.lock();
+            // this->snp_data_mtx.lock();
             snp_info.insertSNPPopulationFrequency(chr_snp, pos, pfb);
-            this->snp_data_mtx.unlock();
+            // this->snp_data_mtx.unlock();
             pfb_count++;
 
             // [TEST] Print 15 values

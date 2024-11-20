@@ -139,7 +139,7 @@ int SVData::getClippedBaseSupport(std::string chr, int64_t pos, int64_t end)
     return clipped_base_support;
 }
 
-void SVData::saveToVCF(FASTAQuery& ref_genome, std::string output_dir)
+void SVData::saveToVCF(ReferenceGenome& ref_genome, std::string output_dir)
 {
     // Create a VCF writer
     std::cout << "Creating VCF writer..." << std::endl;

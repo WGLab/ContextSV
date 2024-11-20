@@ -130,8 +130,9 @@ def cluster_breakpoints(vcf_df, sv_type, cluster_size_min):
     # Get the HMM likelihood scores
     hmm_scores = vcf_df['INFO'].str.extract(r'HMM=(-?\d+\.?\d*)', expand=False).astype(float)
 
-    # Set all 0 values to NaN
-    hmm_scores[hmm_scores == 0] = np.nan
+    # Set all 0 values to a low negative value
+    hmm_scores[hmm_scores == 0] = -1e-100
+    # hmm_scores[hmm_scores == 0] = np.nan
 
     # Cluster SV breakpoints using HDBSCAN
     cluster_labels = []

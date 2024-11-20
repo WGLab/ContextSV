@@ -12,7 +12,7 @@
 /// @endcond
 
 
-int FASTAQuery::setFilepath(std::string fasta_filepath)
+int ReferenceGenome::setFilepath(std::string fasta_filepath)
 {
     if (fasta_filepath == "")
     {
@@ -92,13 +92,13 @@ int FASTAQuery::setFilepath(std::string fasta_filepath)
     return 0;
 }
 
-std::string FASTAQuery::getFilepath()
+std::string ReferenceGenome::getFilepath() const
 {
     return this->fasta_filepath;
 }
 
 // Function to get the reference sequence at a given position range
-std::string FASTAQuery::query(std::string chr, int64_t pos_start, int64_t pos_end)
+std::string ReferenceGenome::query(const std::string& chr, uint32_t pos_start, uint32_t pos_end) const
 {    
     // Convert positions from 1-indexed (reference) to 0-indexed (string indexing)
     pos_start--;
@@ -110,15 +110,17 @@ std::string FASTAQuery::query(std::string chr, int64_t pos_start, int64_t pos_en
     {
         return "";
     }
-    if (pos_end >= (int64_t)this->chr_to_seq[chr].length())
+    // if (pos_end >= (uint32_t)this->chr_to_seq[chr].length())
+    if (pos_end >= (uint32_t)this->chr_to_seq.at(chr).length())
     {
         return "";
     }
 
-    int64_t length = pos_end - pos_start + 1;
+    uint32_t length = pos_end - pos_start + 1;
     
     // Get the sequence
-    const std::string& sequence = this->chr_to_seq[chr];
+    const std::string& sequence = this->chr_to_seq.at(chr);
+    // const std::string& sequence = this->chr_to_seq[chr];
 
     // Get the substring
     // std::string subsequence = sequence.substr(pos_start, length);
@@ -133,7 +135,7 @@ std::string FASTAQuery::query(std::string chr, int64_t pos_start, int64_t pos_en
 }
 
 // Function to get the chromosome contig lengths in VCF header format
-std::string FASTAQuery::getContigHeader()
+std::string ReferenceGenome::getContigHeader() const
 {
     std::string contig_header = "";
 
@@ -149,7 +151,8 @@ std::string FASTAQuery::getContigHeader()
     for (auto const& chr : chromosomes)
     {
         // Add the contig header line
-        contig_header += "##contig=<ID=" + chr + ",length=" + std::to_string(this->chr_to_seq[chr].length()) + ">\n";
+        contig_header += "##contig=<ID=" + chr + ",length=" + std::to_string(this->chr_to_seq.at(chr).length()) + ">\n";
+        // contig_header += "##contig=<ID=" + chr + ",length=" + std::to_string(this->chr_to_seq[chr].length()) + ">\n";
     }
 
     // Remove the last newline character
@@ -158,12 +161,12 @@ std::string FASTAQuery::getContigHeader()
     return contig_header;
 }
 
-std::vector<std::string> FASTAQuery::getChromosomes()
+std::vector<std::string> ReferenceGenome::getChromosomes()
 {
     return this->chromosomes;
 }
 
-int64_t FASTAQuery::getChromosomeLength(std::string chr)
+uint32_t ReferenceGenome::getChromosomeLength(std::string chr)
 {
     return this->chr_to_seq[chr].length();
 }

@@ -9,6 +9,7 @@
 #include "cnv_data.h"
 #include "sv_data.h"
 #include "sv_types.h"
+#include "sv_object.h"
 
 /// @cond
 #include <string>
@@ -47,7 +48,7 @@ struct SNPData {
 // CNVCaller: Detect CNVs and return the state sequence by SNP position
 class CNVCaller {
     private:
-        InputData* input_data;
+        InputData& input_data;
         mutable std::mutex sv_candidates_mtx; // SV candidate map mutex
         mutable std::mutex snp_data_mtx;  // SNP data mutex
         mutable std::mutex hmm_mtx;  // HMM mutex
@@ -86,7 +87,7 @@ class CNVCaller {
         std::pair<SNPData, bool> querySNPRegion(std::string chr, int64_t start_pos, int64_t end_pos, SNPInfo &snp_info, std::unordered_map<uint32_t, int> &pos_depth_map, double mean_chr_cov);
 
         // Run copy number prediction for a chunk of SV candidates from CIGAR strings
-        void runCIGARCopyNumberPredictionChunk(std::string chr, std::map<SVCandidate, SVInfo>& sv_candidates, std::vector<SVCandidate> sv_chunk, SNPInfo& snp_info, CHMM hmm, int window_size, double mean_chr_cov, std::unordered_map<uint32_t, int>& pos_depth_map);
+        void runCIGARCopyNumberPredictionChunk(std::string chr, std::set<SVCall>& sv_chunk, SNPInfo& snp_info, CHMM hmm, int window_size, double mean_chr_cov, std::unordered_map<uint32_t, int>& pos_depth_map);
 
         void updateSVCopyNumber(std::map<SVCandidate, SVInfo>& sv_candidates, SVCandidate key, SVType sv_type_update, std::string data_type, std::string genotype, double hmm_likelihood);
 
@@ -102,7 +103,7 @@ class CNVCaller {
         void mergePosDepthMaps(std::unordered_map<uint32_t, int>& main_map, std::unordered_map<uint32_t, int>& map_update);
 
     public:
-        CNVCaller(InputData& input_data);
+        explicit CNVCaller(InputData& input_data);
 
         // Load file data for a chromosome (SNP positions, BAF values, and PFB values)
         void loadChromosomeData(std::string chr);
@@ -112,7 +113,8 @@ class CNVCaller {
         std::tuple<double, SVType, std::string, bool> runCopyNumberPrediction(std::string chr, const SVCandidate& sv_candidate);
 
         // Run copy number prediction for SVs meeting the minimum length threshold obtained from CIGAR strings
-        SNPData runCIGARCopyNumberPrediction(std::string chr, std::map<SVCandidate, SVInfo>& sv_candidates, int min_length);
+        // SNPData runCIGARCopyNumberPrediction(std::string chr, std::map<SVCandidate, SVInfo>& sv_candidates, int min_length);
+        void runCIGARCopyNumberPrediction(std::string chr, std::set<SVCall>& sv_candidates, int min_length);
 
         // Calculate the mean chromosome coverage
         double calculateMeanChromosomeCoverage(std::string chr);

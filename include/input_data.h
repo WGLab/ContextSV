@@ -38,8 +38,8 @@ class InputData {
         // Set the filepath to the reference genome FASTA file.
 		void setRefGenome(std::string fasta_filepath);
 
-        // Return a reference to the FASTAQuery object.
-        const FASTAQuery& getRefGenome() const;
+        // Return a reference to the ReferenceGenome object.
+        const ReferenceGenome& getRefGenome() const;
         // FASTAQuery getRefGenome();
 
         // Query the reference genome for a sequence.
@@ -111,7 +111,7 @@ class InputData {
         std::string snp_vcf_filepath;
         std::string ethnicity;
         std::unordered_map<std::string, std::string> pfb_filepaths;  // Map of population frequency VCF filepaths by chromosome
-        FASTAQuery fasta_query;
+        ReferenceGenome fasta_query;
         std::string output_dir;
         int window_size;
         int min_cnv_length;

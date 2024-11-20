@@ -90,7 +90,7 @@ void InputData::setRefGenome(std::string fasta_filepath)
     this->fasta_query.setFilepath(fasta_filepath);
 }
 
-const FASTAQuery &InputData::getRefGenome() const
+const ReferenceGenome& InputData::getRefGenome() const
 {
     return this->fasta_query;
 }

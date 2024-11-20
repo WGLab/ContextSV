@@ -13,10 +13,10 @@
 
 class ContextSV {
 	private:
-		InputData* input_data;
+		InputData& input_data;
 
 	public:
-		ContextSV(InputData& input_data);
+		explicit ContextSV(InputData& input_data);
 
 		// Entry point
 		int run();
