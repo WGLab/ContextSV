@@ -73,6 +73,7 @@ tests/cpp_module_out
 data/gnomadv2_filepaths.txt
 data/gnomadv3_filepaths.txt
 data/gnomadv4_filepaths.txt
+data/gnomadv4_filepaths_ssd.txt
 data/gnomadv4_hg19_filepaths.txt
 
 # Training data

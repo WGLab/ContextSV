@@ -383,6 +383,13 @@ std::unordered_map<std::string, std::set<SVCall>> SVCaller::run()
         throw std::runtime_error("ERROR: failed to open " + bam_filepath);
     }
 
+    // Enable multi-threading
+    int num_threads = this->input_data.getThreadCount();
+    if (num_threads > 1) {
+        std::cout << "Running SV detection with " << num_threads << " thread(s)..." << std::endl;
+    }
+    hts_set_threads(fp_in, num_threads);
+
     // Load the header for the BAM file
     bam_hdr_t *bamHdr = sam_hdr_read(fp_in);
     if (!bamHdr) {

@@ -56,10 +56,11 @@ class CNVCaller {
         SNPData snp_data;
         SNPInfo snp_info;
         double mean_chr_cov = 0.0;
-        std::unordered_map<uint32_t, int> pos_depth_map;
-        std::unordered_map<uint32_t, double> snp_baf_map;
-        std::set<uint32_t> snp_baf_keys;
-        std::unordered_map<uint32_t, double> snp_pfb_map;
+        std::unordered_map<uint32_t, int> pos_depth_map;  // Read depth map
+        std::unordered_map<uint32_t, double> snp_baf_map;  // SNP B-allele frequency map
+        // std::set<uint32_t> snp_alt_map;  // SNP B-allele map
+        std::set<uint32_t> snp_baf_keys;  // SNP positions for BAF values
+        std::unordered_map<uint32_t, double> snp_pfb_map;  // SNP population frequency map
 
         // Define a map of CNV genotypes by HMM predicted state.
         // We only use the first 3 genotypes (0/0, 0/1, 1/1) for the VCF output.
