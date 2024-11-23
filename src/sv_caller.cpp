@@ -37,30 +37,30 @@ int SVCaller::readNextAlignment(samFile *fp_in, hts_itr_t *itr, bam1_t *bam1)
 }
 
 // RegionData SVCaller::detectSVsFromRegion(std::string region)
-std::tuple<std::set<SVCall>, PrimaryMap, SuppMap> SVCaller::detectCIGARSVs(std::string region)
+std::tuple<std::set<SVCall>, PrimaryMap, SuppMap> SVCaller::detectCIGARSVs(samFile* fp_in, hts_idx_t* idx, bam_hdr_t* bamHdr, const std::string& region)
 {
-    // Open the BAM file
-    std::string bam_filepath = this->input_data.getLongReadBam();
-    samFile *fp_in = sam_open(bam_filepath.c_str(), "r");
-    if (fp_in == NULL) {
-        std::cerr << "ERROR: failed to open " << bam_filepath << std::endl;
-        exit(1);
-    }
+    // // Open the BAM file
+    // std::string bam_filepath = this->input_data.getLongReadBam();
+    // samFile *fp_in = sam_open(bam_filepath.c_str(), "r");
+    // if (fp_in == NULL) {
+    //     std::cerr << "ERROR: failed to open " << bam_filepath << std::endl;
+    //     exit(1);
+    // }
 
-    // Load the header for the BAM file
-    bam_hdr_t *bamHdr = sam_hdr_read(fp_in);
-    if (!bamHdr) {
-        sam_close(fp_in);
-        throw std::runtime_error("ERROR: failed to read header for " + bam_filepath);
-    }
+    // // Load the header for the BAM file
+    // bam_hdr_t *bamHdr = sam_hdr_read(fp_in);
+    // if (!bamHdr) {
+    //     sam_close(fp_in);
+    //     throw std::runtime_error("ERROR: failed to read header for " + bam_filepath);
+    // }
 
-    // Load the index for the BAM file
-    hts_idx_t *idx = sam_index_load(fp_in, bam_filepath.c_str());
-    if (!idx) {
-        bam_hdr_destroy(bamHdr);
-        sam_close(fp_in);
-        throw std::runtime_error("ERROR: failed to load index for " + bam_filepath);
-    }
+    // // Load the index for the BAM file
+    // hts_idx_t *idx = sam_index_load(fp_in, bam_filepath.c_str());
+    // if (!idx) {
+    //     bam_hdr_destroy(bamHdr);
+    //     sam_close(fp_in);
+    //     throw std::runtime_error("ERROR: failed to load index for " + bam_filepath);
+    // }
 
     // Create a read and iterator for the region
     bam1_t *bam1 = bam_init1();
@@ -135,11 +135,15 @@ std::tuple<std::set<SVCall>, PrimaryMap, SuppMap> SVCaller::detectCIGARSVs(std::
         num_alignments++;
     }
 
+    // Clean up the iterator and alignment
     hts_itr_destroy(itr);
     bam_destroy1(bam1);
-    hts_idx_destroy(idx);
-    bam_hdr_destroy(bamHdr);
-    sam_close(fp_in);
+    
+    // hts_itr_destroy(itr);
+    // bam_destroy1(bam1);
+    // hts_idx_destroy(idx);
+    // bam_hdr_destroy(bamHdr);
+    // sam_close(fp_in);
 
     return std::make_tuple(sv_calls, primary_alignments, supplementary_alignments);
 }
@@ -181,7 +185,6 @@ std::tuple<std::unordered_map<int, int>, int32_t, int32_t> SVCaller::detectSVsFr
     int32_t query_end = 0;    // Last alignment position in the query
     bool first_op = false;  // First alignment operation for the query
     double default_lh = 0.0;
-    // double default_lh = std::numeric_limits<double>::quiet_NaN();  // Default likelihood
     for (int i = 0; i < cigar_len; i++) {
 
         int op = bam_cigar_op(cigar[i]);  // CIGAR operation
@@ -373,6 +376,28 @@ std::unordered_map<std::string, std::set<SVCall>> SVCaller::run()
     // std::cout << "[DEBUG] Running last " << last_n << " chromosomes" << std::endl;
     // //chromosomes = std::vector<std::string>(chromosomes.end()-3, chromosomes.end());
 
+    // Open the BAM file
+    std::string bam_filepath = this->input_data.getLongReadBam();
+    samFile *fp_in = sam_open(bam_filepath.c_str(), "r");
+    if (!fp_in) {
+        throw std::runtime_error("ERROR: failed to open " + bam_filepath);
+    }
+
+    // Load the header for the BAM file
+    bam_hdr_t *bamHdr = sam_hdr_read(fp_in);
+    if (!bamHdr) {
+        sam_close(fp_in);
+        throw std::runtime_error("ERROR: failed to read header for " + bam_filepath);
+    }
+
+    // Load the index for the BAM file
+    hts_idx_t *idx = sam_index_load(fp_in, bam_filepath.c_str());
+    if (!idx) {
+        bam_hdr_destroy(bamHdr);
+        sam_close(fp_in);
+        throw std::runtime_error("ERROR: failed to load index for " + bam_filepath);
+    }
+
     // Loop through each region and detect SVs in chunks
     int chr_count = chromosomes.size();
     int current_chr = 0;
@@ -426,7 +451,8 @@ std::unordered_map<std::string, std::set<SVCall>> SVCaller::run()
         std::set<SVCall> combined_sv_calls;
         for (const auto& sub_region : region_chunks) {
             // std::cout << "Detecting CIGAR string SVs from " << sub_region << "..." << std::endl;
-            std::tuple<std::set<SVCall>, PrimaryMap, SuppMap> region_data = this->detectCIGARSVs(sub_region);
+            // std::tuple<std::set<SVCall>, PrimaryMap, SuppMap> region_data = this->detectCIGARSVs(sub_region);
+            std::tuple<std::set<SVCall>, PrimaryMap, SuppMap> region_data = this->detectCIGARSVs(fp_in, idx, bamHdr, sub_region);
             std::set<SVCall>& subregion_sv_calls = std::get<0>(region_data);
             PrimaryMap& primary_map = std::get<1>(region_data);
             SuppMap& supp_map = std::get<2>(region_data);
@@ -460,6 +486,10 @@ std::unordered_map<std::string, std::set<SVCall>> SVCaller::run()
             // main set
             // sv_calls.emplace_back(subregion_sv_calls);
 
+            // Merge the SV calls from the current region
+            std::cout << "Merge SV calls from " << sub_region << "..." << std::endl;
+            mergeSVs(subregion_sv_calls);
+
             // Combine the SV calls from the current region
             std::cout << "Combining SV calls from " << sub_region << "..." << std::endl;
             concatenateSVCalls(combined_sv_calls, subregion_sv_calls);
@@ -479,12 +509,19 @@ std::unordered_map<std::string, std::set<SVCall>> SVCaller::run()
         // std::cout << "Completed " << region_count << " of " << chr_count << " chromosome(s)" << std::endl;
     }
 
+    // Clean up the BAM file, header, and index
+    hts_idx_destroy(idx);
+    bam_hdr_destroy(bamHdr);
+    sam_close(fp_in);
+
     // SVData sv_calls_combined;
     // for (const auto& subregion_sv_calls : sv_calls) {
     //     sv_calls_combined.concatenate(subregion_sv_calls);
     // }
 
-    std::cout << "SV calling completed." << std::endl;
+    // Save to VCF
+    std::cout << "Saving SVs to VCF..." << std::endl;
+    this->saveToVCF(whole_genome_sv_calls);
 
     return whole_genome_sv_calls;
 }
@@ -570,6 +607,7 @@ void SVCaller::detectSVsFromSplitReads(std::set<SVCall>& sv_calls, PrimaryMap& p
         int32_t primary_lh_t = 0;
         if (primary_end - primary_start >= min_cnv_length) {
             SVCandidate sv_candidate(primary_start+1, primary_end+1, ".");
+            // std::cout << "TEST5" << std::endl;
             std::tuple<double, SVType, std::string, bool> result = cnv_caller.runCopyNumberPrediction(primary_chr, sv_candidate);
             primary_lh = std::get<0>(result);
             // primary_log_likelihood /= (double)(primary_end - primary_start);  // Normalize the log likelihood by the length
@@ -613,6 +651,7 @@ void SVCaller::detectSVsFromSplitReads(std::set<SVCall>& sv_calls, PrimaryMap& p
         int largest_supp_lh_t = 0;
         if (largest_supp_length >= min_cnv_length) {
             SVCandidate sv_candidate(std::get<1>(largest_supp_alignment)+1, std::get<2>(largest_supp_alignment)+1, ".");
+            // std::cout << "TEST1" << std::endl;
             std::tuple<double, SVType, std::string, bool> result = cnv_caller.runCopyNumberPrediction(primary_chr, sv_candidate);
             largest_supp_lh = std::get<0>(result);
             // largest_supp_log_likelihood /= (double)largest_supp_length;  // Normalize the log likelihood by the length
@@ -627,6 +666,7 @@ void SVCaller::detectSVsFromSplitReads(std::set<SVCall>& sv_calls, PrimaryMap& p
         if (largest_supp_alignment != closest_supp_alignment) {
             if (closest_supp_length >= min_cnv_length) {
                 SVCandidate sv_candidate(std::get<1>(closest_supp_alignment)+1, std::get<2>(closest_supp_alignment)+1, ".");
+                // std::cout << "TEST2" << std::endl;
                 std::tuple<double, SVType, std::string, bool> result = cnv_caller.runCopyNumberPrediction(primary_chr, sv_candidate);
                 closest_supp_lh = std::get<0>(result);
                 // closest_supp_log_likelihood /= (double)closest_supp_length;  // Normalize the log likelihood by the length
@@ -708,6 +748,8 @@ void SVCaller::detectSVsFromSplitReads(std::set<SVCall>& sv_calls, PrimaryMap& p
             std::string chosen_candidate_str = "BOUNDARY";
             int split_scenario = NOCALL;
             for (const auto& sv_candidate : sv_candidates) {
+            	// std::cout << "TEST3: primary = " << primary_start << ", " << primary_end << " supp = " << supp_start << ", " << supp_end << std::endl;
+            	// std::cout << "Position: " << std::get<0>(sv_candidate) << ", " << std::get<1>(sv_candidate) << std::endl;
                 std::tuple<double, SVType, std::string, bool> result = cnv_caller.runCopyNumberPrediction(primary_chr, sv_candidate);
                 double current_lh = std::get<0>(result);
                 SVType current_type = std::get<1>(result);
@@ -957,6 +999,7 @@ void SVCaller::detectSVsFromSplitReads(std::set<SVCall>& sv_calls, PrimaryMap& p
                     // the closest supplementary alignment and the largest
                     // supplementary alignment
                     SVCandidate sv_candidate(std::get<2>(closest_supp_alignment)+1, std::get<1>(largest_supp_alignment)+1, ".");
+                    // std::cout << "TEST4" << std::endl;
                     std::tuple<double, SVType, std::string, bool> result = cnv_caller.runCopyNumberPrediction(primary_chr, sv_candidate);
                     // double complex_log_likelihood = std::get<0>(result);
                     SVType complex_type = std::get<1>(result);
@@ -1018,7 +1061,7 @@ void SVCaller::detectSVsFromSplitReads(std::set<SVCall>& sv_calls, PrimaryMap& p
     }
 }
 
-void SVCaller::saveToVCF(const std::unordered_map<std::string, std::set<SVCall> >& sv_calls, const ReferenceGenome& ref_genome)
+void SVCaller::saveToVCF(const std::unordered_map<std::string, std::set<SVCall> >& sv_calls)
 {
     std::cout << "Creating VCF writer..." << std::endl;
     // std::string output_vcf = output_dir + "/output.vcf";
@@ -1032,25 +1075,19 @@ void SVCaller::saveToVCF(const std::unordered_map<std::string, std::set<SVCall> 
 
     std::cout << "Getting reference genome filepath..." << std::endl;
     try {
-        std::string ref_fp = ref_genome.getFilepath();
+        std::string ref_fp = this->input_data.getRefGenome().getFilepath();
         std::cout << "Reference genome filepath: " << ref_fp << std::endl;
     } catch (const std::exception& e) {
         std::cerr << "Error: " << e.what() << std::endl;
         return;
     }
 
-    std::cout << "Getting reference genome header..." << std::endl;
-    try {
-        ref_genome.getContigHeader();
-    } catch (const std::exception& e) {
-        std::cerr << "Error: " << e.what() << std::endl;
-        return;
-    }
-
     // Set the header lines
+    std::cout << "Getting reference genome header..." << std::endl;
+    const std::string contig_header = this->input_data.getRefGenome().getContigHeader();
     std::vector<std::string> header_lines = {
-        std::string("##reference=") + ref_genome.getFilepath(),
-        ref_genome.getContigHeader(),
+        std::string("##reference=") + 
+        contig_header,
         "##INFO=<ID=END,Number=1,Type=Integer,Description=\"End position of the variant described in this record\">",
         "##INFO=<ID=SVTYPE,Number=1,Type=String,Description=\"Type of structural variant\">",
         "##INFO=<ID=SVLEN,Number=1,Type=Integer,Description=\"Difference in length between REF and ALT alleles\">",
@@ -1166,7 +1203,8 @@ void SVCaller::saveToVCF(const std::unordered_map<std::string, std::set<SVCall> 
             if (sv_type_str == "DEL") {
                 // Get the deleted sequence from the reference genome, also including the preceding base
                 int64_t preceding_pos = (int64_t) std::max(1, (int) start-1);  // Make sure the position is not negative
-                ref_allele = ref_genome.query(chr, preceding_pos, end);
+                // ref_allele = ref_genome.query(chr, preceding_pos, end);
+                ref_allele = this->input_data.queryRefGenome(chr, preceding_pos, end);
 
                 // Use the preceding base as the alternate allele 
                 if (ref_allele != "") {
@@ -1184,7 +1222,9 @@ void SVCaller::saveToVCF(const std::unordered_map<std::string, std::set<SVCall> 
             } else {
                 // Use the preceding base as the reference allele
                 int64_t preceding_pos = (int64_t) std::max(1, (int) start-1);  // Make sure the position is not negative
-                ref_allele = ref_genome.query(chr, preceding_pos, preceding_pos);
+                // ref_allele = ref_genome.query(chr, preceding_pos,
+                // preceding_pos);
+                ref_allele = this->input_data.queryRefGenome(chr, preceding_pos, preceding_pos);
 
                 // Format novel insertions
                 if (sv_type_str == "INS") {

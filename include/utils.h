@@ -23,4 +23,6 @@ void printError(std::string message);
 
 std::string getElapsedTime(std::chrono::high_resolution_clock::time_point start, std::chrono::high_resolution_clock::time_point end);
 
+std::string removeChrPrefix(std::string chr);
+
 #endif // UTILS_H

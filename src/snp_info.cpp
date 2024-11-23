@@ -1,4 +1,5 @@
 #include "snp_info.h"
+#include "utils.h"
 
 /// @cond
 #include <string>
@@ -11,45 +12,36 @@
 #define MIN_PFB 0.01
 
 
-// Function to remove the 'chr' prefix from chromosome names
-std::string removeChrPrefix(std::string chr)
+void SNPInfo::insertSNPAlleleFrequency(const std::string& chr, uint32_t pos, double baf)
 {
-    if (chr.find("chr") != std::string::npos) {
-        return chr.substr(3);
-    }
-    return chr;
-}
-
-void SNPInfo::insertSNPAlleleFrequency(std::string chr, int64_t pos, double baf)
-{
-    chr = removeChrPrefix(chr);
+    // chr = removeChrPrefix(chr);
 
     // Add the chromosome to the SNP B-allele frequency map if it does not exist
-    if (this->snp_baf_map.find(chr) == this->snp_baf_map.end()) {
-        this->snp_baf_map[chr] = BST();
-    }
+    // if (this->snp_baf_map.find(chr) == this->snp_baf_map.end()) {
+    //     this->snp_baf_map[chr] = BST();
+    // }
 
     // Insert the SNP into the map with its position and B-allele frequency
     // using a binary search tree to keep the SNP positions sorted
     this->snp_baf_map[chr].insert({pos, baf});
 }
 
-void SNPInfo::insertSNPPopulationFrequency(std::string chr, int64_t pos, double pfb)
+void SNPInfo::insertSNPPopulationFrequency(const std::string& chr, uint32_t pos, double pfb)
 {
-    chr = removeChrPrefix(chr);
+    // chr = removeChrPrefix(chr);
 
     // Add the chromosome to the SNP population frequency map if it does not
     // exist
-    if (this->snp_pfb_map.find(chr) == this->snp_pfb_map.end()) {
-        this->snp_pfb_map[chr] = std::unordered_map<int64_t, double>();
-    }
+    // if (this->snp_pfb_map.find(chr) == this->snp_pfb_map.end()) {
+    //     this->snp_pfb_map[chr] = std::unordered_map<uint32_t, double>();
+    // }
 
     // Insert the SNP into the map with its position and population frequency of
     // the B allele
     this->snp_pfb_map[chr][pos] = pfb;
 }
 
-std::tuple<std::vector<int64_t>, std::vector<double>, std::vector<double>> SNPInfo::querySNPs(std::string chr, int64_t start, int64_t end)
+std::tuple<std::vector<uint32_t>, std::vector<double>, std::vector<double>> SNPInfo::querySNPs(std::string chr, uint32_t start, uint32_t end)
 {
     // Lock the mutex for reading SNP information
     // std::lock_guard<std::mutex> lock(this->snp_info_mtx);
@@ -57,13 +49,13 @@ std::tuple<std::vector<int64_t>, std::vector<double>, std::vector<double>> SNPIn
     chr = removeChrPrefix(chr);
 
     // Create an ordered map of SNP positions to BAF and PFB values
-    std::map<int64_t, std::tuple<double, double>> snp_map;
+    std::map<uint32_t, std::tuple<double, double>> snp_map;
 
     // Query SNPs within a range (start, end) and return their BAF and PFB
     // values as separate vectors
     std::vector<double> bafs;
     std::vector<double> pfbs;
-    std::vector<int64_t> pos;
+    std::vector<uint32_t> pos;
     
     // Check if the chromosome exists in the B-allele frequency map
     if (this->snp_baf_map.find(chr) == this->snp_baf_map.end()) {
@@ -91,7 +83,7 @@ std::tuple<std::vector<int64_t>, std::vector<double>, std::vector<double>> SNPIn
     // Query the PFBs for all SNP positions with PFB data
     auto& pfb_map = this->snp_pfb_map[chr];
     for (size_t i = 0; i < pos.size(); i++) {
-        int64_t snp_pos = pos[i];
+        uint32_t snp_pos = pos[i];
         if (pfb_map.find(snp_pos) != pfb_map.end()) {
             pfbs[i] = pfb_map[snp_pos];
         }
@@ -100,13 +92,13 @@ std::tuple<std::vector<int64_t>, std::vector<double>, std::vector<double>> SNPIn
     return std::make_tuple(pos, bafs, pfbs);
 }
 
-std::pair<int64_t, int64_t> SNPInfo::getSNPRange(std::string chr)
+std::pair<uint32_t, uint32_t> SNPInfo::getSNPRange(std::string chr)
 {
     chr = removeChrPrefix(chr);
 
     // Get the range of SNP positions for a given chromosome
-    int64_t start = 0;
-    int64_t end = 0;
+    uint32_t start = 0;
+    uint32_t end = 0;
     if (this->snp_baf_map.find(chr) != this->snp_baf_map.end()) {
         auto& baf_bst = this->snp_baf_map[chr];
         start = std::get<0>(*baf_bst.begin());

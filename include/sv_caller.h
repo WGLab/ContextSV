@@ -41,7 +41,7 @@ class SVCaller {
         // Detect SVs at a region from long read alignments. This is used for
         // whole genome analysis running in parallel.
         // RegionData detectSVsFromRegion(std::string region);
-        std::tuple<std::set<SVCall>, PrimaryMap, SuppMap> detectCIGARSVs(std::string region);
+        std::tuple<std::set<SVCall>, PrimaryMap, SuppMap> detectCIGARSVs(samFile* fp_in, hts_idx_t* idx, bam_hdr_t* bamHdr, const std::string& region);
  
         // Read the next alignment from the BAM file in a thread-safe manner
         int readNextAlignment(samFile *fp_in, hts_itr_t *itr, bam1_t *bam1);
@@ -54,7 +54,7 @@ class SVCaller {
         // sequence
         double calculateMismatchRate(std::unordered_map<int, int>& mismatch_map, int32_t start, int32_t end);
 
-        void saveToVCF(const std::unordered_map<std::string, std::set<SVCall>>& sv_calls, const ReferenceGenome& ref_genome);
+        void saveToVCF(const std::unordered_map<std::string, std::set<SVCall>>& sv_calls);
 
     public:
         explicit SVCaller(InputData& input_data);

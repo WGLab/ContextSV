@@ -43,7 +43,7 @@ class InputData {
         // FASTAQuery getRefGenome();
 
         // Query the reference genome for a sequence.
-        std::string queryRefGenome(std::string chr, int64_t pos_start, int64_t pos_end);
+        std::string queryRefGenome(const std::string& chr, uint32_t pos_start, uint32_t pos_end) const;
 
         // Get the chromosomes in the reference genome.
         std::vector<std::string> getRefGenomeChromosomes();

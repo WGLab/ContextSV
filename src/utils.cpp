@@ -100,3 +100,12 @@ std::string getElapsedTime(std::chrono::high_resolution_clock::time_point start,
     std::string elapsed_time = std::to_string(hours) + ":" + std::to_string(minutes) + ":" + std::to_string(seconds);
     return elapsed_time;
 }
+
+// Function to remove the 'chr' prefix from chromosome names
+std::string removeChrPrefix(std::string chr)
+{
+    if (chr.find("chr") != std::string::npos) {
+        return chr.substr(3);
+    }
+    return chr;
+}

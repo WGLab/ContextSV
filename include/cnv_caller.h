@@ -27,7 +27,7 @@ using namespace sv_types;
 // SNP data is a struct containing vectors used in predicting copy number
 // states. It is sorted by SNP position.
 struct SNPData {
-    std::vector<int64_t> pos;
+    std::vector<uint32_t> pos;
     std::vector<double> pfb;
     std::vector<double> baf;
     std::vector<double> log2_cov;
@@ -57,6 +57,9 @@ class CNVCaller {
         SNPInfo snp_info;
         double mean_chr_cov = 0.0;
         std::unordered_map<uint32_t, int> pos_depth_map;
+        std::unordered_map<uint32_t, double> snp_baf_map;
+        std::set<uint32_t> snp_baf_keys;
+        std::unordered_map<uint32_t, double> snp_pfb_map;
 
         // Define a map of CNV genotypes by HMM predicted state.
         // We only use the first 3 genotypes (0/0, 0/1, 1/1) for the VCF output.
@@ -79,22 +82,24 @@ class CNVCaller {
             {6, "1/1"}
         };
 
-        void updateSNPData(SNPData& snp_data, int64_t pos, double pfb, double baf, double log2_cov, bool is_snp);
+        void updateSNPData(SNPData& snp_data, uint32_t pos, double pfb, double baf, double log2_cov, bool is_snp);
 
         std::pair<std::vector<int>, double> runViterbi(CHMM hmm, SNPData &snp_data);
 
         // Query a region for SNPs and return the SNP data
-        std::pair<SNPData, bool> querySNPRegion(std::string chr, int64_t start_pos, int64_t end_pos, SNPInfo &snp_info, std::unordered_map<uint32_t, int> &pos_depth_map, double mean_chr_cov);
+        std::pair<SNPData, bool> querySNPRegion(std::string chr, uint32_t start_pos, uint32_t end_pos, SNPInfo &snp_info, std::unordered_map<uint32_t, int> &pos_depth_map, double mean_chr_cov);
+
+        std::tuple<std::vector<uint32_t>, std::vector<double>, std::vector<double>> querySNPs(std::string chr, uint32_t start, uint32_t end);
 
         // Run copy number prediction for a chunk of SV candidates from CIGAR strings
-        void runCIGARCopyNumberPredictionChunk(std::string chr, std::set<SVCall>& sv_chunk, SNPInfo& snp_info, CHMM hmm, int window_size, double mean_chr_cov, std::unordered_map<uint32_t, int>& pos_depth_map);
+        void runCIGARCopyNumberPredictionChunk(std::string chr, std::set<SVCall>& sv_chunk, CHMM hmm, int window_size, double mean_chr_cov);
 
         void updateSVCopyNumber(std::map<SVCandidate, SVInfo>& sv_candidates, SVCandidate key, SVType sv_type_update, std::string data_type, std::string genotype, double hmm_likelihood);
 
         void updateDPValue(std::map<SVCandidate, SVInfo>& sv_candidates, SVCandidate key, int dp_value);
 
         // Split a region into chunks for parallel processing
-        std::vector<std::string> splitRegionIntoChunks(std::string chr, int64_t start_pos, int64_t end_pos, int chunk_count);
+        std::vector<std::string> splitRegionIntoChunks(std::string chr, uint32_t start_pos, uint32_t end_pos, int chunk_count);
 
         // Split SV candidates into chunks for parallel processing
         std::vector<std::vector<SVCandidate>> splitSVCandidatesIntoChunks(std::map<SVCandidate, SVInfo>& sv_candidates, int chunk_count);
@@ -131,7 +136,7 @@ class CNVCaller {
         void getSNPPopulationFrequencies(std::string chr, SNPInfo& snp_info);
 
         // Save a TSV with B-allele frequencies, log2 ratios, and copy number predictions
-        void saveSVCopyNumberToTSV(SNPData& snp_data, std::string filepath, std::string chr, int64_t start, int64_t end, std::string sv_type, double likelihood);
+        void saveSVCopyNumberToTSV(SNPData& snp_data, std::string filepath, std::string chr, uint32_t start, uint32_t end, std::string sv_type, double likelihood);
 };
 
 #endif // CNV_CALLER_H

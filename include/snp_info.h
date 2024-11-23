@@ -11,30 +11,30 @@
 // Define the comparator for the binary search tree by SNP position (first
 // element of tuple)
 struct SNPCompare {
-    bool operator()(const std::tuple<int64_t, double>& a, const std::tuple<int64_t, double>& b) const {
+    bool operator()(const std::tuple<uint32_t, double>& a, const std::tuple<uint32_t, double>& b) const {
         return std::get<0>(a) < std::get<0>(b);
     }
 };
 
 // Define the data structure for SNP frequencies sorted by position
-using BST = std::set<std::tuple<int64_t, double>, SNPCompare>;
+using BST = std::set<std::tuple<uint32_t, double>, SNPCompare>;
 
 class SNPInfo {
 public:
     SNPInfo() {}
 
     // Insert a SNP into the map with its position and B-allele frequency
-    void insertSNPAlleleFrequency(std::string chr, int64_t pos, double baf);
+    void insertSNPAlleleFrequency(const std::string& chr, uint32_t pos, double baf);
 
     // Insert a SNP into the map with its position and population frequency of
     // the B allele
-    void insertSNPPopulationFrequency(std::string chr, int64_t pos, double pfb);
+    void insertSNPPopulationFrequency(const std::string& chr, uint32_t pos, double pfb);
     
     // Query SNPs within a range (start, end) and return their BAF and PFB values
-    std::tuple<std::vector<int64_t>, std::vector<double>, std::vector<double>> querySNPs(std::string chr, int64_t start, int64_t end);
+    std::tuple<std::vector<uint32_t>, std::vector<double>, std::vector<double>> querySNPs(std::string chr, uint32_t start, uint32_t end);
 
     // Get the range of SNP positions for a given chromosome
-    std::pair<int64_t, int64_t> getSNPRange(std::string chr);
+    std::pair<uint32_t, uint32_t> getSNPRange(std::string chr);
 
 
 private:
@@ -45,7 +45,7 @@ private:
     std::unordered_map<std::string, BST> snp_baf_map;
 
     // Define the map of chromosome to SNP population frequency
-    std::unordered_map<std::string, std::unordered_map<int64_t, double>> snp_pfb_map;
+    std::unordered_map<std::string, std::unordered_map<uint32_t, double>> snp_pfb_map;
 };
 
 #endif // SNP_INFO_H

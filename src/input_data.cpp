@@ -95,7 +95,7 @@ const ReferenceGenome& InputData::getRefGenome() const
     return this->fasta_query;
 }
 
-std::string InputData::queryRefGenome(std::string chr, int64_t pos_start, int64_t pos_end)
+std::string InputData::queryRefGenome(const std::string& chr, uint32_t pos_start, uint32_t pos_end) const
 {
     return this->fasta_query.query(chr, pos_start, pos_end);
 }

@@ -28,6 +28,8 @@ struct SVCall {
 
 void addSVCall(std::set<SVCall>& sv_calls, uint32_t start, uint32_t end, std::string sv_type, std::string alt_allele, std::string data_type, std::string genotype, double hmm_likelihood);
 
+void mergeSVs(std::set<SVCall>& sv_calls);
+
 std::vector<std::set<SVCall>> splitSVsIntoChunks(std::set<SVCall>& sv_calls, int chunk_count);
 
 uint32_t getSVCount(const std::set<SVCall>& sv_calls);
