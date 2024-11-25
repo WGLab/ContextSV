@@ -75,6 +75,7 @@ data/gnomadv3_filepaths.txt
 data/gnomadv4_filepaths.txt
 data/gnomadv4_filepaths_ssd.txt
 data/gnomadv4_hg19_filepaths.txt
+data/gnomadv4_hg19_filepaths_ssd.txt
 
 # Training data
 data/sv_scoring_dataset/
