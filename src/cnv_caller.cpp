@@ -700,14 +700,12 @@ void CNVCaller::readSNPAlleleFrequencies(std::string chr, uint32_t start_pos, ui
         throw std::runtime_error("ERROR: Could not initialize SNP reader.");
     }
 
-    // Read the SNP header
-    htsFile *snp_file = bcf_open(snp_filepath.c_str(), "r");
-    bcf_hdr_t *snp_header = bcf_hdr_read(snp_file);
-    if (!snp_header)
+    // Set the region
+    std::string region_str = chr + ":" + std::to_string(start_pos) + "-" + std::to_string(end_pos);
+    if (bcf_sr_set_regions(snp_reader, region_str.c_str(), 0) < 0)
     {
         bcf_sr_destroy(snp_reader);
-        bcf_close(snp_file);
-        throw std::runtime_error("ERROR: Could not initialize SNP header.");
+        throw std::runtime_error("ERROR: Could not set region for SNP reader: " + region_str);
     }
 
     // Set multi-threading
@@ -721,29 +719,47 @@ void CNVCaller::readSNPAlleleFrequencies(std::string chr, uint32_t start_pos, ui
     if (bcf_sr_add_reader(snp_reader, snp_filepath.c_str()) < 0)
     {
         bcf_sr_destroy(snp_reader);
-        bcf_hdr_destroy(snp_header);
-        bcf_close(snp_file);
         throw std::runtime_error("ERROR: Could not add SNP file to reader: " + snp_filepath);
     }
 
-    // Set the region
-    std::string region_str = chr + ":" + std::to_string(start_pos) + "-" + std::to_string(end_pos);
-    if (bcf_sr_set_regions(snp_reader, region_str.c_str(), 0) < 0)
+    // Get the header
+    bcf_hdr_t *snp_header = bcf_sr_get_header(snp_reader, 0);
+    if (!snp_header)
     {
         bcf_sr_destroy(snp_reader);
-        bcf_hdr_destroy(snp_header);
-        bcf_close(snp_file);
-        throw std::runtime_error("ERROR: Could not set region for SNP reader: " + region_str);
+        throw std::runtime_error("ERROR: Could not get header for SNP reader.");
     }
 
     std::cout << "Iterating through SNPs in region " << region_str << "..." << std::endl;
     int print_count = 0;
-    while (bcf_sr_next_line(snp_reader) >= 0)
+    int record_count = 0;
+    int duplicate_count = 0;
+    uint32_t last_pos = 0;
+    while (bcf_sr_next_line(snp_reader) > 0)
     {
+        if (!bcf_sr_has_line(snp_reader, 0))
+        {
+            continue;
+        }
         bcf1_t *snp_record = bcf_sr_get_line(snp_reader, 0);
         if (snp_record)
         {
+            record_count++;
             uint32_t pos = (uint32_t)snp_record->pos + 1;
+
+            // Skip if 3 or more duplicate positions found
+            // if (pos == last_pos)
+            // {
+            //     duplicate_count++;
+            //     if (duplicate_count >= 10)
+            //     {
+            //         std::cerr << "ERROR: 3 or more duplicate positions found in SNP file at " << chr << ":" << pos << std::endl;
+            //         break;
+            //     }
+            // } else {
+            //     duplicate_count = 0;
+            // }
+            // last_pos = pos;
 
             // Skip if not a SNP
             if (!bcf_is_snp(snp_record))
@@ -755,7 +771,7 @@ void CNVCaller::readSNPAlleleFrequencies(std::string chr, uint32_t start_pos, ui
             float qual = snp_record->qual;
             if (bcf_float_is_missing(qual))
             {
-                std::cerr << "ERROR: QUAL value is missing for SNP at " << chr << ":" << pos << std::endl;
+                // std::cerr << "ERROR: QUAL value is missing for SNP at " << chr << ":" << pos << std::endl;
             }
             // Skip if quality is less than 30
             if (qual <= 30)
@@ -766,33 +782,28 @@ void CNVCaller::readSNPAlleleFrequencies(std::string chr, uint32_t start_pos, ui
             // Extract DP from FORMAT field
             int32_t *dp = 0;
             int dp_count = 0;
-            // int dp_count = bcf_get_info_int32(snp_header, snp_record, "DP",
-            // &dp, &dp_count);
             int dp_ret = bcf_get_format_int32(snp_header, snp_record, "DP", &dp, &dp_count);
+            bool dp_skip = false;
             if (dp_ret < 0)
             {
-                std::cerr << "ERROR: Could not get DP value for SNP at " << chr << ":" << pos << std::endl;
+                // std::cerr << "ERROR: Could not get DP value for SNP at " << chr << ":" << pos << std::endl;
             } else {
                 // Skip if depth is not greater than 10
                 for (int i = 0; i < dp_count; i++)
                 {
                     if (dp[i] <= 10)
                     {
-                        continue;
+                        dp_skip = true;
+                        break;
                     }
                 }
-                // if (dp <= 10)
-                // {
-                //     continue;
-                // }
             }
             free(dp);
-            // // Skip if depth is not greater than 10
-            // if (dp <= 10)
-            // {
-            //     continue;
-            // }
-            
+            if (dp_skip)
+            {
+                continue;
+            }
+
             // Skip if the SNP does not pass the filter
             if (bcf_has_filter(snp_header, snp_record, const_cast<char*>("PASS")) != 1)
             {
@@ -800,24 +811,20 @@ void CNVCaller::readSNPAlleleFrequencies(std::string chr, uint32_t start_pos, ui
             }
 
             // Extract AD from FORMAT field
-            // int32_t ad[2] = {0, 0};
             int32_t *ad = 0;
             int ad_count = 0;
-            // int ad_ret = bcf_get_format_int32(snp_header, snp_record, "AD",
-            // &ad, &ad_count);
             int ad_ret = bcf_get_format_int32(snp_header, snp_record, "AD", &ad, &ad_count);
 
             // Skip if AD value is missing
             if (ad_ret < 0)
             {
-                std::cerr << "ERROR: AD value is missing for SNP at " << chr << ":" << pos << std::endl;
-                continue;
+                // std::cerr << "ERROR: AD value is missing for SNP at " << chr
+                // << ":" << pos << std::endl;
+                throw std::runtime_error("ERROR: AD value is missing for SNP at " + chr + ":" + std::to_string(pos));
             }
 
             // Calculate the B-allele frequency (BAF)
             double baf = 0.0;
-            // double ad0 = (double) ad[0];
-            // double ad1 = (double) ad[1];
             double ad0 = 0.0;
             double ad1 = 0.0;
             for (int i = 0; i < ad_count; i++)
@@ -830,34 +837,29 @@ void CNVCaller::readSNPAlleleFrequencies(std::string chr, uint32_t start_pos, ui
                 }
             }
             free(ad);
-            try {
-                // std::cout << "AD[0]: " << ad0 << ", AD[1]: " << ad1 << std::endl;
-                baf = ad1 / (ad0 + ad1);
-                // std::cout << "AD[0]: " << ad[0] << ", AD[1]: " << ad[1] << std::endl;
-                // baf = (double) ad[1] / (double) (ad[0] + ad[1]);
-            } catch (const std::exception& e) {
-                std::cerr << "ERROR: Could not calculate BAF for SNP at " << chr << ":" << pos << std::endl;
-                continue;
-            }
+            baf = ad1 / (ad0 + ad1);
 
             // Insert the SNP position and BAF into the maps
             snp_pos.insert(pos);
             snp_baf[pos] = baf;
 
             // Print the SNP position and BAF
-            if (print_count < 10)
-            {
-                std::cout << "SNP: " << chr << ":" << pos << ", BAF: " << baf << "(REF=" << ad0 << ",ALT=" << ad1 << ")" << std::endl;
-                print_count++;
-            }
+            // std::cout << "SNP: " << chr << ":" << pos << ", BAF: " << baf << "(REF=" << ad0 << ",ALT=" << ad1 << ")" << std::endl;
+            // print_count++;
+            // if (print_count < 10)
+            // {
+            //     std::cout << "SNP: " << chr << ":" << pos << ", BAF: " << baf << "(REF=" << ad0 << ",ALT=" << ad1 << ")" << std::endl;
+            //     print_count++;
+            // }
         }
     }
+
+    std::cout << "[TEST] SNP record count: " << record_count << std::endl;
 
     // Clean up
     std::cout << "Cleaning up SNP reader..." << std::endl;
     bcf_sr_destroy(snp_reader);
-    bcf_hdr_destroy(snp_header);
-    bcf_close(snp_file);
+    std::cout << "Finished reading SNP allele frequencies for chromosome " << chr << std::endl;
 
     // std::cout << "Opening SNP file: " << snp_filepath << std::endl;
     // htsFile *snp_file = bcf_open(snp_filepath.c_str(), "r");
@@ -1290,6 +1292,14 @@ void CNVCaller::readSNPPopulationFrequencies(std::string chr, uint32_t start_pos
         throw std::runtime_error("ERROR: Could not initialize synced reader for population frequency file: " + pfb_filepath);
     }
 
+    // Set the region for the synced reader
+    std::string region_str = chr_gnomad + ":" + std::to_string(start_pos) + "-" + std::to_string(end_pos);
+    if (bcf_sr_set_regions(pfb_reader, region_str.c_str(), 0) < 0)
+    {
+        bcf_sr_destroy(pfb_reader);
+        throw std::runtime_error("ERROR: Could not set region for synced reader: " + region_str);
+    }
+
     // Set multi-threading
     bcf_sr_set_threads(pfb_reader, thread_count);
 
@@ -1303,34 +1313,30 @@ void CNVCaller::readSNPPopulationFrequencies(std::string chr, uint32_t start_pos
         throw std::runtime_error("ERROR: Could not add population frequency file to synced reader: " + pfb_filepath);
     }
 
-    // Set the region for the synced reader
-    std::string region_str = chr_gnomad + ":" + std::to_string(start_pos) + "-" + std::to_string(end_pos);
-    if (bcf_sr_set_regions(pfb_reader, region_str.c_str(), 0) < 0)
+    // Get the header
+    bcf_hdr_t *pfb_header = bcf_sr_get_header(pfb_reader, 0);
+    if (!pfb_header)
     {
         bcf_sr_destroy(pfb_reader);
-        throw std::runtime_error("ERROR: Could not set region for synced reader: " + region_str);
-    } else {
-        std::cout << "Successfully set region for synced reader: " << region_str << std::endl;
+        throw std::runtime_error("ERROR: Could not get header for population frequency file: " + pfb_filepath);
     }
 
-    // Iterate through the records in the population frequency file
-    // bcf1_t *pfb_record = bcf_init();
-    // if (!pfb_record)
-    // {
-    //     bcf_sr_destroy(pfb_reader);
-    //     throw std::runtime_error("ERROR: Could not initialize BCF record for population frequency file: " + pfb_filepath);
-    // }
-
     int test_count = 0;
-    std::cout << "Iterating through records..." << std::endl;
-    while (bcf_sr_next_line(pfb_reader) >= 0)
+    int record_count = 0;
+    std::cout << "Iterating through records for region " << region_str << "..." << std::endl;
+    while (bcf_sr_next_line(pfb_reader) > 0)
     {
+        if (!bcf_sr_has_line(pfb_reader, 0))
+        {
+            continue;
+        }
         // std::cout << "Reading record..." << std::endl;
         // pfb_record = bcf_sr_get_line(pfb_reader, 0);
         bcf1_t *pfb_record = bcf_sr_get_line(pfb_reader, 0);
         // Do something with the record
         if (pfb_record)
         {
+            record_count++;
             // Skip if not a SNP
             if (!bcf_is_snp(pfb_record))
             {
@@ -1370,11 +1376,11 @@ void CNVCaller::readSNPPopulationFrequencies(std::string chr, uint32_t start_pos
                 }
             }
 
-            if (test_count < 10)
-            {
-                std::cout << "Population frequency for " << chr << ":" << pos << " = " << pfb << std::endl;
-                test_count++;
-            }
+            // if (test_count < 10)
+            // {
+            //     std::cout << "Population frequency for " << chr << ":" << pos << " = " << pfb << std::endl;
+            //     test_count++;
+            // }
         }
             // std::cout << "Record: " << pfb_record->pos << std::endl;
             // std::cout << "QUAL: " << pfb_record->qual << std::endl;
@@ -1428,6 +1434,7 @@ void CNVCaller::readSNPPopulationFrequencies(std::string chr, uint32_t start_pos
     }
 
     // std::cout << "Test count: " << test_count << std::endl;
+    std::cout << "Record count: " << record_count << std::endl;
 
     // Clean up
     // bcf_destroy(pfb_record);
