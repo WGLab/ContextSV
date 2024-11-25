@@ -74,6 +74,7 @@ std::pair<SNPData, bool> CNVCaller::querySNPRegion(std::string chr, uint32_t sta
     // window, then calculate the log2 ratio for each window
     for (uint32_t i = start_pos; i <= end_pos; i += window_size)
     {
+        // std::cout << "Querying SNP region for " << chr << ":" << i << "-" << std::min(i + window_size - 1, end_pos) << std::endl;
         // Run a sliding non-overlapping window of size window_size across
         // the SV region and calculate the log2 ratio for each window
         uint32_t window_start = i;
@@ -98,6 +99,8 @@ std::pair<SNPData, bool> CNVCaller::querySNPRegion(std::string chr, uint32_t sta
         // after the SNP, and continue until the end of the window
         // (If there are no SNPs in the window, then use the default BAF and
         // PFB values, and the coverage log2 ratio)
+
+        // If no SNPs, then calculate the log2 ratio for the window
         if (snp_window_pos.size() == 0)
         {
             double window_log2_ratio = calculateLog2Ratio(window_start, window_end, pos_depth_map, mean_chr_cov);
@@ -116,6 +119,20 @@ std::pair<SNPData, bool> CNVCaller::querySNPRegion(std::string chr, uint32_t sta
                 // Just use a window centered at the SNP position
                 uint32_t bin_start = snp_window_pos[j] - window_size / 2;
                 uint32_t bin_end = snp_window_pos[j] + window_size / 2;
+
+                // Trim the bin start and end to 1/2 the distance from the
+                // neighboring SNPs (or the start/end of the window)
+                if (j > 0)
+                {
+                    bin_start = std::max(bin_start, (snp_window_pos[j-1] + snp_window_pos[j]) / 2);
+                }
+
+                if (j < (int) snp_window_pos.size() - 1)
+                {
+                    bin_end = std::min(bin_end, (snp_window_pos[j] + snp_window_pos[j+1]) / 2);
+                }
+                // std::cout << "bin_start: " << bin_start << std::endl;
+                // std::cout << "bin_end: " << bin_end << std::endl;
 
                 // Calculate the log2 ratio for the SNP bin
                 double bin_cov = calculateLog2Ratio(bin_start, bin_end, pos_depth_map, mean_chr_cov);
@@ -582,6 +599,11 @@ double CNVCaller::calculateMeanChromosomeCoverage(std::string chr)
     std::unordered_map<uint32_t, int> chr_pos_depth_map;
     while (sam_itr_next(bam_file, bam_iter, bam_record) >= 0)
     {
+        // Ignore UNMAP, SECONDARY, QCFAIL, and DUP reads
+        if (bam_record->core.flag & BAM_FUNMAP || bam_record->core.flag & BAM_FSECONDARY || bam_record->core.flag & BAM_FQCFAIL || bam_record->core.flag & BAM_FDUP)
+        {
+            continue;
+        }
         
         // Parse the CIGAR string to get the depth (match, sequence match, and
         // mismatch)
@@ -622,11 +644,18 @@ double CNVCaller::calculateMeanChromosomeCoverage(std::string chr)
     bam_hdr_destroy(bam_header);
     sam_close(bam_file);
 
-    // Calculate the mean chromosome coverage
+    // Calculate the mean chromosome coverage for positions with non-zero depth
     uint64_t cum_depth = 0;
     uint32_t pos_count = 0;
     for (auto& pos_depth : chr_pos_depth_map)
     {
+        // if (pos_depth.second > 0)
+        // {
+        //     cum_depth += pos_depth.second;
+        //     pos_count++;
+        // } else {
+        //     std::cout << "Zero depth at position " << pos_depth.first << std::endl;
+        // }
         cum_depth += pos_depth.second;
         pos_count++;
     }
@@ -730,7 +759,7 @@ void CNVCaller::readSNPAlleleFrequencies(std::string chr, uint32_t start_pos, ui
         throw std::runtime_error("ERROR: Could not get header for SNP reader.");
     }
 
-    std::cout << "Iterating through SNPs in region " << region_str << "..." << std::endl;
+    // std::cout << "Iterating through SNPs in region " << region_str << "..." << std::endl;
     int print_count = 0;
     int record_count = 0;
     int duplicate_count = 0;
@@ -854,12 +883,8 @@ void CNVCaller::readSNPAlleleFrequencies(std::string chr, uint32_t start_pos, ui
         }
     }
 
-    std::cout << "[TEST] SNP record count: " << record_count << std::endl;
-
     // Clean up
-    std::cout << "Cleaning up SNP reader..." << std::endl;
     bcf_sr_destroy(snp_reader);
-    std::cout << "Finished reading SNP allele frequencies for chromosome " << chr << std::endl;
 
     // std::cout << "Opening SNP file: " << snp_filepath << std::endl;
     // htsFile *snp_file = bcf_open(snp_filepath.c_str(), "r");
@@ -1281,8 +1306,6 @@ void CNVCaller::readSNPPopulationFrequencies(std::string chr, uint32_t start_pos
     // Remove the 'chr' prefix from the chromosome name for SNP data. All
     // SNP data in this program does not use the 'chr' prefix
     std::string chr_no_prefix = removeChrPrefix(chr);
-
-    std::cout << "Reading population frequencies for chromosome " << chr << " from " << pfb_filepath << std::endl;
     int thread_count = this->input_data.getThreadCount();
 
     // Initialize the synced reader
@@ -1323,7 +1346,6 @@ void CNVCaller::readSNPPopulationFrequencies(std::string chr, uint32_t start_pos
 
     int test_count = 0;
     int record_count = 0;
-    std::cout << "Iterating through records for region " << region_str << "..." << std::endl;
     while (bcf_sr_next_line(pfb_reader) > 0)
     {
         if (!bcf_sr_has_line(pfb_reader, 0))
@@ -1433,14 +1455,9 @@ void CNVCaller::readSNPPopulationFrequencies(std::string chr, uint32_t start_pos
         std::cerr << "ERROR: " <<bcf_sr_strerror(pfb_reader->errnum) << std::endl;
     }
 
-    // std::cout << "Test count: " << test_count << std::endl;
-    std::cout << "Record count: " << record_count << std::endl;
-
     // Clean up
     // bcf_destroy(pfb_record);
     bcf_sr_destroy(pfb_reader);
-    std::cout << "Finished reading population frequencies for SV region" << std::endl;
-
 
     // // Open the population frequency file
     // std::cout << "Opening population frequency file: " << pfb_filepath << std::endl;
