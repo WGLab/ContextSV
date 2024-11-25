@@ -57,10 +57,10 @@ class CNVCaller {
         SNPInfo snp_info;
         double mean_chr_cov = 0.0;
         std::unordered_map<uint32_t, int> pos_depth_map;  // Read depth map
-        std::unordered_map<uint32_t, double> snp_baf_map;  // SNP B-allele frequency map
+        // std::unordered_map<uint32_t, double> snp_baf_map;  // SNP B-allele frequency map
         // std::set<uint32_t> snp_alt_map;  // SNP B-allele map
-        std::set<uint32_t> snp_baf_keys;  // SNP positions for BAF values
-        std::unordered_map<uint32_t, double> snp_pfb_map;  // SNP population frequency map
+        // std::set<uint32_t> snp_baf_keys;  // SNP positions for BAF values
+        // std::unordered_map<uint32_t, double> snp_pfb_map;  // SNP population frequency map
 
         // Define a map of CNV genotypes by HMM predicted state.
         // We only use the first 3 genotypes (0/0, 0/1, 1/1) for the VCF output.
@@ -90,7 +90,7 @@ class CNVCaller {
         // Query a region for SNPs and return the SNP data
         std::pair<SNPData, bool> querySNPRegion(std::string chr, uint32_t start_pos, uint32_t end_pos, SNPInfo &snp_info, std::unordered_map<uint32_t, int> &pos_depth_map, double mean_chr_cov);
 
-        std::tuple<std::vector<uint32_t>, std::vector<double>, std::vector<double>> querySNPs(std::string chr, uint32_t start, uint32_t end);
+        void querySNPs(std::string chr, uint32_t start, uint32_t end, std::set<uint32_t>& snp_pos, std::unordered_map<uint32_t, double>& snp_baf, std::unordered_map<uint32_t, double>& snp_pfb);
 
         // Run copy number prediction for a chunk of SV candidates from CIGAR strings
         void runCIGARCopyNumberPredictionChunk(std::string chr, std::set<SVCall>& sv_chunk, CHMM hmm, int window_size, double mean_chr_cov);
@@ -130,11 +130,14 @@ class CNVCaller {
         double calculateLog2Ratio(uint32_t start_pos, uint32_t end_pos, std::unordered_map<uint32_t, int>& pos_depth_map, double mean_chr_cov);
 
         // Read SNP positions and BAF values from the VCF file of SNP calls
-        void readSNPAlleleFrequencies(std::string chr, std::string filepath, SNPInfo& snp_info);
+        // void readSNPAlleleFrequencies(std::string chr, std::string filepath, SNPInfo& snp_info);
 
         // Read SNP population frequencies from the PFB file and return a vector
         // of population frequencies for each SNP location
-        void getSNPPopulationFrequencies(std::string chr, SNPInfo& snp_info);
+        // void getSNPPopulationFrequencies(std::string chr, SNPInfo& snp_info);
+
+        void readSNPAlleleFrequencies(std::string chr, uint32_t start_pos, uint32_t end_pos, std::set<uint32_t>& snp_pos, std::unordered_map<uint32_t, double>& snp_baf);
+        void readSNPPopulationFrequencies(std::string chr, uint32_t start_pos, uint32_t end_pos, std::unordered_map<uint32_t, double>& snp_pfb_map);
 
         // Save a TSV with B-allele frequencies, log2 ratios, and copy number predictions
         void saveSVCopyNumberToTSV(SNPData& snp_data, std::string filepath, std::string chr, uint32_t start, uint32_t end, std::string sv_type, double likelihood);

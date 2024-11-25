@@ -171,12 +171,12 @@ void mergeSVs(std::set<SVCall>& sv_calls) {
         uint32_t current_length = current_merge.end - current_merge.start;
         uint32_t next_length = next.end - next.start;
 
-        // Merge the SV calls if the overlap is at least 50% of the current or
-        // next SV call
-        double overlap_pct_current = static_cast<double>(overlap_length) / current_length;
-        double overlap_pct_next = static_cast<double>(overlap_length) / next_length;
+        // Merge the SV calls if the overlap is > 0
+        //double overlap_pct_current = static_cast<double>(overlap_length) / current_length;
+        //double overlap_pct_next = static_cast<double>(overlap_length) / next_length;
 
-        if (overlap_pct_current >= 0.5 || overlap_pct_next >= 0.5) {
+        //if (overlap_pct_current >= 0.5 || overlap_pct_next >= 0.5) {
+        if (overlap_length > 0) {
             // Merge the SV calls based on the likelihood
             if (next.hmm_likelihood != 0.0) {
                 // Update the likelihood if the next SV call has a likelihood
@@ -197,7 +197,7 @@ void mergeSVs(std::set<SVCall>& sv_calls) {
                 // }
             }
         } else {
-            // No overlap: Save the SV and continue
+            // No overlap: Save the previous SV and continue
             merged_sv_calls.push_back(current_merge);
             current_merge = next;
         }
