@@ -548,8 +548,8 @@ void SVCaller::detectSVsFromSplitReads(std::set<SVCall>& sv_calls, PrimaryMap& p
         std::string primary_chr = std::get<0>(primary_alignment);
         int32_t primary_start = std::get<1>(primary_alignment);
         int32_t primary_end = std::get<2>(primary_alignment);
-        int32_t primary_query_start = std::get<4>(primary_alignment);
-        int32_t primary_query_end = std::get<5>(primary_alignment);
+        // int32_t primary_query_start = std::get<4>(primary_alignment);
+        // int32_t primary_query_end = std::get<5>(primary_alignment);
         std::unordered_map<int, int> primary_match_map = std::get<6>(primary_alignment);
         // bool primary_strand = std::get<7>(primary_alignment);
 
@@ -627,32 +627,34 @@ void SVCaller::detectSVsFromSplitReads(std::set<SVCall>& sv_calls, PrimaryMap& p
             gap_exists = supp_end < primary_start;
         }
         
-        // Run copy number variant predictions on the boundary
-        split_boundary = SVCandidate(boundary_left, boundary_right, ".");
-        std::tuple<double, SVType, std::string, bool> bd_result = cnv_caller.runCopyNumberPrediction(primary_chr, split_boundary);
-        double bd_lh = std::get<0>(bd_result);
-        SVType bd_type = std::get<1>(bd_result);
+        // Run copy number variant predictions on the boundary if large enough
+        if (boundary_right - boundary_left >= min_cnv_length) {
+            split_boundary = SVCandidate(boundary_left, boundary_right, ".");
+            std::tuple<double, SVType, std::string, bool> bd_result = cnv_caller.runCopyNumberPrediction(primary_chr, split_boundary);
+            double bd_lh = std::get<0>(bd_result);
+            SVType bd_type = std::get<1>(bd_result);
 
-        // Run copy number variant predictions on the gap if it exists
-        if (gap_exists) {
-            split_gap = SVCandidate(gap_left, gap_right, ".");
-            std::tuple<double, SVType, std::string, bool> gap_result = cnv_caller.runCopyNumberPrediction(primary_chr, split_gap);
-            double gap_lh = std::get<0>(gap_result);
-            SVType gap_type = std::get<1>(gap_result);
+            // Run copy number variant predictions on the gap if it exists
+            if (gap_exists && gap_right - gap_left >= min_cnv_length) {
+                split_gap = SVCandidate(gap_left, gap_right, ".");
+                std::tuple<double, SVType, std::string, bool> gap_result = cnv_caller.runCopyNumberPrediction(primary_chr, split_gap);
+                double gap_lh = std::get<0>(gap_result);
+                SVType gap_type = std::get<1>(gap_result);
 
-            // If higher likelihood than the boundary, add the gap as the SV call
-            if (gap_lh > bd_lh) {
-                addSVCall(sv_calls, (uint32_t)(gap_left), (uint32_t)(gap_right), "GAP", ".", "GAP", "./.", gap_lh);
-                sv_count++;
+                // If higher likelihood than the boundary, add the gap as the SV call
+                if (gap_lh > bd_lh) {
+                    addSVCall(sv_calls, (uint32_t)(gap_left), (uint32_t)(gap_right), getSVTypeString(gap_type), ".", "GAP", "./.", gap_lh);
+                    sv_count++;
+                } else {
+                    // Add the boundary as the SV call
+                    addSVCall(sv_calls, (uint32_t)(boundary_left), (uint32_t)(boundary_right), getSVTypeString(bd_type), ".", "BOUNDARY", "./.", bd_lh);
+                    sv_count++;
+                }
             } else {
                 // Add the boundary as the SV call
-                addSVCall(sv_calls, (uint32_t)(boundary_left), (uint32_t)(boundary_right), "BOUNDARY", ".", "BOUNDARY", "./.", bd_lh);
+                addSVCall(sv_calls, (uint32_t)(boundary_left), (uint32_t)(boundary_right), getSVTypeString(bd_type), ".", "BOUNDARY", "./.", bd_lh);
                 sv_count++;
             }
-        } else {
-            // Add the boundary as the SV call
-            addSVCall(sv_calls, (uint32_t)(boundary_left), (uint32_t)(boundary_right), "BOUNDARY", ".", "BOUNDARY", "./.", bd_lh);
-            sv_count++;
         }
     }
 

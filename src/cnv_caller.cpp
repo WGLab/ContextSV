@@ -760,10 +760,7 @@ void CNVCaller::readSNPAlleleFrequencies(std::string chr, uint32_t start_pos, ui
     }
 
     // std::cout << "Iterating through SNPs in region " << region_str << "..." << std::endl;
-    int print_count = 0;
     int record_count = 0;
-    int duplicate_count = 0;
-    uint32_t last_pos = 0;
     while (bcf_sr_next_line(snp_reader) > 0)
     {
         if (!bcf_sr_has_line(snp_reader, 0))
@@ -1344,7 +1341,6 @@ void CNVCaller::readSNPPopulationFrequencies(std::string chr, uint32_t start_pos
         throw std::runtime_error("ERROR: Could not get header for population frequency file: " + pfb_filepath);
     }
 
-    int test_count = 0;
     int record_count = 0;
     while (bcf_sr_next_line(pfb_reader) > 0)
     {

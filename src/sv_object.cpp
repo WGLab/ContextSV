@@ -15,9 +15,9 @@ bool SVCall::operator<(const SVCall & other) const
 
 void addSVCall(std::set<SVCall>& sv_calls, uint32_t start, uint32_t end, std::string sv_type, std::string alt_allele, std::string data_type, std::string genotype, double hmm_likelihood)
 {
-    // Throw an error if unknown SV type
+    // Ignore unknown SV types
     if (sv_type == "UNKNOWN") {
-        throw std::runtime_error("ERROR: Cannot add unknown SV type");
+        return;
     }
     
     if (start >= end) {
@@ -26,10 +26,13 @@ void addSVCall(std::set<SVCall>& sv_calls, uint32_t start, uint32_t end, std::st
 
     // If the SV call already exists (start and end position), then update all information if the
     // likelihood is higher
-    // std::cout << "[TEST1] Adding SV call: " << start << "-" << end << " " << sv_type << " " << alt_allele << " " << data_type << " " << genotype << " " << hmm_likelihood << std::endl;
-    SVCall new_sv_call{start, end, sv_type, alt_allele, data_type, genotype, hmm_likelihood, 1};
+    // std::cout << "[TEST1] Adding SV call: " << start << "-" << end << " " <<
+    // sv_type << " " << alt_allele << " " << data_type << " " << genotype << "
+    // " << hmm_likelihood << std::endl;
+    sv_calls.insert(SVCall{start, end, sv_type, alt_allele, data_type, genotype, hmm_likelihood, 1});
+    // SVCall new_sv_call{start, end, sv_type, alt_allele, data_type, genotype, hmm_likelihood, 1};
     
-    sv_calls.insert(new_sv_call);
+    // sv_calls.insert(new_sv_call);
     
     /*
     bool exists = false;
