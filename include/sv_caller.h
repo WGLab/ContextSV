@@ -38,6 +38,8 @@ class SVCaller {
         // mismatch rate, and the start and end positions of the query sequence
         std::tuple<std::unordered_map<int, int>, int32_t, int32_t> detectSVsFromCIGAR(bam_hdr_t* header, bam1_t* alignment, std::set<SVCall>& sv_calls, bool is_primary);
 
+        void processChromosome(const std::string& chr, const std::string& bam_filepath, CHMM hmm, std::set<SVCall>& combined_sv_calls, int min_cnv_length);
+
         // Detect SVs at a region from long read alignments. This is used for
         // whole genome analysis running in parallel.
         // RegionData detectSVsFromRegion(std::string region);

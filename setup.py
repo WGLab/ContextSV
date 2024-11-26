@@ -40,7 +40,7 @@ ext = Extension(
     name="_" + NAME,
     sources=SRC_FILES,
     include_dirs=[INCLUDE_DIR, conda_include_dir],
-    extra_compile_args=["-std=c++11"],
+    extra_compile_args=["-std=c++14"],
     language="c++",
     libraries=["hts"],
     library_dirs=[conda_lib_dir]
