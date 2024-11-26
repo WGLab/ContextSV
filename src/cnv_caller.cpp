@@ -148,7 +148,7 @@ std::pair<SNPData, bool> CNVCaller::querySNPRegion(std::string chr, uint32_t sta
     return std::make_pair(snp_data, snps_found);
 }
 
-std::tuple<double, SVType, std::string, bool> CNVCaller::runCopyNumberPrediction(std::string chr, const SVCandidate& candidate)
+std::tuple<double, SVType, std::string, bool> CNVCaller::runCopyNumberPrediction(std::string chr, const SVCandidate& candidate, CHMM hmm)
 {
      // Get the start and end positions of the SV call
     uint32_t start_pos = std::get<0>(candidate);
@@ -157,28 +157,16 @@ std::tuple<double, SVType, std::string, bool> CNVCaller::runCopyNumberPrediction
     // Run the Viterbi algorithm on SNPs in the SV region +/- 1/2
     // the SV length
     uint32_t sv_half_length = (end_pos - start_pos) / 2.0;
-    // uint32_t snp_start_pos = std::max((uint32_t)1, start_pos - sv_length);
-    // Prevent underflow (start_pos - sv_length) if start_pos < sv_length
     uint32_t snp_start_pos = start_pos > sv_half_length ? start_pos - sv_half_length : 1;
     uint32_t snp_end_pos = end_pos + sv_half_length;
-    // std::cout << "CNP for " << chr << ":" << start_pos << "-" << end_pos << "(" << snp_start_pos << ", " << snp_end_pos << ")" << std::endl;
-    // printMessage("Running copy number prediction for SV candidate " + chr + ":" + std::to_string(start_pos) + "-" + std::to_string(end_pos) + " with SNP region " + chr + ":" + std::to_string(snp_start_pos) + "-" + std::to_string(snp_end_pos) + "...");
 
     // Query the SNP region for the SV candidate
     std::pair<SNPData, bool> snp_call = querySNPRegion(chr, snp_start_pos, snp_end_pos, this->snp_info, this->pos_depth_map, this->mean_chr_cov);
     SNPData& sv_snps = snp_call.first;
     bool sv_snps_found = snp_call.second;
 
-	/*
-    if (sv_snps.pos.size() == 0) {
-    	std::cerr << "ERROR [2]: No windows for SV " << chr << ":" << std::to_string((int)start_pos) << "-" << std::to_string((int)end_pos) << " (" << snp_start_pos << "," << snp_end_pos << std::endl;
-    	continue;
-    }
-    */
-
     // Run the Viterbi algorithm
-    // printMessage("[TEST] Running Viterbi algorithm for SV candidate " + chr + ":" + std::to_string(start_pos) + "-" + std::to_string(end_pos) + "...");
-    std::pair<std::vector<int>, double> prediction = runViterbi(this->hmm, sv_snps);
+    std::pair<std::vector<int>, double> prediction = runViterbi(hmm, sv_snps);
     std::vector<int>& state_sequence = prediction.first;
     double likelihood = prediction.second;
 
@@ -235,54 +223,12 @@ std::tuple<double, SVType, std::string, bool> CNVCaller::runCopyNumberPrediction
 }
 
 
-void CNVCaller::runCIGARCopyNumberPrediction(std::string chr, std::set<SVCall> &sv_candidates, int min_length)
+void CNVCaller::runCIGARCopyNumberPrediction(std::string chr, std::set<SVCall> &sv_candidates, int min_length, CHMM hmm)
 {
-    CHMM& hmm = this->hmm;
     int window_size = this->input_data.getWindowSize();
     double mean_chr_cov = this->mean_chr_cov;  
     printMessage("Predicting CIGAR string copy number states for chromosome " + chr + "...");
-
-    // Create a map with counts for each CNV type
-    // std::map<int, int> cnv_type_counts;
-    // for (int i = 0; i < 6; i++)
-    // {
-    //     cnv_type_counts[i] = 0;
-    // }
-
     runCIGARCopyNumberPredictionChunk(chr, sv_candidates, hmm, window_size, mean_chr_cov);
-    // // Split the SV candidates into chunks for each thread
-    // int chunk_count = this->input_data.getThreadCount();
-    // // std::vector<std::vector<SVCandidate>> sv_chunks = splitSVCandidatesIntoChunks(sv_candidates, chunk_count);
-    // std::vector<std::set<SVCall>> sv_chunks = splitSVsIntoChunks(sv_candidates, chunk_count);
-
-    // // Loop through each SV chunk and run the copy number prediction in parallel
-    // // std::vector<std::future<SNPData>> futures;
-    // std::vector<std::future<void>> futures;
-    // for (auto& sv_chunk : sv_chunks)
-    // {
-    //     // Run the copy number prediction for the SV chunk
-    //     futures.emplace_back(std::async(std::launch::async, &CNVCaller::runCIGARCopyNumberPredictionChunk, this, chr, std::ref(sv_chunk), std::ref(this->snp_info), hmm, window_size, mean_chr_cov, std::ref(this->pos_depth_map)));
-    //     // futures.emplace_back(std::async(std::launch::async, &CNVCaller::runCIGARCopyNumberPredictionChunk, this, chr, std::ref(sv_chunk), std::ref(this->snp_info), hmm, window_size, mean_chr_cov, std::ref(this->pos_depth_map)));
-    //     // std::async(std::launch::async, &CNVCaller::runCIGARCopyNumberPredictionChunk, this, chr, sv_chunk, std::ref(this->snp_info), hmm, window_size, mean_chr_cov, std::ref(this->pos_depth_map));
-    // }
-
-    // // Wait for all the futures to finish
-    // int current_chunk = 0;
-    // for (auto& future : futures)
-    // {
-    //     current_chunk++;
-    //     try {
-    //         future.wait();
-    //         // SNPData chunk_snp_data = std::move(future.get());
-    //         if (this->input_data.getVerbose())
-    //         {
-    //             printMessage("Finished processing SV chunk " + std::to_string(current_chunk) + " of " + std::to_string(chunk_count) + "...");
-    //         }
-    //     } catch (const std::exception& e) {
-    //         printError("Error processing SV chunk " + std::to_string(current_chunk) + " of " + std::to_string(chunk_count) + ": " + e.what());
-    //     }
-    // }
-
     printMessage("Finished predicting copy number states for chromosome " + chr + "...");
 }
 
@@ -525,9 +471,9 @@ std::vector<std::vector<SVCandidate>> CNVCaller::splitSVCandidatesIntoChunks(std
 
 void CNVCaller::loadChromosomeData(std::string chr)
 {
-    std::string hmm_filepath = this->input_data.getHMMFilepath();
-    std::cout << "Reading HMM from file: " << hmm_filepath << std::endl;
-    this->hmm = ReadCHMM(hmm_filepath.c_str());
+    // std::string hmm_filepath = this->input_data.getHMMFilepath();
+    // std::cout << "Reading HMM from file: " << hmm_filepath << std::endl;
+    // this->hmm = ReadCHMM(hmm_filepath.c_str());
 
     printMessage("Calculating mean chromosome coverage for " + chr + "...");
     this->mean_chr_cov = calculateMeanChromosomeCoverage(chr);

@@ -52,7 +52,7 @@ class CNVCaller {
         mutable std::mutex sv_candidates_mtx; // SV candidate map mutex
         mutable std::mutex snp_data_mtx;  // SNP data mutex
         mutable std::mutex hmm_mtx;  // HMM mutex
-        CHMM hmm;
+        // CHMM hmm;
         SNPData snp_data;
         SNPInfo snp_info;
         double mean_chr_cov = 0.0;
@@ -116,11 +116,11 @@ class CNVCaller {
 
         // Run copy number prediction for a single SV candidate, returning the
         // likelihood, predicted CNV type, genotype, and whether SNPs were found
-        std::tuple<double, SVType, std::string, bool> runCopyNumberPrediction(std::string chr, const SVCandidate& sv_candidate);
+        std::tuple<double, SVType, std::string, bool> runCopyNumberPrediction(std::string chr, const SVCandidate& sv_candidate, CHMM hmm);
 
         // Run copy number prediction for SVs meeting the minimum length threshold obtained from CIGAR strings
         // SNPData runCIGARCopyNumberPrediction(std::string chr, std::map<SVCandidate, SVInfo>& sv_candidates, int min_length);
-        void runCIGARCopyNumberPrediction(std::string chr, std::set<SVCall>& sv_candidates, int min_length);
+        void runCIGARCopyNumberPrediction(std::string chr, std::set<SVCall>& sv_candidates, int min_length, CHMM hmm);
 
         // Calculate the mean chromosome coverage
         double calculateMeanChromosomeCoverage(std::string chr);

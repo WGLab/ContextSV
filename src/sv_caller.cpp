@@ -383,6 +383,12 @@ std::unordered_map<std::string, std::set<SVCall>> SVCaller::run()
         throw std::runtime_error("ERROR: failed to open " + bam_filepath);
     }
 
+    // Read the HMM from the file
+    std::string hmm_filepath = this->input_data.getHMMFilepath();
+    std::cout << "Reading HMM from file: " << hmm_filepath << std::endl;
+    CHMM hmm = ReadCHMM(hmm_filepath.c_str());
+    // this->hmm = ReadCHMM(hmm_filepath.c_str());
+
     // Enable multi-threading
     int num_threads = this->input_data.getThreadCount();
     if (num_threads > 1) {
@@ -485,12 +491,12 @@ std::unordered_map<std::string, std::set<SVCall>> SVCaller::run()
                 std::cout << "Running copy number variant detection from CIGAR string SVs..." << std::endl;
                 // cnv_caller.runCIGARCopyNumberPrediction(chr, cigar_svs,
                 // min_cnv_length);
-                cnv_caller.runCIGARCopyNumberPrediction(chr, subregion_sv_calls, min_cnv_length);
+                cnv_caller.runCIGARCopyNumberPrediction(chr, subregion_sv_calls, min_cnv_length, hmm);
             }
 
             // Run split-read SV and copy number variant predictions
             std::cout << "Detecting copy number variants from split reads..." << std::endl;
-            this->detectSVsFromSplitReads(subregion_sv_calls, primary_map, supp_map, cnv_caller);
+            this->detectSVsFromSplitReads(subregion_sv_calls, primary_map, supp_map, cnv_caller, hmm);
             // sv_calls.concatenate(subregion_sv_calls);  // Add the calls to the
             // main set
             // sv_calls.emplace_back(subregion_sv_calls);
@@ -537,7 +543,7 @@ std::unordered_map<std::string, std::set<SVCall>> SVCaller::run()
 
 
 // Detect SVs from split read alignments
-void SVCaller::detectSVsFromSplitReads(std::set<SVCall>& sv_calls, PrimaryMap& primary_map, SuppMap& supp_map, CNVCaller& cnv_caller)
+void SVCaller::detectSVsFromSplitReads(std::set<SVCall>& sv_calls, PrimaryMap& primary_map, SuppMap& supp_map, CNVCaller& cnv_caller, CHMM hmm)
 {
     // Find split-read SV evidence
     int sv_count = 0;
@@ -579,7 +585,7 @@ void SVCaller::detectSVsFromSplitReads(std::set<SVCall>& sv_calls, PrimaryMap& p
             if (is_opposite_strand) {
                 if (supp_length >= min_cnv_length) {
                     SVCandidate sv_candidate(supp_start+1, supp_end+1, ".");
-                    std::tuple<double, SVType, std::string, bool> result = cnv_caller.runCopyNumberPrediction(primary_chr, sv_candidate);
+                    std::tuple<double, SVType, std::string, bool> result = cnv_caller.runCopyNumberPrediction(primary_chr, sv_candidate, hmm);
                     double supp_lh = std::get<0>(result);
                     SVType supp_type = std::get<1>(result);
                     if (supp_type == SVType::NEUTRAL) {
@@ -630,14 +636,14 @@ void SVCaller::detectSVsFromSplitReads(std::set<SVCall>& sv_calls, PrimaryMap& p
         // Run copy number variant predictions on the boundary if large enough
         if (boundary_right - boundary_left >= min_cnv_length) {
             split_boundary = SVCandidate(boundary_left, boundary_right, ".");
-            std::tuple<double, SVType, std::string, bool> bd_result = cnv_caller.runCopyNumberPrediction(primary_chr, split_boundary);
+            std::tuple<double, SVType, std::string, bool> bd_result = cnv_caller.runCopyNumberPrediction(primary_chr, split_boundary, hmm);
             double bd_lh = std::get<0>(bd_result);
             SVType bd_type = std::get<1>(bd_result);
 
             // Run copy number variant predictions on the gap if it exists
             if (gap_exists && gap_right - gap_left >= min_cnv_length) {
                 split_gap = SVCandidate(gap_left, gap_right, ".");
-                std::tuple<double, SVType, std::string, bool> gap_result = cnv_caller.runCopyNumberPrediction(primary_chr, split_gap);
+                std::tuple<double, SVType, std::string, bool> gap_result = cnv_caller.runCopyNumberPrediction(primary_chr, split_gap, hmm);
                 double gap_lh = std::get<0>(gap_result);
                 SVType gap_type = std::get<1>(gap_result);
 
