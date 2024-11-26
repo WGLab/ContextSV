@@ -899,11 +899,9 @@ void SVCaller::trimOverlappingAlignments(AlignmentData& primary_alignment, Align
             if (primary_mismatch_rate > supp_mismatch_rate) {
                 // Trim the end of the primary alignment
                 std::get<2>(primary_alignment) = primary_alignment_end - overlap_length;
-                std::cout << "Trimming primary alignment" << std::endl;
             } else {
                 // Trim the beginning of the supplementary alignment
                 std::get<1>(supp_alignment) = supp_alignment_start + overlap_length;
-                std::cout << "Trimming supplementary alignment" << std::endl;
             }
         }
     } else {
@@ -918,11 +916,9 @@ void SVCaller::trimOverlappingAlignments(AlignmentData& primary_alignment, Align
             if (supp_mismatch_rate > primary_mismatch_rate) {
                 // Trim the end of the supplementary alignment
                 std::get<2>(supp_alignment) = supp_alignment_end - overlap_length;
-                std::cout << "Trimming supplementary alignment" << std::endl;
             } else {
                 // Trim the beginning of the primary alignment
                 std::get<1>(primary_alignment) = primary_alignment_start + overlap_length;
-                std::cout << "Trimming primary alignment" << std::endl;
             }
         }
     }
