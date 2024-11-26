@@ -370,12 +370,6 @@ std::unordered_map<std::string, std::set<SVCall>> SVCaller::run()
         chromosomes = this->input_data.getRefGenomeChromosomes();
     }
 
-    // [TEST] Only process the last N chromosomes
-    // int last_n = 3;
-    // chromosomes = std::vector<std::string>(chromosomes.end()-last_n, chromosomes.end());
-    // std::cout << "[DEBUG] Running last " << last_n << " chromosomes" << std::endl;
-    // //chromosomes = std::vector<std::string>(chromosomes.end()-3, chromosomes.end());
-
     // Open the BAM file
     std::string bam_filepath = this->input_data.getLongReadBam();
     samFile *fp_in = sam_open(bam_filepath.c_str(), "r");
@@ -387,7 +381,6 @@ std::unordered_map<std::string, std::set<SVCall>> SVCaller::run()
     std::string hmm_filepath = this->input_data.getHMMFilepath();
     std::cout << "Reading HMM from file: " << hmm_filepath << std::endl;
     CHMM hmm = ReadCHMM(hmm_filepath.c_str());
-    // this->hmm = ReadCHMM(hmm_filepath.c_str());
 
     // Enable multi-threading
     int num_threads = this->input_data.getThreadCount();
@@ -416,9 +409,6 @@ std::unordered_map<std::string, std::set<SVCall>> SVCaller::run()
     int current_chr = 0;
     std::cout << "Detecting SVs from " << chr_count << " chromosome(s)..." << std::endl;
     int chunk_count = 100;  // Number of chunks to split the chromosome into
-    // SVData sv_calls;
-    // std::vector<std::map<SVCandidate, SVInfo>> sv_calls;
-    // std::unordered_map<std::string, std::map<uint32_t, uint32_t>> sv_calls;
     uint32_t total_sv_count = 0;
     std::unordered_map<std::string, std::set<SVCall>> whole_genome_sv_calls;
     int min_cnv_length = this->input_data.getMinCNVLength();
@@ -463,43 +453,25 @@ std::unordered_map<std::string, std::set<SVCall>> SVCaller::run()
         int current_region = 0;
         std::set<SVCall> combined_sv_calls;
         for (const auto& sub_region : region_chunks) {
-            // std::cout << "Detecting CIGAR string SVs from " << sub_region << "..." << std::endl;
-            // std::tuple<std::set<SVCall>, PrimaryMap, SuppMap> region_data = this->detectCIGARSVs(sub_region);
             std::tuple<std::set<SVCall>, PrimaryMap, SuppMap> region_data = this->detectCIGARSVs(fp_in, idx, bamHdr, sub_region);
             std::set<SVCall>& subregion_sv_calls = std::get<0>(region_data);
             PrimaryMap& primary_map = std::get<1>(region_data);
             SuppMap& supp_map = std::get<2>(region_data);
             std::cout << "Merge CIGAR SV calls from " << sub_region << "..." << std::endl;
             mergeSVs(subregion_sv_calls);
-            // SVData& subregion_sv_calls = std::get<0>(region_data);
-            // PrimaryMap& primary_map = std::get<1>(region_data);
-            // SuppMap& supp_map = std::get<2>(region_data);
-            // int region_sv_count = subregion_sv_calls.totalCalls();
-            // if (region_sv_count > 0) {
-            //     std::cout << "Detected " << region_sv_count << " CIGAR SVs from " << sub_region << "..." << std::endl;
-            // }
-            // int region_sv_count = subregion_sv_calls.count();
             int region_sv_count = getSVCount(subregion_sv_calls);
             printMessage("Total SVs detected from CIGAR string: " + std::to_string(region_sv_count));
 
             // Run copy number variant predictions on the SVs detected from the
             // CIGAR string, using a minimum CNV length threshold
-            // std::cout << "Detecting copy number variants from CIGAR string SVs..." << std::endl;
-            // std::map<SVCandidate, SVInfo>& cigar_svs = subregion_sv_calls.getChromosomeSVs(chr);
-            // if (cigar_svs.size() > 0) {
             if (region_sv_count > 0) {
                 std::cout << "Running copy number variant detection from CIGAR string SVs..." << std::endl;
-                // cnv_caller.runCIGARCopyNumberPrediction(chr, cigar_svs,
-                // min_cnv_length);
                 cnv_caller.runCIGARCopyNumberPrediction(chr, subregion_sv_calls, min_cnv_length, hmm);
             }
 
             // Run split-read SV and copy number variant predictions
             std::cout << "Detecting copy number variants from split reads..." << std::endl;
             this->detectSVsFromSplitReads(subregion_sv_calls, primary_map, supp_map, cnv_caller, hmm);
-            // sv_calls.concatenate(subregion_sv_calls);  // Add the calls to the
-            // main set
-            // sv_calls.emplace_back(subregion_sv_calls);
 
             // Merge the SV calls from the current region
             std::cout << "Merge SV calls from " << sub_region << "..." << std::endl;
@@ -509,10 +481,6 @@ std::unordered_map<std::string, std::set<SVCall>> SVCaller::run()
             std::cout << "Combining SV calls from " << sub_region << "..." << std::endl;
             concatenateSVCalls(combined_sv_calls, subregion_sv_calls);
             std::cout << "Completed " << ++current_region << " of " << region_count << " region(s)..." << std::endl;
-
-            // [TEST] Break after the first region
-            // std::cout << "[DEBUG] Breaking after the first region" << std::endl;
-            // break;
         }
 
         std::cout << "Completed " << ++current_chr << " of " << chr_count << " chromosome(s)..." << std::endl;
@@ -521,18 +489,12 @@ std::unordered_map<std::string, std::set<SVCall>> SVCaller::run()
         std::cout << "Total SVs detected for chromosome " << chr << ": " << chr_sv_count << std::endl;
         total_sv_count += chr_sv_count;
         std::cout << "Cumulative total SVs: " << total_sv_count << std::endl;
-        // std::cout << "Completed " << region_count << " of " << chr_count << " chromosome(s)" << std::endl;
     }
 
     // Clean up the BAM file, header, and index
     hts_idx_destroy(idx);
     bam_hdr_destroy(bamHdr);
     sam_close(fp_in);
-
-    // SVData sv_calls_combined;
-    // for (const auto& subregion_sv_calls : sv_calls) {
-    //     sv_calls_combined.concatenate(subregion_sv_calls);
-    // }
 
     // Save to VCF
     std::cout << "Saving SVs to VCF..." << std::endl;
@@ -554,10 +516,7 @@ void SVCaller::detectSVsFromSplitReads(std::set<SVCall>& sv_calls, PrimaryMap& p
         std::string primary_chr = std::get<0>(primary_alignment);
         int32_t primary_start = std::get<1>(primary_alignment);
         int32_t primary_end = std::get<2>(primary_alignment);
-        // int32_t primary_query_start = std::get<4>(primary_alignment);
-        // int32_t primary_query_end = std::get<5>(primary_alignment);
         std::unordered_map<int, int> primary_match_map = std::get<6>(primary_alignment);
-        // bool primary_strand = std::get<7>(primary_alignment);
 
         // Skip primary alignments that do not have supplementary alignments
         if (supp_map.find(qname) == supp_map.end()) {
