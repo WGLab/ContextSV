@@ -463,6 +463,8 @@ std::unordered_map<std::string, std::set<SVCall>> SVCaller::run()
             std::set<SVCall>& subregion_sv_calls = std::get<0>(region_data);
             PrimaryMap& primary_map = std::get<1>(region_data);
             SuppMap& supp_map = std::get<2>(region_data);
+            std::cout << "Merge CIGAR SV calls from " << sub_region << "..." << std::endl;
+            mergeSVs(subregion_sv_calls);
             // SVData& subregion_sv_calls = std::get<0>(region_data);
             // PrimaryMap& primary_map = std::get<1>(region_data);
             // SuppMap& supp_map = std::get<2>(region_data);
@@ -550,515 +552,107 @@ void SVCaller::detectSVsFromSplitReads(std::set<SVCall>& sv_calls, PrimaryMap& p
         int32_t primary_query_end = std::get<5>(primary_alignment);
         std::unordered_map<int, int> primary_match_map = std::get<6>(primary_alignment);
         // bool primary_strand = std::get<7>(primary_alignment);
+
+        // Skip primary alignments that do not have supplementary alignments
         if (supp_map.find(qname) == supp_map.end()) {
             continue;
         }
 
-        // // Resolve overlaps between the primary and supplementary query
-        // // sequences
-        // for (auto it = supp_map[qname].begin(); it != supp_map[qname].end(); ++it) {
-        //     std::string supp_chr = std::get<0>(*it);
-        //     // int32_t supp_start = std::get<1>(*it);
-        //     // int32_t supp_end = std::get<2>(*it);
-        //     int32_t supp_query_start = std::get<4>(*it);
-        //     int32_t supp_query_end = std::get<5>(*it);
-        //     std::unordered_map<int, int> supp_match_map = std::get<6>(*it);
-        //     // bool supp_strand = std::get<7>(*it);
-
-        //     // Resolve overlaps between the primary and supplementary query
-        //     // sequences
-        //     if (primary_query_start < supp_query_end && primary_query_end > supp_query_start || supp_query_start < primary_query_end && supp_query_end > primary_query_start) {
-
-        //         // Calculate the mismatch rate for each alignment at the overlap
-        //         double primary_mismatch_rate = this->calculateMismatchRate(primary_match_map, overlap_start, overlap_end-1);
-        //         double supp_mismatch_rate = this->calculateMismatchRate(supp_match_map, overlap_start, overlap_end-1);
-        //         // std::cout << "Primary mismatch rate: " << primary_mismatch_rate << std::endl;
-        //         // std::cout << "Supplementary mismatch rate: " << supp_mismatch_rate << std::endl;
-
-        //         // Trim the overlap from the alignment with the higher mismatch
-        //         // rate
-        //         if (primary_mismatch_rate > supp_mismatch_rate) {
-        //             if (overlap_start == primary_query_start) {
-        //                 primary_start += overlap_length;
-        //             } else if (overlap_end == primary_query_end) {
-        //                 primary_end -= overlap_length;
-        //             }
-
-        //         } else {
-        //             if (overlap_start == supp_query_start) {
-        //                 // supp_start += overlap_length;
-        //                 // Update the value in the supp map
-        //                 std::get<1>(*it) += overlap_length;
-        //             } else if (overlap_end == supp_query_end) {
-        //                 // supp_end -= overlap_length;
-        //                 // Update the value in the supp map
-        //                 std::get<2>(*it) -= overlap_length;
-        //             }
-        //         }
-        //     }
-        // }
-
-        // Remove supplementary alignments that are not on the same chromosome
-        // as the primary alignment
-        for (auto it = supp_map[qname].begin(); it != supp_map[qname].end();) {
-            if (std::get<0>(*it) != primary_chr) {
-                it = supp_map[qname].erase(it);
-            } else {
-                ++it;
-            }
-        }
-
-        // Run copy number variant predictions on the primary alignment
-        SVType primary_type = SVType::UNKNOWN;
-        double primary_lh = std::numeric_limits<double>::lowest();
-        int32_t primary_lh_t = 0;
-        if (primary_end - primary_start >= min_cnv_length) {
-            SVCandidate sv_candidate(primary_start+1, primary_end+1, ".");
-            // std::cout << "TEST5" << std::endl;
-            std::tuple<double, SVType, std::string, bool> result = cnv_caller.runCopyNumberPrediction(primary_chr, sv_candidate);
-            primary_lh = std::get<0>(result);
-            // primary_log_likelihood /= (double)(primary_end - primary_start);  // Normalize the log likelihood by the length
-            primary_type = std::get<1>(result);
-        }
-
-        // Loop through the supplementary alignments, find the largest
-        // supplementary alignment, and the closest non-overlapping
-        // supplementary alignment to the primary alignment
+        // Find the largest supplementary alignment, and also identify inversions
         AlignmentData largest_supp_alignment = supp_map[qname][0];
-        AlignmentData closest_supp_alignment = supp_map[qname][0];
         int32_t largest_supp_length = 0;
-        int32_t closest_supp_distance = std::numeric_limits<int32_t>::max();
-        int32_t closest_supp_length = 0;
         for (auto it = supp_map[qname].begin(); it != supp_map[qname].end(); ++it) {
-            // const auto& supp_chr = std::get<0>(*it);
+            const auto& supp_chr = std::get<0>(*it);
+            if (primary_chr != supp_chr) {
+                continue;  // Skip supplementary alignments on different chromosomes
+            }
             int32_t supp_start = std::get<1>(*it);
             int32_t supp_end = std::get<2>(*it);
             int32_t supp_length = supp_end - supp_start + 1;
-            int32_t supp_distance = std::numeric_limits<int32_t>::max();
-            if (supp_start > primary_end) {
-                supp_distance = supp_start - primary_end;
-            } else if (supp_end < primary_start) {
-                supp_distance = primary_start - supp_end;
-            }
             if (supp_length > largest_supp_length) {
                 largest_supp_length = supp_length;
                 largest_supp_alignment = *it;
             }
-            if (supp_distance < closest_supp_distance) {
-                closest_supp_length = supp_length;
-                closest_supp_alignment = *it;
-                closest_supp_distance = supp_distance;
-            }
-        }
 
-        // Run copy number variant predictions on the largest supplementary
-        // alignment
-        double largest_supp_lh = std::numeric_limits<double>::lowest();
-        SVType largest_supp_type = SVType::UNKNOWN;
-        int largest_supp_lh_t = 0;
-        if (largest_supp_length >= min_cnv_length) {
-            SVCandidate sv_candidate(std::get<1>(largest_supp_alignment)+1, std::get<2>(largest_supp_alignment)+1, ".");
-            // std::cout << "TEST1" << std::endl;
-            std::tuple<double, SVType, std::string, bool> result = cnv_caller.runCopyNumberPrediction(primary_chr, sv_candidate);
-            largest_supp_lh = std::get<0>(result);
-            // largest_supp_log_likelihood /= (double)largest_supp_length;  // Normalize the log likelihood by the length
-            largest_supp_type = std::get<1>(result);
-        }
-
-        // Run copy number variant predictions on the closest non-overlapping
-        // supplementary alignment (if not the same as the largest)
-        double closest_supp_lh = std::numeric_limits<double>::lowest();
-        SVType closest_supp_type = SVType::UNKNOWN;
-        int closest_supp_lh_t = 0;
-        if (largest_supp_alignment != closest_supp_alignment) {
-            if (closest_supp_length >= min_cnv_length) {
-                SVCandidate sv_candidate(std::get<1>(closest_supp_alignment)+1, std::get<2>(closest_supp_alignment)+1, ".");
-                // std::cout << "TEST2" << std::endl;
-                std::tuple<double, SVType, std::string, bool> result = cnv_caller.runCopyNumberPrediction(primary_chr, sv_candidate);
-                closest_supp_lh = std::get<0>(result);
-                // closest_supp_log_likelihood /= (double)closest_supp_length;  // Normalize the log likelihood by the length
-                closest_supp_type = std::get<1>(result);
-                int32_t closest_supp_start = std::get<1>(closest_supp_alignment);
-                int32_t closest_supp_end = std::get<2>(closest_supp_alignment);
-            }
-        }
-
-        // Define constants representing read scenarios used for SV detection
-        const int NOCALL = -1;  // Default
-        const int PRIM_SUPP_BD = 0;  // Primary and supplementary boundary
-        const int PRIM_SUPP_GAP = 1;  // Primary and supplementary gap
-        const int SUPP_PRIM_BD = 2;  // Supplementary and primary boundary
-        const int SUPP_PRIM_GAP = 3;  // Supplementary and primary gap
-
-        // Loop through all the supplementary alignments and find the highest
-        // likelihood prediction
-        double best_split_aln_lh = std::numeric_limits<double>::lowest();
-        double best_split_aln_lh_norm = std::numeric_limits<double>::lowest();
-        // int best_split_aln_length = 0;
-        SVType best_supp_type = SVType::UNKNOWN;
-        std::pair<int32_t, int32_t> best_supp_candidate;
-        AlignmentData& best_split_alignment = supp_map[qname][0];
-        int best_scenario = NOCALL;
-        for (auto it = supp_map[qname].begin(); it != supp_map[qname].end(); ++it) {
-            int32_t supp_start = std::get<1>(*it);
-            int32_t supp_end = std::get<2>(*it);
-            bool primary_before_supp = primary_start < supp_start;
-
-            // Create the SV candidate as the boundary of the primary and
-            // supplementary alignments
-            SVCandidate split_boundary;
-            SVCandidate split_gap;
-            bool invalid_gap = false;
-            if (primary_before_supp) {
-                split_boundary = SVCandidate(primary_start+1, supp_end+1, ".");
-
-                // Check for an invalid gap (overlap)
-                if (primary_end >= supp_start) {
-                    invalid_gap = true;
-                } else {
-                    split_gap = SVCandidate(primary_end+1, supp_start+1, ".");
-                }
-                // split_gap = SVCandidate(primary_end+1, supp_start+1, ".");
-
-            } else {
-                split_boundary = SVCandidate(supp_start+1, primary_end+1, ".");
-
-                // Check for an invalid gap (overlap)
-                if (supp_end >= primary_start) {
-                    invalid_gap = true;
-                } else {
-                    split_gap = SVCandidate(supp_end+1, primary_start+1, ".");
-                }
-            }
-
-            // Create a vector of the two SV candidates, don't add the gap if
-            // it is an overlap, or if either SV is less than the minimum CNV
-            // length
-            std::vector<SVCandidate> sv_candidates;
-            if (!invalid_gap && std::get<1>(split_gap) - std::get<0>(split_gap) >= min_cnv_length) {
-                sv_candidates.push_back(split_gap);
-            }
-            if (std::get<1>(split_boundary) - std::get<0>(split_boundary) >= min_cnv_length) {
-                sv_candidates.push_back(split_boundary);
-            }
-
-            // Continue if no SV candidates
-            if (sv_candidates.size() == 0) {
-                continue;
-            }
-
-            // Run copy number variant predictions on both, and keep the
-            // prediction with the highest normalized log likelihood
-            double chosen_lh_norm = std::numeric_limits<double>::lowest();
-            SVType chosen_type = SVType::UNKNOWN;
-            std::pair<int32_t, int32_t> chosen_candidate;
-            std::string chosen_candidate_str = "BOUNDARY";
-            int split_scenario = NOCALL;
-            for (const auto& sv_candidate : sv_candidates) {
-            	// std::cout << "TEST3: primary = " << primary_start << ", " << primary_end << " supp = " << supp_start << ", " << supp_end << std::endl;
-            	// std::cout << "Position: " << std::get<0>(sv_candidate) << ", " << std::get<1>(sv_candidate) << std::endl;
-                std::tuple<double, SVType, std::string, bool> result = cnv_caller.runCopyNumberPrediction(primary_chr, sv_candidate);
-                double current_lh = std::get<0>(result);
-                SVType current_type = std::get<1>(result);
-
-                // Normalize the log likelihood by the state sequence length
-                double current_lh_norm = current_lh;// / (double)T;
-                // if (sv_candidate == split_boundary) {
-                //     std::cout << "Boundary candidate: " << current_lh_norm << ", before normalization: " << current_lh << std::endl;
-                // } else if (sv_candidate == split_gap) {
-                //     std::cout << "Gap candidate: " << current_lh_norm << ", before normalization: " << current_lh << std::endl;
-                // }
-
-                // Update the current SV candidate if the likelihood is higher
-                if (current_type != SVType::UNKNOWN && current_lh_norm > chosen_lh_norm) {
-                    chosen_lh_norm = current_lh_norm;
-                    chosen_type = current_type;
-                    chosen_candidate = std::make_pair(std::get<0>(sv_candidate), std::get<1>(sv_candidate));
-
-                    // Update the candidate string
-                    if (sv_candidate == split_boundary) {
-                        chosen_candidate_str = "BOUNDARY";
-                        if (primary_before_supp) {
-                            split_scenario = PRIM_SUPP_BD;
-                        } else {
-                            split_scenario = SUPP_PRIM_BD;
-                        }
-                    } else if (sv_candidate == split_gap) {
-                        chosen_candidate_str = "GAP";
-                        if (primary_before_supp) {
-                            split_scenario = PRIM_SUPP_GAP;
-                        } else {
-                            split_scenario = SUPP_PRIM_GAP;
-                        }
-                    }
-                    // std::cout << "Updated candidate: " << chosen_candidate_str << " with likelihood: " << current_lh_norm << std::endl;
-                } else if (current_type == SVType::UNKNOWN) {
-                    // std::cerr << "ERROR: Unknown SV type" << std::endl;
-                    // exit(1);
-                }
-            }
-
-            // std::cout << "Chosen candidate: " << chosen_candidate_str << std::endl;
-
-            // Continue if unknown SV type
-            if (chosen_type == SVType::UNKNOWN) {
-                // std::cerr << "ERROR: Unknown SV type" << std::endl;
-                continue;
-            }
-
-            // If opposite strand, set the type to INV or INV_DUP
-            bool same_strand = std::get<7>(*it) == std::get<7>(primary_alignment);
-            if (!same_strand) {
-                if (chosen_type == SVType::NEUTRAL) {
-                    chosen_type = SVType::INV;
-                } else if (chosen_type == SVType::DUP) {
-                    chosen_type = SVType::INV_DUP;
-                }
-            }
-
-            if (chosen_lh_norm > best_split_aln_lh_norm) {
-                // best_supp_log_likelihood = supp_likelihood;
-                // best_supp_log_likelihood /= (double)(sv_end - sv_start);  //
-                // Normalize the log likelihood by the length
-                // best_split_aln_lh = split_aln_lh;
-                best_split_aln_lh_norm = chosen_lh_norm;
-                // best_split_aln_length = split_aln_length;
-                best_supp_type = chosen_type;
-                best_supp_candidate = chosen_candidate;
-                best_split_alignment = *it;
-                best_scenario = split_scenario;
-            } else if (chosen_lh_norm <= best_split_aln_lh_norm) {
-                // std::cerr << "ERROR: split_aln_lh_norm is less than or equal to best_split_aln_lh_norm" << std::endl;
-                // exit(1);
-            }
-        }
-
-        // If the likelihood is equal to the lowest value, print an error
-        if (best_split_aln_lh_norm == std::numeric_limits<double>::lowest()) {
-            // std::cerr << "ERROR: best_supp_log_likelihood is the lowest value" << std::endl;
-            // exit(1);
-        }
-
-        // Print the likelihoods
-        // std::cout << "Primary log likelihood: " << primary_lh << std::endl;
-        // std::cout << "Largest supplementary log likelihood: " << largest_supp_lh << std::endl;
-        // std::cout << "Closest supplementary log likelihood: " << closest_supp_lh << std::endl;
-        // // std::cout << "Best split alignment log likelihood: " << best_split_aln_lh << std::endl;
-        // std::cout << "Best split alignment log likelihood (normalized): " << best_split_aln_lh_norm << std::endl;
-        // std::cout << "Best scenario: " << best_scenario << std::endl;
-
-        // Add the SV call with the highest likelihood prediction
-        // 
-        // Determine the normalized log likelihood for the combined alignments
-        // by summing and normalizing the log likelihoods by the length
-        double complex_lh = 0.0;
-        double complex_lh_norm = 0.0;
-        if (largest_supp_alignment == closest_supp_alignment) {
-            int32_t complex_t = primary_lh_t + largest_supp_lh_t;
-            complex_lh = primary_lh + largest_supp_lh;
-            complex_lh_norm = complex_lh;// / complex_t;
-        } else {
-            int32_t complex_t = primary_lh_t + largest_supp_lh_t + closest_supp_lh_t;
-            complex_lh = primary_lh + largest_supp_lh + closest_supp_lh;
-            complex_lh_norm = complex_lh;// / complex_t;
-        }
-        // std::cout << "Complex log likelihood (normalized): " << complex_lh_norm << std::endl;
-
-        // Compare the best split alignment likelihood to the complex likelihood
-        // if (best_supp_log_likelihood > primary_log_likelihood || best_supp_log_likelihood > largest_supp_log_likelihood || best_supp_log_likelihood > closest_supp_log_likelihood) {
-        if (best_split_aln_lh_norm > complex_lh_norm) {
-            int32_t sv_start = best_supp_candidate.first;
-            int32_t sv_end = best_supp_candidate.second;
-
-            // Print an error and continue if the end is less than the start
-            if (sv_end < sv_start) {
-                std::cerr << "ERROR: SV end is less than the start: " << sv_start << " - " << sv_end << ", SV type: " << getSVTypeString(best_supp_type) << std::endl;
-                continue;
-            }
-
-            // Resolve overlaps between the primary and supplementary query
-            // sequences for deletions (not usually an issue for other types)
-            if (best_supp_type == SVType::DEL) {
-                AlignmentData& best_supp_alignment = best_split_alignment;
-                int32_t supp_start = std::get<1>(best_supp_alignment);
-                int32_t supp_end = std::get<2>(best_supp_alignment);
-                int32_t supp_query_start = std::get<4>(best_supp_alignment);
-                int32_t supp_query_end = std::get<5>(best_supp_alignment);
-                std::unordered_map<int, int> supp_match_map = std::get<6>(best_supp_alignment);
-
-                // Resolve overlaps between the primary and supplementary query
-                // sequences
-                // int32_t overlap_start = std::max(primary_query_start, supp_query_start);
-                // int32_t overlap_end = std::min(primary_query_end, supp_query_end);
-                // int32_t overlap_length = overlap_end - overlap_start;
-                bool gap_present = primary_query_end < supp_query_start || supp_query_end < primary_query_start;
-                if (!gap_present) {
-                    int32_t overlap_start = std::max(primary_query_start, supp_query_start);
-                    int32_t overlap_end = std::min(primary_query_end, supp_query_end);
-                    int32_t overlap_length = overlap_end - overlap_start;
-
-                    // Calculate the mismatch rate for each alignment at the overlap
-                    double primary_mismatch_rate = this->calculateMismatchRate(primary_match_map, overlap_start, overlap_end);
-                    double supp_mismatch_rate = this->calculateMismatchRate(supp_match_map, overlap_start, overlap_end);
-                    // std::cout << "Primary mismatch rate: " << primary_mismatch_rate << std::endl;
-                    // std::cout << "Supplementary mismatch rate: " << supp_mismatch_rate << std::endl;
-
-                    // Trim the overlap from the alignment with the higher mismatch
-                    // rate
-                    if (primary_mismatch_rate > supp_mismatch_rate) {
-
-                        // Handle each scenario
-                        if (best_scenario == PRIM_SUPP_BD || best_scenario == PRIM_SUPP_GAP) {
-                            // Primary is first, incorporate the overlap into
-                            // the beginning of the deletion
-                            sv_start -= overlap_length;
-                        } else if (best_scenario == SUPP_PRIM_BD || best_scenario == SUPP_PRIM_GAP) {
-                            // Primary is last, incorporate the overlap into
-                            // the end of the deletion
-                            sv_end += overlap_length;
-                        }
-                    } else {
-
-                        // Handle each scenario
-                        if (best_scenario == SUPP_PRIM_BD || best_scenario == SUPP_PRIM_GAP) {
-                            // Supplementary is first, incorporate the overlap into
-                            // the beginning of the deletion
-                            sv_start -= overlap_length;
-                        } else if (best_scenario == PRIM_SUPP_BD || best_scenario == PRIM_SUPP_GAP) {
-                            // Supplementary is last, incorporate the overlap into
-                            // the end of the deletion
-                            sv_end += overlap_length;
-                        }
-                    }
-                }
-            }
-
-            // Add the best split alignment as the SV call
-            // sv_calls.add(primary_chr, sv_start, sv_end, best_supp_type, ".",
-            // "SPLITREAD", "./.", best_split_aln_lh_norm);
-            std::string sv_type_str = getSVTypeString(best_supp_type);
-            sv_count++;
-        } else {
-            // Resolve complex SVs
-
-            // Simplest case: Largest supplementary is also the closest
-            if (largest_supp_alignment == closest_supp_alignment) {
-                // [primary] -- [supp_start] -- [supp_end]
-                // Determine if opposite strands
-                bool opposite_strands = std::get<7>(largest_supp_alignment) != std::get<7>(primary_alignment);
-
-                // Determine if the supplementary alignment is an inversion
-                if (opposite_strands) {
-                    if (largest_supp_type == SVType::NEUTRAL) {
-                        largest_supp_type = SVType::INV;
-                    } else if (largest_supp_type == SVType::DUP) {
-                        largest_supp_type = SVType::INV_DUP;
-                    }
-                }
-
-                // Get the SV type strings
-                std::string primary_type_str = getSVTypeString(primary_type);
-                std::string supp_type_str = getSVTypeString(largest_supp_type);
-
-                // Determine the order of the primary and supplementary
-                // alignment to resolve the SV
-                if (std::get<1>(largest_supp_alignment) < primary_start) {
-                    // [supp_start] -- [supp_end] -- [primary]
-                    std::string complex_sv_type_str = supp_type_str + "+" + primary_type_str;
-
-                    // Add the complex SV call
-                    addSVCall(sv_calls, (uint32_t)std::get<1>(largest_supp_alignment), (uint32_t)primary_end, "COMPLEX", ".", complex_sv_type_str, "./.", complex_lh_norm);
-                    // sv_calls.insert(SVCall{(uint32_t)std::get<1>(largest_supp_alignment), (uint32_t)primary_end, "COMPLEX", ".", complex_sv_type_str, "./.", complex_lh_norm});
-                    // sv_calls.add(primary_chr, std::get<1>(largest_supp_alignment), primary_end, SVType::COMPLEX, ".", complex_sv_type_str, "./.", complex_lh_norm);
-                    sv_count++;
-                } else {
-                    // [primary] -- [supp_start] -- [supp_end]
-                    std::string complex_sv_type_str = primary_type_str + "+" + supp_type_str;
-
-                    // Add the complex SV call
-                    addSVCall(sv_calls, (uint32_t)primary_start, (uint32_t)std::get<2>(largest_supp_alignment), "COMPLEX", ".", complex_sv_type_str, "./.", complex_lh_norm);
-                    // sv_calls.insert(SVCall{(uint32_t)primary_start, (uint32_t)std::get<2>(largest_supp_alignment), "COMPLEX", ".", complex_sv_type_str, "./.", complex_lh_norm});
-                    // sv_calls.add(primary_chr, primary_start, std::get<2>(largest_supp_alignment), SVType::COMPLEX, ".", complex_sv_type_str, "./.", complex_lh_norm);
-                    sv_count++;
-                }
-            } else {
-                // Resolve complex SVs with multiple supplementary alignments
-                // Determine the order of the primary and supplementary
-                // alignments
-                // [primary] -- [closest_supp] -- [largest_supp]
-                // [closest_supp] -- [primary] -- [largest_supp]
-                // [largest_supp] -- [closest_supp] -- [primary]
-                // [largest_supp] -- [primary] -- [closest_supp]
-                // Only consider case 1 for efficiency:
-                if (primary_end < std::get<1>(closest_supp_alignment) && std::get<2>(closest_supp_alignment) < std::get<1>(largest_supp_alignment)) {
-                    // [primary] -- [closest_supp] -- [largest_supp]
-                    // Determine if the closest supplementary alignment is an
-                    // inversion
-                    if (std::get<7>(closest_supp_alignment) != std::get<7>(primary_alignment)) {
-                        if (closest_supp_type == SVType::NEUTRAL) {
-                            closest_supp_type = SVType::INV;
-                        } else if (closest_supp_type == SVType::DUP) {
-                            closest_supp_type = SVType::INV_DUP;
-                        }
-                    }
-
-                    // Run copy number variant predictions on the region between
-                    // the closest supplementary alignment and the largest
-                    // supplementary alignment
-                    SVCandidate sv_candidate(std::get<2>(closest_supp_alignment)+1, std::get<1>(largest_supp_alignment)+1, ".");
-                    // std::cout << "TEST4" << std::endl;
+            // Inversion detection
+            bool is_opposite_strand = std::get<7>(primary_alignment) != std::get<7>(*it);
+            if (is_opposite_strand) {
+                if (supp_length >= min_cnv_length) {
+                    SVCandidate sv_candidate(supp_start+1, supp_end+1, ".");
                     std::tuple<double, SVType, std::string, bool> result = cnv_caller.runCopyNumberPrediction(primary_chr, sv_candidate);
-                    // double complex_log_likelihood = std::get<0>(result);
-                    SVType complex_type = std::get<1>(result);
-
-                    // if (std::get<7>(largest_supp_alignment) != std::get<7>(primary_alignment)) {
-                    //     if (largest_supp_type == SVType::NEUTRAL) {
-                    //         largest_supp_type = SVType::INV;
-                    //     } else if (largest_supp_type == SVType::DUP) {
-                    //         largest_supp_type = SVType::INV_DUP;
-                    //     }
-                    // }
-
-                    std::string primary_type_str = getSVTypeString(primary_type);
-                    std::string closest_supp_type_str = getSVTypeString(closest_supp_type);
-                    // std::string largest_supp_type_str = getSVTypeString(largest_supp_type);
-                    // std::string complex_sv_type_str = primary_type_str + "+" + closest_supp_type_str;
-
-
-                    // Combine the types if equal and not unknown/neutral
-                    std::cout << "Resolving complex SVs..." << std::endl;
-                    std::string complex_sv_type_str = "";
-                    if (primary_type != SVType::UNKNOWN && primary_type != SVType::NEUTRAL) {
-                        complex_sv_type_str += primary_type_str;
-                        std::cout << "[1] Updated to type: " << complex_sv_type_str << std::endl;
-                    }
-                    if (closest_supp_type != primary_type && closest_supp_type != SVType::UNKNOWN && closest_supp_type != SVType::NEUTRAL) {
-                        if (complex_sv_type_str != "") {
-                            complex_sv_type_str += "+";
-                        }
-                        complex_sv_type_str += closest_supp_type_str;
-                        std::cout << "[2] Updated to type: " << complex_sv_type_str << std::endl;
-                    }
-                    if (complex_type != closest_supp_type && complex_type != primary_type && complex_type != SVType::UNKNOWN && complex_type != SVType::NEUTRAL) {
-                        if (complex_sv_type_str != "") {
-                            complex_sv_type_str += "+";
-                        }
-                        complex_sv_type_str += getSVTypeString(complex_type);
-                        std::cout << "[3] Updated to type: " << complex_sv_type_str << std::endl;
-                    }
-
-                    // Add the complex SV call if not empty
-                    if (complex_sv_type_str != "") {
-                        std::cout << "Found complex SV type: " << complex_sv_type_str << std::endl;
-                        // sv_calls.add(primary_chr, primary_start,
-                        // std::get<2>(largest_supp_alignment), SVType::COMPLEX,
-                        // ".", complex_sv_type_str, "./.", complex_lh_norm);
-                        // sv_calls.insert(SVCall{(uint32_t)primary_start, (uint32_t)std::get<2>(largest_supp_alignment), "COMPLEX", ".", complex_sv_type_str, "./.", complex_lh_norm});
-                        addSVCall(sv_calls, (uint32_t)primary_start, (uint32_t)std::get<2>(largest_supp_alignment), "COMPLEX", ".", complex_sv_type_str, "./.", complex_lh_norm);
+                    double supp_lh = std::get<0>(result);
+                    SVType supp_type = std::get<1>(result);
+                    if (supp_type == SVType::NEUTRAL) {
+                        addSVCall(sv_calls, (uint32_t)(supp_start+1), (uint32_t)(supp_end+1), "INV", ".", "HMM", "./.", supp_lh);
+                        sv_count++;
+                    } else if (supp_type == SVType::DUP) {
+                        addSVCall(sv_calls, (uint32_t)(supp_start+1), (uint32_t)(supp_end+1), "INVDUP", ".", "HMM", "./.", supp_lh);
                         sv_count++;
                     }
-                }                
+                } else {
+                    // Add the inversion without running copy number predictions
+                    // (too small for predictions)
+                    addSVCall(sv_calls, (uint32_t)(supp_start+1), (uint32_t)(supp_end+1), "INV", ".", "REV", "./.", 0.0);
+                    sv_count++;
+                }
             }
+        }
+
+        // Trim overlapping alignments
+        int32_t supp_start = std::get<1>(largest_supp_alignment);
+        int32_t supp_end = std::get<2>(largest_supp_alignment);
+        bool primary_before_supp = primary_start < supp_start;
+        trimOverlappingAlignments(primary_alignment, largest_supp_alignment);
+
+        // Create the SV candidate using both alignments
+        supp_start = std::get<1>(largest_supp_alignment);
+        supp_end = std::get<2>(largest_supp_alignment);
+        primary_start = std::get<1>(primary_alignment);
+        primary_end = std::get<2>(primary_alignment);
+        SVCandidate split_boundary;
+        SVCandidate split_gap;
+        bool gap_exists = false;
+        int32_t boundary_left, boundary_right, gap_left, gap_right;
+        if (primary_before_supp) {
+            boundary_left = primary_start+1;
+            boundary_right = supp_end+1;
+            gap_left = primary_end+1;
+            gap_right = supp_start+1;
+            gap_exists = primary_end < supp_start;
+        } else {
+            boundary_left = supp_start+1;
+            boundary_right = primary_end+1;
+            gap_left = supp_end+1;
+            gap_right = primary_start+1;
+            gap_exists = supp_end < primary_start;
+        }
+        
+        // Run copy number variant predictions on the boundary
+        split_boundary = SVCandidate(boundary_left, boundary_right, ".");
+        std::tuple<double, SVType, std::string, bool> bd_result = cnv_caller.runCopyNumberPrediction(primary_chr, split_boundary);
+        double bd_lh = std::get<0>(bd_result);
+        SVType bd_type = std::get<1>(bd_result);
+
+        // Run copy number variant predictions on the gap if it exists
+        if (gap_exists) {
+            split_gap = SVCandidate(gap_left, gap_right, ".");
+            std::tuple<double, SVType, std::string, bool> gap_result = cnv_caller.runCopyNumberPrediction(primary_chr, split_gap);
+            double gap_lh = std::get<0>(gap_result);
+            SVType gap_type = std::get<1>(gap_result);
+
+            // If higher likelihood than the boundary, add the gap as the SV call
+            if (gap_lh > bd_lh) {
+                addSVCall(sv_calls, (uint32_t)(gap_left), (uint32_t)(gap_right), "GAP", ".", "GAP", "./.", gap_lh);
+                sv_count++;
+            } else {
+                // Add the boundary as the SV call
+                addSVCall(sv_calls, (uint32_t)(boundary_left), (uint32_t)(boundary_right), "BOUNDARY", ".", "BOUNDARY", "./.", bd_lh);
+                sv_count++;
+            }
+        } else {
+            // Add the boundary as the SV call
+            addSVCall(sv_calls, (uint32_t)(boundary_left), (uint32_t)(boundary_right), "BOUNDARY", ".", "BOUNDARY", "./.", bd_lh);
+            sv_count++;
         }
     }
 
@@ -1276,3 +870,60 @@ void SVCaller::saveToVCF(const std::unordered_map<std::string, std::set<SVCall> 
     std::cout << "Finished writing VCF file. Total SV calls: " << total_count << ", skipped: " << skip_count << " with unknown SV type" << std::endl;
 }
 
+void SVCaller::trimOverlappingAlignments(AlignmentData& primary_alignment, AlignmentData& supp_alignment)
+{
+    // Get the start and end read positions for the primary and supplementary
+    // alignments
+    int32_t primary_query_start = std::get<4>(primary_alignment);
+    int32_t primary_query_end = std::get<5>(primary_alignment);
+    int32_t supp_query_start = std::get<4>(supp_alignment);
+    int32_t supp_query_end = std::get<5>(supp_alignment);
+    std::unordered_map<int, int>& primary_match_map = std::get<6>(primary_alignment);
+    std::unordered_map<int, int>& supp_match_map = std::get<6>(supp_alignment);
+    int32_t primary_alignment_start = std::get<1>(primary_alignment);
+    int32_t primary_alignment_end = std::get<2>(primary_alignment);
+    int32_t supp_alignment_start = std::get<1>(supp_alignment);
+    int32_t supp_alignment_end = std::get<2>(supp_alignment);
+
+    // Check if the alignments overlap
+    bool primary_before_supp = primary_query_start < supp_query_start;
+    if (primary_before_supp) {
+        // Primary before supplementary in the query
+        if (primary_query_end >= supp_query_start) {
+            // Calculate the mismatch rates at the overlapping region
+            double primary_mismatch_rate = this->calculateMismatchRate(primary_match_map, supp_query_start, primary_query_end);
+            double supp_mismatch_rate = this->calculateMismatchRate(supp_match_map, supp_query_start, primary_query_end);
+            int32_t overlap_length = primary_query_end - supp_query_start + 1;
+
+            // Trim the ailgnment with the higher mismatch rate
+            if (primary_mismatch_rate > supp_mismatch_rate) {
+                // Trim the end of the primary alignment
+                std::get<2>(primary_alignment) = primary_alignment_end - overlap_length;
+                std::cout << "Trimming primary alignment" << std::endl;
+            } else {
+                // Trim the beginning of the supplementary alignment
+                std::get<1>(supp_alignment) = supp_alignment_start + overlap_length;
+                std::cout << "Trimming supplementary alignment" << std::endl;
+            }
+        }
+    } else {
+        // Supplementary before primary in the query
+        if (supp_query_end >= primary_query_start) {
+            // Calculate the mismatch rates at the overlapping region
+            double primary_mismatch_rate = this->calculateMismatchRate(primary_match_map, primary_query_start, supp_query_end);
+            double supp_mismatch_rate = this->calculateMismatchRate(supp_match_map, primary_query_start, supp_query_end);
+            int32_t overlap_length = supp_query_end - primary_query_start + 1;
+
+            // Trim the ailgnment with the higher mismatch rate
+            if (supp_mismatch_rate > primary_mismatch_rate) {
+                // Trim the end of the supplementary alignment
+                std::get<2>(supp_alignment) = supp_alignment_end - overlap_length;
+                std::cout << "Trimming supplementary alignment" << std::endl;
+            } else {
+                // Trim the beginning of the primary alignment
+                std::get<1>(primary_alignment) = primary_alignment_start + overlap_length;
+                std::cout << "Trimming primary alignment" << std::endl;
+            }
+        }
+    }
+}

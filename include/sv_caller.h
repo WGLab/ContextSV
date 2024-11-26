@@ -56,6 +56,8 @@ class SVCaller {
 
         void saveToVCF(const std::unordered_map<std::string, std::set<SVCall>>& sv_calls);
 
+        void trimOverlappingAlignments(AlignmentData& primary_alignment, AlignmentData& supp_alignment);
+
     public:
         explicit SVCaller(InputData& input_data);
 
