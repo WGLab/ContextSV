@@ -769,7 +769,7 @@ void CNVCaller::readSNPPopulationFrequencies(std::string chr, uint32_t start_pos
     std::string pfb_filepath = this->input_data.getAlleleFreqFilepath(chr);
     if (pfb_filepath == "")
     {
-        printError("No population frequency file provided for chromosome " + chr);
+        // printError("No population frequency file provided for chromosome " + chr);
         return;
     }
     

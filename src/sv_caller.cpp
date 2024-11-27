@@ -173,14 +173,15 @@ std::tuple<std::unordered_map<int, int>, int32_t, int32_t> SVCaller::detectSVsFr
 
                 // To determine whether the insertion is a duplication, check
                 // for sequence identity between the insertion and the
-                // reference genome (duplications are typically >= 90%)
-
+                // reference genome (duplications are typically >= 90%):
                 // Loop through the reference sequence and calculate the
                 // sequence identity +/- insertion length from the insertion
                 // position.
                 bool is_duplication = false;
                 int ins_ref_pos;
-                for (int j = pos - op_len; j <= pos; j++) {
+                int dup_start = std::max(0, pos - op_len);
+                // for (int j = pos - op_len; j <= pos; j++) {
+                for (int j = dup_start; j <= pos; j++) {
 
                     // Get the string for the window (1-based coordinates)
                     ins_ref_pos = j + 1;
@@ -267,6 +268,7 @@ std::tuple<std::unordered_map<int, int>, int32_t, int32_t> SVCaller::detectSVsFr
 
             // Get the corresponding reference sequence
             int cmatch_pos = pos + 1;  // Querying the reference genome is 1-based
+            // printMessage("Checking window for match: " + chr + ":" + std::to_string(cmatch_pos) + "-" + std::to_string(cmatch_pos + op_len - 1));
             std::string cmatch_ref_str = this->input_data.queryRefGenome(chr, cmatch_pos, cmatch_pos + op_len - 1);
 
             // Check that the two sequence lengths are equal
@@ -362,6 +364,7 @@ void SVCaller::processChromosome(const std::string& chr, const std::string& bam_
 
     // Load chromosome data for copy number predictions
     // std::cout << "Loading chromosome data for copy number predictions..." << std::endl;
+    printMessage(chr + ": Loading chromosome data...");
     CNVCaller cnv_caller(this->input_data);
     cnv_caller.loadChromosomeData(chr);
 
@@ -371,11 +374,14 @@ void SVCaller::processChromosome(const std::string& chr, const std::string& bam_
     int current_region = 0;
     // std::set<SVCall> combined_sv_calls;
     for (const auto& sub_region : region_chunks) {
+        current_region++;
+        printMessage(chr + ": CIGAR SVs...");
         std::tuple<std::set<SVCall>, PrimaryMap, SuppMap> region_data = this->detectCIGARSVs(fp_in, idx, bamHdr, sub_region);
         std::set<SVCall>& subregion_sv_calls = std::get<0>(region_data);
         PrimaryMap& primary_map = std::get<1>(region_data);
         SuppMap& supp_map = std::get<2>(region_data);
         // std::cout << "Merge CIGAR SV calls from " << sub_region << "..." << std::endl;
+        printMessage(chr + ": Merging CIGAR...");
         mergeSVs(subregion_sv_calls);
         int region_sv_count = getSVCount(subregion_sv_calls);
         // printMessage("Total SVs detected from CIGAR string: " + std::to_string(region_sv_count));
@@ -384,21 +390,25 @@ void SVCaller::processChromosome(const std::string& chr, const std::string& bam_
         // CIGAR string, using a minimum CNV length threshold
         if (region_sv_count > 0) {
             // std::cout << "Running copy number variant detection from CIGAR string SVs..." << std::endl;
+            printMessage(chr + ": CIGAR predictions...");
             cnv_caller.runCIGARCopyNumberPrediction(chr, subregion_sv_calls, min_cnv_length, hmm);
         }
 
         // Run split-read SV and copy number variant predictions
         // std::cout << "Detecting copy number variants from split reads..." << std::endl;
+        printMessage(chr + ": Split read SVs...");
         this->detectSVsFromSplitReads(subregion_sv_calls, primary_map, supp_map, cnv_caller, hmm);
 
         // Merge the SV calls from the current region
         // std::cout << "Merge SV calls from " << sub_region << "..." << std::endl;
+        printMessage(chr + ": Merging split reads...");
         mergeSVs(subregion_sv_calls);
 
         // Combine the SV calls from the current region
         // std::cout << "Combining SV calls from " << sub_region << "..." << std::endl;
+        printMessage(chr + ": Concatenating calls...");
         concatenateSVCalls(combined_sv_calls, subregion_sv_calls);
-        current_region++;
+
         printMessage("Completed " + std::to_string(current_region) + " of " + std::to_string(region_count) + " region(s) for chromosome " + chr + "...");
     }
 
@@ -422,15 +432,24 @@ std::unordered_map<std::string, std::set<SVCall>> SVCaller::run()
     chromosomes.erase(std::remove_if(chromosomes.begin(), chromosomes.end(), [](const std::string& chr) {
         return chr.find("alt") != std::string::npos || chr.find("GL") != std::string::npos || chr.find("NC") != std::string::npos || chr.find("hs") != std::string::npos;
     }), chromosomes.end());
-
+    
+    /*
+    // Test only on a subset 241125_ALL/output.merged.vcf
+    chromosomes = {"chr2", "chr3", "chr5", "chr6", "chr7", "chr4"};
+    */
+    
+    
+    // Test only on a subset 241125_ALL/output.merged.vcf
+    // chromosomes = {"chrM", "chr8", "chr9", "chr10", "chr11", "chr1"};
+        
     // Read the HMM from the file
     std::string hmm_filepath = this->input_data.getHMMFilepath();
     std::cout << "Reading HMM from file: " << hmm_filepath << std::endl;
     CHMM hmm = ReadCHMM(hmm_filepath.c_str());
 
     // Set up threads for processing each chromosome
-    // const int max_threads = 6;
-    const int max_threads = 10;
+    const int max_threads = 8;
+    // const int max_threads = 10;
     std::vector<std::future<void>> futures;
     std::unordered_map<std::string, std::set<SVCall>> whole_genome_sv_calls;
     std::mutex sv_mutex;

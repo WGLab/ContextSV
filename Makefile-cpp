@@ -11,7 +11,7 @@ CONDA_LIB_DIR := $(CONDA_PREFIX)/lib
 
 # Compiler and Flags
 CXX := g++
-CXXFLAGS := -std=c++14 -I$(INCL_DIR) -I$(CONDA_INCL_DIR)
+CXXFLAGS := -std=c++14 -g -I$(INCL_DIR) -I$(CONDA_INCL_DIR)
 LDFLAGS := -L$(LIB_DIR) -L$(CONDA_LIB_DIR) -Wl,-rpath=$(CONDA_LIB_DIR)  # Add rpath for shared libraries
 
 # Link htslib
