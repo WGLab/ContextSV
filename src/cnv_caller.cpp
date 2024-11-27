@@ -223,9 +223,9 @@ void CNVCaller::runCIGARCopyNumberPrediction(std::string chr, std::set<SVCall> &
 {
     int window_size = this->input_data.getWindowSize();
     double mean_chr_cov = this->mean_chr_cov;  
-    printMessage("Predicting CIGAR string copy number states for chromosome " + chr + "...");
+    // printMessage("Predicting CIGAR string copy number states for chromosome " + chr + "...");
     runCIGARCopyNumberPredictionChunk(chr, sv_candidates, hmm, window_size, mean_chr_cov);
-    printMessage("Finished predicting copy number states for chromosome " + chr + "...");
+    // printMessage("Finished predicting copy number states for chromosome " + chr + "...");
 }
 
 void CNVCaller::runCIGARCopyNumberPredictionChunk(std::string chr, std::set<SVCall>& sv_chunk, CHMM hmm, int window_size, double mean_chr_cov)

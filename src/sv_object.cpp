@@ -158,7 +158,7 @@ void mergeSVs(std::set<SVCall>& sv_calls) {
     }
 
     // Merge SV calls if they overlap by at least 50%
-    int initial_size = sv_calls.size();
+    // int initial_size = sv_calls.size();
     std::vector<SVCall> merged_sv_calls;
     auto it = sv_calls.begin();
     SVCall current_merge = *it++;
@@ -214,6 +214,6 @@ void mergeSVs(std::set<SVCall>& sv_calls) {
     for (const auto& sv_call : merged_sv_calls) {
         sv_calls.insert(sv_call);
     }
-    int updated_size = sv_calls.size();
-    std::cout << "Merged " << initial_size << " SV calls into " << updated_size << " SV calls" << std::endl;
+    // int updated_size = sv_calls.size();
+    // std::cout << "Merged " << initial_size << " SV calls into " << updated_size << " SV calls" << std::endl;
 }

@@ -18,6 +18,7 @@
 #include <cmath>
 #include <algorithm>
 #include <fstream>
+#include <condition_variable>
 
 #include "utils.h"
 #include "sv_types.h"
@@ -428,89 +429,99 @@ std::unordered_map<std::string, std::set<SVCall>> SVCaller::run()
     CHMM hmm = ReadCHMM(hmm_filepath.c_str());
 
     // Set up threads for processing each chromosome
+    // const int max_threads = 6;
+    const int max_threads = 10;
     std::vector<std::future<void>> futures;
     std::unordered_map<std::string, std::set<SVCall>> whole_genome_sv_calls;
     std::mutex sv_mutex;
+    std::condition_variable cv;
+    int active_threads = 0;
 
-    // Set a thread count for processing each chromosome. Keep it low to avoid
-    // memory issues.
-    int max_threads = 6;  // Number of chromosomes to process in parallel
-    int batch_count = 0;
-    int completed_threads = 0;
-    int chr_count = chromosomes.size();
-    for (const auto& chr : chromosomes) {
+    // Lambda to process a chromosome
+    auto process_chr = [&](const std::string& chr) {
         printMessage("Launching thread for chromosome " + chr + "...");
-        futures.push_back(std::async(std::launch::async, [&]() {
-            std::set<SVCall> sv_calls;
-            this->processChromosome(chr, this->input_data.getLongReadBam(), hmm, sv_calls, this->input_data.getMinCNVLength());
-            {
-                std::lock_guard<std::mutex> lock(sv_mutex);
-                whole_genome_sv_calls[chr] = std::move(sv_calls);
-            }
+        std::set<SVCall> sv_calls;
+        this->processChromosome(chr, this->input_data.getLongReadBam(), hmm, sv_calls, this->input_data.getMinCNVLength());
+        {
+            std::lock_guard<std::mutex> lock(sv_mutex);
+            whole_genome_sv_calls[chr] = std::move(sv_calls);
         }
-        ));
-        batch_count++;
-        if (batch_count >= max_threads || batch_count >= chr_count) {
-            // Wait for all threads to finish
-            // printMessage("Waiting for all threads to finish for " + std::to_string(batch_count) + " chromosome(s)...");
-            for (auto& future : futures) {
-                future.get();
-                completed_threads++;
-                printMessage("Completed " + std::to_string(completed_threads) + " of " + std::to_string(chr_count) + " chromosome(s)");
-            }
-            // completed_threads += batch_count;
-            // printMessage("Completed " + std::to_string(completed_threads) + " of " + std::to_string(chr_count) + " chromosome(s)");
-            batch_count = 0;
-            futures.clear();
+        printMessage("Completed chromosome " + chr);
+
+        // Notify thread completion
+        {
+            std::lock_guard<std::mutex> lock(sv_mutex);
+            active_threads--;
+        }
+        cv.notify_one();
+    };
+
+    // Thread management
+    std::vector<std::thread> threads;
+    for (const auto& chr : chromosomes) {
+        {
+            std::unique_lock<std::mutex> lock(sv_mutex);
+            cv.wait(lock, [&] { return active_threads < max_threads; });
+            active_threads++;
+        }
+
+        // Launch a new thread
+        threads.emplace_back(process_chr, chr);
+    }
+
+    // Wait for all threads to complete
+    for (auto& thread : threads) {
+        if (thread.joinable()) {
+            thread.join();
         }
     }
 
-    // Wait for remaining threads to finish
-    if (futures.size() > 0) {
-        // printMessage("Waiting for remaining threads to finish for " + std::to_string(futures.size()) + " chromosome(s)...");
-        for (auto& future : futures) {
-            future.get();
-            completed_threads++;
-            printMessage("[TEST] Completed " + std::to_string(completed_threads) + " of " + std::to_string(chr_count) + " chromosome(s)");
-        }
-        // completed_threads += futures.size();
-        // printMessage("Completed " + std::to_string(completed_threads) + " of " + std::to_string(chr_count) + " chromosome(s)");
-    }
+    printMessage("All threads have finished.");
 
-    // // Loop through each region and detect SVs in chunks
-    // std::string bam_filepath = this->input_data.getLongReadBam();
+    /////////////////////////////////////////////////
+
+    // // Set a thread count for processing each chromosome. Keep it low to avoid
+    // // memory issues.
+    // int batch_count = 0;
+    // int completed_threads = 0;
     // int chr_count = chromosomes.size();
-    // std::cout << "Detecting SVs from " << chr_count << " chromosome(s)..." << std::endl;
-    // // int thread_count = this->input_data.getThreadCount();
-    // int thread_count = chr_count;
-    // int min_cnv_length = this->input_data.getMinCNVLength();
     // for (const auto& chr : chromosomes) {
     //     printMessage("Launching thread for chromosome " + chr + "...");
     //     futures.push_back(std::async(std::launch::async, [&]() {
     //         std::set<SVCall> sv_calls;
-    //         this->processChromosome(chr, bam_filepath, hmm, sv_calls, min_cnv_length);
+    //         this->processChromosome(chr, this->input_data.getLongReadBam(), hmm, sv_calls, this->input_data.getMinCNVLength());
     //         {
     //             std::lock_guard<std::mutex> lock(sv_mutex);
     //             whole_genome_sv_calls[chr] = std::move(sv_calls);
     //         }
     //     }
     //     ));
-    // }
-
-    // // Wait for all threads to finish
-    // printMessage("Waiting for all threads to finish for " + std::to_string(chr_count) + " chromosome(s)...");
-    // int threads_finished = 0;
-    // for (auto& future : futures) {
-    //     try{
-    //         // future.wait();
-    //         future.get();  // Wait and handle exceptions
-    //         threads_finished++;
-    //         printMessage("Completed " + std::to_string(threads_finished) + " of " + std::to_string(thread_count) + " threads...");
-    //     } catch (const std::exception& e) {
-    //         std::cerr << "Error in thread: " << e.what() << std::endl;
+    //     batch_count++;
+    //     if (batch_count >= max_threads || batch_count >= chr_count) {
+    //         // Wait for all threads to finish
+    //         // printMessage("Waiting for all threads to finish for " + std::to_string(batch_count) + " chromosome(s)...");
+    //         for (auto& future : futures) {
+    //             future.get();
+    //             completed_threads++;
+    //             printMessage("Completed " + std::to_string(completed_threads) + " of " + std::to_string(chr_count) + " chromosome(s)");
+    //         }
+    //         // completed_threads += batch_count;
+    //         // printMessage("Completed " + std::to_string(completed_threads) + " of " + std::to_string(chr_count) + " chromosome(s)");
+    //         batch_count = 0;
+    //         futures.clear();
     //     }
     // }
-    printMessage("All threads have finished.");
+
+    // // Wait for remaining threads to finish
+    // if (futures.size() > 0) {
+    //     // printMessage("Waiting for remaining threads to finish for " + std::to_string(futures.size()) + " chromosome(s)...");
+    //     for (auto& future : futures) {
+    //         future.get();
+    //         completed_threads++;
+    //         printMessage("[TEST] Completed " + std::to_string(completed_threads) + " of " + std::to_string(chr_count) + " chromosome(s)");
+    //     }
+    // }
+    // printMessage("All threads have finished.");
 
     // Print the total number of SVs detected for each chromosome
     uint32_t total_sv_count = 0;
@@ -650,9 +661,9 @@ void SVCaller::detectSVsFromSplitReads(std::set<SVCall>& sv_calls, PrimaryMap& p
     }
 
     // Print the number of SVs detected from split-read alignments
-    if (sv_count > 0) {
-        std::cout << "Found " << sv_count << " SVs from split-read alignments" << std::endl;
-    }
+    // if (sv_count > 0) {
+    //     std::cout << "Found " << sv_count << " SVs from split-read alignments" << std::endl;
+    // }
 }
 
 void SVCaller::saveToVCF(const std::unordered_map<std::string, std::set<SVCall> >& sv_calls)
