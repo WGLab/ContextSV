@@ -311,7 +311,7 @@ std::tuple<std::unordered_map<int, int>, int32_t, int32_t> SVCaller::detectSVsFr
     return std::tuple<std::unordered_map<int, int>, int32_t, int32_t>(query_match_map, query_start, query_end);
 }
 
-void SVCaller::processChromosome(const std::string& chr, const std::string& bam_filepath, CHMM hmm, std::set<SVCall>& combined_sv_calls, int min_cnv_length)
+void SVCaller::processChromosome(const std::string& chr, const std::string& bam_filepath, const CHMM& hmm, std::set<SVCall>& combined_sv_calls, int min_cnv_length)
 {
     // Open the BAM file
     samFile *fp_in = sam_open(bam_filepath.c_str(), "r");
@@ -432,24 +432,15 @@ std::unordered_map<std::string, std::set<SVCall>> SVCaller::run()
     chromosomes.erase(std::remove_if(chromosomes.begin(), chromosomes.end(), [](const std::string& chr) {
         return chr.find("alt") != std::string::npos || chr.find("GL") != std::string::npos || chr.find("NC") != std::string::npos || chr.find("hs") != std::string::npos;
     }), chromosomes.end());
-    
-    /*
-    // Test only on a subset 241125_ALL/output.merged.vcf
-    chromosomes = {"chr2", "chr3", "chr5", "chr6", "chr7", "chr4"};
-    */
-    
-    
-    // Test only on a subset 241125_ALL/output.merged.vcf
-    // chromosomes = {"chrM", "chr8", "chr9", "chr10", "chr11", "chr1"};
         
     // Read the HMM from the file
     std::string hmm_filepath = this->input_data.getHMMFilepath();
     std::cout << "Reading HMM from file: " << hmm_filepath << std::endl;
-    CHMM hmm = ReadCHMM(hmm_filepath.c_str());
+    const CHMM& hmm = ReadCHMM(hmm_filepath.c_str());
 
     // Set up threads for processing each chromosome
-    const int max_threads = 8;
-    // const int max_threads = 10;
+    const int max_threads = this->input_data.getThreadCount();
+    std::cout << "Using " << max_threads << " threads for processing..." << std::endl;
     std::vector<std::future<void>> futures;
     std::unordered_map<std::string, std::set<SVCall>> whole_genome_sv_calls;
     std::mutex sv_mutex;
@@ -458,7 +449,7 @@ std::unordered_map<std::string, std::set<SVCall>> SVCaller::run()
 
     // Lambda to process a chromosome
     auto process_chr = [&](const std::string& chr) {
-        printMessage("Launching thread for chromosome " + chr + "...");
+        // printMessage("Launching thread for chromosome " + chr + "...");
         std::set<SVCall> sv_calls;
         this->processChromosome(chr, this->input_data.getLongReadBam(), hmm, sv_calls, this->input_data.getMinCNVLength());
         {
@@ -471,6 +462,7 @@ std::unordered_map<std::string, std::set<SVCall>> SVCaller::run()
         {
             std::lock_guard<std::mutex> lock(sv_mutex);
             active_threads--;
+            printMessage("Active threads: " + std::to_string(active_threads));
         }
         cv.notify_one();
     };
@@ -480,8 +472,10 @@ std::unordered_map<std::string, std::set<SVCall>> SVCaller::run()
     for (const auto& chr : chromosomes) {
         {
             std::unique_lock<std::mutex> lock(sv_mutex);
+            printMessage("Waiting for thread slot. Active threads: " + std::to_string(active_threads));
             cv.wait(lock, [&] { return active_threads < max_threads; });
             active_threads++;
+            printMessage("Launching thread for chromosome " + chr + ". Active threads: " + std::to_string(active_threads));
         }
 
         // Launch a new thread
@@ -496,51 +490,6 @@ std::unordered_map<std::string, std::set<SVCall>> SVCaller::run()
     }
 
     printMessage("All threads have finished.");
-
-    /////////////////////////////////////////////////
-
-    // // Set a thread count for processing each chromosome. Keep it low to avoid
-    // // memory issues.
-    // int batch_count = 0;
-    // int completed_threads = 0;
-    // int chr_count = chromosomes.size();
-    // for (const auto& chr : chromosomes) {
-    //     printMessage("Launching thread for chromosome " + chr + "...");
-    //     futures.push_back(std::async(std::launch::async, [&]() {
-    //         std::set<SVCall> sv_calls;
-    //         this->processChromosome(chr, this->input_data.getLongReadBam(), hmm, sv_calls, this->input_data.getMinCNVLength());
-    //         {
-    //             std::lock_guard<std::mutex> lock(sv_mutex);
-    //             whole_genome_sv_calls[chr] = std::move(sv_calls);
-    //         }
-    //     }
-    //     ));
-    //     batch_count++;
-    //     if (batch_count >= max_threads || batch_count >= chr_count) {
-    //         // Wait for all threads to finish
-    //         // printMessage("Waiting for all threads to finish for " + std::to_string(batch_count) + " chromosome(s)...");
-    //         for (auto& future : futures) {
-    //             future.get();
-    //             completed_threads++;
-    //             printMessage("Completed " + std::to_string(completed_threads) + " of " + std::to_string(chr_count) + " chromosome(s)");
-    //         }
-    //         // completed_threads += batch_count;
-    //         // printMessage("Completed " + std::to_string(completed_threads) + " of " + std::to_string(chr_count) + " chromosome(s)");
-    //         batch_count = 0;
-    //         futures.clear();
-    //     }
-    // }
-
-    // // Wait for remaining threads to finish
-    // if (futures.size() > 0) {
-    //     // printMessage("Waiting for remaining threads to finish for " + std::to_string(futures.size()) + " chromosome(s)...");
-    //     for (auto& future : futures) {
-    //         future.get();
-    //         completed_threads++;
-    //         printMessage("[TEST] Completed " + std::to_string(completed_threads) + " of " + std::to_string(chr_count) + " chromosome(s)");
-    //     }
-    // }
-    // printMessage("All threads have finished.");
 
     // Print the total number of SVs detected for each chromosome
     uint32_t total_sv_count = 0;
@@ -561,7 +510,7 @@ std::unordered_map<std::string, std::set<SVCall>> SVCaller::run()
 
 
 // Detect SVs from split read alignments
-void SVCaller::detectSVsFromSplitReads(std::set<SVCall>& sv_calls, PrimaryMap& primary_map, SuppMap& supp_map, CNVCaller& cnv_caller, CHMM hmm)
+void SVCaller::detectSVsFromSplitReads(std::set<SVCall>& sv_calls, PrimaryMap& primary_map, SuppMap& supp_map, CNVCaller& cnv_caller, const CHMM& hmm)
 {
     // Find split-read SV evidence
     int sv_count = 0;

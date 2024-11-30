@@ -217,8 +217,6 @@ bool InputData::isRegionSet()
 
 void InputData::setAlleleFreqFilepaths(std::string filepath)
 {
-    // this->pfb_filepath = filepath;
-
     // Check if empty string
     if (filepath == "")
     {

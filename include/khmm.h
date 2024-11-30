@@ -13,22 +13,22 @@
 // Struct for HMM (C++ RAII style)
 struct CHMM
 {
-	int N;	// Number of states
-	int M; 	// Number of observation symbols
+	int N = 0;	// Number of states
+	int M = 0; 	// Number of observation symbols
 	std::vector<std::vector<double>> A;  // Transition probability matrix
 	std::vector<std::vector<double>> B;  // Emission probability matrix
 	std::vector<double> pi;  // Initial state distribution
 	std::vector<double> B1_mean;  // Mean of a continuous Gaussian distribution for state 1 through N
 	std::vector<double> B1_sd;  // Standard deviation of B1 values, which is the same for all states
-	double B1_uf;  // B1_uniform_fraction: the contribution of uniform distribution to the finite mixture model
+	double B1_uf = 0.0;  // B1_uniform_fraction: the contribution of uniform distribution to the finite mixture model
 	std::vector<double> B2_mean;  // B2_mean[1..4] is the average of B_allele_freq
 	std::vector<double> B2_sd;  // B2_sd[1..4] is the standard deviation of four B_allele_freq, B2_sd[5] is specially for state1, where B is modelled as a wide normal distribution
-	double B2_uf;  // B2_uniform_fraction: the fraction of uniform distribution in the finite mixture model
-	int NP_flag;
+	double B2_uf = 0.0;  // B2_uniform_fraction: the fraction of uniform distribution in the finite mixture model
+	int NP_flag = 0;
 	std::vector<double> B3_mean;
 	std::vector<double> B3_sd;
-	double B3_uf;
-	int dist;
+	double B3_uf = 0.0;
+	int dist = 0;
 };
 
 

@@ -4,6 +4,13 @@ SRC_DIR := $(CURDIR)/src
 BUILD_DIR := $(CURDIR)/build
 LIB_DIR := $(CURDIR)/lib
 
+# Version header
+VERSION := $(shell git describe --tags --always)
+VERSION_HEADER := $(INCL_DIR)/version.h
+.PHONY: $(VERSION_HEADER)
+	@echo "#pragma once" > $@
+	@echo "#define VERSION \"$(VERSION)\"" >> $@
+
 # Conda environment directories
 CONDA_PREFIX := $(shell echo $$CONDA_PREFIX)
 CONDA_INCL_DIR := $(CONDA_PREFIX)/include
@@ -13,10 +20,7 @@ CONDA_LIB_DIR := $(CONDA_PREFIX)/lib
 CXX := g++
 CXXFLAGS := -std=c++14 -g -I$(INCL_DIR) -I$(CONDA_INCL_DIR)
 LDFLAGS := -L$(LIB_DIR) -L$(CONDA_LIB_DIR) -Wl,-rpath=$(CONDA_LIB_DIR)  # Add rpath for shared libraries
-
-# Link htslib
 LDLIBS := -lhts  # Link with libhts.a or libhts.so
-# LDLIBS := -lmylib  # Link with libraries in LIB_DIR, e.g., libmylib.a or libmylib.so
 
 # Sources and Output
 # SOURCES := $(wildcard $(SRC_DIR)/*.cpp)

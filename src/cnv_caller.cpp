@@ -41,7 +41,7 @@ CNVCaller::CNVCaller(InputData &input_data)
 }
 
 // Function to call the Viterbi algorithm for the CHMM
-std::pair<std::vector<int>, double> CNVCaller::runViterbi(CHMM hmm, SNPData& snp_data)
+std::pair<std::vector<int>, double> CNVCaller::runViterbi(const CHMM& hmm, SNPData& snp_data)
 {
     int data_count = (int) snp_data.pos.size();
     if (data_count == 0)
@@ -144,7 +144,7 @@ std::pair<SNPData, bool> CNVCaller::querySNPRegion(std::string chr, uint32_t sta
     return std::make_pair(snp_data, snps_found);
 }
 
-std::tuple<double, SVType, std::string, bool> CNVCaller::runCopyNumberPrediction(std::string chr, const SVCandidate& candidate, CHMM hmm)
+std::tuple<double, SVType, std::string, bool> CNVCaller::runCopyNumberPrediction(std::string chr, const SVCandidate& candidate, const CHMM& hmm)
 {
      // Get the start and end positions of the SV call
     uint32_t start_pos = std::get<0>(candidate);
@@ -162,6 +162,7 @@ std::tuple<double, SVType, std::string, bool> CNVCaller::runCopyNumberPrediction
     bool sv_snps_found = snp_call.second;
 
     // Run the Viterbi algorithm
+    printMessage("Running Viterbi algorithm for SV " + chr + ":" + std::to_string((int)start_pos) + "-" + std::to_string((int)end_pos) + " (" + std::to_string(sv_snps.pos.size()) + " SNPs, start=" + std::to_string(snp_start_pos) + ", end=" + std::to_string(snp_end_pos) + ")...");
     std::pair<std::vector<int>, double> prediction = runViterbi(hmm, sv_snps);
     std::vector<int>& state_sequence = prediction.first;
     double likelihood = prediction.second;
@@ -219,7 +220,7 @@ std::tuple<double, SVType, std::string, bool> CNVCaller::runCopyNumberPrediction
 }
 
 
-void CNVCaller::runCIGARCopyNumberPrediction(std::string chr, std::set<SVCall> &sv_candidates, int min_length, CHMM hmm)
+void CNVCaller::runCIGARCopyNumberPrediction(std::string chr, std::set<SVCall> &sv_candidates, int min_length, const CHMM& hmm)
 {
     int window_size = this->input_data.getWindowSize();
     double mean_chr_cov = this->mean_chr_cov;  
@@ -228,7 +229,7 @@ void CNVCaller::runCIGARCopyNumberPrediction(std::string chr, std::set<SVCall> &
     // printMessage("Finished predicting copy number states for chromosome " + chr + "...");
 }
 
-void CNVCaller::runCIGARCopyNumberPredictionChunk(std::string chr, std::set<SVCall>& sv_chunk, CHMM hmm, int window_size, double mean_chr_cov)
+void CNVCaller::runCIGARCopyNumberPredictionChunk(std::string chr, std::set<SVCall>& sv_chunk, const CHMM& hmm, int window_size, double mean_chr_cov)
 {
     // printMessage("Running copy number prediction for " + std::to_string(sv_chunk.size()) + " SV candidates on chromosome " + chr + "...");
     // Map with counts for each CNV type

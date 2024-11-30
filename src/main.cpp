@@ -1,80 +1,165 @@
 
 #include "swig_interface.h"
 #include "input_data.h"
+#include "version.h"
 
 /// @cond DOXYGEN_IGNORE
 #include <iostream>
 #include <string>
+// #include <optional>
 /// @endcond
 
 // Placeholder for ContextSV library includes
 // #include "ContextSV.h"
 
-void runContextSV(const std::string& bamFile, const std::string& refFile, const std::string& vcfFile, const std::string& outputDir, int threadCount = 1, const std::string& hmmFile = "", int windowSize = 2500, int minCNV = 2500, const std::string& eth = "", const std::string& pfbFile = "")
+void runContextSV(const std::unordered_map<std::string, std::string>& args)
 {
     // Placeholder for setting up input data and running ContextSV
-    std::cout << "Running ContextSV with the following files:" << std::endl;
-    std::cout << "BAM file: " << bamFile << std::endl;
-    std::cout << "Reference file: " << refFile << std::endl;
-    std::cout << "VCF file: " << vcfFile << std::endl;
-    std::cout << "Thread count: " << threadCount << std::endl;
-    std::cout << "Output directory: " << outputDir << std::endl;
+    std::cout << "ContextSV version " << VERSION << std::endl;
+    std::cout << "Input parameters:" << std::endl;
+    for (const auto& arg : args) {
+        std::cout << arg.first << ": " << arg.second << std::endl;
+    }
 
     // Set up input data
     InputData input_data;
-    input_data.setShortReadBam(bamFile);
-    input_data.setLongReadBam(bamFile);
-    input_data.setRefGenome(refFile);
-    input_data.setSNPFilepath(vcfFile);
-    //input_data.setChromosome("21");
-    //input_data.setRegion("14486099-14515105");
-    input_data.setThreadCount(threadCount);
-    input_data.setAlleleFreqFilepaths(pfbFile);
-    input_data.setHMMFilepath(hmmFile);
-    input_data.setOutputDir(outputDir);
-    input_data.saveCNVData(false);
-    input_data.setThreadCount(threadCount);
-    input_data.setWindowSize(windowSize);
-    input_data.setMinCNVLength(minCNV);
+    input_data.setLongReadBam(args.at("bam-file"));
+    input_data.setShortReadBam(args.at("bam-file"));
+    input_data.setRefGenome(args.at("ref-file"));
+    input_data.setSNPFilepath(args.at("snps-file"));
+    input_data.setOutputDir(args.at("output-dir"));
+    if (args.find("chr") != args.end()) {
+        input_data.setChromosome(args.at("chr"));
+    }
+    if (args.find("region") != args.end()) {
+        input_data.setRegion(args.at("region"));
+    }
+    if (args.find("thread-count") != args.end()) {
+        input_data.setThreadCount(std::stoi(args.at("thread-count")));
+    }
+    if (args.find("hmm-file") != args.end()) {
+        input_data.setHMMFilepath(args.at("hmm-file"));
+    }
+    if (args.find("window-size") != args.end()) {
+        input_data.setWindowSize(std::stoi(args.at("window-size")));
+    }
+    if (args.find("min-cnv") != args.end()) {
+        input_data.setMinCNVLength(std::stoi(args.at("min-cnv")));
+    }
+    if (args.find("eth") != args.end()) {
+        input_data.setEthnicity(args.at("eth"));
+    }
+    if (args.find("pfb-file") != args.end()) {
+        input_data.setAlleleFreqFilepaths(args.at("pfb-file"));
+    }
+    if (args.find("save-cnv") != args.end()) {
+        input_data.saveCNVData(true);
+    }
+    if (args.find("debug") != args.end()) {
+        input_data.setVerbose(true);
+    }
+    // input_data.setShortReadBam(bamFile);
+    // input_data.setLongReadBam(bamFile);
+    // input_data.setRefGenome(refFile);
+    // input_data.setSNPFilepath(vcfFile);
+    // //input_data.setChromosome("21");
+    // //input_data.setRegion("14486099-14515105");
+    // input_data.setThreadCount(threadCount);
+    // input_data.setAlleleFreqFilepaths(pfbFile);
+    // input_data.setHMMFilepath(hmmFile);
+    // input_data.setOutputDir(outputDir);
+    // input_data.saveCNVData(false);
+    // input_data.setThreadCount(threadCount);
+    // input_data.setWindowSize(windowSize);
+    // input_data.setMinCNVLength(minCNV);
 
     // Run ContextSV
     run(input_data);
 }
 
+void printUsage(const std::string& programName) {
+    std::cerr << "Usage: " << programName << " [options]\n"
+                << "Options:\n"
+                << "  -b, --bam <bam_file>          Long-read BAM file (required)\n"
+                << "  -r, --ref <ref_file>          Reference genome FASTA file (required)\n"
+                << "  -s, --snp <vcf_file>          SNPs VCF file (required)\n"
+                << "  -o, --outdir <output_dir>     Output directory (required)\n"
+                << "  -c, --chr <chromosome>        Chromosome\n"
+                << "  -r, --region <region>         Region (e.g., 14486099-14515105)\n"
+                << "  -t, --threads <thread_count>  Number of threads\n"
+                << "  -h, --hmm <hmm_file>          HMM file\n"
+                << "  -w, --window <window_size>    Window size\n"
+                << "     --min-cnv <min_length>     Minimum CNV length\n"
+                << "  -e, --eth <eth_file>          ETH file\n"
+                << "  -p, --pfb <pfb_file>          PFB file\n"
+                << "     --save-cnv                 Save CNV data\n"
+                << "     --debug                    Debug mode\n"
+                << "     --version                  Print version and exit\n"
+                << "  -h, --help                    Print usage and exit\n";
+}
+
+std::unordered_map<std::string, std::string> parseArguments(int argc, char* argv[]) {
+    std::unordered_map<std::string, std::string> args;
+    for (int i = 1; i < argc; i++) {
+        std::string arg = argv[i];
+
+        // Handle short and long options
+        if ((arg == "-b" || arg == "--bam") && i + 1 < argc) {
+            args["bam-file"] = argv[++i];
+        } else if ((arg == "-r" || arg == "--ref") && i + 1 < argc) {
+            args["ref-file"] = argv[++i];
+        } else if ((arg == "-s" || arg == "--snp") && i + 1 < argc) {
+            args["snps-file"] = argv[++i];
+        } else if ((arg == "-o" || arg == "--outdir") && i + 1 < argc) {
+            args["output-dir"] = argv[++i];
+        } else if ((arg == "-c" || arg == "--chr") && i + 1 < argc) {
+            args["chr"] = argv[++i];
+        } else if ((arg == "-r" || arg == "--region") && i + 1 < argc) {
+            args["region"] = argv[++i];
+        } else if ((arg == "-t" || arg == "--threads") && i + 1 < argc) {
+            args["thread-count"] = argv[++i];
+        } else if ((arg == "-h" || arg == "--hmm") && i + 1 < argc) {
+            args["hmm-file"] = argv[++i];
+        } else if ((arg == "-w" || arg == "--window") && i + 1 < argc) {
+            args["window-size"] = argv[++i];
+        } else if (arg == "--min-cnv" && i + 1 < argc) {
+            args["min-cnv"] = argv[++i];
+        } else if ((arg == "-e" || arg == "--eth") && i + 1 < argc) {
+            args["eth"] = argv[++i];
+        } else if ((arg == "-p" || arg == "--pfb") && i + 1 < argc) {
+            args["pfb-file"] = argv[++i];
+        } else if (arg == "--save-cnv") {
+            args["save-cnv"] = "true";
+        } else if (arg == "--debug") {
+            args["debug"] = "true";
+        } else if ((arg == "-v" || arg == "--version")) {
+            std::cout << "ContextSV version " << VERSION << std::endl;
+            exit(0);
+        } else if (arg == "-h" || arg == "--help") {
+            printUsage(argv[0]);
+            exit(0);
+        } else {
+            std::cerr << "Unknown option: " << arg << std::endl;
+        }
+    }
+
+    // Check for required arguments
+    bool hasLR = args.find("bam-file") != args.end();
+    bool hasOutput = args.find("output-dir") != args.end();
+    bool hasRef = args.find("ref-file") != args.end();
+    bool hasSNPs = args.find("snps-file") != args.end();
+    bool requiredArgs = hasLR && hasOutput && hasRef && hasSNPs;
+    if (!requiredArgs) {
+        std::cerr << "Missing required argument(s): -b/--bam, -r/--ref, -s/--snp, -o/--outdir" << std::endl;
+        exit(1);
+    }
+
+    return args;
+}
+
 int main(int argc, char* argv[]) {
-    if (argc < 6) {
-        std::cerr << "Usage: " << argv[0] << " <bam_file> <ref_file> <vcf_file> <output_dir> <thread_count>" << std::endl;
-        return 1;
-    }
-
-    std::string bamFile = argv[1];
-    std::string refFile = argv[2];
-    std::string vcfFile = argv[3];
-    std::string outputDir = argv[4];
-    int threadCount = std::stoi(argv[5]);
-
-    std::string hmmFile = "";
-    int windowSize = 2500;
-    int minCNV = 2500;
-    std::string eth = "";
-    std::string pfbFile = "";
-    if (argc == 11) {
-        hmmFile = argv[6];
-        windowSize = std::stoi(argv[7]);
-        minCNV = std::stoi(argv[8]);
-        eth = argv[9];
-        pfbFile = argv[10];
-    }
-    
-    runContextSV(bamFile, refFile, vcfFile, outputDir, threadCount, hmmFile, windowSize, minCNV, eth, pfbFile);
-    
-    //std::string hmmFile = argv[6];
-    //int windowSize = std::stoi(argv[7]);
-    //int minCNV = std::stoi(argv[8]);
-    //std::string eth = argv[9];
-    //std::string pfbFile = argv[10];
-    
-    //runContextSV(bamFile, refFile, vcfFile, outputDir, threadCount, "", 2500, 2500, "", "");
+    auto args = parseArguments(argc, argv);
+    runContextSV(args);
 
     return 0;
 }

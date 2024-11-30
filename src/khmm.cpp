@@ -459,17 +459,6 @@ CHMM ReadCHMM(const std::string filename)
 		throw std::runtime_error("Error reading A");
 	}
 
-	// Print A
-	// std::cout << "A: " << std::endl;
-	// for (int i = 0; i < hmm.N; i++)
-	// {
-	// 	for (int j = 0; j < hmm.N; j++)
-	// 	{
-	// 		std::cout << std::setprecision(10) << hmm.A[i][j] << " ";
-	// 	}
-	// 	std::cout << std::endl;
-	// }
-
 	// Read B
 	std::getline(file, line);
 	if (line != "B:")
@@ -494,13 +483,6 @@ CHMM ReadCHMM(const std::string filename)
 		throw std::runtime_error("Error reading pi");
 	}
 
-	// Print pi
-	// std::cout << "pi: ";
-	// for (int i = 0; i < hmm.N; i++)
-	// {
-	// 	std::cout << std::setprecision(10) << hmm.pi[i] << " ";
-	// }
-
 	// Read B1_mean
 	std::getline(file, line);
 	if (line != "B1_mean:")
@@ -512,13 +494,6 @@ CHMM ReadCHMM(const std::string filename)
 	{
 		throw std::runtime_error("Error reading B1_mean");
 	}
-
-	// Print B1_mean
-	// std::cout << "B1_mean: ";
-	// for (int i = 0; i < hmm.N; i++)
-	// {
-	// 	std::cout << std::setprecision(10) << hmm.B1_mean[i] << " ";
-	// }
 
 	// Read B1_sd
 	std::getline(file, line);
@@ -532,13 +507,6 @@ CHMM ReadCHMM(const std::string filename)
 		throw std::runtime_error("Error reading B1_sd");
 	}
 
-	// Print B1_sd
-	// std::cout << "B1_sd: ";
-	// for (int i = 0; i < hmm.N; i++)
-	// {
-	// 	std::cout << std::setprecision(10) << hmm.B1_sd[i] << " ";
-	// }
-
 	// Read B1_uf
 	std::getline(file, line);
 	if (line != "B1_uf:")
@@ -551,9 +519,6 @@ CHMM ReadCHMM(const std::string filename)
 	} catch (const std::invalid_argument& e) {
 		throw std::runtime_error("Error reading B1_uf");
 	}
-
-	// Print B1_uf
-	// std::cout << "B1_uf: " << std::setprecision(10) << hmm.B1_uf << std::endl;
 
 	// Read B2_mean
 	std::getline(file, line);
@@ -591,9 +556,6 @@ CHMM ReadCHMM(const std::string filename)
 	} catch (const std::invalid_argument& e) {
 		throw std::runtime_error("Error reading B2_uf");
 	}
-
-	// Print B2_uf
-	// std::cout << "B2_uf: " << std::setprecision(10) << hmm.B2_uf << std::endl;
 
 	return hmm;
 }
