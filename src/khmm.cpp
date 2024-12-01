@@ -285,10 +285,6 @@ std::pair<std::vector<int>, double> ViterbiLogNP_CHMM(CHMM hmm, int T, std::vect
 	// Threshold any zero values to avoid calculation issues.
 	for (i = 1; i <= hmm.N; i++)
 	{
-		// if (hmm.pi[i] == 0)
-		// 	hmm.pi[i] = 1e-9; /*eliminate problems with zero probability*/
-		// hmm.pi[i] = log(hmm.pi[i]);  // Convert to log probability due to underflow
-
 		// Update to 0-based indexing
 		if (hmm.pi[i-1] == 0) {
 			hmm.pi[i-1] = 1e-9; /*eliminate problems with zero probability*/

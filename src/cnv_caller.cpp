@@ -208,18 +208,11 @@ std::tuple<double, SVType, std::string, bool> CNVCaller::runCopyNumberPrediction
 }
 
 
-void CNVCaller::runCIGARCopyNumberPrediction(std::string chr, std::set<SVCall> &sv_candidates, int min_length, const CHMM& hmm, double mean_chr_cov, std::vector<uint32_t>& pos_depth_map)
+void CNVCaller::runCIGARCopyNumberPrediction(std::string chr, std::vector<SVCall> &sv_candidates, const CHMM& hmm, double mean_chr_cov, std::vector<uint32_t>& pos_depth_map)
 {
+    int min_length = this->input_data.getMinCNVLength();
     int window_size = this->input_data.getWindowSize();
-    // double mean_chr_cov = this->mean_chr_cov;  
-    // printMessage("Predicting CIGAR string copy number states for chromosome " + chr + "...");
-    runCIGARCopyNumberPredictionChunk(chr, sv_candidates, hmm, window_size, mean_chr_cov, pos_depth_map);
-    // printMessage("Finished predicting copy number states for chromosome " + chr + "...");
-}
 
-void CNVCaller::runCIGARCopyNumberPredictionChunk(std::string chr, std::set<SVCall>& sv_chunk, const CHMM& hmm, int window_size, double mean_chr_cov, std::vector<uint32_t>& pos_depth_map)
-{
-    // printMessage("Running copy number prediction for " + std::to_string(sv_chunk.size()) + " SV candidates on chromosome " + chr + "...");
     // Map with counts for each CNV type
     std::map<int, int> cnv_type_counts;
     for (int i = 0; i < 6; i++)
@@ -228,7 +221,7 @@ void CNVCaller::runCIGARCopyNumberPredictionChunk(std::string chr, std::set<SVCa
     }
     
     // Loop through each SV candidate and predict the copy number state
-    for (auto& sv_call : sv_chunk)
+    for (auto& sv_call : sv_candidates)
     {
 
         // Get the SV candidate
@@ -243,7 +236,7 @@ void CNVCaller::runCIGARCopyNumberPredictionChunk(std::string chr, std::set<SVCa
         }
 
         // Skip if not the minimum length for CNV predictions
-        if ((end_pos - start_pos) < (uint32_t)this->input_data.getMinCNVLength())
+        if ((end_pos - start_pos) < (uint32_t) min_length)
         {
             continue;
         }
@@ -322,10 +315,15 @@ void CNVCaller::runCIGARCopyNumberPredictionChunk(std::string chr, std::set<SVCa
 
         // Update the SV copy number data if not unknown
         // printMessage("Updating SV copy number data for SV " + chr + ":" + std::to_string((int)start_pos) + "-" + std::to_string((int)end_pos) + "...");
-        if (updated_sv_type != SVType::UNKNOWN)
+        if (updated_sv_type != SVType::UNKNOWN && updated_sv_type != SVType::NEUTRAL)
         {
             std::string sv_type_str = getSVTypeString(updated_sv_type);
-            addSVCall(sv_chunk, sv_call.start, sv_call.end, sv_type_str, ".", data_type, genotype, likelihood);
+            sv_call.sv_type = sv_type_str;
+            sv_call.data_type = data_type;
+            sv_call.genotype = genotype;
+            sv_call.hmm_likelihood = likelihood;
+            sv_call.support = 1;
+            // addSVCall(sv_chunk, sv_call.start, sv_call.end, sv_type_str, ".", data_type, genotype, likelihood);
         }
 
         // Save the SV calls as a TSV file if enabled, if the SV type is

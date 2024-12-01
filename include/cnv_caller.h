@@ -49,11 +49,6 @@ class CNVCaller {
         mutable std::mutex snp_file_mtx;  // SNP file mutex
         mutable std::mutex pfb_file_mtx;  // Population frequency file mutex
         mutable std::mutex bam_file_mtx;  // BAM file mutex
-        
-        // CHMM hmm;
-        SNPData snp_data;
-        // double mean_chr_cov = 0.0;
-        // std::unordered_map<uint32_t, int> pos_depth_map;  // Read depth map
 
         // Define a map of CNV genotypes by HMM predicted state.
         // We only use the first 3 genotypes (0/0, 0/1, 1/1) for the VCF output.
@@ -85,9 +80,6 @@ class CNVCaller {
 
         void querySNPs(std::string chr, uint32_t start, uint32_t end, std::set<uint32_t>& snp_pos, std::unordered_map<uint32_t, double>& snp_baf, std::unordered_map<uint32_t, double>& snp_pfb);
 
-        // Run copy number prediction for a chunk of SV candidates from CIGAR strings
-        void runCIGARCopyNumberPredictionChunk(std::string chr, std::set<SVCall>& sv_chunk, const CHMM& hmm, int window_size, double mean_chr_cov, std::vector<uint32_t>& pos_depth_map);
-
         // Split a region into chunks for parallel processing
         std::vector<std::string> splitRegionIntoChunks(std::string chr, uint32_t start_pos, uint32_t end_pos, int chunk_count);
 
@@ -99,7 +91,7 @@ class CNVCaller {
         std::tuple<double, SVType, std::string, bool> runCopyNumberPrediction(std::string chr, const CHMM& hmm, uint32_t start_pos, uint32_t end_pos, double mean_chr_cov, std::vector<uint32_t>& pos_depth_map);
 
         // Run copy number prediction for SVs meeting the minimum length threshold obtained from CIGAR strings
-        void runCIGARCopyNumberPrediction(std::string chr, std::set<SVCall>& sv_candidates, int min_length, const CHMM& hmm, double mean_chr_cov, std::vector<uint32_t>& pos_depth_map);
+        void runCIGARCopyNumberPrediction(std::string chr, std::vector<SVCall>& sv_candidates, const CHMM& hmm, double mean_chr_cov, std::vector<uint32_t>& pos_depth_map);
 
         // Calculate the mean chromosome coverage
         std::pair<double, std::vector<uint32_t>> calculateMeanChromosomeCoverage(std::string chr, uint32_t chr_len);
