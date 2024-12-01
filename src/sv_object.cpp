@@ -107,14 +107,17 @@ void mergeSVs(std::set<SVCall>& sv_calls) {
     }
 
     // Add the last merged SV call
-    printMessage("Saving SV call: " + std::to_string(current_merge.start) + "-" + std::to_string(current_merge.end) + " with likelihood " + std::to_string(current_merge.hmm_likelihood));
+    // printMessage("Saving SV call: " + std::to_string(current_merge.start) + "-" + std::to_string(current_merge.end) + " with likelihood " + std::to_string(current_merge.hmm_likelihood));
     merged_sv_calls.push_back(current_merge);
 
-    // Update the SV calls
-    sv_calls.clear();
-    for (const auto& sv_call : merged_sv_calls) {
-        sv_calls.insert(sv_call);
-    }
+    // Replace contents of the SV calls
+    sv_calls = std::set<SVCall>(merged_sv_calls.begin(), merged_sv_calls.end());
+
+    // // Update the SV calls
+    // sv_calls.clear();
+    // for (const auto& sv_call : merged_sv_calls) {
+    //     sv_calls.insert(sv_call);
+    // }
     int updated_size = sv_calls.size();
     std::cout << "Merged " << initial_size << " SV calls into " << updated_size << " SV calls" << std::endl;
 }
