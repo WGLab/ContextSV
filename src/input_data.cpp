@@ -105,7 +105,7 @@ std::vector<std::string> InputData::getRefGenomeChromosomes()
     return this->fasta_query.getChromosomes();
 }
 
-int64_t InputData::getRefGenomeChromosomeLength(std::string chr)
+uint32_t InputData::getRefGenomeChromosomeLength(std::string chr)
 {
     return this->fasta_query.getChromosomeLength(chr);
 }

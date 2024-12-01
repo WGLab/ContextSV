@@ -38,7 +38,10 @@ int SVCaller::readNextAlignment(samFile *fp_in, hts_itr_t *itr, bam1_t *bam1)
 }
 
 // RegionData SVCaller::detectSVsFromRegion(std::string region)
-std::tuple<std::set<SVCall>, PrimaryMap, SuppMap> SVCaller::detectCIGARSVs(samFile* fp_in, hts_idx_t* idx, bam_hdr_t* bamHdr, const std::string& region)
+// std::tuple<std::set<SVCall>, PrimaryMap, SuppMap>
+// SVCaller::detectCIGARSVs(samFile* fp_in, hts_idx_t* idx, bam_hdr_t* bamHdr,
+// const std::string& region)
+void SVCaller::detectCIGARSVs(samFile* fp_in, hts_idx_t* idx, bam_hdr_t* bamHdr, const std::string& region, std::set<SVCall>& sv_calls, PrimaryMap& primary_alignments, SuppMap& supplementary_alignments)
 {
     // Create a read and iterator for the region
     bam1_t *bam1 = bam_init1();
@@ -58,10 +61,10 @@ std::tuple<std::set<SVCall>, PrimaryMap, SuppMap> SVCaller::detectCIGARSVs(samFi
     }
 
     // Main loop to process the alignments
-    std::set<SVCall> sv_calls;
+    // std::set<SVCall> sv_calls;
     int num_alignments = 0;
-    PrimaryMap primary_alignments;
-    SuppMap supplementary_alignments;
+    // PrimaryMap primary_alignments;
+    // SuppMap supplementary_alignments;
     while (readNextAlignment(fp_in, itr, bam1) >= 0) {
 
         // Skip secondary and unmapped alignments, duplicates, QC failures, and low mapping quality
@@ -80,13 +83,15 @@ std::tuple<std::set<SVCall>, PrimaryMap, SuppMap> SVCaller::detectCIGARSVs(samFi
             bool fwd_strand = !(bam1->core.flag & BAM_FREVERSE);
 
             // Call SVs directly from the CIGAR string
-            std::tuple<std::unordered_map<int, int>, int32_t, int32_t> query_info = this->detectSVsFromCIGAR(bamHdr, bam1, sv_calls, true);
-            std::unordered_map<int, int> match_map = std::get<0>(query_info);
+            std::tuple<std::vector<int>, int32_t, int32_t> query_info;
+            this->detectSVsFromCIGAR(bamHdr, bam1, sv_calls, query_info, true);
+            // std::tuple<std::vector<int>, int32_t, int32_t> query_info = this->detectSVsFromCIGAR(bamHdr, bam1, sv_calls, true);
+            const std::vector<int>& match_map = std::get<0>(query_info);
             int32_t query_start = std::get<1>(query_info);
             int32_t query_end = std::get<2>(query_info);
 
             // Add the primary alignment to the map
-            AlignmentData alignment(chr, start, end, ".", query_start, query_end, match_map, fwd_strand);
+            AlignmentData alignment(chr, start, end, query_start, query_end, match_map, fwd_strand);
             primary_alignments[qname] = alignment;
 
         // Process supplementary alignments
@@ -99,13 +104,16 @@ std::tuple<std::set<SVCall>, PrimaryMap, SuppMap> SVCaller::detectCIGARSVs(samFi
             bool fwd_strand = !(bam1->core.flag & BAM_FREVERSE);
 
             // Get CIGAR string information, but don't call SVs
-            std::tuple<std::unordered_map<int, int>, int32_t, int32_t> query_info = this->detectSVsFromCIGAR(bamHdr, bam1, sv_calls, false);
-            const std::unordered_map<int, int>& match_map = std::get<0>(query_info);
+            // std::tuple<std::vector<int>, int32_t, int32_t> query_info =
+            // this->detectSVsFromCIGAR(bamHdr, bam1, sv_calls, false);
+            std::tuple<std::vector<int>, int32_t, int32_t> query_info;
+            this->detectSVsFromCIGAR(bamHdr, bam1, sv_calls, query_info, false);
+            const std::vector<int>& match_map = std::get<0>(query_info);
             int32_t query_start = std::get<1>(query_info);
             int32_t query_end = std::get<2>(query_info);
 
             // Add the supplementary alignment to the map
-            AlignmentData alignment(chr, start, end, ".", query_start, query_end, match_map, fwd_strand);
+            AlignmentData alignment(chr, start, end, query_start, query_end, match_map, fwd_strand);
             supplementary_alignments[qname].emplace_back(alignment);
         }
 
@@ -116,35 +124,57 @@ std::tuple<std::set<SVCall>, PrimaryMap, SuppMap> SVCaller::detectCIGARSVs(samFi
     hts_itr_destroy(itr);
     bam_destroy1(bam1);
 
-    return std::make_tuple(sv_calls, primary_alignments, supplementary_alignments);
+    // return std::make_tuple(sv_calls, primary_alignments, supplementary_alignments);
 }
 
-double SVCaller::calculateMismatchRate(std::unordered_map<int, int> &match_map, int32_t start, int32_t end)
+double SVCaller::calculateMismatchRate(const std::vector<int>& mismatch_map, int32_t start, int32_t end)
 {
+    start = std::max(start, 0);
+    end = std::min(end, (int32_t)mismatch_map.size() - 1);
     int match_count = 0;
     int mismatch_count = 0;
+    int MATCH = 1;
+    int MISMATCH = -1;
     for (int i = start; i <= end; i++) {
-        if (match_map.find(i) != match_map.end()) {
-            if (match_map[i] == 1) {
-                match_count++;
-            } else {
-                mismatch_count++;
-            }
+        if (mismatch_map[i] == MATCH) {
+            match_count++;
+        } else if (mismatch_map[i] == MISMATCH) {
+            mismatch_count++;
         }
     }
-    double mismatch_rate = (double)mismatch_count / (double)(match_count + mismatch_count);
+
+    // Avoid division by zero
+    if (match_count + mismatch_count == 0) {
+        return 0.0;
+    }
+
+    double mismatch_rate = static_cast<double>(mismatch_count) / static_cast<double>(match_count + mismatch_count);
+    // int match_count = 0;
+    // int mismatch_count = 0;
+    // for (int i = start; i <= end; i++) {
+    //     if (match_map.find(i) != match_map.end()) {
+    //         if (match_map[i] == 1) {
+    //             match_count++;
+    //         } else {
+    //             mismatch_count++;
+    //         }
+    //     }
+    // }
+    // double mismatch_rate = (double)mismatch_count / (double)(match_count + mismatch_count);
 
     return mismatch_rate;
 }
 
-std::tuple<std::unordered_map<int, int>, int32_t, int32_t> SVCaller::detectSVsFromCIGAR(bam_hdr_t* header, bam1_t* alignment, std::set<SVCall>& sv_calls, bool is_primary)
+void SVCaller::detectSVsFromCIGAR(bam_hdr_t* header, bam1_t* alignment, std::set<SVCall>& sv_calls, std::tuple<std::vector<int>, int32_t, int32_t>& query_info, bool is_primary)
 {
     std::string chr = header->target_name[alignment->core.tid];  // Chromosome name
     int32_t pos = alignment->core.pos;  // Leftmost position of the alignment in the reference genome (0-based)
     uint32_t* cigar = bam_get_cigar(alignment);  // CIGAR array
     int cigar_len = alignment->core.n_cigar;
     int query_pos = 0;
-    std::unordered_map<int, int> query_match_map;  // Query position to match/mismatch (1/0) map
+    // std::unordered_map<int, int> query_match_map;  // Query position to
+    // match/mismatch (1/0) map
+    std::vector<int> query_match_map(alignment->core.l_qseq, 0);  // Query position to match/mismatch (1/0) map
 
     // Loop through the CIGAR string, process operations, detect SVs (primary
     // only), update clipped base support, calculate sequence identity for
@@ -250,13 +280,15 @@ std::tuple<std::unordered_map<int, int>, int32_t, int32_t> SVCaller::detectSVsFr
         }
 
         // Update match/mismatch query map
+        int MATCH = 1;
+        int MISMATCH = -1;
         if (op == BAM_CEQUAL) {
             for (int j = 0; j < op_len; j++) {
-                query_match_map[query_pos + j] = 1;
+                query_match_map[query_pos + j] = MATCH;
             }
         } else if (op == BAM_CDIFF) {
             for (int j = 0; j < op_len; j++) {
-                query_match_map[query_pos + j] = 0;
+                query_match_map[query_pos + j] = MISMATCH;
             }
         } else if (op == BAM_CMATCH) {
             // Get the read sequence
@@ -279,9 +311,9 @@ std::tuple<std::unordered_map<int, int>, int32_t, int32_t> SVCaller::detectSVsFr
             // Compare the two sequences and update the mismatch map
             for (int j = 0; j < op_len; j++) {
                 if (cmatch_seq_str[j] != cmatch_ref_str[j]) {
-                    query_match_map[query_pos + j] = 0;
+                    query_match_map[query_pos + j] = MISMATCH;
                 } else {
-                    query_match_map[query_pos + j] = 1;
+                    query_match_map[query_pos + j] = MATCH;
                 }
             }
         }
@@ -308,7 +340,9 @@ std::tuple<std::unordered_map<int, int>, int32_t, int32_t> SVCaller::detectSVsFr
 
     query_end = query_pos;  // Last alignment position in the query
 
-    return std::tuple<std::unordered_map<int, int>, int32_t, int32_t>(query_match_map, query_start, query_end);
+    query_info = std::tuple<std::vector<int>, int32_t, int32_t>(std::move(query_match_map), query_start, query_end);
+
+    // return std::tuple<std::vector<int>, int32_t, int32_t>(query_match_map, query_start, query_end);
 }
 
 void SVCaller::processChromosome(const std::string& chr, const std::string& bam_filepath, const CHMM& hmm, std::set<SVCall>& combined_sv_calls, int min_cnv_length)
@@ -337,6 +371,7 @@ void SVCaller::processChromosome(const std::string& chr, const std::string& bam_
     // Split the chromosome into chunks for memory efficiency
     std::vector<std::string> region_chunks;
     int chunk_count = 100;
+    uint32_t chr_len = this->input_data.getRefGenomeChromosomeLength(chr);
     if (this->input_data.isRegionSet()) {
 
         // Use one chunk for the specified region
@@ -348,7 +383,6 @@ void SVCaller::processChromosome(const std::string& chr, const std::string& bam_
         // std::cout << "Using specified region " << chunk << "..." << std::endl;
         
     } else {
-        int chr_len = this->input_data.getRefGenomeChromosomeLength(chr);
         int chunk_size = std::ceil((double)chr_len / chunk_count);
         for (int i = 0; i < chunk_count; i++) {
             int start = i * chunk_size + 1;  // 1-based
@@ -366,7 +400,8 @@ void SVCaller::processChromosome(const std::string& chr, const std::string& bam_
     // std::cout << "Loading chromosome data for copy number predictions..." << std::endl;
     printMessage(chr + ": Loading chromosome data...");
     CNVCaller cnv_caller(this->input_data);
-    cnv_caller.loadChromosomeData(chr);
+    // cnv_caller.loadChromosomeData(chr);
+    std::pair<double, std::vector<uint32_t>> chr_data = cnv_caller.calculateMeanChromosomeCoverage(chr, chr_len);
 
     // Process each chunk one at a time
     // std::cout << "Processing " << region_chunks.size() << " region(s) for chromosome " << chr << "..." << std::endl;
@@ -376,10 +411,13 @@ void SVCaller::processChromosome(const std::string& chr, const std::string& bam_
     for (const auto& sub_region : region_chunks) {
         current_region++;
         printMessage(chr + ": CIGAR SVs...");
-        std::tuple<std::set<SVCall>, PrimaryMap, SuppMap> region_data = this->detectCIGARSVs(fp_in, idx, bamHdr, sub_region);
-        std::set<SVCall>& subregion_sv_calls = std::get<0>(region_data);
-        PrimaryMap& primary_map = std::get<1>(region_data);
-        SuppMap& supp_map = std::get<2>(region_data);
+        PrimaryMap primary_map;
+        SuppMap supp_map;
+        std::set<SVCall> subregion_sv_calls;
+        this->detectCIGARSVs(fp_in, idx, bamHdr, sub_region, subregion_sv_calls, primary_map, supp_map);
+        // std::set<SVCall>& subregion_sv_calls = std::get<0>(region_data);
+        // PrimaryMap& primary_map = std::get<1>(region_data);
+        // SuppMap& supp_map = std::get<2>(region_data);
         // std::cout << "Merge CIGAR SV calls from " << sub_region << "..." << std::endl;
         printMessage(chr + ": Merging CIGAR...");
         mergeSVs(subregion_sv_calls);
@@ -391,13 +429,13 @@ void SVCaller::processChromosome(const std::string& chr, const std::string& bam_
         if (region_sv_count > 0) {
             // std::cout << "Running copy number variant detection from CIGAR string SVs..." << std::endl;
             printMessage(chr + ": CIGAR predictions...");
-            cnv_caller.runCIGARCopyNumberPrediction(chr, subregion_sv_calls, min_cnv_length, hmm);
+            cnv_caller.runCIGARCopyNumberPrediction(chr, subregion_sv_calls, min_cnv_length, hmm, chr_data.first, chr_data.second);
         }
 
         // Run split-read SV and copy number variant predictions
         // std::cout << "Detecting copy number variants from split reads..." << std::endl;
         printMessage(chr + ": Split read SVs...");
-        this->detectSVsFromSplitReads(subregion_sv_calls, primary_map, supp_map, cnv_caller, hmm);
+        this->detectSVsFromSplitReads(subregion_sv_calls, primary_map, supp_map, cnv_caller, hmm, chr_data.first, chr_data.second);
 
         // Merge the SV calls from the current region
         // std::cout << "Merge SV calls from " << sub_region << "..." << std::endl;
@@ -418,7 +456,7 @@ void SVCaller::processChromosome(const std::string& chr, const std::string& bam_
     sam_close(fp_in);
 }
 
-std::unordered_map<std::string, std::set<SVCall>> SVCaller::run()
+void SVCaller::run()
 {
     // Get the chromosomes to process
     std::vector<std::string> chromosomes;
@@ -505,12 +543,12 @@ std::unordered_map<std::string, std::set<SVCall>> SVCaller::run()
     std::cout << "Saving SVs to VCF..." << std::endl;
     this->saveToVCF(whole_genome_sv_calls);
 
-    return whole_genome_sv_calls;
+    // return whole_genome_sv_calls;
 }
 
 
 // Detect SVs from split read alignments
-void SVCaller::detectSVsFromSplitReads(std::set<SVCall>& sv_calls, PrimaryMap& primary_map, SuppMap& supp_map, CNVCaller& cnv_caller, const CHMM& hmm)
+void SVCaller::detectSVsFromSplitReads(std::set<SVCall>& sv_calls, PrimaryMap& primary_map, SuppMap& supp_map, CNVCaller& cnv_caller, const CHMM& hmm, double mean_chr_cov, std::vector<uint32_t>& pos_depth_map)
 {
     // Find split-read SV evidence
     int sv_count = 0;
@@ -521,7 +559,6 @@ void SVCaller::detectSVsFromSplitReads(std::set<SVCall>& sv_calls, PrimaryMap& p
         std::string primary_chr = std::get<0>(primary_alignment);
         int32_t primary_start = std::get<1>(primary_alignment);
         int32_t primary_end = std::get<2>(primary_alignment);
-        std::unordered_map<int, int> primary_match_map = std::get<6>(primary_alignment);
 
         // Skip primary alignments that do not have supplementary alignments
         if (supp_map.find(qname) == supp_map.end()) {
@@ -545,11 +582,11 @@ void SVCaller::detectSVsFromSplitReads(std::set<SVCall>& sv_calls, PrimaryMap& p
             }
 
             // Inversion detection
-            bool is_opposite_strand = std::get<7>(primary_alignment) != std::get<7>(*it);
+            bool is_opposite_strand = std::get<6>(primary_alignment) != std::get<6>(*it);
             if (is_opposite_strand) {
                 if (supp_length >= min_cnv_length) {
-                    SVCandidate sv_candidate(supp_start+1, supp_end+1, ".");
-                    std::tuple<double, SVType, std::string, bool> result = cnv_caller.runCopyNumberPrediction(primary_chr, sv_candidate, hmm);
+                    // SVCandidate sv_candidate(supp_start+1, supp_end+1, ".");
+                    std::tuple<double, SVType, std::string, bool> result = cnv_caller.runCopyNumberPrediction(primary_chr, hmm, supp_start+1, supp_end+1, mean_chr_cov, pos_depth_map);
                     double supp_lh = std::get<0>(result);
                     SVType supp_type = std::get<1>(result);
                     if (supp_type == SVType::NEUTRAL) {
@@ -579,8 +616,6 @@ void SVCaller::detectSVsFromSplitReads(std::set<SVCall>& sv_calls, PrimaryMap& p
         supp_end = std::get<2>(largest_supp_alignment);
         primary_start = std::get<1>(primary_alignment);
         primary_end = std::get<2>(primary_alignment);
-        SVCandidate split_boundary;
-        SVCandidate split_gap;
         bool gap_exists = false;
         int32_t boundary_left, boundary_right, gap_left, gap_right;
         if (primary_before_supp) {
@@ -599,15 +634,15 @@ void SVCaller::detectSVsFromSplitReads(std::set<SVCall>& sv_calls, PrimaryMap& p
         
         // Run copy number variant predictions on the boundary if large enough
         if (boundary_right - boundary_left >= min_cnv_length) {
-            split_boundary = SVCandidate(boundary_left, boundary_right, ".");
-            std::tuple<double, SVType, std::string, bool> bd_result = cnv_caller.runCopyNumberPrediction(primary_chr, split_boundary, hmm);
+            // split_boundary = SVCandidate(boundary_left, boundary_right, ".");
+            std::tuple<double, SVType, std::string, bool> bd_result = cnv_caller.runCopyNumberPrediction(primary_chr, hmm, boundary_left, boundary_right, mean_chr_cov, pos_depth_map);
             double bd_lh = std::get<0>(bd_result);
             SVType bd_type = std::get<1>(bd_result);
 
             // Run copy number variant predictions on the gap if it exists
             if (gap_exists && gap_right - gap_left >= min_cnv_length) {
-                split_gap = SVCandidate(gap_left, gap_right, ".");
-                std::tuple<double, SVType, std::string, bool> gap_result = cnv_caller.runCopyNumberPrediction(primary_chr, split_gap, hmm);
+                // split_gap = SVCandidate(gap_left, gap_right, ".");
+                std::tuple<double, SVType, std::string, bool> gap_result = cnv_caller.runCopyNumberPrediction(primary_chr, hmm, gap_left, gap_right, mean_chr_cov, pos_depth_map);
                 double gap_lh = std::get<0>(gap_result);
                 SVType gap_type = std::get<1>(gap_result);
 
@@ -840,16 +875,26 @@ void SVCaller::trimOverlappingAlignments(AlignmentData& primary_alignment, Align
 {
     // Get the start and end read positions for the primary and supplementary
     // alignments
-    int32_t primary_query_start = std::get<4>(primary_alignment);
-    int32_t primary_query_end = std::get<5>(primary_alignment);
-    int32_t supp_query_start = std::get<4>(supp_alignment);
-    int32_t supp_query_end = std::get<5>(supp_alignment);
-    std::unordered_map<int, int>& primary_match_map = std::get<6>(primary_alignment);
-    std::unordered_map<int, int>& supp_match_map = std::get<6>(supp_alignment);
     int32_t primary_alignment_start = std::get<1>(primary_alignment);
     int32_t primary_alignment_end = std::get<2>(primary_alignment);
     int32_t supp_alignment_start = std::get<1>(supp_alignment);
     int32_t supp_alignment_end = std::get<2>(supp_alignment);
+    int32_t primary_query_start = std::get<3>(primary_alignment);
+    int32_t primary_query_end = std::get<4>(primary_alignment);
+    int32_t supp_query_start = std::get<3>(supp_alignment);
+    int32_t supp_query_end = std::get<4>(supp_alignment);
+    const std::vector<int>& primary_match_map = std::get<5>(primary_alignment);
+    const std::vector<int>& supp_match_map = std::get<5>(supp_alignment);
+    // int32_t primary_query_start = std::get<4>(primary_alignment);
+    // int32_t primary_query_end = std::get<5>(primary_alignment);
+    // int32_t supp_query_start = std::get<4>(supp_alignment);
+    // int32_t supp_query_end = std::get<5>(supp_alignment);
+    // const std::vector<int>& primary_match_map = std::get<6>(primary_alignment);
+    // const std::vector<int>& supp_match_map = std::get<6>(supp_alignment);
+    // int32_t primary_alignment_start = std::get<1>(primary_alignment);
+    // int32_t primary_alignment_end = std::get<2>(primary_alignment);
+    // int32_t supp_alignment_start = std::get<1>(supp_alignment);
+    // int32_t supp_alignment_end = std::get<2>(supp_alignment);
 
     // Check if the alignments overlap
     bool primary_before_supp = primary_query_start < supp_query_start;

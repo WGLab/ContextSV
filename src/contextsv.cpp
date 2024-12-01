@@ -23,7 +23,9 @@ int ContextSV::run()
     SVCaller sv_caller(this->input_data);  // Create an SV caller object
     // SVCaller sv_caller(*this->input_data);  // Create an SV caller object
     // SVData sv_calls = sv_caller.run();  // Run the SV caller
-    std::unordered_map<std::string, std::set<SVCall>> sv_calls = sv_caller.run();  // Run the SV caller
+    // std::unordered_map<std::string, std::set<SVCall>> sv_calls =
+    // sv_caller.run();  // Run the SV caller
+    sv_caller.run();  // Run the SV caller
     // std::string output_dir = this->input_data->getOutputDir();  // Get the output directory
     
     // std::cout << "Writing SV calls to file " << output_dir << "/output.vcf..." << std::endl;

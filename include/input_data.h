@@ -40,7 +40,6 @@ class InputData {
 
         // Return a reference to the ReferenceGenome object.
         const ReferenceGenome& getRefGenome() const;
-        // FASTAQuery getRefGenome();
 
         // Query the reference genome for a sequence.
         std::string queryRefGenome(const std::string& chr, uint32_t pos_start, uint32_t pos_end) const;
@@ -49,7 +48,7 @@ class InputData {
         std::vector<std::string> getRefGenomeChromosomes();
 
         // Get a chromosome's length in the reference genome.
-        int64_t getRefGenomeChromosomeLength(std::string chr);
+        uint32_t getRefGenomeChromosomeLength(std::string chr);
 
         // Set the filepath to the text file containing the locations of the
         // VCF files with population frequencies for each chromosome.

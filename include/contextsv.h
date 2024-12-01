@@ -7,8 +7,6 @@
 #define CONTEXTSV_H
 
 #include "input_data.h"
-#include "cnv_data.h"
-#include "sv_data.h"
 
 
 class ContextSV {
