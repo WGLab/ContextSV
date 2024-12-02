@@ -180,7 +180,6 @@ void filterSVsWithLowSupport(std::vector<SVCall>& sv_calls, int min_depth)
     // Remove SV calls with low read depth
     sv_calls.erase(std::remove_if(sv_calls.begin(), sv_calls.end(), [min_depth](const SVCall& sv_call) {
         return sv_call.read_depth < min_depth;
-        // return (sv_call.total_support < min_support && (sv_call.end - sv_call.start) < 20000);
     }), sv_calls.end());
 
     int updated_size = sv_calls.size();

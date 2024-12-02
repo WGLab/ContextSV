@@ -447,8 +447,7 @@ void SVCaller::processChromosome(const std::string& chr, const std::string& bam_
     mergeSVs(combined_sv_calls);
 
     // Insert breakpoint support and filter SVs with low support
-    // filterSVsWithLowSupport(combined_sv_calls, breakpoint_depth, 5);
-    filterSVsWithLowSupport(combined_sv_calls, 10);
+    // filterSVsWithLowSupport(combined_sv_calls, 10);
 
     // Clean up the BAM file, header, and index
     hts_idx_destroy(idx);
