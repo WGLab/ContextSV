@@ -14,7 +14,7 @@ bool SVCall::operator<(const SVCall & other) const
 	return start < other.start || (start == other.start && end < other.end);
 }
 
-void addSVCall(std::vector<SVCall>& sv_calls, uint32_t start, uint32_t end, std::string sv_type, std::string alt_allele, std::string data_type, std::string genotype, double hmm_likelihood)
+void addSVCall(std::vector<SVCall>& sv_calls, uint32_t start, uint32_t end, std::string sv_type, std::string alt_allele, std::string data_type, std::string genotype, double hmm_likelihood, int read_depth)
 {
     // Catch underflow errors
     if (start > 4000000000 || end > 4000000000) {
@@ -31,14 +31,15 @@ void addSVCall(std::vector<SVCall>& sv_calls, uint32_t start, uint32_t end, std:
     }
 
     // Insert the SV call in sorted order
-    SVCall sv_call{start, end, sv_type, alt_allele, data_type, genotype, hmm_likelihood, 1, 0};
+    SVCall sv_call{start, end, sv_type, alt_allele, data_type, genotype, hmm_likelihood, read_depth, 1};
     auto it = std::lower_bound(sv_calls.begin(), sv_calls.end(), sv_call);
-    // sv_calls.insert(it, sv_call);
 
     // Update the SV type if the SV call already exists (if likelihood is
     // higher)
     if (it != sv_calls.end() && it->start == start && it->end == end)
     {
+        it->support += 1;  // Update the read support
+        // printMessage("Updating SV call with length " + std::to_string(end - start) + " and type " + sv_type + " and support " + std::to_string(it->support));
         if (hmm_likelihood != 0.0 && hmm_likelihood > it->hmm_likelihood)
         {
             // Update the SV call
@@ -46,16 +47,10 @@ void addSVCall(std::vector<SVCall>& sv_calls, uint32_t start, uint32_t end, std:
             it->data_type = data_type;
             it->genotype = genotype;
             it->hmm_likelihood = hmm_likelihood;
-            it->support++;  // Update support
-        } else {
-            it->support++;  // Update support
         }
     } else {
         sv_calls.insert(it, sv_call);  // Insert the new SV call
     }
-
-    // printMessage("Adding SV call: " + std::to_string(start) + "-" + std::to_string(end) + " with length " + std::to_string(end - start) + " and type " + sv_type);
-    // sv_calls.insert(SVCall{start, end, sv_type, alt_allele, data_type, genotype, hmm_likelihood, 1});
 }
 
 void updateSVType(std::vector<SVCall>& sv_calls, uint32_t start, uint32_t end, std::string sv_type, std::string data_type, std::string genotype, double hmm_likelihood)
@@ -80,12 +75,10 @@ uint32_t getSVCount(const std::vector<SVCall>& sv_calls)
 
 void concatenateSVCalls(std::vector<SVCall> &target, const std::vector<SVCall>& source)
 {
-    // Efficiently concatenate two sets of SV calls
-    // target.insert(source.begin(), source.end());
     target.insert(target.end(), source.begin(), source.end());
 }
 
-void mergeSVs(std::vector<SVCall>& sv_calls, std::unordered_map<uint32_t, uint32_t>& breakpoint_support)
+void mergeSVs(std::vector<SVCall>& sv_calls)
 {
     if (sv_calls.size() < 2) {
         return;
@@ -96,74 +89,100 @@ void mergeSVs(std::vector<SVCall>& sv_calls, std::unordered_map<uint32_t, uint32
     std::vector<SVCall> merged_sv_calls;
     auto it = sv_calls.begin();
     SVCall current_merge = *it++;
+    double log_lh_eps = 1.0;  // Log likelihood epsilon
     for (; it != sv_calls.end(); ++it) {
         SVCall& next = *it;
 
         // Find overlap
+        // printMessage("[0] Current SV call: " + std::to_string(current_merge.start) + "-" + std::to_string(current_merge.end) + " with likelihood " + std::to_string(current_merge.hmm_likelihood) + " and read depth " + std::to_string(current_merge.read_depth) + " and length " + std::to_string(current_merge.end - current_merge.start) + " and support " + std::to_string(current_merge.support));
+        // printMessage("[0] Next SV call: " + std::to_string(next.start) + "-" + std::to_string(next.end) + " with likelihood " + std::to_string(next.hmm_likelihood) + " and read depth " + std::to_string(next.read_depth) + " and length " + std::to_string(next.end - next.start) + " and support " + std::to_string(next.support));
         if (next.start <= current_merge.end) {
-            // Merge the SV calls if it is a subset
-            if (next.end <= current_merge.end) {
-                continue;
-            }
 
-            // Merge the SV calls based on HMM log likelihood (keep the higher
-            // likelihood), 0.0 indicates no likelihood (Also update support)
-            if (next.hmm_likelihood != 0.0) {
-                if (next.hmm_likelihood > current_merge.hmm_likelihood) {
+            // Merge based on read support
+            if (next.support > current_merge.support) {
+                // Compare only if lengths are within 20% of each other
+                uint32_t current_length = current_merge.end - current_merge.start;
+                uint32_t next_length = next.end - next.start;
+                double length_diff = std::abs((int)current_length - (int)next_length);
+                double length_threshold = 0.2 * (int)current_length;
+                if (length_diff <= length_threshold) {
                     current_merge = next;  // Continue with the next call
+                    // printMessage("Keeping next SV call with support " + std::to_string(next.support));
+                } else {
+                    // Keep the larger SV
+                    if (next_length > current_length) {
+                        current_merge = next;
+                        // printMessage("Keeping next SV call with length " + std::to_string(next_length));
+                    }
                 }
+                // printMessage("Keeping next SV call with support " + std::to_string(next.support));
 
-            // Merge based on support
-            } else if (next.support > current_merge.support) {
-                current_merge = next;  // Continue with the next call
+            } else if (next.support == current_merge.support) {
+                // Merge based on existence of predictions
+                if (next.hmm_likelihood != 0.0 && current_merge.hmm_likelihood == 0.0) {
+                    current_merge = next;  // Continue with the next call
+                    // printMessage("Keeping next SV call with likelihood " + std::to_string(next.hmm_likelihood));
 
-            } else {
-                // Merge based on breakpoint depth
-                uint32_t next_depth = breakpoint_support[next.start] + breakpoint_support[next.end];
-                uint32_t current_depth = breakpoint_support[current_merge.start] + breakpoint_support[current_merge.end];
-                if (next_depth > current_depth) {
-                    current_merge = next;  // Continue with the next call
-                
-                // Merge based on SV length
-                } else if (next.end - next.start > current_merge.end - current_merge.start) {
-                    current_merge = next;  // Continue with the next call
+                // Merge based on prediction log likelihood
+                } else if (next.hmm_likelihood != 0.0 && current_merge.hmm_likelihood != 0.0) {
+                    
+                    // Print all SV information
+                    // printMessage("Current SV call: " + std::to_string(current_merge.start) + "-" + std::to_string(current_merge.end) + " with likelihood " + std::to_string(current_merge.hmm_likelihood) + " and read depth " + std::to_string(current_merge.read_depth) + " and length " + std::to_string(current_merge.end - current_merge.start) + " and support " + std::to_string(current_merge.support));
+                    // printMessage("Next SV call: " + std::to_string(next.start) + "-" + std::to_string(next.end) + " with likelihood " + std::to_string(next.hmm_likelihood) + " and read depth " + std::to_string(next.read_depth) + " and length " + std::to_string(next.end - next.start) + " and support " + std::to_string(next.support));
+                    // printMessage("Comparing likelihoods: " + std::to_string(current_merge.hmm_likelihood) + " vs " + std::to_string(next.hmm_likelihood));
+
+                    // Keep the SV call with the higher likelihood. Compare only if
+                    // lengths are within 20% of each other
+                    uint32_t current_length = current_merge.end - current_merge.start;
+                    uint32_t next_length = next.end - next.start;
+                    double length_diff = std::abs((int)current_length - (int)next_length);
+                    double length_threshold = 0.2 * (int)current_length;
+                    if (length_diff <= length_threshold) {
+                        // printMessage("Length difference is within threshold: " + std::to_string(length_diff) + " <= " + std::to_string(length_threshold));
+
+                        if (next.hmm_likelihood > current_merge.hmm_likelihood) {
+                            current_merge = next;  // Continue with the next call
+                            // printMessage("Keeping next SV call with likelihood " + std::to_string(next.hmm_likelihood));
+                        }
+                    
+                    } else {
+                        // Keep the larger SV
+                        if (next_length > current_length) {
+                            current_merge = next;
+                            // printMessage("[2] Keeping next SV call with length " + std::to_string(next_length));
+                        }
+                    }
                 }
             }
 
         } else {
-            // No overlap: Save the previous SV and continue
+            // No overlap: Save the call and continue
             merged_sv_calls.emplace_back(current_merge);
             current_merge = next;
         }
     }
+    merged_sv_calls.emplace_back(current_merge);  // Save the last call
+    sv_calls = merged_sv_calls;  // Update the SV calls
 
-    // Add the last merged SV call
-    // printMessage("Saving SV call: " + std::to_string(current_merge.start) + "-" + std::to_string(current_merge.end) + " with likelihood " + std::to_string(current_merge.hmm_likelihood));
-    merged_sv_calls.emplace_back(current_merge);
-
-    // Replace contents of the SV calls
-    sv_calls = merged_sv_calls;
-    
     int updated_size = sv_calls.size();
     std::cout << "Merged " << initial_size << " SV calls into " << updated_size << " SV calls" << std::endl;
 }
 
-void filterSVsWithLowSupport(std::vector<SVCall>& sv_calls, std::unordered_map<uint32_t, uint32_t>& breakpoint_support, int min_support)
+void filterSVsWithLowSupport(std::vector<SVCall>& sv_calls, int min_depth)
 {
-    // Insert breakpoint support for each SV call, and remove SV calls with low
-    // support
     int prev_size = sv_calls.size();
-    for (auto& sv_call : sv_calls)
-    {
-        sv_call.total_support = breakpoint_support[sv_call.start] + breakpoint_support[sv_call.end];
-        printMessage("SV call: " + std::to_string(sv_call.start) + "-" + std::to_string(sv_call.end) + " with support " + std::to_string(sv_call.total_support) + " and likelihood " + std::to_string(sv_call.hmm_likelihood) + " and length " + std::to_string(sv_call.end - sv_call.start));
+
+    // Print read depth for each SV call
+    for (const auto& sv_call : sv_calls) {
+        std::cout << "SV call: " << sv_call.start << "-" << sv_call.end << " with depth " << sv_call.read_depth << " and length " << (sv_call.end - sv_call.start) << std::endl;
     }
 
-    // Remove SV calls with low support, unless they are large (> 20 kb)
-    sv_calls.erase(std::remove_if(sv_calls.begin(), sv_calls.end(), [min_support](const SVCall& sv_call) {
-        return (sv_call.total_support < min_support && (sv_call.end - sv_call.start) < 20000);
+    // Remove SV calls with low read depth
+    sv_calls.erase(std::remove_if(sv_calls.begin(), sv_calls.end(), [min_depth](const SVCall& sv_call) {
+        return sv_call.read_depth < min_depth;
+        // return (sv_call.total_support < min_support && (sv_call.end - sv_call.start) < 20000);
     }), sv_calls.end());
 
     int updated_size = sv_calls.size();
-    printMessage("Filtered " + std::to_string(prev_size) + " SV calls to " + std::to_string(updated_size) + " SV calls with support >= " + std::to_string(min_support));
+    printMessage("Filtered " + std::to_string(prev_size) + " SV calls to " + std::to_string(updated_size) + " SV calls with DP >= " + std::to_string(min_depth));
 }

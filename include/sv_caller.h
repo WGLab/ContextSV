@@ -34,32 +34,32 @@ class SVCaller {
 
         // Detect SVs from the CIGAR string of a read alignment, and return the
         // mismatch rate, and the start and end positions of the query sequence
-        void detectSVsFromCIGAR(bam_hdr_t* header, bam1_t* alignment, std::vector<SVCall>& sv_calls, std::tuple<std::vector<int>, uint32_t, uint32_t>& query_info, bool is_primary, std::unordered_map<uint32_t, uint32_t>& breakpoint_depth);
+        void detectSVsFromCIGAR(bam_hdr_t* header, bam1_t* alignment, std::vector<SVCall>& sv_calls, std::tuple<std::vector<int>, uint32_t, uint32_t>& query_info, bool is_primary, const std::vector<uint32_t>& pos_depth_map);
 
         void processChromosome(const std::string& chr, const std::string& bam_filepath, const CHMM& hmm, std::vector<SVCall>& combined_sv_calls, int min_cnv_length);
 
         // Detect SVs at a region from long read alignments. This is used for
         // whole genome analysis running in parallel.
         // RegionData detectSVsFromRegion(std::string region);
-        void detectCIGARSVs(samFile* fp_in, hts_idx_t* idx, bam_hdr_t* bamHdr, const std::string& region, std::vector<SVCall>& sv_calls, PrimaryMap& primary_alignments, SuppMap& supplementary_alignments, std::unordered_map<uint32_t, uint32_t>& breakpoint_depth);
+        void detectCIGARSVs(samFile* fp_in, hts_idx_t* idx, bam_hdr_t* bamHdr, const std::string& region, std::vector<SVCall>& sv_calls, PrimaryMap& primary_alignments, SuppMap& supplementary_alignments, const std::vector<uint32_t>& pos_depth_map);
  
         // Read the next alignment from the BAM file in a thread-safe manner
         int readNextAlignment(samFile *fp_in, hts_itr_t *itr, bam1_t *bam1);
 
         // Detect SVs from split alignments
-        void detectSVsFromSplitReads(std::vector<SVCall>& sv_calls, PrimaryMap& primary_map, SuppMap& supp_map, CNVCaller& cnv_caller, const CHMM& hmm, double mean_chr_cov, std::vector<uint32_t>& pos_depth_map, std::unordered_map<uint32_t, uint32_t>& breakpoint_depth);
+        void detectSVsFromSplitReads(std::vector<SVCall>& sv_calls, PrimaryMap& primary_map, SuppMap& supp_map, CNVCaller& cnv_caller, const CHMM& hmm, double mean_chr_cov, const std::vector<uint32_t>& pos_depth_map);
 
         // Calculate the mismatch rate given a map of query positions to
         // match/mismatch (1/0) values within a specified range of the query
         // sequence
-        // double calculateMismatchRate(std::unordered_map<int, int>& mismatch_map, int32_t start, int32_t end);
         double calculateMismatchRate(const std::vector<int>& mismatch_map, int32_t start, int32_t end);
 
         void saveToVCF(const std::unordered_map<std::string, std::vector<SVCall>>& sv_calls);
 
         void trimOverlappingAlignments(AlignmentData& primary_alignment, AlignmentData& supp_alignment);
 
-        void updateBreakpointDepth(std::unordered_map<uint32_t, uint32_t>& breakpoint_depth, uint32_t start, uint32_t end);
+        // Calculate the read depth (INFO/DP) for a region
+        int calculateReadDepth(const std::vector<uint32_t>& pos_depth_map, uint32_t start, uint32_t end);
 
     public:
         explicit SVCaller(InputData& input_data);

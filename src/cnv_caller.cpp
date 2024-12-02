@@ -41,19 +41,18 @@ CNVCaller::CNVCaller(InputData &input_data)
 }
 
 // Function to call the Viterbi algorithm for the CHMM
-std::pair<std::vector<int>, double> CNVCaller::runViterbi(const CHMM& hmm, SNPData& snp_data)
+void CNVCaller::runViterbi(const CHMM& hmm, SNPData& snp_data, std::pair<std::vector<int>, double>& prediction)
 {
     int data_count = (int) snp_data.pos.size();
     if (data_count == 0)
     {
         throw std::runtime_error("Error: No SNP data found for Viterbi algorithm.");
     }
-    std::pair<std::vector<int>, double> state_sequence = testVit_CHMM(hmm, data_count, snp_data.log2_cov, snp_data.baf, snp_data.pfb);
-    return state_sequence;
+    prediction = testVit_CHMM(hmm, data_count, snp_data.log2_cov, snp_data.baf, snp_data.pfb);
 }
 
 // Function to obtain SNP information for a region
-std::pair<SNPData, bool> CNVCaller::querySNPRegion(std::string chr, uint32_t start_pos, uint32_t end_pos, std::vector<uint32_t>& pos_depth_map, double mean_chr_cov)
+std::pair<SNPData, bool> CNVCaller::querySNPRegion(std::string chr, uint32_t start_pos, uint32_t end_pos, const std::vector<uint32_t>& pos_depth_map, double mean_chr_cov)
 {
     SNPData snp_data;
     bool snps_found = false;
@@ -136,13 +135,28 @@ std::pair<SNPData, bool> CNVCaller::querySNPRegion(std::string chr, uint32_t sta
     return std::make_pair(snp_data, snps_found);
 }
 
-std::tuple<double, SVType, std::string, bool> CNVCaller::runCopyNumberPrediction(std::string chr, const CHMM& hmm, uint32_t start_pos, uint32_t end_pos, double mean_chr_cov, std::vector<uint32_t>& pos_depth_map)
+std::tuple<double, SVType, std::string, bool> CNVCaller::runCopyNumberPrediction(std::string chr, const CHMM& hmm, uint32_t start_pos, uint32_t end_pos, double mean_chr_cov, const std::vector<uint32_t>& pos_depth_map)
 {
+    // Check that the start position is less than the end position
+    if (start_pos >= end_pos)
+    {
+        throw std::runtime_error("ERROR: Invalid SV region for copy number prediction: " + chr + ":" + std::to_string((int)start_pos) + "-" + std::to_string((int)end_pos));
+    }
+
     // Run the Viterbi algorithm on SNPs in the SV region +/- 1/2
     // the SV length
-    uint32_t sv_half_length = (end_pos - start_pos) / 2.0;
-    uint32_t snp_start_pos = start_pos > sv_half_length ? start_pos - sv_half_length : 1;
-    uint32_t snp_end_pos = end_pos + sv_half_length;
+    // Only extened the region if "save CNV data" is enabled
+    uint32_t snp_start_pos = start_pos;
+    uint32_t snp_end_pos = end_pos;
+    if (this->input_data.getSaveCNVData())
+    {
+        uint32_t sv_half_length = (end_pos - start_pos) / 2.0;
+        snp_start_pos = start_pos > sv_half_length ? start_pos - sv_half_length : 1;
+        snp_end_pos = end_pos + sv_half_length;
+    }
+    // uint32_t sv_half_length = (end_pos - start_pos) / 2.0;
+    // uint32_t snp_start_pos = start_pos > sv_half_length ? start_pos - sv_half_length : 1;
+    // uint32_t snp_end_pos = end_pos + sv_half_length;
 
     // Query the SNP region for the SV candidate
     std::pair<SNPData, bool> snp_call = querySNPRegion(chr, snp_start_pos, snp_end_pos, pos_depth_map, mean_chr_cov);
@@ -151,7 +165,8 @@ std::tuple<double, SVType, std::string, bool> CNVCaller::runCopyNumberPrediction
 
     // Run the Viterbi algorithm
     // printMessage("Running Viterbi algorithm for SV " + chr + ":" + std::to_string((int)start_pos) + "-" + std::to_string((int)end_pos) + " (" + std::to_string(sv_snps.pos.size()) + " SNPs, start=" + std::to_string(snp_start_pos) + ", end=" + std::to_string(snp_end_pos) + ")...");
-    std::pair<std::vector<int>, double> prediction = runViterbi(hmm, sv_snps);
+    std::pair<std::vector<int>, double> prediction;
+    runViterbi(hmm, sv_snps, prediction);
     std::vector<int>& state_sequence = prediction.first;
     double likelihood = prediction.second;
 
@@ -208,7 +223,7 @@ std::tuple<double, SVType, std::string, bool> CNVCaller::runCopyNumberPrediction
 }
 
 
-void CNVCaller::runCIGARCopyNumberPrediction(std::string chr, std::vector<SVCall> &sv_candidates, const CHMM& hmm, double mean_chr_cov, std::vector<uint32_t>& pos_depth_map)
+void CNVCaller::runCIGARCopyNumberPrediction(std::string chr, std::vector<SVCall> &sv_candidates, const CHMM& hmm, double mean_chr_cov, const std::vector<uint32_t>& pos_depth_map)
 {
     int min_length = this->input_data.getMinCNVLength();
     int window_size = this->input_data.getWindowSize();
@@ -241,27 +256,29 @@ void CNVCaller::runCIGARCopyNumberPrediction(std::string chr, std::vector<SVCall
             continue;
         }
 
-        // Get the depth at the start position. This is used as the FORMAT/DP
-        // value in the VCF file
-        // int dp_value = pos_depth_map[start_pos];
-        // this->updateDPValue(sv_candidates, sv_call, dp_value);
-
         // Loop through the SV region +/- 1/2 SV length and run copy number
         // predictions
-        uint32_t sv_half_length = (end_pos - start_pos) / 2.0;
-        uint32_t snp_start_pos = start_pos > sv_half_length ? start_pos - sv_half_length : 1;
-        uint32_t snp_end_pos = end_pos + sv_half_length;
+        // Only extend the region if "save CNV data" is enabled
+        uint32_t snp_start_pos = start_pos;
+        uint32_t snp_end_pos = end_pos;
+        if (this->input_data.getSaveCNVData())
+        {
+            uint32_t sv_half_length = (end_pos - start_pos) / 2.0;
+            snp_start_pos = start_pos > sv_half_length ? start_pos - sv_half_length : 1;
+            snp_end_pos = end_pos + sv_half_length;
+        }
         std::pair<SNPData, bool> snp_call = this->querySNPRegion(chr, snp_start_pos, snp_end_pos, pos_depth_map, mean_chr_cov);
         SNPData& sv_snps = snp_call.first;
         bool snps_found = snp_call.second;
 
-        // Run the Viterbi algorithm        
+        // Run the Viterbi algorithm
         if (sv_snps.pos.size() == 0) {
         	std::cerr << "ERROR: No windows for SV " << chr << ":" << start_pos << "-" << end_pos << " (" << snp_start_pos << "," << snp_end_pos << std::endl;
         	continue;
         }
         
-        std::pair<std::vector<int>, double> prediction = runViterbi(hmm, sv_snps);
+        std::pair<std::vector<int>, double> prediction;
+        runViterbi(hmm, sv_snps, prediction);
         std::vector<int>& state_sequence = prediction.first;
         double likelihood = prediction.second;
         // printMessage("Finished running Viterbi algorithm for SV " + chr + ":" + std::to_string((int)start_pos) + "-" + std::to_string((int)end_pos) + "...");
@@ -322,8 +339,6 @@ void CNVCaller::runCIGARCopyNumberPrediction(std::string chr, std::vector<SVCall
             sv_call.data_type = data_type;
             sv_call.genotype = genotype;
             sv_call.hmm_likelihood = likelihood;
-            sv_call.support = 1;
-            // addSVCall(sv_chunk, sv_call.start, sv_call.end, sv_type_str, ".", data_type, genotype, likelihood);
         }
 
         // Save the SV calls as a TSV file if enabled, if the SV type is
@@ -367,14 +382,6 @@ std::vector<std::string> CNVCaller::splitRegionIntoChunks(std::string chr, uint3
 
     return region_chunks;
 }
-
-// std::pair<double, std::unordered_map<uint32_t, int>> CNVCaller::loadChromosomeData(std::string chr)
-// {
-//     printMessage("Calculating mean chromosome coverage for " + chr + "...");
-//     // this->mean_chr_cov = calculateMeanChromosomeCoverage(chr);
-//     std::pair<double, std::unordered_map<uint32_t, int>> depth_data = calculateMeanChromosomeCoverage(chr);
-//     printMessage("Mean chromosome coverage for " + chr + ": " + std::to_string(mean_chr_cov));
-// }
 
 // Calculate the mean chromosome coverage
 std::pair<double, std::vector<uint32_t>> CNVCaller::calculateMeanChromosomeCoverage(std::string chr, uint32_t chr_len)
@@ -509,7 +516,7 @@ std::pair<double, std::vector<uint32_t>> CNVCaller::calculateMeanChromosomeCover
     return std::make_pair(mean_chr_cov, chr_pos_depth_map);
 }
 
-double CNVCaller::calculateLog2Ratio(uint32_t start_pos, uint32_t end_pos, std::vector<uint32_t>& pos_depth_map, double mean_chr_cov)
+double CNVCaller::calculateLog2Ratio(uint32_t start_pos, uint32_t end_pos, const std::vector<uint32_t>& pos_depth_map, double mean_chr_cov)
 {
     // Use the position and depth map to calculate the log2 ratio
     double cum_depth = 0;
@@ -521,15 +528,6 @@ double CNVCaller::calculateLog2Ratio(uint32_t start_pos, uint32_t end_pos, std::
             cum_depth += pos_depth_map[i];
             pos_count++;
         }
-        // // Check if the position is in the map
-        // auto it = pos_depth_map.find(i);
-        // if (it == pos_depth_map.end())
-        // {
-        //     continue;
-        // }
-        // int depth = pos_depth_map[i];
-        // pos_count++;
-        // cum_depth += depth;
     }
 
     // Calculate the window coverage log2 ratio (0 if no positions)

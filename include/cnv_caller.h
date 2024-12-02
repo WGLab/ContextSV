@@ -73,10 +73,10 @@ class CNVCaller {
 
         void updateSNPData(SNPData& snp_data, uint32_t pos, double pfb, double baf, double log2_cov, bool is_snp);
 
-        std::pair<std::vector<int>, double> runViterbi(const CHMM& hmm, SNPData& snp_data);
+        void runViterbi(const CHMM& hmm, SNPData& snp_data, std::pair<std::vector<int>, double>& prediction);
 
         // Query a region for SNPs and return the SNP data
-        std::pair<SNPData, bool> querySNPRegion(std::string chr, uint32_t start_pos, uint32_t end_pos, std::vector<uint32_t>& pos_depth_map, double mean_chr_cov);
+        std::pair<SNPData, bool> querySNPRegion(std::string chr, uint32_t start_pos, uint32_t end_pos, const std::vector<uint32_t>& pos_depth_map, double mean_chr_cov);
 
         void querySNPs(std::string chr, uint32_t start, uint32_t end, std::set<uint32_t>& snp_pos, std::unordered_map<uint32_t, double>& snp_baf, std::unordered_map<uint32_t, double>& snp_pfb);
 
@@ -88,17 +88,17 @@ class CNVCaller {
 
         // Run copy number prediction for a single SV candidate, returning the
         // likelihood, predicted CNV type, genotype, and whether SNPs were found
-        std::tuple<double, SVType, std::string, bool> runCopyNumberPrediction(std::string chr, const CHMM& hmm, uint32_t start_pos, uint32_t end_pos, double mean_chr_cov, std::vector<uint32_t>& pos_depth_map);
+        std::tuple<double, SVType, std::string, bool> runCopyNumberPrediction(std::string chr, const CHMM& hmm, uint32_t start_pos, uint32_t end_pos, double mean_chr_cov, const std::vector<uint32_t>& pos_depth_map);
 
         // Run copy number prediction for SVs meeting the minimum length threshold obtained from CIGAR strings
-        void runCIGARCopyNumberPrediction(std::string chr, std::vector<SVCall>& sv_candidates, const CHMM& hmm, double mean_chr_cov, std::vector<uint32_t>& pos_depth_map);
+        void runCIGARCopyNumberPrediction(std::string chr, std::vector<SVCall>& sv_candidates, const CHMM& hmm, double mean_chr_cov, const std::vector<uint32_t>& pos_depth_map);
 
         // Calculate the mean chromosome coverage
         std::pair<double, std::vector<uint32_t>> calculateMeanChromosomeCoverage(std::string chr, uint32_t chr_len);
 
         // Calculate the log2 ratio for a region given the read depths and mean
         // chromosome coverage
-        double calculateLog2Ratio(uint32_t start_pos, uint32_t end_pos, std::vector<uint32_t>& pos_depth_map, double mean_chr_cov);
+        double calculateLog2Ratio(uint32_t start_pos, uint32_t end_pos, const std::vector<uint32_t>& pos_depth_map, double mean_chr_cov);
 
         void readSNPAlleleFrequencies(std::string chr, uint32_t start_pos, uint32_t end_pos, std::set<uint32_t>& snp_pos, std::unordered_map<uint32_t, double>& snp_baf);
         void readSNPPopulationFrequencies(std::string chr, uint32_t start_pos, uint32_t end_pos, std::unordered_map<uint32_t, double>& snp_pfb_map);

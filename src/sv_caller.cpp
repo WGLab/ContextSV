@@ -22,6 +22,7 @@
 
 #include "utils.h"
 #include "sv_types.h"
+#include "version.h"
 /// @endcond
 
 # define DUP_SEQSIM_THRESHOLD 0.9  // Sequence similarity threshold for duplication detection
@@ -37,7 +38,7 @@ int SVCaller::readNextAlignment(samFile *fp_in, hts_itr_t *itr, bam1_t *bam1)
     return ret;
 }
 
-void SVCaller::detectCIGARSVs(samFile* fp_in, hts_idx_t* idx, bam_hdr_t* bamHdr, const std::string& region, std::vector<SVCall>& sv_calls, PrimaryMap& primary_alignments, SuppMap& supplementary_alignments, std::unordered_map<uint32_t, uint32_t>& breakpoint_depth)
+void SVCaller::detectCIGARSVs(samFile* fp_in, hts_idx_t* idx, bam_hdr_t* bamHdr, const std::string& region, std::vector<SVCall>& sv_calls, PrimaryMap& primary_alignments, SuppMap& supplementary_alignments, const std::vector<uint32_t>& pos_depth_map)
 {
     // Create a read and iterator for the region
     bam1_t *bam1 = bam_init1();
@@ -82,7 +83,7 @@ void SVCaller::detectCIGARSVs(samFile* fp_in, hts_idx_t* idx, bam_hdr_t* bamHdr,
 
             // Call SVs directly from the CIGAR string
             std::tuple<std::vector<int>, uint32_t, uint32_t> query_info;
-            this->detectSVsFromCIGAR(bamHdr, bam1, sv_calls, query_info, true, breakpoint_depth);
+            this->detectSVsFromCIGAR(bamHdr, bam1, sv_calls, query_info, true, pos_depth_map);
             // std::tuple<std::vector<int>, int32_t, int32_t> query_info = this->detectSVsFromCIGAR(bamHdr, bam1, sv_calls, true);
             const std::vector<int>& match_map = std::get<0>(query_info);
             uint32_t query_start = std::get<1>(query_info);
@@ -110,7 +111,7 @@ void SVCaller::detectCIGARSVs(samFile* fp_in, hts_idx_t* idx, bam_hdr_t* bamHdr,
             // std::tuple<std::vector<int>, int32_t, int32_t> query_info =
             // this->detectSVsFromCIGAR(bamHdr, bam1, sv_calls, false);
             std::tuple<std::vector<int>, uint32_t, uint32_t> query_info;
-            this->detectSVsFromCIGAR(bamHdr, bam1, sv_calls, query_info, false, breakpoint_depth);
+            this->detectSVsFromCIGAR(bamHdr, bam1, sv_calls, query_info, false, pos_depth_map);
             const std::vector<int>& match_map = std::get<0>(query_info);
             uint32_t query_start = std::get<1>(query_info);
             uint32_t query_end = std::get<2>(query_info);
@@ -156,7 +157,7 @@ double SVCaller::calculateMismatchRate(const std::vector<int>& mismatch_map, int
     return mismatch_rate;
 }
 
-void SVCaller::detectSVsFromCIGAR(bam_hdr_t* header, bam1_t* alignment, std::vector<SVCall>& sv_calls, std::tuple<std::vector<int>, uint32_t, uint32_t>& query_info, bool is_primary, std::unordered_map<uint32_t, uint32_t>& breakpoint_depth)
+void SVCaller::detectSVsFromCIGAR(bam_hdr_t* header, bam1_t* alignment, std::vector<SVCall>& sv_calls, std::tuple<std::vector<int>, uint32_t, uint32_t>& query_info, bool is_primary, const std::vector<uint32_t>& pos_depth_map)
 {
     std::string chr = header->target_name[alignment->core.tid];  // Chromosome name
     uint32_t pos = (uint32_t)alignment->core.pos;  // Leftmost position of the alignment in the reference genome (0-based)
@@ -241,12 +242,12 @@ void SVCaller::detectSVsFromCIGAR(bam_hdr_t* header, bam1_t* alignment, std::vec
                 // Add to SV calls (1-based) with the appropriate SV type
                 ref_pos = pos+1;
                 ref_end = ref_pos + op_len -1;
+                int read_depth = this->calculateReadDepth(pos_depth_map, ref_pos, ref_end);
                 if (is_duplication) {
-                    addSVCall(sv_calls, ref_pos, ref_end, "DUP", ins_seq_str, "CIGARDUP", "./.", default_lh);
+                    addSVCall(sv_calls, ref_pos, ref_end, "DUP", ins_seq_str, "CIGARDUP", "./.", default_lh, read_depth);
                 } else {
-                    addSVCall(sv_calls, ref_pos, ref_end, "INS", ins_seq_str, "CIGARINS", "./.", default_lh);
+                    addSVCall(sv_calls, ref_pos, ref_end, "INS", ins_seq_str, "CIGARINS", "./.", default_lh, read_depth);
                 }
-                this->updateBreakpointDepth(breakpoint_depth, ref_pos, ref_end);
             }
 
         // Check if the CIGAR operation is a deletion
@@ -257,8 +258,8 @@ void SVCaller::detectSVsFromCIGAR(bam_hdr_t* header, bam1_t* alignment, std::vec
             {
                 ref_pos = pos+1;
                 ref_end = ref_pos + op_len -1;
-                addSVCall(sv_calls, ref_pos, ref_end, "DEL", ".", "CIGARDEL", "./.", default_lh);
-                this->updateBreakpointDepth(breakpoint_depth, ref_pos, ref_end);
+                int read_depth = this->calculateReadDepth(pos_depth_map, ref_pos, ref_end);
+                addSVCall(sv_calls, ref_pos, ref_end, "DEL", ".", "CIGARDEL", "./.", default_lh, read_depth);
             }
 
         // Check if the CIGAR operation is a clipped base
@@ -399,21 +400,19 @@ void SVCaller::processChromosome(const std::string& chr, const std::string& bam_
     // std::cout << "Processing " << region_chunks.size() << " region(s) for chromosome " << chr << "..." << std::endl;
     int region_count = region_chunks.size();
     int current_region = 0;
-    // std::set<SVCall> combined_sv_calls;
-    std::unordered_map<uint32_t, uint32_t> breakpoint_depth;
     for (const auto& sub_region : region_chunks) {
         current_region++;
         printMessage(chr + ": CIGAR SVs...");
         PrimaryMap primary_map;
         SuppMap supp_map;
         std::vector<SVCall> subregion_sv_calls;
-        this->detectCIGARSVs(fp_in, idx, bamHdr, sub_region, subregion_sv_calls, primary_map, supp_map, breakpoint_depth);
+        this->detectCIGARSVs(fp_in, idx, bamHdr, sub_region, subregion_sv_calls, primary_map, supp_map, chr_data.second);
         // std::set<SVCall>& subregion_sv_calls = std::get<0>(region_data);
         // PrimaryMap& primary_map = std::get<1>(region_data);
         // SuppMap& supp_map = std::get<2>(region_data);
         // std::cout << "Merge CIGAR SV calls from " << sub_region << "..." << std::endl;
         printMessage(chr + ": Merging CIGAR...");
-        mergeSVs(subregion_sv_calls, breakpoint_depth);
+        mergeSVs(subregion_sv_calls);
         int region_sv_count = getSVCount(subregion_sv_calls);
         // printMessage("Total SVs detected from CIGAR string: " + std::to_string(region_sv_count));
 
@@ -428,12 +427,12 @@ void SVCaller::processChromosome(const std::string& chr, const std::string& bam_
         // Run split-read SV and copy number variant predictions
         // std::cout << "Detecting copy number variants from split reads..." << std::endl;
         printMessage(chr + ": Split read SVs...");
-        this->detectSVsFromSplitReads(subregion_sv_calls, primary_map, supp_map, cnv_caller, hmm, chr_data.first, chr_data.second, breakpoint_depth);
+        this->detectSVsFromSplitReads(subregion_sv_calls, primary_map, supp_map, cnv_caller, hmm, chr_data.first, chr_data.second);
 
         // Merge the SV calls from the current region
         // std::cout << "Merge SV calls from " << sub_region << "..." << std::endl;
         printMessage(chr + ": Merging split reads...");
-        mergeSVs(subregion_sv_calls, breakpoint_depth);
+        mergeSVs(subregion_sv_calls);
 
         // Combine the SV calls from the current region
         // std::cout << "Combining SV calls from " << sub_region << "..." << std::endl;
@@ -445,10 +444,11 @@ void SVCaller::processChromosome(const std::string& chr, const std::string& bam_
 
     // Run a final merge on the combined SV calls
     printMessage(chr + ": Merging final calls...");
-    mergeSVs(combined_sv_calls, breakpoint_depth);
+    mergeSVs(combined_sv_calls);
 
     // Insert breakpoint support and filter SVs with low support
-    filterSVsWithLowSupport(combined_sv_calls, breakpoint_depth, 5);
+    // filterSVsWithLowSupport(combined_sv_calls, breakpoint_depth, 5);
+    filterSVsWithLowSupport(combined_sv_calls, 10);
 
     // Clean up the BAM file, header, and index
     hts_idx_destroy(idx);
@@ -548,7 +548,7 @@ void SVCaller::run()
 
 
 // Detect SVs from split read alignments
-void SVCaller::detectSVsFromSplitReads(std::vector<SVCall>& sv_calls, PrimaryMap& primary_map, SuppMap& supp_map, CNVCaller& cnv_caller, const CHMM& hmm, double mean_chr_cov, std::vector<uint32_t>& pos_depth_map, std::unordered_map<uint32_t, uint32_t>& breakpoint_depth)
+void SVCaller::detectSVsFromSplitReads(std::vector<SVCall>& sv_calls, PrimaryMap& primary_map, SuppMap& supp_map, CNVCaller& cnv_caller, const CHMM& hmm, double mean_chr_cov, const std::vector<uint32_t>& pos_depth_map)
 {
     // Find split-read SV evidence
     int sv_count = 0;
@@ -589,20 +589,20 @@ void SVCaller::detectSVsFromSplitReads(std::vector<SVCall>& sv_calls, PrimaryMap
                     std::tuple<double, SVType, std::string, bool> result = cnv_caller.runCopyNumberPrediction(primary_chr, hmm, supp_start+1, supp_end+1, mean_chr_cov, pos_depth_map);
                     double supp_lh = std::get<0>(result);
                     SVType supp_type = std::get<1>(result);
+                    int read_depth = this->calculateReadDepth(pos_depth_map, supp_start+1, supp_end+1);
                     if (supp_type == SVType::NEUTRAL) {
-                        addSVCall(sv_calls, supp_start+1, supp_end+1, "INV", ".", "HMM", "./.", supp_lh);
-                        this->updateBreakpointDepth(breakpoint_depth, supp_start+1, supp_end+1);
+                        addSVCall(sv_calls, supp_start+1, supp_end+1, "INV", ".", "HMM", "./.", supp_lh, read_depth);
                         
                         sv_count++;
                     } else if (supp_type == SVType::DUP) {
-                        addSVCall(sv_calls, supp_start+1, supp_end+1, "INVDUP", ".", "HMM", "./.", supp_lh);
-                        this->updateBreakpointDepth(breakpoint_depth, supp_start+1, supp_end+1);
+                        int read_depth = this->calculateReadDepth(pos_depth_map, supp_start+1, supp_end+1);
+                        addSVCall(sv_calls, supp_start+1, supp_end+1, "INVDUP", ".", "HMM", "./.", supp_lh, read_depth);
                     }
                 } else {
                     // Add the inversion without running copy number predictions
                     // (too small for predictions)
-                    addSVCall(sv_calls, supp_start+1, (supp_end+1), "INV", ".", "REV", "./.", 0.0);
-                    this->updateBreakpointDepth(breakpoint_depth, supp_start+1, supp_end+1);
+                    int read_depth = this->calculateReadDepth(pos_depth_map, supp_start+1, supp_end+1);
+                    addSVCall(sv_calls, supp_start+1, supp_end+1, "INV", ".", "REV", "./.", 0.0, read_depth);
                 }
             }
         }
@@ -650,17 +650,17 @@ void SVCaller::detectSVsFromSplitReads(std::vector<SVCall>& sv_calls, PrimaryMap
 
                 // If higher likelihood than the boundary, add the gap as the SV call
                 if (gap_lh > bd_lh) {
-                    addSVCall(sv_calls, gap_left, gap_right, getSVTypeString(gap_type), ".", "GAP", "./.", gap_lh);
-                    this->updateBreakpointDepth(breakpoint_depth, gap_left, gap_right);
+                    int read_depth = this->calculateReadDepth(pos_depth_map, gap_left, gap_right);
+                    addSVCall(sv_calls, gap_left, gap_right, getSVTypeString(gap_type), ".", "GAP", "./.", gap_lh, read_depth);
                 } else {
                     // Add the boundary as the SV call
-                    addSVCall(sv_calls, boundary_left, boundary_right, getSVTypeString(bd_type), ".", "BOUNDARY", "./.", bd_lh);
-                    this->updateBreakpointDepth(breakpoint_depth, boundary_left, boundary_right);
+                    int read_depth = this->calculateReadDepth(pos_depth_map, boundary_left, boundary_right);
+                    addSVCall(sv_calls, boundary_left, boundary_right, getSVTypeString(bd_type), ".", "BOUNDARY", "./.", bd_lh, read_depth);
                 }
             } else {
                 // Add the boundary as the SV call
-                addSVCall(sv_calls, boundary_left, boundary_right, getSVTypeString(bd_type), ".", "BOUNDARY", "./.", bd_lh);
-                this->updateBreakpointDepth(breakpoint_depth, boundary_left, boundary_right);
+                int read_depth = this->calculateReadDepth(pos_depth_map, boundary_left, boundary_right);
+                addSVCall(sv_calls, boundary_left, boundary_right, getSVTypeString(bd_type), ".", "BOUNDARY", "./.", bd_lh, read_depth);
             }
         }
     }
@@ -697,15 +697,12 @@ void SVCaller::saveToVCF(const std::unordered_map<std::string, std::vector<SVCal
         "##INFO=<ID=SVTYPE,Number=1,Type=String,Description=\"Type of structural variant\">",
         "##INFO=<ID=SVLEN,Number=1,Type=Integer,Description=\"Difference in length between REF and ALT alleles\">",
         "##INFO=<ID=SVMETHOD,Number=1,Type=String,Description=\"Method used to call the structural variant\">",
-        "##INFO=<ID=ALN,Number=1,Type=String,Description=\"Alignment type used to call the structural variant\">",
-        "##INFO=<ID=BPSUP1,Number=1,Type=Integer,Description=\"Number of reads supporting either breakpoint\">",
-        "##INFO=<ID=BPSUP2,Number=1,Type=Integer,Description=\"Number of reads supporting the exact breakpoints\">",
-        "##INFO=<ID=REPTYPE,Number=1,Type=String,Description=\"Repeat type\">",
+        "##INFO=<ID=ALN,Number=1,Type=String,Description=\"Feature used to identify the structural variant\">",
         "##INFO=<ID=HMM,Number=1,Type=Float,Description=\"HMM likelihood\">",
         "##FILTER=<ID=PASS,Description=\"All filters passed\">",
         "##FILTER=<ID=LowQual,Description=\"Low quality\">",
         "##FORMAT=<ID=GT,Number=1,Type=String,Description=\"Genotype\">",
-        "##FORMAT=<ID=DP,Number=1,Type=Integer,Description=\"Read depth\">"
+        "##FORMAT=<ID=DP,Number=1,Type=Integer,Description=\"Read depth at the variant site (sum of start and end positions)\">",
     };
 
     std::cout << "Writing VCF header..." << std::endl;
@@ -740,7 +737,7 @@ void SVCaller::saveToVCF(const std::unordered_map<std::string, std::vector<SVCal
     //this->file_stream.flush();
 
     std::cout << "Saving SV calls to " << output_vcf << std::endl;
-    std::string sv_method = "CONTEXTSVv0.1";
+    std::string sv_method = "CONTEXTSV" + std::string(VERSION);
     int skip_count = 0;
     int total_count = 0;
     for (const auto& pair : sv_calls) {
@@ -760,31 +757,8 @@ void SVCaller::saveToVCF(const std::unordered_map<std::string, std::vector<SVCal
             if (sv_type_str == "DEL") {
             	sv_length++;
         	}
-            int bp_support = sv_call.support;
-            int total_bp_support = sv_call.total_support;
-            int read_depth = 0;
-            // SVType sv_type = sv_call.sv_type;
-            // SVCandidate candidate = sv_call.first;
-            // SVInfo info = sv_call.second;
-            // SVType sv_type = info.sv_type;
-            // int read_support = info.read_support;
-            // int read_depth = info.read_depth;
-            // int read_depth = 0;
-            // int read_support = 0;
-            // int sv_length = info.sv_length;
-            // std::set<std::string> data_type = info.data_type;
-            // std::string genotype = info.genotype;
-            // double hmm_likelihood = info.hmm_likelihood;
-
-            // Convert the data type set to a string
-            // std::string data_type_str = "";
-            // for (auto const& type : data_type) {
-            //     data_type_str += type + ",";
-            // }
-
-            // Get the CHROM, POS, END, and ALT
-            // uint32_t pos = std::get<0>(candidate);
-            // uint32_t end = std::get<1>(candidate);
+            int read_depth = sv_call.read_depth;
+            std::string ref_allele = ".";
 
             // If the SV type is unknown, skip it
             if (sv_type_str == "UNKNOWN" || sv_type_str == "NEUTRAL") {
@@ -793,11 +767,6 @@ void SVCaller::saveToVCF(const std::unordered_map<std::string, std::vector<SVCal
             } else {
                 total_count += 1;
             }
-
-            // Process by SV type
-            std::string ref_allele = ".";
-            // std::string alt_allele = ".";
-            std::string repeat_type = "NA";
 
             // Deletion
             if (sv_type_str == "DEL") {
@@ -822,8 +791,6 @@ void SVCaller::saveToVCF(const std::unordered_map<std::string, std::vector<SVCal
             } else {
                 // Use the preceding base as the reference allele
                 int64_t preceding_pos = (int64_t) std::max(1, (int) start-1);  // Make sure the position is not negative
-                // ref_allele = ref_genome.query(chr, preceding_pos,
-                // preceding_pos);
                 ref_allele = this->input_data.queryRefGenome(chr, preceding_pos, preceding_pos);
 
                 // Format novel insertions
@@ -831,7 +798,6 @@ void SVCaller::saveToVCF(const std::unordered_map<std::string, std::vector<SVCal
                     // Check if in symbolic form
                     if (alt_allele != "<INS>") {
                         // Use the insertion sequence as the alternate allele
-                        // alt_allele = std::get<2>(candidate);
                         alt_allele.insert(0, ref_allele);
                     }
                     start = preceding_pos;  // Update the position to the preceding base
@@ -843,15 +809,9 @@ void SVCaller::saveToVCF(const std::unordered_map<std::string, std::vector<SVCal
             }
 
             // Create the VCF parameter strings
-            // std::string info_str = "END=" + std::to_string(end) + ";SVTYPE=" + sv_type_str + \
-            //     ";SVLEN=" + std::to_string(sv_length) + ";SUPPORT=" + std::to_string(read_support) + \
-            //     ";SVMETHOD=" + sv_method + ";ALN=" + data_type_str + ";CLIPSUP=" + std::to_string(clipped_base_support) + \
-            //     ";REPTYPE=" + repeat_type + ";HMM=" +
-            //     std::to_string(hmm_likelihood);
             std::string info_str = "END=" + std::to_string(end) + ";SVTYPE=" + sv_type_str + \
                 ";SVLEN=" + std::to_string(sv_length) + ";SVMETHOD=" + sv_method + ";ALN=" + data_type_str + \
-                ";BPSUP1=" + std::to_string(total_bp_support) + ";BPSUP2=" + std::to_string(bp_support) + \
-                ";REPTYPE=" + repeat_type + ";HMM=" + std::to_string(hmm_likelihood);
+                ";HMM=" + std::to_string(hmm_likelihood);
                 
             std::string format_str = "GT:DP";
             std::string sample_str = genotype + ":" + std::to_string(read_depth);
@@ -897,14 +857,24 @@ void SVCaller::trimOverlappingAlignments(AlignmentData& primary_alignment, Align
 
             // Trim the ailgnment with the higher mismatch rate
             if (primary_mismatch_rate > supp_mismatch_rate) {
-                // Trim the end of the primary alignment
-                uint32_t new_end = primary_alignment_end > overlap_length ? primary_alignment_end - overlap_length : 0;
-                std::get<2>(primary_alignment) = new_end;
+                // Trim the end of the primary alignment, ensuring that the new
+                // end is not less than the start
+                if (primary_alignment_end > overlap_length && (primary_alignment_end - overlap_length) > primary_alignment_start) {
+                    // Trim the end of the primary alignment
+                    uint32_t new_end = primary_alignment_end - overlap_length;
+                    std::get<2>(primary_alignment) = new_end;
+                }
                 // std::get<2>(primary_alignment) = primary_alignment_end - overlap_length;
             } else {
-                // Trim the beginning of the supplementary alignment
-                uint32_t new_start = supp_alignment_start + overlap_length;
-                std::get<1>(supp_alignment) = new_start;
+                // Trim the beginning of the supplementary alignment, ensuring
+                // that the new start is not greater than the end
+                if (supp_alignment_start + overlap_length < supp_alignment_end) {
+                    // Trim the beginning of the supplementary alignment
+                    uint32_t new_start = supp_alignment_start + overlap_length;
+                    std::get<1>(supp_alignment) = new_start;
+                }
+                // uint32_t new_start = supp_alignment_start + overlap_length;
+                // std::get<1>(supp_alignment) = new_start;
                 // std::get<1>(supp_alignment) = supp_alignment_start + overlap_length;
             }
         }
@@ -918,21 +888,47 @@ void SVCaller::trimOverlappingAlignments(AlignmentData& primary_alignment, Align
 
             // Trim the ailgnment with the higher mismatch rate
             if (supp_mismatch_rate > primary_mismatch_rate) {
-                // Trim the end of the supplementary alignment
-                uint32_t new_end = supp_alignment_end > overlap_length ? supp_alignment_end - overlap_length : 0;
+                // Trim the end of the supplementary alignment, ensuring that
+                // the new end is not less than the start
+                if (supp_alignment_end > overlap_length && (supp_alignment_end - overlap_length) > supp_alignment_start) {
+                    // Trim the end of the supplementary alignment
+                    uint32_t new_end = supp_alignment_end - overlap_length;
+                    std::get<2>(supp_alignment) = new_end;
+                }
+                // uint32_t new_end = supp_alignment_end > overlap_length ? supp_alignment_end - overlap_length : 0;
+                // std::get<2>(supp_alignment) = new_end;
                 // std::get<2>(supp_alignment) = supp_alignment_end - overlap_length;
             } else {
-                // Trim the beginning of the primary alignment
-                uint32_t new_start = primary_alignment_start + overlap_length;
-                std::get<1>(primary_alignment) = new_start;
+                // Trim the beginning of the primary alignment, ensuring that
+                // the new start is not greater than the end
+                if (primary_alignment_start + overlap_length < primary_alignment_end) {
+                    // Trim the beginning of the primary alignment
+                    uint32_t new_start = primary_alignment_start + overlap_length;
+                    std::get<1>(primary_alignment) = new_start;
+                }
+                // uint32_t new_start = primary_alignment_start + overlap_length;
+                // std::get<1>(primary_alignment) = new_start;
                 // std::get<1>(primary_alignment) = primary_alignment_start + overlap_length;
             }
         }
     }
 }
 
-void SVCaller::updateBreakpointDepth(std::unordered_map<uint32_t, uint32_t> &breakpoint_depth, uint32_t start, uint32_t end)
+int SVCaller::calculateReadDepth(const std::vector<uint32_t>& pos_depth_map, uint32_t start, uint32_t end)
 {
-    breakpoint_depth[start] += 1;
-    breakpoint_depth[end] += 1;
+    int read_depth = 0;
+    try {
+        // printMessage("Read depth at start: " + std::to_string(pos_depth_map.at(start)) + " for SV at " + std::to_string(start) + "-" + std::to_string(end) + " with length " + std::to_string(end-start));
+        read_depth += pos_depth_map.at(start);
+    } catch (const std::out_of_range& e) {
+        std::cerr << "Warning: Start position " << start << " not found in depth map." << std::endl;
+    }
+    try {
+        // printMessage("Read depth at end: " + std::to_string(pos_depth_map.at(end)) + " for SV at " + std::to_string(start) + "-" + std::to_string(end) + " with length " + std::to_string(end-start));
+        read_depth += pos_depth_map.at(end);
+    } catch (const std::out_of_range& e) {
+        std::cerr << "Warning: End position " << end << " not found in depth map." << std::endl;
+    }
+    // printMessage("Read depth for SV at " + std::to_string(start) + "-" + std::to_string(end) + " with length " + std::to_string(end-start) + ": " + std::to_string(read_depth));
+    return read_depth;
 }
