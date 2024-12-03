@@ -74,6 +74,7 @@ void SVCaller::detectCIGARSVs(samFile* fp_in, hts_idx_t* idx, bam_hdr_t* bamHdr,
             std::string chr = bamHdr->target_name[bam1->core.tid];
             uint32_t start = (uint32_t)bam1->core.pos;
             uint32_t end = (uint32_t)bam_endpos(bam1);  // This is the first position after the alignment
+            end--;  // Adjust to the last position of the alignment
             bool fwd_strand = !(bam1->core.flag & BAM_FREVERSE);
 
             // Check for underflow
@@ -104,7 +105,8 @@ void SVCaller::detectCIGARSVs(samFile* fp_in, hts_idx_t* idx, bam_hdr_t* bamHdr,
             // Get the supplementary alignment information
             std::string chr = bamHdr->target_name[bam1->core.tid];
             uint32_t start = bam1->core.pos;
-            uint32_t end = bam_endpos(bam1);
+            uint32_t end = bam_endpos(bam1);  // This is the first position after the alignment
+            end--;  // Adjust to the last position of the alignment
             bool fwd_strand = !(bam1->core.flag & BAM_FREVERSE);
 
             // Get CIGAR string information, but don't call SVs
@@ -400,6 +402,7 @@ void SVCaller::processChromosome(const std::string& chr, const std::string& bam_
     // std::cout << "Processing " << region_chunks.size() << " region(s) for chromosome " << chr << "..." << std::endl;
     int region_count = region_chunks.size();
     int current_region = 0;
+    int filter_threshold = 4;
     for (const auto& sub_region : region_chunks) {
         current_region++;
         printMessage(chr + ": CIGAR SVs...");
@@ -413,6 +416,7 @@ void SVCaller::processChromosome(const std::string& chr, const std::string& bam_
         // std::cout << "Merge CIGAR SV calls from " << sub_region << "..." << std::endl;
         printMessage(chr + ": Merging CIGAR...");
         mergeSVs(subregion_sv_calls);
+        filterSVsWithLowSupport(subregion_sv_calls, filter_threshold);
         int region_sv_count = getSVCount(subregion_sv_calls);
         // printMessage("Total SVs detected from CIGAR string: " + std::to_string(region_sv_count));
 
@@ -433,6 +437,7 @@ void SVCaller::processChromosome(const std::string& chr, const std::string& bam_
         // std::cout << "Merge SV calls from " << sub_region << "..." << std::endl;
         printMessage(chr + ": Merging split reads...");
         mergeSVs(subregion_sv_calls);
+        filterSVsWithLowSupport(subregion_sv_calls, filter_threshold);
 
         // Combine the SV calls from the current region
         // std::cout << "Combining SV calls from " << sub_region << "..." << std::endl;
@@ -445,6 +450,7 @@ void SVCaller::processChromosome(const std::string& chr, const std::string& bam_
     // Run a final merge on the combined SV calls
     printMessage(chr + ": Merging final calls...");
     mergeSVs(combined_sv_calls);
+    filterSVsWithLowSupport(combined_sv_calls, filter_threshold);
 
     // Insert breakpoint support and filter SVs with low support
     // filterSVsWithLowSupport(combined_sv_calls, 10);
@@ -486,37 +492,53 @@ void SVCaller::run()
 
     // Lambda to process a chromosome
     auto process_chr = [&](const std::string& chr) {
-        // printMessage("Launching thread for chromosome " + chr + "...");
-        std::vector<SVCall> sv_calls;
-        this->processChromosome(chr, this->input_data.getLongReadBam(), hmm, sv_calls, this->input_data.getMinCNVLength());
-        {
-            std::lock_guard<std::mutex> lock(sv_mutex);
-            whole_genome_sv_calls[chr] = std::move(sv_calls);
-        }
-        printMessage("Completed chromosome " + chr);
+        try {
+            // printMessage("Launching thread for chromosome " + chr + "...");
+            std::vector<SVCall> sv_calls;
+            this->processChromosome(chr, this->input_data.getLongReadBam(), hmm, sv_calls, this->input_data.getMinCNVLength());
+            {
+                std::lock_guard<std::mutex> lock(sv_mutex);
+                whole_genome_sv_calls[chr] = std::move(sv_calls);
+            }
+            printMessage("Completed chromosome " + chr);
 
-        // Notify thread completion
-        {
-            std::lock_guard<std::mutex> lock(sv_mutex);
-            active_threads--;
-            printMessage("Active threads: " + std::to_string(active_threads));
+            // // Notify thread completion
+            // {
+            //     std::lock_guard<std::mutex> lock(sv_mutex);
+            //     active_threads--;
+            //     printMessage("Active threads: " + std::to_string(active_threads));
+            // }
+            // cv.notify_one();
+        } catch (const std::exception& e) {
+            printError("Error processing chromosome " + chr + ": " + e.what());
         }
-        cv.notify_one();
     };
 
     // Thread management
     std::vector<std::thread> threads;
     for (const auto& chr : chromosomes) {
-        {
-            std::unique_lock<std::mutex> lock(sv_mutex);
-            printMessage("Waiting for thread slot. Active threads: " + std::to_string(active_threads));
-            cv.wait(lock, [&] { return active_threads < max_threads; });
-            active_threads++;
-            printMessage("Launching thread for chromosome " + chr + ". Active threads: " + std::to_string(active_threads));
-        }
+        // Wait for a thread slot
+        std::unique_lock<std::mutex> lock(sv_mutex);
+        cv.wait(lock, [&] { return threads.size() < max_threads; });
 
         // Launch a new thread
-        threads.emplace_back(process_chr, chr);
+        threads.emplace_back([&, chr] {
+            process_chr(chr);
+
+            // Notify thread completion
+            std::lock_guard<std::mutex> lock(sv_mutex);
+            cv.notify_one();
+        });
+        // {
+        //     std::unique_lock<std::mutex> lock(sv_mutex);
+        //     printMessage("Waiting for thread slot. Active threads: " + std::to_string(active_threads));
+        //     cv.wait(lock, [&] { return active_threads < max_threads; });
+        //     active_threads++;
+        //     printMessage("Launching thread for chromosome " + chr + ". Active threads: " + std::to_string(active_threads));
+        // }
+
+        // // Launch a new thread
+        // threads.emplace_back(process_chr, chr);
     }
 
     // Wait for all threads to complete
@@ -551,7 +573,7 @@ void SVCaller::detectSVsFromSplitReads(std::vector<SVCall>& sv_calls, PrimaryMap
 {
     // Find split-read SV evidence
     int sv_count = 0;
-    int min_cnv_length = this->input_data.getMinCNVLength();
+    uint32_t min_cnv_length = (uint32_t) this->input_data.getMinCNVLength();
     for (const auto& entry : primary_map) {
         std::string qname = entry.first;
         AlignmentData primary_alignment = entry.second;
@@ -584,6 +606,14 @@ void SVCaller::detectSVsFromSplitReads(std::vector<SVCall>& sv_calls, PrimaryMap
             bool is_opposite_strand = std::get<6>(primary_alignment) != std::get<6>(*it);
             if (is_opposite_strand) {
                 if (supp_length >= min_cnv_length) {
+
+                    // Print error if the start position is greater than the end
+                    // position
+                    if (supp_start+1 > supp_end+1) {
+                        printError("ERROR: Invalid inversion coordinates: " + primary_chr + ":" + std::to_string(supp_start+1) + "-" + std::to_string(supp_end+1));
+                        continue;
+                    }
+
                     // printMessage("Running copy number prediction on inversion: " + primary_chr + ":" + std::to_string(supp_start+1) + "-" + std::to_string(supp_end+1));
                     std::tuple<double, SVType, std::string, bool> result = cnv_caller.runCopyNumberPrediction(primary_chr, hmm, supp_start+1, supp_end+1, mean_chr_cov, pos_depth_map);
                     double supp_lh = std::get<0>(result);
@@ -621,20 +651,30 @@ void SVCaller::detectSVsFromSplitReads(std::vector<SVCall>& sv_calls, PrimaryMap
         uint32_t boundary_left, boundary_right, gap_left, gap_right;
         if (primary_before_supp) {
             boundary_left = primary_start+1;
-            boundary_right = supp_end+1;
+            // boundary_right = supp_end+1;
+            boundary_right = std::max(primary_end, supp_end)+1;
             gap_left = primary_end+1;
             gap_right = supp_start+1;
-            gap_exists = primary_end < supp_start;
+            gap_exists = gap_left < gap_right;
         } else {
             boundary_left = supp_start+1;
-            boundary_right = primary_end+1;
+            // boundary_right = primary_end+1;
+            boundary_right = std::max(primary_end, supp_end)+1;
             gap_left = supp_end+1;
             gap_right = primary_start+1;
-            gap_exists = supp_end < primary_start;
+            gap_exists = gap_left < gap_right;
         }
         
         // Run copy number variant predictions on the boundary if large enough
         if (boundary_right - boundary_left >= min_cnv_length) {
+
+            // Print error if the start position is greater than the end
+            // position
+            if (boundary_left > boundary_right) {
+                printError("ERROR: Invalid boundary coordinates: " + primary_chr + ":" + std::to_string(boundary_left) + "-" + std::to_string(boundary_right));
+                continue;
+            }
+
             // printMessage("Running copy number prediction on boundary: " + primary_chr + ":" + std::to_string(boundary_left) + "-" + std::to_string(boundary_right));
             std::tuple<double, SVType, std::string, bool> bd_result = cnv_caller.runCopyNumberPrediction(primary_chr, hmm, boundary_left, boundary_right, mean_chr_cov, pos_depth_map);
             double bd_lh = std::get<0>(bd_result);
@@ -642,6 +682,14 @@ void SVCaller::detectSVsFromSplitReads(std::vector<SVCall>& sv_calls, PrimaryMap
 
             // Run copy number variant predictions on the gap if it exists
             if (gap_exists && gap_right - gap_left >= min_cnv_length) {
+
+                // Print error if the start position is greater than the end
+                // position
+                if (gap_left > gap_right) {
+                    printError("ERROR: Invalid gap coordinates: " + primary_chr + ":" + std::to_string(gap_left) + "-" + std::to_string(gap_right));
+                    continue;
+                }
+
                 // printMessage("Running copy number prediction on gap: " + primary_chr + ":" + std::to_string(gap_left) + "-" + std::to_string(gap_right));
                 std::tuple<double, SVType, std::string, bool> gap_result = cnv_caller.runCopyNumberPrediction(primary_chr, hmm, gap_left, gap_right, mean_chr_cov, pos_depth_map);
                 double gap_lh = std::get<0>(gap_result);
@@ -690,7 +738,7 @@ void SVCaller::saveToVCF(const std::unordered_map<std::string, std::vector<SVCal
     std::cout << "Getting reference genome header..." << std::endl;
     const std::string contig_header = this->input_data.getRefGenome().getContigHeader();
     std::vector<std::string> header_lines = {
-        std::string("##reference=") + 
+        std::string("##reference=") + this->input_data.getRefGenome().getFilepath(),
         contig_header,
         "##INFO=<ID=END,Number=1,Type=Integer,Description=\"End position of the variant described in this record\">",
         "##INFO=<ID=SVTYPE,Number=1,Type=String,Description=\"Type of structural variant\">",
@@ -698,6 +746,7 @@ void SVCaller::saveToVCF(const std::unordered_map<std::string, std::vector<SVCal
         "##INFO=<ID=SVMETHOD,Number=1,Type=String,Description=\"Method used to call the structural variant\">",
         "##INFO=<ID=ALN,Number=1,Type=String,Description=\"Feature used to identify the structural variant\">",
         "##INFO=<ID=HMM,Number=1,Type=Float,Description=\"HMM likelihood\">",
+        "##INFO=<ID=SUPPORT,Number=1,Type=Integer,Description=\"Number of reads supporting the variant\">",
         "##FILTER=<ID=PASS,Description=\"All filters passed\">",
         "##FILTER=<ID=LowQual,Description=\"Low quality\">",
         "##FORMAT=<ID=GT,Number=1,Type=String,Description=\"Genotype\">",
@@ -720,7 +769,8 @@ void SVCaller::saveToVCF(const std::unordered_map<std::string, std::vector<SVCal
     vcf_stream << "##fileDate=" << buffer << std::endl;
 
     // Add source
-    std::string source = "##source=ContexSV";
+    std::string sv_method = "ContextSV" + std::string(VERSION);
+    std::string source = "##source=" + sv_method;
     vcf_stream << source << std::endl;
 
     // Loop over the header metadata lines
@@ -731,12 +781,7 @@ void SVCaller::saveToVCF(const std::unordered_map<std::string, std::vector<SVCal
     // Add the header line
     std::string header_line = "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tSAMPLE";
     vcf_stream << header_line << std::endl;
-
-    // Flush the stream to ensure that the header is written
-    //this->file_stream.flush();
-
     std::cout << "Saving SV calls to " << output_vcf << std::endl;
-    std::string sv_method = "CONTEXTSV" + std::string(VERSION);
     int skip_count = 0;
     int total_count = 0;
     for (const auto& pair : sv_calls) {
@@ -758,6 +803,7 @@ void SVCaller::saveToVCF(const std::unordered_map<std::string, std::vector<SVCal
         	}
             int read_depth = sv_call.read_depth;
             std::string ref_allele = ".";
+            int support = sv_call.support;
 
             // If the SV type is unknown, skip it
             if (sv_type_str == "UNKNOWN" || sv_type_str == "NEUTRAL") {
@@ -808,9 +854,12 @@ void SVCaller::saveToVCF(const std::unordered_map<std::string, std::vector<SVCal
             }
 
             // Create the VCF parameter strings
+            // std::string info_str = "END=" + std::to_string(end) + ";SVTYPE=" + sv_type_str + \
+            //     ";SVLEN=" + std::to_string(sv_length) + ";SVMETHOD=" + sv_method + ";ALN=" + data_type_str + \
+            //     ";HMM=" + std::to_string(hmm_likelihood);
             std::string info_str = "END=" + std::to_string(end) + ";SVTYPE=" + sv_type_str + \
                 ";SVLEN=" + std::to_string(sv_length) + ";SVMETHOD=" + sv_method + ";ALN=" + data_type_str + \
-                ";HMM=" + std::to_string(hmm_likelihood);
+                ";HMM=" + std::to_string(hmm_likelihood) + ";SUPPORT=" + std::to_string(support);
                 
             std::string format_str = "GT:DP";
             std::string sample_str = genotype + ":" + std::to_string(read_depth);
