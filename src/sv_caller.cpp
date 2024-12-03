@@ -415,8 +415,8 @@ void SVCaller::processChromosome(const std::string& chr, const std::string& bam_
         // SuppMap& supp_map = std::get<2>(region_data);
         // std::cout << "Merge CIGAR SV calls from " << sub_region << "..." << std::endl;
         printMessage(chr + ": Merging CIGAR...");
-        mergeSVs(subregion_sv_calls);
         filterSVsWithLowSupport(subregion_sv_calls, filter_threshold);
+        mergeSVs(subregion_sv_calls);
         int region_sv_count = getSVCount(subregion_sv_calls);
         // printMessage("Total SVs detected from CIGAR string: " + std::to_string(region_sv_count));
 
@@ -436,8 +436,8 @@ void SVCaller::processChromosome(const std::string& chr, const std::string& bam_
         // Merge the SV calls from the current region
         // std::cout << "Merge SV calls from " << sub_region << "..." << std::endl;
         printMessage(chr + ": Merging split reads...");
-        mergeSVs(subregion_sv_calls);
         filterSVsWithLowSupport(subregion_sv_calls, filter_threshold);
+        mergeSVs(subregion_sv_calls);
 
         // Combine the SV calls from the current region
         // std::cout << "Combining SV calls from " << sub_region << "..." << std::endl;
@@ -450,10 +450,7 @@ void SVCaller::processChromosome(const std::string& chr, const std::string& bam_
     // Run a final merge on the combined SV calls
     printMessage(chr + ": Merging final calls...");
     mergeSVs(combined_sv_calls);
-    filterSVsWithLowSupport(combined_sv_calls, filter_threshold);
-
-    // Insert breakpoint support and filter SVs with low support
-    // filterSVsWithLowSupport(combined_sv_calls, 10);
+    // filterSVsWithLowSupport(combined_sv_calls, filter_threshold);
 
     // Clean up the BAM file, header, and index
     hts_idx_destroy(idx);
