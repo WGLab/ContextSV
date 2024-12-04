@@ -481,16 +481,12 @@ void SVCaller::run()
     // Set up threads for processing each chromosome
     const int max_threads = this->input_data.getThreadCount();
     std::cout << "Using " << max_threads << " threads for processing..." << std::endl;
-    std::vector<std::future<void>> futures;
     std::unordered_map<std::string, std::vector<SVCall>> whole_genome_sv_calls;
     std::mutex sv_mutex;
-    std::condition_variable cv;
-    int active_threads = 0;
 
     // Lambda to process a chromosome
     auto process_chr = [&](const std::string& chr) {
         try {
-            // printMessage("Launching thread for chromosome " + chr + "...");
             std::vector<SVCall> sv_calls;
             this->processChromosome(chr, this->input_data.getLongReadBam(), hmm, sv_calls, this->input_data.getMinCNVLength());
             {
@@ -498,52 +494,58 @@ void SVCaller::run()
                 whole_genome_sv_calls[chr] = std::move(sv_calls);
             }
             printMessage("Completed chromosome " + chr);
-
-            // // Notify thread completion
-            // {
-            //     std::lock_guard<std::mutex> lock(sv_mutex);
-            //     active_threads--;
-            //     printMessage("Active threads: " + std::to_string(active_threads));
-            // }
-            // cv.notify_one();
         } catch (const std::exception& e) {
             printError("Error processing chromosome " + chr + ": " + e.what());
         }
     };
 
     // Thread management
-    std::vector<std::thread> threads;
+    // std::vector<std::thread> threads;
+    std::vector<std::future<void>> futures;
+    std::atomic<int> active_threads(0);
+    std::mutex cv_mutex;
+    std::condition_variable cv;
     for (const auto& chr : chromosomes) {
         // Wait for a thread slot
-        std::unique_lock<std::mutex> lock(sv_mutex);
-        cv.wait(lock, [&] { return threads.size() < max_threads; });
+        {
+            std::unique_lock<std::mutex> lock(cv_mutex);
+            cv.wait(lock, [&] { return active_threads.load() < max_threads; });
+            active_threads.fetch_add(1);
+        }
 
-        // Launch a new thread
-        threads.emplace_back([&, chr] {
+        // Launch a task
+        futures.push_back(std::async(std::launch::async, [&, chr] {
             process_chr(chr);
+            {
+                std::lock_guard<std::mutex> lock(cv_mutex);
+                active_threads.fetch_sub(1);
 
-            // Notify thread completion
-            std::lock_guard<std::mutex> lock(sv_mutex);
-            cv.notify_one();
-        });
-        // {
-        //     std::unique_lock<std::mutex> lock(sv_mutex);
-        //     printMessage("Waiting for thread slot. Active threads: " + std::to_string(active_threads));
-        //     cv.wait(lock, [&] { return active_threads < max_threads; });
-        //     active_threads++;
-        //     printMessage("Launching thread for chromosome " + chr + ". Active threads: " + std::to_string(active_threads));
+                // Notify threads waiting for a slot
+                cv.notify_all();
+            }
+        }));
+        // while (active_threads.load() >= max_threads) {
+        //     std::this_thread::yield();
         // }
 
         // // Launch a new thread
-        // threads.emplace_back(process_chr, chr);
+        // threads.emplace_back([&, chr] {
+        //     active_threads.fetch_add(1);
+        //     process_chr(chr);
+        //     active_threads.fetch_sub(1);
+        // });
     }
 
     // Wait for all threads to complete
-    for (auto& thread : threads) {
-        if (thread.joinable()) {
-            thread.join();
-        }
+    printMessage("Waiting for all threads to finish...");
+    for (auto& future : futures) {
+        future.get();
     }
+    // for (auto& thread : threads) {
+    //     if (thread.joinable()) {
+    //         thread.join();
+    //     }
+    // }
 
     printMessage("All threads have finished.");
 
@@ -560,8 +562,6 @@ void SVCaller::run()
     // Save to VCF
     std::cout << "Saving SVs to VCF..." << std::endl;
     this->saveToVCF(whole_genome_sv_calls);
-
-    // return whole_genome_sv_calls;
 }
 
 
