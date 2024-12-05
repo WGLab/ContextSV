@@ -397,7 +397,6 @@ void SVCaller::processChromosome(const std::string& chr, const CHMM& hmm, std::v
     // std::cout << "Loading chromosome data for copy number predictions..." << std::endl;
     printMessage(chr + ": Loading chromosome data...");
     CNVCaller cnv_caller(this->input_data);
-    // cnv_caller.loadChromosomeData(chr);
     std::pair<double, std::vector<uint32_t>> chr_data = cnv_caller.calculateMeanChromosomeCoverage(chr, chr_len);
     if (chr_data.first == 0.0 || chr_data.second.size() == 0) {
         hts_idx_destroy(idx);

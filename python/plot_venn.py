@@ -4,7 +4,7 @@ import argparse
 
 import matplotlib.pyplot as plt
 
-def plot_venn(AB, Ab, aB, output, title_AB, title_Ab, title_aB):
+def plot_venn(AB, Ab, aB, output, plot_title, title_Ab, title_aB):
     plt.figure(figsize=(8, 8))
 
     print('AB:', AB)
@@ -27,7 +27,8 @@ def plot_venn(AB, Ab, aB, output, title_AB, title_Ab, title_aB):
     venn.get_label_by_id('11').set_text(str(AB))
 
     # Update the title
-    plt.title("contextsv and " + title_aB + " venn diagram (all SV types)")
+    # plt.title("contextsv and " + title_aB + " venn diagram (all SV types)")
+    plt.title(plot_title)
     plt.savefig(output)
     plt.close()
 
