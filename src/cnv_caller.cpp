@@ -46,7 +46,10 @@ void CNVCaller::runViterbi(const CHMM& hmm, SNPData& snp_data, std::pair<std::ve
     int data_count = (int) snp_data.pos.size();
     if (data_count == 0)
     {
-        throw std::runtime_error("Error: No SNP data found for Viterbi algorithm.");
+        // throw std::runtime_error("Error: No SNP data found for Viterbi
+        // algorithm.");
+        printError("ERROR: No SNP data found for Viterbi algorithm.");
+        prediction = std::make_pair(std::vector<int>(), 0.0);
     }
     prediction = testVit_CHMM(hmm, data_count, snp_data.log2_cov, snp_data.baf, snp_data.pfb);
 }
@@ -140,7 +143,9 @@ std::tuple<double, SVType, std::string, bool> CNVCaller::runCopyNumberPrediction
     // Check that the start position is less than the end position
     if (start_pos >= end_pos)
     {
-        throw std::runtime_error("ERROR: Invalid SV region for copy number prediction: " + chr + ":" + std::to_string((int)start_pos) + "-" + std::to_string((int)end_pos));
+        // throw std::runtime_error("ERROR: Invalid SV region for copy number prediction: " + chr + ":" + std::to_string((int)start_pos) + "-" + std::to_string((int)end_pos));
+        printError("ERROR: Invalid SV region for copy number prediction: " + chr + ":" + std::to_string((int)start_pos) + "-" + std::to_string((int)end_pos));
+        return std::make_tuple(0.0, SVType::UNKNOWN, "./.", false);
     }
 
     // Run the Viterbi algorithm on SNPs in the SV region +/- 1/2
@@ -167,6 +172,11 @@ std::tuple<double, SVType, std::string, bool> CNVCaller::runCopyNumberPrediction
     // printMessage("Running Viterbi algorithm for SV " + chr + ":" + std::to_string((int)start_pos) + "-" + std::to_string((int)end_pos) + " (" + std::to_string(sv_snps.pos.size()) + " SNPs, start=" + std::to_string(snp_start_pos) + ", end=" + std::to_string(snp_end_pos) + ")...");
     std::pair<std::vector<int>, double> prediction;
     runViterbi(hmm, sv_snps, prediction);
+    if (prediction.first.size() == 0)
+    {
+        return std::make_tuple(0.0, SVType::UNKNOWN, "./.", sv_snps_found);
+    }
+
     std::vector<int>& state_sequence = prediction.first;
     double likelihood = prediction.second;
 
@@ -225,9 +235,6 @@ std::tuple<double, SVType, std::string, bool> CNVCaller::runCopyNumberPrediction
 
 void CNVCaller::runCIGARCopyNumberPrediction(std::string chr, std::vector<SVCall> &sv_candidates, const CHMM& hmm, double mean_chr_cov, const std::vector<uint32_t>& pos_depth_map)
 {
-    int min_length = this->input_data.getMinCNVLength();
-    int window_size = this->input_data.getWindowSize();
-
     // Map with counts for each CNV type
     std::map<int, int> cnv_type_counts;
     for (int i = 0; i < 6; i++)
@@ -236,6 +243,7 @@ void CNVCaller::runCIGARCopyNumberPrediction(std::string chr, std::vector<SVCall
     }
     
     // Loop through each SV candidate and predict the copy number state
+    int min_length = this->input_data.getMinCNVLength();
     for (auto& sv_call : sv_candidates)
     {
 
@@ -386,7 +394,6 @@ std::vector<std::string> CNVCaller::splitRegionIntoChunks(std::string chr, uint3
 // Calculate the mean chromosome coverage
 std::pair<double, std::vector<uint32_t>> CNVCaller::calculateMeanChromosomeCoverage(std::string chr, uint32_t chr_len)
 {
-    // std::unordered_map<uint32_t, int> chr_pos_depth_map;
     std::vector<uint32_t> chr_pos_depth_map(chr_len+1, 0); // 1-based index
     {
         // Lock the bam file
@@ -397,7 +404,10 @@ std::pair<double, std::vector<uint32_t>> CNVCaller::calculateMeanChromosomeCover
         samFile *bam_file = sam_open(bam_filepath.c_str(), "r");
         if (!bam_file)
         {
-            throw std::runtime_error("ERROR: Could not open BAM file: " + bam_filepath);
+            // throw std::runtime_error("ERROR: Could not open BAM file: " +
+            // bam_filepath);
+            printError("ERROR: Could not open BAM file: " + bam_filepath);
+            return std::make_pair(0.0, chr_pos_depth_map);
         }
 
         // Enable multi-threading
@@ -408,7 +418,9 @@ std::pair<double, std::vector<uint32_t>> CNVCaller::calculateMeanChromosomeCover
         if (!bam_header)
         {
             sam_close(bam_file);
-            throw std::runtime_error("ERROR: Could not read header from BAM file: " + bam_filepath);
+            printError("ERROR: Could not read header from BAM file: " + bam_filepath);
+            return std::make_pair(0.0, chr_pos_depth_map);
+            // throw std::runtime_error("ERROR: Could not read header from BAM file: " + bam_filepath);
         }
 
         // Load the index
@@ -417,7 +429,10 @@ std::pair<double, std::vector<uint32_t>> CNVCaller::calculateMeanChromosomeCover
         {
             bam_hdr_destroy(bam_header);
             sam_close(bam_file);
-            throw std::runtime_error("ERROR: Could not load index for BAM file: " + bam_filepath);
+            // throw std::runtime_error("ERROR: Could not load index for BAM
+            // file: " + bam_filepath);
+            printError("ERROR: Could not load index for BAM file: " + bam_filepath);
+            return std::make_pair(0.0, chr_pos_depth_map);  
         }
 
         // Create an iterator for the chromosome
@@ -427,7 +442,11 @@ std::pair<double, std::vector<uint32_t>> CNVCaller::calculateMeanChromosomeCover
             hts_idx_destroy(bam_index);
             bam_hdr_destroy(bam_header);
             sam_close(bam_file);
-            throw std::runtime_error("ERROR: Could not create iterator for chromosome: " + chr + ", check if the chromosome exists in the BAM file.");
+            // throw std::runtime_error("ERROR: Could not create iterator for
+            // chromosome: " + chr + ", check if the chromosome exists in the
+            // BAM file.");
+            printError("ERROR: Could not create iterator for chromosome: " + chr + ", check if the chromosome exists in the BAM file.");
+            return std::make_pair(0.0, chr_pos_depth_map);
         }
 
         // Initialize the record
@@ -438,7 +457,10 @@ std::pair<double, std::vector<uint32_t>> CNVCaller::calculateMeanChromosomeCover
             hts_idx_destroy(bam_index);
             bam_hdr_destroy(bam_header);
             sam_close(bam_file);
-            throw std::runtime_error("ERROR: Could not initialize BAM record.");
+            // throw std::runtime_error("ERROR: Could not initialize BAM
+            // record.");
+            printError("ERROR: Could not initialize BAM record.");
+            return std::make_pair(0.0, chr_pos_depth_map);
         }
 
         // Iterate through the chromosome and update the depth map
@@ -469,7 +491,9 @@ std::pair<double, std::vector<uint32_t>> CNVCaller::calculateMeanChromosomeCover
                         try {
                             chr_pos_depth_map[ref_pos + j]++;
                         } catch (const std::out_of_range& oor) {
-                            std::cerr << "Out of range error for " << chr << ":" << ref_pos+j << std::endl;
+                            // std::cerr << "Out of range error for " << chr <<
+                            // ":" << ref_pos+j << std::endl;
+                            printError("Out of range error for " + chr + ":" + std::to_string(ref_pos+j));
                         }
                         // chr_pos_depth_map[ref_pos + j]++;
                     }
@@ -482,7 +506,9 @@ std::pair<double, std::vector<uint32_t>> CNVCaller::calculateMeanChromosomeCover
                 } else if (op == BAM_CINS || op == BAM_CSOFT_CLIP || op == BAM_CHARD_CLIP || op == BAM_CPAD) {
                     // Do nothing
                 } else {
-                    throw std::runtime_error("ERROR: Unknown CIGAR operation: " + std::to_string(op));
+                    // throw std::runtime_error("ERROR: Unknown CIGAR operation:
+                    // " + std::to_string(op));
+                    printError("ERROR: Unknown CIGAR operation: " + std::to_string(op));
                 }
             }
         }
@@ -554,14 +580,18 @@ void CNVCaller::readSNPAlleleFrequencies(std::string chr, uint32_t start_pos, ui
     std::string snp_filepath = this->input_data.getSNPFilepath();
     if (snp_filepath.empty())
     {
-        throw std::runtime_error("ERROR: SNP file path is empty.");
+        // throw std::runtime_error("ERROR: SNP file path is empty.");
+        printError("ERROR: SNP file path is empty.");
+        return;
     }
 
     // Initialize the synced reader
     bcf_srs_t *snp_reader = bcf_sr_init();
     if (!snp_reader)
     {
-        throw std::runtime_error("ERROR: Could not initialize SNP reader.");
+        // throw std::runtime_error("ERROR: Could not initialize SNP reader.");
+        printError("ERROR: Could not initialize SNP reader.");
+        return;
     }
 
     // Lock during reading
@@ -572,7 +602,10 @@ void CNVCaller::readSNPAlleleFrequencies(std::string chr, uint32_t start_pos, ui
     if (bcf_sr_set_regions(snp_reader, region_str.c_str(), 0) < 0)
     {
         bcf_sr_destroy(snp_reader);
-        throw std::runtime_error("ERROR: Could not set region for SNP reader: " + region_str);
+        // throw std::runtime_error("ERROR: Could not set region for SNP reader:
+        // " + region_str);
+        printError("ERROR: Could not set region for SNP reader: " + region_str);
+        return;
     }
 
     // Set multi-threading
@@ -586,7 +619,10 @@ void CNVCaller::readSNPAlleleFrequencies(std::string chr, uint32_t start_pos, ui
     if (bcf_sr_add_reader(snp_reader, snp_filepath.c_str()) < 0)
     {
         bcf_sr_destroy(snp_reader);
-        throw std::runtime_error("ERROR: Could not add SNP file to reader: " + snp_filepath);
+        // throw std::runtime_error("ERROR: Could not add SNP file to reader: "
+        // + snp_filepath);
+        printError("ERROR: Could not add SNP file to reader: " + snp_filepath);
+        return;
     }
 
     // Get the header
@@ -594,7 +630,10 @@ void CNVCaller::readSNPAlleleFrequencies(std::string chr, uint32_t start_pos, ui
     if (!snp_header)
     {
         bcf_sr_destroy(snp_reader);
-        throw std::runtime_error("ERROR: Could not get header for SNP reader.");
+        // throw std::runtime_error("ERROR: Could not get header for SNP
+        // reader.");
+        printError("ERROR: Could not get header for SNP reader.");
+        return;
     }
 
     // std::cout << "Iterating through SNPs in region " << region_str << "..." << std::endl;
@@ -670,7 +709,10 @@ void CNVCaller::readSNPAlleleFrequencies(std::string chr, uint32_t start_pos, ui
             {
                 // std::cerr << "ERROR: AD value is missing for SNP at " << chr
                 // << ":" << pos << std::endl;
-                throw std::runtime_error("ERROR: AD value is missing for SNP at " + chr + ":" + std::to_string(pos));
+                // throw std::runtime_error("ERROR: AD value is missing for SNP
+                // at " + chr + ":" + std::to_string(pos));
+                printError("ERROR: AD value is missing for SNP at " + chr + ":" + std::to_string(pos));
+                continue;
             }
 
             // Calculate the B-allele frequency (BAF)
@@ -744,7 +786,10 @@ void CNVCaller::readSNPPopulationFrequencies(std::string chr, uint32_t start_pos
     bcf_srs_t *pfb_reader = bcf_sr_init();
     if (!pfb_reader)
     {
-        throw std::runtime_error("ERROR: Could not initialize synced reader for population frequency file: " + pfb_filepath);
+        // throw std::runtime_error("ERROR: Could not initialize synced reader
+        // for population frequency file: " + pfb_filepath);
+        printError("ERROR: Could not initialize synced reader for population frequency file: " + pfb_filepath);
+        return;
     }
 
     // Lock during reading
@@ -755,7 +800,10 @@ void CNVCaller::readSNPPopulationFrequencies(std::string chr, uint32_t start_pos
     if (bcf_sr_set_regions(pfb_reader, region_str.c_str(), 0) < 0)
     {
         bcf_sr_destroy(pfb_reader);
-        throw std::runtime_error("ERROR: Could not set region for synced reader: " + region_str);
+        // throw std::runtime_error("ERROR: Could not set region for synced
+        // reader: " + region_str);
+        printError("ERROR: Could not set region for synced reader: " + region_str);
+        return;
     }
 
     // Set multi-threading
@@ -768,7 +816,10 @@ void CNVCaller::readSNPPopulationFrequencies(std::string chr, uint32_t start_pos
     if (bcf_sr_add_reader(pfb_reader, pfb_filepath.c_str()) < 0)
     {
         bcf_sr_destroy(pfb_reader);
-        throw std::runtime_error("ERROR: Could not add population frequency file to synced reader: " + pfb_filepath);
+        // throw std::runtime_error("ERROR: Could not add population frequency
+        // file to synced reader: " + pfb_filepath);
+        printError("ERROR: Could not add population frequency file to synced reader: " + pfb_filepath);
+        return;
     }
 
     // Get the header
@@ -776,7 +827,10 @@ void CNVCaller::readSNPPopulationFrequencies(std::string chr, uint32_t start_pos
     if (!pfb_header)
     {
         bcf_sr_destroy(pfb_reader);
-        throw std::runtime_error("ERROR: Could not get header for population frequency file: " + pfb_filepath);
+        // throw std::runtime_error("ERROR: Could not get header for population
+        // frequency file: " + pfb_filepath);
+        printError("ERROR: Could not get header for population frequency file: " + pfb_filepath);
+        return;
     }
 
     int record_count = 0;
@@ -832,7 +886,9 @@ void CNVCaller::readSNPPopulationFrequencies(std::string chr, uint32_t start_pos
     }
     if (pfb_reader->errnum)
     {
-        std::cerr << "ERROR: " <<bcf_sr_strerror(pfb_reader->errnum) << std::endl;
+        // std::cerr << "ERROR: " <<bcf_sr_strerror(pfb_reader->errnum) <<
+        // std::endl;
+        printError("ERROR: " + std::string(bcf_sr_strerror(pfb_reader->errnum)));
     }
 
     // Clean up

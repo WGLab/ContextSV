@@ -20,6 +20,7 @@
 #include <fstream>
 #include <condition_variable>
 
+#include "ThreadPool.h"
 #include "utils.h"
 #include "sv_types.h"
 #include "version.h"
@@ -398,6 +399,12 @@ void SVCaller::processChromosome(const std::string& chr, const CHMM& hmm, std::v
     CNVCaller cnv_caller(this->input_data);
     // cnv_caller.loadChromosomeData(chr);
     std::pair<double, std::vector<uint32_t>> chr_data = cnv_caller.calculateMeanChromosomeCoverage(chr, chr_len);
+    if (chr_data.first == 0.0 || chr_data.second.size() == 0) {
+        hts_idx_destroy(idx);
+        bam_hdr_destroy(bamHdr);
+        sam_close(fp_in);
+        return;
+    }
 
     // Process each chunk one at a time
     // std::cout << "Processing " << region_chunks.size() << " region(s) for chromosome " << chr << "..." << std::endl;
@@ -468,20 +475,18 @@ void SVCaller::run()
     } else {
         chromosomes = this->input_data.getRefGenomeChromosomes();
     }
-
-    // Ignore all alternate contigs (contains 'alt', 'GL', 'NC', 'hs', etc.)
-    // chromosomes.erase(std::remove_if(chromosomes.begin(), chromosomes.end(), [](const std::string& chr) {
-    //     return chr.find("alt") != std::string::npos || chr.find("GL") != std::string::npos || chr.find("NC") != std::string::npos || chr.find("hs") != std::string::npos;
-    // }), chromosomes.end());
         
     // Read the HMM from the file
     std::string hmm_filepath = this->input_data.getHMMFilepath();
     std::cout << "Reading HMM from file: " << hmm_filepath << std::endl;
     const CHMM& hmm = ReadCHMM(hmm_filepath.c_str());
 
-    // Set up threads for processing each chromosome
+    // Set up thread pool
     const int max_threads = this->input_data.getThreadCount();
     std::cout << "Using " << max_threads << " threads for processing..." << std::endl;
+    ThreadPool pool(max_threads);
+
+    // Shared resources
     std::unordered_map<std::string, std::vector<SVCall>> whole_genome_sv_calls;
     std::mutex sv_mutex;
 
@@ -497,58 +502,34 @@ void SVCaller::run()
             printMessage("Completed chromosome " + chr);
         } catch (const std::exception& e) {
             printError("Error processing chromosome " + chr + ": " + e.what());
+        } catch (...) {
+            printError("Unknown error processing chromosome " + chr);
         }
     };
 
-    // Thread management
-    // std::vector<std::thread> threads;
+    // Futures vector
     std::vector<std::future<void>> futures;
-    std::atomic<int> active_threads(0);
-    std::mutex cv_mutex;
-    std::condition_variable cv;
+
+    // Submit tasks to the thread pool and track futures
     for (const auto& chr : chromosomes) {
-        // Wait for a thread slot
-        {
-            std::unique_lock<std::mutex> lock(cv_mutex);
-            cv.wait(lock, [&] { return active_threads.load() < max_threads; });
-            active_threads.fetch_add(1);
-        }
-
-        // Launch a task
-        futures.push_back(std::async(std::launch::async, [&, chr] {
+        futures.emplace_back(pool.enqueue([&, chr] {
+            printMessage("Processing chromosome " + chr);
             process_chr(chr);
-            {
-                std::lock_guard<std::mutex> lock(cv_mutex);
-                active_threads.fetch_sub(1);
-
-                // Notify threads waiting for a slot
-                cv.notify_all();
-            }
         }));
-        // while (active_threads.load() >= max_threads) {
-        //     std::this_thread::yield();
-        // }
-
-        // // Launch a new thread
-        // threads.emplace_back([&, chr] {
-        //     active_threads.fetch_add(1);
-        //     process_chr(chr);
-        //     active_threads.fetch_sub(1);
-        // });
     }
 
-    // Wait for all threads to complete
-    printMessage("Waiting for all threads to finish...");
+    // Wait for all tasks to complete
     for (auto& future : futures) {
-        future.get();
+        try {
+            future.get();
+            printMessage("Chromosome task completed.");
+        } catch (const std::exception& e) {
+            printError("Error processing chromosome task: " + std::string(e.what()));
+        } catch (...) {
+            printError("Unknown error processing chromosome task.");
+        }
     }
-    // for (auto& thread : threads) {
-    //     if (thread.joinable()) {
-    //         thread.join();
-    //     }
-    // }
-
-    printMessage("All threads have finished.");
+    printMessage("All tasks have finished.");
 
     // Print the total number of SVs detected for each chromosome
     uint32_t total_sv_count = 0;
@@ -614,6 +595,10 @@ void SVCaller::detectSVsFromSplitReads(std::vector<SVCall>& sv_calls, PrimaryMap
 
                     // printMessage("Running copy number prediction on inversion: " + primary_chr + ":" + std::to_string(supp_start+1) + "-" + std::to_string(supp_end+1));
                     std::tuple<double, SVType, std::string, bool> result = cnv_caller.runCopyNumberPrediction(primary_chr, hmm, supp_start+1, supp_end+1, mean_chr_cov, pos_depth_map);
+                    if (std::get<1>(result) == SVType::UNKNOWN) {
+                        continue;
+                    }
+
                     double supp_lh = std::get<0>(result);
                     SVType supp_type = std::get<1>(result);
                     int read_depth = this->calculateReadDepth(pos_depth_map, supp_start+1, supp_end+1);
@@ -675,6 +660,9 @@ void SVCaller::detectSVsFromSplitReads(std::vector<SVCall>& sv_calls, PrimaryMap
 
             // printMessage("Running copy number prediction on boundary: " + primary_chr + ":" + std::to_string(boundary_left) + "-" + std::to_string(boundary_right));
             std::tuple<double, SVType, std::string, bool> bd_result = cnv_caller.runCopyNumberPrediction(primary_chr, hmm, boundary_left, boundary_right, mean_chr_cov, pos_depth_map);
+            if (std::get<1>(bd_result) == SVType::UNKNOWN) {
+                continue;
+            }
             double bd_lh = std::get<0>(bd_result);
             SVType bd_type = std::get<1>(bd_result);
 
@@ -690,6 +678,9 @@ void SVCaller::detectSVsFromSplitReads(std::vector<SVCall>& sv_calls, PrimaryMap
 
                 // printMessage("Running copy number prediction on gap: " + primary_chr + ":" + std::to_string(gap_left) + "-" + std::to_string(gap_right));
                 std::tuple<double, SVType, std::string, bool> gap_result = cnv_caller.runCopyNumberPrediction(primary_chr, hmm, gap_left, gap_right, mean_chr_cov, pos_depth_map);
+                if (std::get<1>(gap_result) == SVType::UNKNOWN) {
+                    continue;
+                }
                 double gap_lh = std::get<0>(gap_result);
                 SVType gap_type = std::get<1>(gap_result);
 

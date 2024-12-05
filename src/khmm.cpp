@@ -12,6 +12,8 @@
 #include <limits>
 /// @endcond
 
+#include "utils.h"
+
 #define STATE_CHANGE 100000.0 /*this is the expected changes (D value) in the transition matrix*/
 #define VITHUGE 100000000000.0
 #define FLOAT_MINIMUM 1.175494351e-38 /*this is indeed machine dependent*/
@@ -423,7 +425,9 @@ CHMM ReadCHMM(const std::string filename)
 	std::ifstream file(filename);
 	if (!file.is_open())
 	{
-		throw std::runtime_error("Error opening file");
+		// throw std::runtime_error("Error opening file");
+		printError("Error opening file");
+		return CHMM();
 	}
 	CHMM hmm;
 
@@ -433,87 +437,115 @@ CHMM ReadCHMM(const std::string filename)
 	std::getline(file, line);
 	if (sscanf(line.c_str(), "M=%d", &hmm.M) != 1)
 	{
-		throw std::runtime_error("Error reading M");
+		// throw std::runtime_error("Error reading M");
+		printError("Error reading M");
+		return CHMM();
 	}
 
 	// Read N
 	std::getline(file, line);
 	if (sscanf(line.c_str(), "N=%d", &hmm.N) != 1)
 	{
-		throw std::runtime_error("Error reading N");
+		// throw std::runtime_error("Error reading N");
+		printError("Error reading N");
+		return CHMM();
 	}
 
 	// Read A
 	std::getline(file, line);
 	if (line != "A:")
 	{
-		throw std::runtime_error("Error reading A");
+		// throw std::runtime_error("Error reading A");
+		printError("Error reading A");
+		return CHMM();
 	}
 	hmm.A = readMatrix(file, hmm.N, hmm.N);
 	if (hmm.A.size() != (size_t)hmm.N || hmm.A[0].size() != (size_t)hmm.N)
 	{
-		throw std::runtime_error("Error reading A");
+		// throw std::runtime_error("Error reading A");
+		printError("Error reading A");
+		return CHMM();
 	}
 
 	// Read B
 	std::getline(file, line);
 	if (line != "B:")
 	{
-		throw std::runtime_error("Error reading B");
+		// throw std::runtime_error("Error reading B");
+		printError("Error reading B");
+		return CHMM();
 	}
 	hmm.B = readMatrix(file, hmm.N, hmm.M);
 	if (hmm.B.size() != (size_t)hmm.N || hmm.B[0].size() != (size_t)hmm.M)
 	{
-		throw std::runtime_error("Error reading B");
+		// throw std::runtime_error("Error reading B");
+		printError("Error reading B");
+		return CHMM();
 	}
 
 	// Read pi
 	std::getline(file, line);
 	if (line != "pi:")
 	{
-		throw std::runtime_error("Error reading pi");
+		// throw std::runtime_error("Error reading pi");
+		printError("Error reading pi");
+		return CHMM();
 	}
 	hmm.pi = readVector(file, hmm.N);
 	if (hmm.pi.size() != (size_t)hmm.N)
 	{
-		throw std::runtime_error("Error reading pi");
+		// throw std::runtime_error("Error reading pi");
+		printError("Error reading pi");
+		return CHMM();
 	}
 
 	// Read B1_mean
 	std::getline(file, line);
 	if (line != "B1_mean:")
 	{
-		throw std::runtime_error("Error reading B1_mean");
+		// throw std::runtime_error("Error reading B1_mean");
+		printError("Error reading B1_mean");
+		return CHMM();
 	}
 	hmm.B1_mean = readVector(file, hmm.N);
 	if (hmm.B1_mean.size() != (size_t)hmm.N)
 	{
-		throw std::runtime_error("Error reading B1_mean");
+		// throw std::runtime_error("Error reading B1_mean");
+		printError("Error reading B1_mean");
+		return CHMM();
 	}
 
 	// Read B1_sd
 	std::getline(file, line);
 	if (line != "B1_sd:")
 	{
-		throw std::runtime_error("Error reading B1_sd");
+		// throw std::runtime_error("Error reading B1_sd");
+		printError("Error reading B1_sd");
+		return CHMM();
 	}
 	hmm.B1_sd = readVector(file, hmm.N);
 	if (hmm.B1_sd.size() != (size_t)hmm.N)
 	{
-		throw std::runtime_error("Error reading B1_sd");
+		// throw std::runtime_error("Error reading B1_sd");
+		printError("Error reading B1_sd");
+		return CHMM();
 	}
 
 	// Read B1_uf
 	std::getline(file, line);
 	if (line != "B1_uf:")
 	{
-		throw std::runtime_error("Error reading B1_uf");
+		// throw std::runtime_error("Error reading B1_uf");
+		printError("Error reading B1_uf");
+		return CHMM();
 	}
 	std::getline(file, line);
 	try {
 		hmm.B1_uf = std::stod(line);
 	} catch (const std::invalid_argument& e) {
-		throw std::runtime_error("Error reading B1_uf");
+		// throw std::runtime_error("Error reading B1_uf");
+		printError("Error reading B1_uf");
+		return CHMM();
 	}
 
 	// Read B2_mean
