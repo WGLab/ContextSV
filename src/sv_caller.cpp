@@ -261,7 +261,7 @@ void SVCaller::detectSVsFromCIGAR(bam_hdr_t* header, bam1_t* alignment, std::vec
                 ref_pos = pos+1;
                 ref_end = ref_pos + op_len -1;
                 int read_depth = this->calculateReadDepth(pos_depth_map, ref_pos, ref_end);
-                addSVCall(sv_calls, ref_pos, ref_end, "DEL", ".", "CIGARDEL", "./.", default_lh, read_depth);
+                addSVCall(sv_calls, ref_pos, ref_end, "DEL", "<DEL>", "CIGARDEL", "./.", default_lh, read_depth);
             }
 
         // Check if the CIGAR operation is a clipped base
@@ -340,9 +340,10 @@ void SVCaller::detectSVsFromCIGAR(bam_hdr_t* header, bam1_t* alignment, std::vec
     query_info = std::tuple<std::vector<int>, uint32_t, uint32_t>(std::move(query_match_map), query_start, query_end);
 }
 
-void SVCaller::processChromosome(const std::string& chr, const std::string& bam_filepath, const CHMM& hmm, std::vector<SVCall>& combined_sv_calls, int min_cnv_length)
+void SVCaller::processChromosome(const std::string& chr, const CHMM& hmm, std::vector<SVCall>& combined_sv_calls)
 {
     // Open the BAM file
+    std::string bam_filepath = this->input_data.getLongReadBam();
     samFile *fp_in = sam_open(bam_filepath.c_str(), "r");
     if (!fp_in) {
         throw std::runtime_error("ERROR: failed to open " + bam_filepath);
@@ -469,9 +470,9 @@ void SVCaller::run()
     }
 
     // Ignore all alternate contigs (contains 'alt', 'GL', 'NC', 'hs', etc.)
-    chromosomes.erase(std::remove_if(chromosomes.begin(), chromosomes.end(), [](const std::string& chr) {
-        return chr.find("alt") != std::string::npos || chr.find("GL") != std::string::npos || chr.find("NC") != std::string::npos || chr.find("hs") != std::string::npos;
-    }), chromosomes.end());
+    // chromosomes.erase(std::remove_if(chromosomes.begin(), chromosomes.end(), [](const std::string& chr) {
+    //     return chr.find("alt") != std::string::npos || chr.find("GL") != std::string::npos || chr.find("NC") != std::string::npos || chr.find("hs") != std::string::npos;
+    // }), chromosomes.end());
         
     // Read the HMM from the file
     std::string hmm_filepath = this->input_data.getHMMFilepath();
@@ -488,7 +489,7 @@ void SVCaller::run()
     auto process_chr = [&](const std::string& chr) {
         try {
             std::vector<SVCall> sv_calls;
-            this->processChromosome(chr, this->input_data.getLongReadBam(), hmm, sv_calls, this->input_data.getMinCNVLength());
+            this->processChromosome(chr, hmm, sv_calls);
             {
                 std::lock_guard<std::mutex> lock(sv_mutex);
                 whole_genome_sv_calls[chr] = std::move(sv_calls);
@@ -617,18 +618,18 @@ void SVCaller::detectSVsFromSplitReads(std::vector<SVCall>& sv_calls, PrimaryMap
                     SVType supp_type = std::get<1>(result);
                     int read_depth = this->calculateReadDepth(pos_depth_map, supp_start+1, supp_end+1);
                     if (supp_type == SVType::NEUTRAL) {
-                        addSVCall(sv_calls, supp_start+1, supp_end+1, "INV", ".", "HMM", "./.", supp_lh, read_depth);
+                        addSVCall(sv_calls, supp_start+1, supp_end+1, "INV", "<INV>", "HMM", "./.", supp_lh, read_depth);
                         
                         sv_count++;
                     } else if (supp_type == SVType::DUP) {
                         int read_depth = this->calculateReadDepth(pos_depth_map, supp_start+1, supp_end+1);
-                        addSVCall(sv_calls, supp_start+1, supp_end+1, "INVDUP", ".", "HMM", "./.", supp_lh, read_depth);
+                        addSVCall(sv_calls, supp_start+1, supp_end+1, "INVDUP", "<INV>", "HMM", "./.", supp_lh, read_depth);
                     }
                 } else {
                     // Add the inversion without running copy number predictions
                     // (too small for predictions)
                     int read_depth = this->calculateReadDepth(pos_depth_map, supp_start+1, supp_end+1);
-                    addSVCall(sv_calls, supp_start+1, supp_end+1, "INV", ".", "REV", "./.", 0.0, read_depth);
+                    addSVCall(sv_calls, supp_start+1, supp_end+1, "INV", "<INV>", "REV", "./.", 0.0, read_depth);
                 }
             }
         }
@@ -695,16 +696,19 @@ void SVCaller::detectSVsFromSplitReads(std::vector<SVCall>& sv_calls, PrimaryMap
                 // If higher likelihood than the boundary, add the gap as the SV call
                 if (gap_lh > bd_lh) {
                     int read_depth = this->calculateReadDepth(pos_depth_map, gap_left, gap_right);
-                    addSVCall(sv_calls, gap_left, gap_right, getSVTypeString(gap_type), ".", "GAP", "./.", gap_lh, read_depth);
+                    std::string alt_allele = bd_type == SVType::NEUTRAL ? "." : "<" + getSVTypeString(bd_type) + ">";
+                    addSVCall(sv_calls, gap_left, gap_right, getSVTypeString(gap_type), alt_allele, "GAP", "./.", gap_lh, read_depth);
                 } else {
                     // Add the boundary as the SV call
                     int read_depth = this->calculateReadDepth(pos_depth_map, boundary_left, boundary_right);
-                    addSVCall(sv_calls, boundary_left, boundary_right, getSVTypeString(bd_type), ".", "BOUNDARY", "./.", bd_lh, read_depth);
+                    std::string alt_allele = bd_type == SVType::NEUTRAL ? "." : "<" + getSVTypeString(bd_type) + ">";
+                    addSVCall(sv_calls, boundary_left, boundary_right, getSVTypeString(bd_type), alt_allele, "BOUNDARY", "./.", bd_lh, read_depth);
                 }
             } else {
                 // Add the boundary as the SV call
                 int read_depth = this->calculateReadDepth(pos_depth_map, boundary_left, boundary_right);
-                addSVCall(sv_calls, boundary_left, boundary_right, getSVTypeString(bd_type), ".", "BOUNDARY", "./.", bd_lh, read_depth);
+                std::string alt_allele = bd_type == SVType::NEUTRAL ? "." : "<" + getSVTypeString(bd_type) + ">";
+                addSVCall(sv_calls, boundary_left, boundary_right, getSVTypeString(bd_type), alt_allele, "BOUNDARY", "./.", bd_lh, read_depth);
             }
         }
     }
@@ -851,9 +855,6 @@ void SVCaller::saveToVCF(const std::unordered_map<std::string, std::vector<SVCal
             }
 
             // Create the VCF parameter strings
-            // std::string info_str = "END=" + std::to_string(end) + ";SVTYPE=" + sv_type_str + \
-            //     ";SVLEN=" + std::to_string(sv_length) + ";SVMETHOD=" + sv_method + ";ALN=" + data_type_str + \
-            //     ";HMM=" + std::to_string(hmm_likelihood);
             std::string info_str = "END=" + std::to_string(end) + ";SVTYPE=" + sv_type_str + \
                 ";SVLEN=" + std::to_string(sv_length) + ";SVMETHOD=" + sv_method + ";ALN=" + data_type_str + \
                 ";HMM=" + std::to_string(hmm_likelihood) + ";SUPPORT=" + std::to_string(support);
