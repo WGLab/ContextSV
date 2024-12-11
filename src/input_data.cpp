@@ -24,7 +24,7 @@ InputData::InputData()
     this->start_end = std::make_pair(0, 0);
     this->region_set = false;
     this->output_dir = "";
-    this->window_size = 2500;
+    this->sample_size = 100;
     this->min_cnv_length = 1000;
     this->thread_count = 1;
     this->hmm_filepath = "data/wgs.hmm";
@@ -124,14 +124,14 @@ void InputData::setOutputDir(std::string dirpath)
     system(cmd.c_str());
 }
 
-int InputData::getWindowSize()
+int InputData::getSampleSize()
 {
-    return this->window_size;
+    return this->sample_size;
 }
 
-void InputData::setWindowSize(int window_size)
+void InputData::setSampleSize(int sample_size)
 {
-    this->window_size = window_size;
+    this->sample_size = sample_size;
 }
 
 std::string InputData::getSNPFilepath()

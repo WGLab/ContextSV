@@ -16,11 +16,6 @@ bool SVCall::operator<(const SVCall & other) const
 
 void addSVCall(std::vector<SVCall>& sv_calls, uint32_t start, uint32_t end, std::string sv_type, std::string alt_allele, std::string data_type, std::string genotype, double hmm_likelihood, int read_depth)
 {
-    // Catch underflow errors
-    if (start > 4000000000 || end > 4000000000) {
-        throw std::runtime_error("ERROR: Integer underflow for SV call at position " + std::to_string(start) + "-" + std::to_string(end));
-    }
-
     // Ignore unknown SV types
     if (sv_type == "UNKNOWN" || sv_type == "NEUTRAL") {
         return;

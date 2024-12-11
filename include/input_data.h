@@ -69,9 +69,9 @@ class InputData {
         void setEthnicity(std::string ethnicity);
         std::string getEthnicity();
 
-        // Set the window size for the log2 ratio calculation.
-        void setWindowSize(int window_size);
-        int getWindowSize();
+        // Set the sample size for HMM predictions.
+        void setSampleSize(int sample_size);
+        int getSampleSize();
 
         // Set the minimum CNV length to use for copy number predictions.
         void setMinCNVLength(int min_cnv_length);
@@ -112,7 +112,7 @@ class InputData {
         std::unordered_map<std::string, std::string> pfb_filepaths;  // Map of population frequency VCF filepaths by chromosome
         ReferenceGenome fasta_query;
         std::string output_dir;
-        int window_size;
+        int sample_size;
         int min_cnv_length;
         std::string chr;  // Chromosome to analyze
         std::pair<int32_t, int32_t> start_end;  // Region to analyze

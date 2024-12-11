@@ -78,11 +78,6 @@ void SVCaller::detectCIGARSVs(samFile* fp_in, hts_idx_t* idx, bam_hdr_t* bamHdr,
             end--;  // Adjust to the last position of the alignment
             bool fwd_strand = !(bam1->core.flag & BAM_FREVERSE);
 
-            // Check for underflow
-            if (start > 4000000000 || end > 4000000000) {
-                throw std::runtime_error("ERROR: Integer underflow for alignment at position " + std::to_string(start) + "-" + std::to_string(end));
-            }
-
             // Call SVs directly from the CIGAR string
             std::tuple<std::vector<int>, uint32_t, uint32_t> query_info;
             this->detectSVsFromCIGAR(bamHdr, bam1, sv_calls, query_info, true, pos_depth_map);
@@ -90,11 +85,6 @@ void SVCaller::detectCIGARSVs(samFile* fp_in, hts_idx_t* idx, bam_hdr_t* bamHdr,
             const std::vector<int>& match_map = std::get<0>(query_info);
             uint32_t query_start = std::get<1>(query_info);
             uint32_t query_end = std::get<2>(query_info);
-
-            // Check for underflow
-            if (query_start > 4000000000 || query_end > 4000000000) {
-                throw std::runtime_error("ERROR: Integer underflow for query at position " + std::to_string(query_start) + "-" + std::to_string(query_end));
-            }
 
             // Add the primary alignment to the map
             AlignmentData alignment(chr, start, end, query_start, query_end, match_map, fwd_strand);
@@ -481,9 +471,13 @@ void SVCaller::run()
     std::cout << "Reading HMM from file: " << hmm_filepath << std::endl;
     const CHMM& hmm = ReadCHMM(hmm_filepath.c_str());
 
-    // Set up thread pool
-    const int max_threads = this->input_data.getThreadCount();
-    std::cout << "Using " << max_threads << " threads for processing..." << std::endl;
+    // Use multi-threading across chromosomes unless a single chromosome is
+    // specified
+    int max_threads = 1;
+    if (this->input_data.getChromosome() == "") {
+        max_threads = this->input_data.getThreadCount();
+        std::cout << "Using " << max_threads << " threads for processing..." << std::endl;
+    }
     ThreadPool pool(max_threads);
 
     // Shared resources
@@ -507,10 +501,8 @@ void SVCaller::run()
         }
     };
 
-    // Futures vector
-    std::vector<std::future<void>> futures;
-
     // Submit tasks to the thread pool and track futures
+    std::vector<std::future<void>> futures;
     for (const auto& chr : chromosomes) {
         futures.emplace_back(pool.enqueue([&, chr] {
             printMessage("Processing chromosome " + chr);
@@ -553,16 +545,12 @@ void SVCaller::detectSVsFromSplitReads(std::vector<SVCall>& sv_calls, PrimaryMap
     // Find split-read SV evidence
     int sv_count = 0;
     uint32_t min_cnv_length = (uint32_t) this->input_data.getMinCNVLength();
-    int primary_count = primary_map.size();
-    int current_primary = 0;
     for (const auto& entry : primary_map) {
-        current_primary++;
         std::string qname = entry.first;
         AlignmentData primary_alignment = entry.second;
         std::string primary_chr = std::get<0>(primary_alignment);
         uint32_t primary_start = std::get<1>(primary_alignment);
         uint32_t primary_end = std::get<2>(primary_alignment);
-        printMessage("Processing primary alignment " + std::to_string(current_primary) + " of " + std::to_string(primary_count) + " (Location: " + primary_chr + ":" + std::to_string(primary_start+1) + "-" + std::to_string(primary_end+1) + ")...");
 
         // Skip primary alignments that do not have supplementary alignments
         if (supp_map.find(qname) == supp_map.end()) {
@@ -571,7 +559,7 @@ void SVCaller::detectSVsFromSplitReads(std::vector<SVCall>& sv_calls, PrimaryMap
 
         // Find the largest supplementary alignment, and also identify
         // inversions
-        printMessage("Finding largest supplementary alignment...");
+        // printMessage("Finding largest supplementary alignment...");
         AlignmentData largest_supp_alignment = supp_map[qname][0];
         uint32_t largest_supp_length = 0;
         for (auto it = supp_map[qname].begin(); it != supp_map[qname].end(); ++it) {
@@ -599,7 +587,6 @@ void SVCaller::detectSVsFromSplitReads(std::vector<SVCall>& sv_calls, PrimaryMap
                         continue;
                     }
 
-                    printMessage("Running copy number prediction on inversion: " + primary_chr + ":" + std::to_string(supp_start+1) + "-" + std::to_string(supp_end+1) + " of length " + std::to_string(supp_length) + " bp...");
                     std::tuple<double, SVType, std::string, bool> result = cnv_caller.runCopyNumberPrediction(primary_chr, hmm, supp_start+1, supp_end+1, mean_chr_cov, pos_depth_map);
                     if (std::get<1>(result) == SVType::UNKNOWN) {
                         continue;
@@ -607,20 +594,17 @@ void SVCaller::detectSVsFromSplitReads(std::vector<SVCall>& sv_calls, PrimaryMap
 
                     double supp_lh = std::get<0>(result);
                     SVType supp_type = std::get<1>(result);
-                    printMessage("Calculating read depth for inversion (length: " + std::to_string(supp_length) + " bp)...");
                     int read_depth = this->calculateReadDepth(pos_depth_map, supp_start+1, supp_end+1);
                     if (supp_type == SVType::NEUTRAL) {
                         addSVCall(sv_calls, supp_start+1, supp_end+1, "INV", "<INV>", "HMM", "./.", supp_lh, read_depth);
                         
                         sv_count++;
                     } else if (supp_type == SVType::DUP) {
-                        // int read_depth = this->calculateReadDepth(pos_depth_map, supp_start+1, supp_end+1);
                         addSVCall(sv_calls, supp_start+1, supp_end+1, "INVDUP", "<INV>", "HMM", "./.", supp_lh, read_depth);
                     }
                 } else {
                     // Add the inversion without running copy number predictions
                     // (too small for predictions)
-                    printMessage("Calculating read depth for small inversion (length: " + std::to_string(supp_length) + " bp)...");
                     int read_depth = this->calculateReadDepth(pos_depth_map, supp_start+1, supp_end+1);
                     addSVCall(sv_calls, supp_start+1, supp_end+1, "INV", "<INV>", "REV", "./.", 0.0, read_depth);
                 }
@@ -628,14 +612,12 @@ void SVCaller::detectSVsFromSplitReads(std::vector<SVCall>& sv_calls, PrimaryMap
         }
 
         // Trim overlapping alignments
-        printMessage("Trimming overlapping alignments...");
         uint32_t supp_start = std::get<1>(largest_supp_alignment);
         uint32_t supp_end = std::get<2>(largest_supp_alignment);
         bool primary_before_supp = primary_start < supp_start;
         trimOverlappingAlignments(primary_alignment, largest_supp_alignment);
 
         // Create the SV candidate using both alignments
-        printMessage("Creating SV candidates...");
         supp_start = std::get<1>(largest_supp_alignment);
         supp_end = std::get<2>(largest_supp_alignment);
         primary_start = std::get<1>(primary_alignment);
@@ -669,7 +651,6 @@ void SVCaller::detectSVsFromSplitReads(std::vector<SVCall>& sv_calls, PrimaryMap
             }
 
             // printMessage("Running copy number prediction on boundary: " + primary_chr + ":" + std::to_string(boundary_left) + "-" + std::to_string(boundary_right));
-            printMessage("Running copy number prediction on boundary (Length: " + std::to_string(boundary_right - boundary_left) + " bp)...");
             std::tuple<double, SVType, std::string, bool> bd_result = cnv_caller.runCopyNumberPrediction(primary_chr, hmm, boundary_left, boundary_right, mean_chr_cov, pos_depth_map);
             if (std::get<1>(bd_result) == SVType::UNKNOWN) {
                 continue;
@@ -690,7 +671,6 @@ void SVCaller::detectSVsFromSplitReads(std::vector<SVCall>& sv_calls, PrimaryMap
                 // printMessage("Running copy number prediction on gap: " +
                 // primary_chr + ":" + std::to_string(gap_left) + "-" +
                 // std::to_string(gap_right));
-                printMessage("Running copy number prediction on gap (Length: " + std::to_string(gap_right - gap_left) + " bp)...");
                 std::tuple<double, SVType, std::string, bool> gap_result = cnv_caller.runCopyNumberPrediction(primary_chr, hmm, gap_left, gap_right, mean_chr_cov, pos_depth_map);
                 if (std::get<1>(gap_result) == SVType::UNKNOWN) {
                     continue;
@@ -701,19 +681,16 @@ void SVCaller::detectSVsFromSplitReads(std::vector<SVCall>& sv_calls, PrimaryMap
                 // If higher likelihood than the boundary, add the gap as the SV call
                 if (gap_lh > bd_lh) {
                     int read_depth = this->calculateReadDepth(pos_depth_map, gap_left, gap_right);
-                    printMessage("Calculating read depth for gap (length: " + std::to_string(gap_right - gap_left) + " bp)...");
                     std::string alt_allele = gap_type == SVType::NEUTRAL ? "." : "<" + getSVTypeString(gap_type) + ">";
                     addSVCall(sv_calls, gap_left, gap_right, getSVTypeString(gap_type), alt_allele, "GAP", "./.", gap_lh, read_depth);
                 } else {
                     // Add the boundary as the SV call
-                    printMessage("Calculating read depth for boundary (length: " + std::to_string(boundary_right - boundary_left) + " bp)...");
                     int read_depth = this->calculateReadDepth(pos_depth_map, boundary_left, boundary_right);
                     std::string alt_allele = bd_type == SVType::NEUTRAL ? "." : "<" + getSVTypeString(bd_type) + ">";
                     addSVCall(sv_calls, boundary_left, boundary_right, getSVTypeString(bd_type), alt_allele, "BOUNDARY", "./.", bd_lh, read_depth);
                 }
             } else {
                 // Add the boundary as the SV call
-                printMessage("Calculating read depth for boundary (length: " + std::to_string(boundary_right - boundary_left) + " bp)...");
                 int read_depth = this->calculateReadDepth(pos_depth_map, boundary_left, boundary_right);
                 std::string alt_allele = bd_type == SVType::NEUTRAL ? "." : "<" + getSVTypeString(bd_type) + ">";
                 addSVCall(sv_calls, boundary_left, boundary_right, getSVTypeString(bd_type), alt_allele, "BOUNDARY", "./.", bd_lh, read_depth);

@@ -40,8 +40,8 @@ void runContextSV(const std::unordered_map<std::string, std::string>& args)
     if (args.find("hmm-file") != args.end()) {
         input_data.setHMMFilepath(args.at("hmm-file"));
     }
-    if (args.find("window-size") != args.end()) {
-        input_data.setWindowSize(std::stoi(args.at("window-size")));
+    if (args.find("sample-size") != args.end()) {
+        input_data.setSampleSize(std::stoi(args.at("sample-size")));
     }
     if (args.find("min-cnv") != args.end()) {
         input_data.setMinCNVLength(std::stoi(args.at("min-cnv")));
@@ -58,20 +58,6 @@ void runContextSV(const std::unordered_map<std::string, std::string>& args)
     if (args.find("debug") != args.end()) {
         input_data.setVerbose(true);
     }
-    // input_data.setShortReadBam(bamFile);
-    // input_data.setLongReadBam(bamFile);
-    // input_data.setRefGenome(refFile);
-    // input_data.setSNPFilepath(vcfFile);
-    // //input_data.setChromosome("21");
-    // //input_data.setRegion("14486099-14515105");
-    // input_data.setThreadCount(threadCount);
-    // input_data.setAlleleFreqFilepaths(pfbFile);
-    // input_data.setHMMFilepath(hmmFile);
-    // input_data.setOutputDir(outputDir);
-    // input_data.saveCNVData(false);
-    // input_data.setThreadCount(threadCount);
-    // input_data.setWindowSize(windowSize);
-    // input_data.setMinCNVLength(minCNV);
 
     // Run ContextSV
     run(input_data);
@@ -85,15 +71,15 @@ void printUsage(const std::string& programName) {
                 << "  -s, --snp <vcf_file>          SNPs VCF file (required)\n"
                 << "  -o, --outdir <output_dir>     Output directory (required)\n"
                 << "  -c, --chr <chromosome>        Chromosome\n"
-                << "  -r, --region <region>         Region (e.g., 14486099-14515105)\n"
+                << "  -r, --region <region>         Region (start-end)\n"
                 << "  -t, --threads <thread_count>  Number of threads\n"
                 << "  -h, --hmm <hmm_file>          HMM file\n"
-                << "  -w, --window <window_size>    Window size\n"
+                << "  -n, --sample-size <size>      Sample size for HMM predictions\n"
                 << "     --min-cnv <min_length>     Minimum CNV length\n"
                 << "  -e, --eth <eth_file>          ETH file\n"
                 << "  -p, --pfb <pfb_file>          PFB file\n"
                 << "     --save-cnv                 Save CNV data\n"
-                << "     --debug                    Debug mode\n"
+                << "     --debug                    Debug mode with verbose logging\n"
                 << "     --version                  Print version and exit\n"
                 << "  -h, --help                    Print usage and exit\n";
 }
@@ -120,8 +106,8 @@ std::unordered_map<std::string, std::string> parseArguments(int argc, char* argv
             args["thread-count"] = argv[++i];
         } else if ((arg == "-h" || arg == "--hmm") && i + 1 < argc) {
             args["hmm-file"] = argv[++i];
-        } else if ((arg == "-w" || arg == "--window") && i + 1 < argc) {
-            args["window-size"] = argv[++i];
+        } else if ((arg == "-n" || arg == "--sample-size") && i + 1 < argc) {
+            args["sample-size"] = argv[++i];
         } else if (arg == "--min-cnv" && i + 1 < argc) {
             args["min-cnv"] = argv[++i];
         } else if ((arg == "-e" || arg == "--eth") && i + 1 < argc) {
