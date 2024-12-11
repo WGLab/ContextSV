@@ -15,8 +15,8 @@ def calculate_mendelian_error(father_genotype, mother_genotype, child_genotype):
             child_genotypes.add('/'.join(sorted([allele1, allele2])))
 
     # Print the parent and child genotypes if invalid
-    # if child_genotype not in child_genotypes:
-    #     print(f"ME: Father: {father_genotype}, Mother: {mother_genotype}, Child: {child_genotype}")
+    if child_genotype not in child_genotypes:
+        print(f"ME: Father: {father_genotype}, Mother: {mother_genotype}, Child: {child_genotype}")
     
     # Check if the child genotype is valid
     return 0 if child_genotype in child_genotypes else 1

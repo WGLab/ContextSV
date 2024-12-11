@@ -338,15 +338,23 @@ void CNVCaller::runCIGARCopyNumberPrediction(std::string chr, std::vector<SVCall
             data_type = "Log2CNV";
         }
 
-        // Update the SV copy number data if not unknown
+        // Update the SV genotype if known
+        if (updated_sv_type != SVType::UNKNOWN)
+        {
+            sv_call.genotype = genotype;
+            sv_call.data_type = data_type;
+            sv_call.hmm_likelihood = likelihood;
+        }
+
+        // Update the SV type if known
         // printMessage("Updating SV copy number data for SV " + chr + ":" + std::to_string((int)start_pos) + "-" + std::to_string((int)end_pos) + "...");
         if (updated_sv_type != SVType::UNKNOWN && updated_sv_type != SVType::NEUTRAL)
         {
             std::string sv_type_str = getSVTypeString(updated_sv_type);
             sv_call.sv_type = sv_type_str;
-            sv_call.data_type = data_type;
-            sv_call.genotype = genotype;
-            sv_call.hmm_likelihood = likelihood;
+            // sv_call.data_type = data_type;
+            // sv_call.genotype = genotype;
+            // sv_call.hmm_likelihood = likelihood;
         }
 
         // Save the SV calls as a TSV file if enabled, if the SV type is
