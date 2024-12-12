@@ -90,7 +90,7 @@ void mergeSVs(std::vector<SVCall>& sv_calls)
     }
 
     // Merge SV calls if they overlap
-    int initial_size = sv_calls.size();
+    // int initial_size = sv_calls.size();
     
     // Merge any SV calls that have >90% reciprocal overlap
     std::vector<SVCall> merged_sv_calls;
@@ -142,8 +142,8 @@ void mergeSVs(std::vector<SVCall>& sv_calls)
     merged_sv_calls.push_back(current_merge);  // Add the last SV call
     sv_calls = merged_sv_calls;  // Update the SV calls
 
-    int updated_size = sv_calls.size();
-    std::cout << "Merged " << initial_size << " SV calls into " << updated_size << " SV calls" << std::endl;
+    // int updated_size = sv_calls.size();
+    // std::cout << "Merged " << initial_size << " SV calls into " << updated_size << " SV calls" << std::endl;
 }
 
 void filterSVsWithLowSupport(std::vector<SVCall>& sv_calls, int min_support)

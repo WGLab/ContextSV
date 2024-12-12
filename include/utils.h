@@ -25,4 +25,6 @@ std::string getElapsedTime(std::chrono::high_resolution_clock::time_point start,
 
 std::string removeChrPrefix(std::string chr);
 
+void printMemoryUsage(const std::string &functionName);
+
 #endif // UTILS_H

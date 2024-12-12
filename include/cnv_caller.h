@@ -94,7 +94,7 @@ class CNVCaller {
         void runCIGARCopyNumberPrediction(std::string chr, std::vector<SVCall>& sv_candidates, const CHMM& hmm, double mean_chr_cov, const std::vector<uint32_t>& pos_depth_map);
 
         // Calculate the mean chromosome coverage
-        std::pair<double, std::vector<uint32_t>> calculateMeanChromosomeCoverage(std::string chr, uint32_t chr_len);
+        double calculateMeanChromosomeCoverage(std::string chr, std::vector<uint32_t>& chr_pos_depth_map);
 
         // Calculate the log2 ratio for a region given the read depths and mean
         // chromosome coverage

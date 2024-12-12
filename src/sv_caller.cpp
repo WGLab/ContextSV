@@ -41,6 +41,8 @@ int SVCaller::readNextAlignment(samFile *fp_in, hts_itr_t *itr, bam1_t *bam1)
 
 void SVCaller::detectCIGARSVs(samFile* fp_in, hts_idx_t* idx, bam_hdr_t* bamHdr, const std::string& region, std::vector<SVCall>& sv_calls, PrimaryMap& primary_alignments, SuppMap& supplementary_alignments, const std::vector<uint32_t>& pos_depth_map)
 {
+    printMemoryUsage("Before detecting SVs from CIGAR strings, ");
+
     // Create a read and iterator for the region
     bam1_t *bam1 = bam_init1();
     if (!bam1) {
@@ -120,6 +122,8 @@ void SVCaller::detectCIGARSVs(samFile* fp_in, hts_idx_t* idx, bam_hdr_t* bamHdr,
     // Clean up the iterator and alignment
     hts_itr_destroy(itr);
     bam_destroy1(bam1);
+
+    printMemoryUsage("After detecting SVs from CIGAR strings, ");
 
     // return std::make_tuple(sv_calls, primary_alignments, supplementary_alignments);
 }
@@ -333,12 +337,14 @@ void SVCaller::detectSVsFromCIGAR(bam_hdr_t* header, bam1_t* alignment, std::vec
 
 void SVCaller::processChromosome(const std::string& chr, const CHMM& hmm, std::vector<SVCall>& combined_sv_calls)
 {
+    printMemoryUsage("Before opening BAM file, ");
     // Open the BAM file
     std::string bam_filepath = this->input_data.getLongReadBam();
     samFile *fp_in = sam_open(bam_filepath.c_str(), "r");
     if (!fp_in) {
         throw std::runtime_error("ERROR: failed to open " + bam_filepath);
     }
+    printMemoryUsage("After opening BAM file, ");
 
     // Load the header
     bam_hdr_t *bamHdr = sam_hdr_read(fp_in);
@@ -354,6 +360,7 @@ void SVCaller::processChromosome(const std::string& chr, const CHMM& hmm, std::v
         sam_close(fp_in);
         throw std::runtime_error("ERROR: failed to load index for " + bam_filepath);
     }
+    printMemoryUsage("After loading index, ");
 
     // Split the chromosome into chunks for memory efficiency
     std::vector<std::string> region_chunks;
@@ -383,13 +390,17 @@ void SVCaller::processChromosome(const std::string& chr, const CHMM& hmm, std::v
         }
         printMessage("Split chromosome " + chr + " into " + std::to_string(region_chunks.size()) + " chunks of size " + std::to_string(chunk_size) + "...");
     }
+    printMemoryUsage("After splitting chromosome into chunks, ");
 
     // Load chromosome data for copy number predictions
     // std::cout << "Loading chromosome data for copy number predictions..." << std::endl;
     printMessage(chr + ": Loading chromosome data...");
     CNVCaller cnv_caller(this->input_data);
-    std::pair<double, std::vector<uint32_t>> chr_data = cnv_caller.calculateMeanChromosomeCoverage(chr, chr_len);
-    if (chr_data.first == 0.0 || chr_data.second.size() == 0) {
+    printMemoryUsage("Before calculating mean chromosome coverage (top), ");
+    std::vector<uint32_t> chr_pos_depth_map(chr_len+1, 0);  // 1-based index
+    double mean_chr_cov = cnv_caller.calculateMeanChromosomeCoverage(chr, chr_pos_depth_map);
+    printMemoryUsage("After calculating mean chromosome coverage (top), ");
+    if (mean_chr_cov == 0.0 || chr_pos_depth_map.size() == 0) {
         hts_idx_destroy(idx);
         bam_hdr_destroy(bamHdr);
         sam_close(fp_in);
@@ -404,10 +415,12 @@ void SVCaller::processChromosome(const std::string& chr, const CHMM& hmm, std::v
     for (const auto& sub_region : region_chunks) {
         current_region++;
         printMessage(chr + ": CIGAR SVs...");
+        printMemoryUsage("Before detecting CIGAR SVs, ");
         PrimaryMap primary_map;
         SuppMap supp_map;
         std::vector<SVCall> subregion_sv_calls;
-        this->detectCIGARSVs(fp_in, idx, bamHdr, sub_region, subregion_sv_calls, primary_map, supp_map, chr_data.second);
+        printMemoryUsage("After creating primary and supplementary maps, ");
+        this->detectCIGARSVs(fp_in, idx, bamHdr, sub_region, subregion_sv_calls, primary_map, supp_map, chr_pos_depth_map);
         // std::set<SVCall>& subregion_sv_calls = std::get<0>(region_data);
         // PrimaryMap& primary_map = std::get<1>(region_data);
         // SuppMap& supp_map = std::get<2>(region_data);
@@ -423,13 +436,13 @@ void SVCaller::processChromosome(const std::string& chr, const CHMM& hmm, std::v
         if (region_sv_count > 0) {
             // std::cout << "Running copy number variant detection from CIGAR string SVs..." << std::endl;
             printMessage(chr + ": CIGAR predictions...");
-            cnv_caller.runCIGARCopyNumberPrediction(chr, subregion_sv_calls, hmm, chr_data.first, chr_data.second);
+            cnv_caller.runCIGARCopyNumberPrediction(chr, subregion_sv_calls, hmm, mean_chr_cov, chr_pos_depth_map);
         }
 
         // Run split-read SV and copy number variant predictions
         // std::cout << "Detecting copy number variants from split reads..." << std::endl;
         printMessage(chr + ": Split read SVs...");
-        this->detectSVsFromSplitReads(subregion_sv_calls, primary_map, supp_map, cnv_caller, hmm, chr_data.first, chr_data.second);
+        this->detectSVsFromSplitReads(subregion_sv_calls, primary_map, supp_map, cnv_caller, hmm, mean_chr_cov, chr_pos_depth_map);
 
         // Merge the SV calls from the current region
         // std::cout << "Merge SV calls from " << sub_region << "..." << std::endl;
@@ -458,6 +471,7 @@ void SVCaller::processChromosome(const std::string& chr, const CHMM& hmm, std::v
 
 void SVCaller::run()
 {
+    printMemoryUsage("Before running SV caller, ");
     // Get the chromosomes to process
     std::vector<std::string> chromosomes;
     if (this->input_data.getChromosome() != "") {
@@ -465,11 +479,13 @@ void SVCaller::run()
     } else {
         chromosomes = this->input_data.getRefGenomeChromosomes();
     }
-        
+    
+    printMemoryUsage("After getting chromosomes, ");
     // Read the HMM from the file
     std::string hmm_filepath = this->input_data.getHMMFilepath();
     std::cout << "Reading HMM from file: " << hmm_filepath << std::endl;
     const CHMM& hmm = ReadCHMM(hmm_filepath.c_str());
+    printMemoryUsage("After reading HMM, ");
 
     // Use multi-threading across chromosomes unless a single chromosome is
     // specified
@@ -542,6 +558,8 @@ void SVCaller::run()
 // Detect SVs from split read alignments
 void SVCaller::detectSVsFromSplitReads(std::vector<SVCall>& sv_calls, PrimaryMap& primary_map, SuppMap& supp_map, CNVCaller& cnv_caller, const CHMM& hmm, double mean_chr_cov, const std::vector<uint32_t>& pos_depth_map)
 {
+    printMemoryUsage("Before detecting SVs from split reads, ");
+
     // Find split-read SV evidence
     int sv_count = 0;
     uint32_t min_cnv_length = (uint32_t) this->input_data.getMinCNVLength();
@@ -697,6 +715,8 @@ void SVCaller::detectSVsFromSplitReads(std::vector<SVCall>& sv_calls, PrimaryMap
             }
         }
     }
+
+    printMemoryUsage("After detecting SVs from split reads, ");
 }
 
 void SVCaller::saveToVCF(const std::unordered_map<std::string, std::vector<SVCall>>& sv_calls)

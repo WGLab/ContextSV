@@ -1,7 +1,5 @@
 
 #include "swig_interface.h"
-#include "input_data.h"
-#include "version.h"
 
 /// @cond DOXYGEN_IGNORE
 #include <iostream>
@@ -9,8 +7,10 @@
 // #include <optional>
 /// @endcond
 
-// Placeholder for ContextSV library includes
-// #include "ContextSV.h"
+#include "input_data.h"
+#include "version.h"
+#include "utils.h"
+
 
 void runContextSV(const std::unordered_map<std::string, std::string>& args)
 {
@@ -22,10 +22,13 @@ void runContextSV(const std::unordered_map<std::string, std::string>& args)
     }
 
     // Set up input data
+    printMemoryUsage("Before setting up input data, ");
     InputData input_data;
     input_data.setLongReadBam(args.at("bam-file"));
     input_data.setShortReadBam(args.at("bam-file"));
+    printMemoryUsage("Before reading reference genome, ");
     input_data.setRefGenome(args.at("ref-file"));
+    printMemoryUsage("After reading reference genome, ");
     input_data.setSNPFilepath(args.at("snps-file"));
     input_data.setOutputDir(args.at("output-dir"));
     if (args.find("chr") != args.end()) {
@@ -58,6 +61,7 @@ void runContextSV(const std::unordered_map<std::string, std::string>& args)
     if (args.find("debug") != args.end()) {
         input_data.setVerbose(true);
     }
+    printMemoryUsage("After setting up input data, ");
 
     // Run ContextSV
     run(input_data);

@@ -1,6 +1,8 @@
 #include "utils.h"
 
 /// @cond
+#include <sys/resource.h>  // getrusage
+#include <iomanip>
 #include <stdio.h>
 #include <string>
 #include <iostream>
@@ -108,4 +110,14 @@ std::string removeChrPrefix(std::string chr)
         return chr.substr(3);
     }
     return chr;
+}
+
+void printMemoryUsage(const std::string& functionName) {
+    struct rusage usage;
+    getrusage(RUSAGE_SELF, &usage);
+
+    // Convert from KB to GB
+    double mem_usage_gb = (double)usage.ru_maxrss / 1024.0 / 1024.0;
+    std::cout << functionName << " memory usage: "
+              << std::fixed << std::setprecision(2) << mem_usage_gb << " GB" << std::endl;
 }
