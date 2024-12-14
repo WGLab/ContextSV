@@ -34,13 +34,13 @@
 
 using namespace sv_types;
 
-CNVCaller::CNVCaller(InputData &input_data)
+CNVCaller::CNVCaller(const InputData& input_data)
     : input_data(input_data)  // Initialize the input data
 {
 }
 
 // Function to call the Viterbi algorithm for the CHMM
-void CNVCaller::runViterbi(const CHMM& hmm, SNPData& snp_data, std::pair<std::vector<int>, double>& prediction)
+void CNVCaller::runViterbi(const CHMM& hmm, SNPData& snp_data, std::pair<std::vector<int>, double>& prediction) const
 {
     int data_count = (int) snp_data.pos.size();
     if (data_count == 0)
@@ -52,7 +52,7 @@ void CNVCaller::runViterbi(const CHMM& hmm, SNPData& snp_data, std::pair<std::ve
 }
 
 // Function to obtain SNP information for a region
-void CNVCaller::querySNPRegion(std::string chr, uint32_t start_pos, uint32_t end_pos, const std::vector<uint32_t>& pos_depth_map, double mean_chr_cov, SNPData& snp_data)
+void CNVCaller::querySNPRegion(std::string chr, uint32_t start_pos, uint32_t end_pos, const std::vector<uint32_t>& pos_depth_map, double mean_chr_cov, SNPData& snp_data) const
 {
     // uint32_t window_size = (uint32_t)this->input_data.getWindowSize();
 
@@ -70,11 +70,7 @@ void CNVCaller::querySNPRegion(std::string chr, uint32_t start_pos, uint32_t end
     std::vector<double> snp_pfb(sample_size, 0.5);
     std::vector<double> snp_log2_cov(sample_size, 0.0);
     std::vector<bool> is_snp(sample_size, false);
-    // std::unordered_map<uint32_t, double> snp_baf(sample_size, -1.0);
-    // std::unordered_map<uint32_t, double> snp_pfb(sample_size, 0.5);
-
-    // Query the SNPs for the entire region
-    this->querySNPs(chr, start_pos, end_pos, snp_pos, snp_baf, snp_pfb, is_snp);
+    this->readSNPAlleleFrequencies(chr, start_pos, end_pos, snp_pos, snp_baf, snp_pfb, is_snp);
 
     // Get the log2 ratio for <sample_size> evenly spaced positions in the
     // region
@@ -88,7 +84,7 @@ void CNVCaller::querySNPRegion(std::string chr, uint32_t start_pos, uint32_t end
     snp_data.is_snp = std::move(is_snp);
 }
 
-std::tuple<double, SVType, std::string, bool> CNVCaller::runCopyNumberPrediction(std::string chr, const CHMM& hmm, uint32_t start_pos, uint32_t end_pos, double mean_chr_cov, const std::vector<uint32_t>& pos_depth_map)
+std::tuple<double, SVType, std::string, bool> CNVCaller::runCopyNumberPrediction(std::string chr, const CHMM& hmm, uint32_t start_pos, uint32_t end_pos, double mean_chr_cov, const std::vector<uint32_t>& pos_depth_map) const
 {
     // Check that the start position is less than the end position
     if (start_pos >= end_pos)
@@ -168,7 +164,7 @@ std::tuple<double, SVType, std::string, bool> CNVCaller::runCopyNumberPrediction
     if ((double) max_count / (double) state_count > pct_threshold)
     {
         predicted_cnv_type = getSVTypeFromCNState(max_state);
-        genotype = cnv_genotype_map[max_state];
+        genotype = cnv_genotype_map.at(max_state);
     }
     snp_data.state_sequence = std::move(state_sequence);  // Move the state sequence to the SNP data
 
@@ -316,7 +312,7 @@ void CNVCaller::runCIGARCopyNumberPrediction(std::string chr, std::vector<SVCall
     }
 }
 
-std::vector<std::string> CNVCaller::splitRegionIntoChunks(std::string chr, uint32_t start_pos, uint32_t end_pos, int chunk_count)
+std::vector<std::string> CNVCaller::splitRegionIntoChunks(std::string chr, uint32_t start_pos, uint32_t end_pos, int chunk_count) const
 {
     // Split the region into chunks
     std::vector<std::string> region_chunks;
@@ -478,39 +474,7 @@ double CNVCaller::calculateMeanChromosomeCoverage(std::string chr, std::vector<u
     return mean_chr_cov;
 }
 
-double CNVCaller::calculateLog2Ratio(uint32_t start_pos, uint32_t end_pos, const std::vector<uint32_t>& pos_depth_map, double mean_chr_cov)
-{
-    // Use the position and depth map to calculate the log2 ratio
-    double cum_depth = 0;
-    int pos_count = 0;
-    for (uint32_t i = start_pos; i <= end_pos; i++)
-    {
-        if (i < pos_depth_map.size() && pos_depth_map[i] > 0)
-        {
-            cum_depth += pos_depth_map[i];
-            pos_count++;
-        }
-    }
-
-    // Calculate the window coverage log2 ratio (0 if no positions)
-    double window_mean_cov = 0;
-    if (pos_count > 0)
-    {
-        window_mean_cov = (double) cum_depth / (double) pos_count;
-    }
-
-    // Calculate the log2 ratio for the window
-    // Avoid log2(0) by using a small value
-    if (window_mean_cov == 0)
-    {
-        window_mean_cov = 0.0001;
-    }
-    double window_log2_ratio = log2(window_mean_cov / mean_chr_cov);
-
-    return window_log2_ratio;
-}
-
-void CNVCaller::calculateRegionLog2Ratio(uint32_t start_pos, uint32_t end_pos, int sample_size, const std::vector<uint32_t>& pos_depth_map, double mean_chr_cov, std::vector<double>& log2_region)
+void CNVCaller::calculateRegionLog2Ratio(uint32_t start_pos, uint32_t end_pos, int sample_size, const std::vector<uint32_t>& pos_depth_map, double mean_chr_cov, std::vector<double>& log2_region) const
 {
     uint32_t region_length = end_pos - start_pos + 1;
     for (int i = 0; i < sample_size; i++)
@@ -534,7 +498,7 @@ void CNVCaller::calculateRegionLog2Ratio(uint32_t start_pos, uint32_t end_pos, i
     }
 }
 
-void CNVCaller::readSNPAlleleFrequencies(std::string chr, uint32_t start_pos, uint32_t end_pos, std::vector<uint32_t>& snp_pos, std::vector<double>& snp_baf, std::vector<double>& snp_pfb, std::vector<bool>& is_snp)
+void CNVCaller::readSNPAlleleFrequencies(std::string chr, uint32_t start_pos, uint32_t end_pos, std::vector<uint32_t>& snp_pos, std::vector<double>& snp_baf, std::vector<double>& snp_pfb, std::vector<bool>& is_snp) const
 {
     printMemoryUsage("Reading SNP allele frequencies for " + chr + ":" + std::to_string((int)start_pos) + "-" + std::to_string((int)end_pos) + ", ");
     
@@ -850,7 +814,7 @@ void CNVCaller::readSNPAlleleFrequencies(std::string chr, uint32_t start_pos, ui
     bcf_sr_destroy(pfb_reader);
 }
 
-void CNVCaller::saveSVCopyNumberToTSV(SNPData& snp_data, std::string filepath, std::string chr, uint32_t start, uint32_t end, std::string sv_type, double likelihood)
+void CNVCaller::saveSVCopyNumberToTSV(SNPData& snp_data, std::string filepath, std::string chr, uint32_t start, uint32_t end, std::string sv_type, double likelihood) const
 {
     // Open the TSV file for writing
     std::ofstream tsv_file(filepath);
@@ -940,31 +904,4 @@ void CNVCaller::updateSNPData(SNPData& snp_data, uint32_t pos, double pfb, doubl
     snp_data.baf.emplace_back(baf);
     snp_data.log2_cov.emplace_back(log2_cov);
     snp_data.is_snp.emplace_back(is_snp);
-}
-
-void CNVCaller::querySNPs(std::string chr, uint32_t start, uint32_t end, std::vector<uint32_t>& snp_pos, std::vector<double>& snp_baf, std::vector<double>& snp_pfb, std::vector<bool>& is_snp)
-{
-    std::string snp_chr = chr;
-    chr = removeChrPrefix(chr);
-
-    // Query the SNP allele frequencies for the SNPs
-    // std::map<uint32_t, std::tuple<double, double>> snp_map;
-    this->readSNPAlleleFrequencies(snp_chr, start, end, snp_pos, snp_baf, snp_pfb, is_snp);
-
-    // Query the population frequencies for the SNPs
-    // std::unordered_map<uint32_t, double> pfb_map;
-    // this->readSNPPopulationFrequencies(chr, start, end, snp_pfb);
-
-    // Filter out the SNP population frequencies that are not in the SNP
-    // position set
-    // double pfb_default = 0.5;
-    // for (auto& pos : snp_pos)
-    // {
-    //     if (pfb_map.find(pos) != pfb_map.end())
-    //     {
-    //         snp_pfb[pos] = pfb_map[pos];
-    //     } else {
-    //         snp_pfb[pos] = pfb_default;
-    //     }
-    // }
 }

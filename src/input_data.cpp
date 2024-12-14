@@ -32,7 +32,7 @@ InputData::InputData()
     this->save_cnv_data = false;
 }
 
-std::string InputData::getShortReadBam()
+std::string InputData::getShortReadBam() const
 {
     return this->short_read_bam;
 }
@@ -58,7 +58,7 @@ void InputData::setShortReadBam(std::string filepath)
     }
 }
 
-std::string InputData::getLongReadBam()
+std::string InputData::getLongReadBam() const
 {
     return this->long_read_bam;
 }
@@ -100,17 +100,17 @@ std::string InputData::queryRefGenome(const std::string& chr, uint32_t pos_start
     return this->fasta_query.query(chr, pos_start, pos_end);
 }
 
-std::vector<std::string> InputData::getRefGenomeChromosomes()
+std::vector<std::string> InputData::getRefGenomeChromosomes() const
 {
     return this->fasta_query.getChromosomes();
 }
 
-uint32_t InputData::getRefGenomeChromosomeLength(std::string chr)
+uint32_t InputData::getRefGenomeChromosomeLength(std::string chr) const
 {
     return this->fasta_query.getChromosomeLength(chr);
 }
 
-std::string InputData::getOutputDir()
+std::string InputData::getOutputDir() const
 {
     return this->output_dir;
 }
@@ -124,7 +124,7 @@ void InputData::setOutputDir(std::string dirpath)
     system(cmd.c_str());
 }
 
-int InputData::getSampleSize()
+int InputData::getSampleSize() const
 {
     return this->sample_size;
 }
@@ -134,7 +134,7 @@ void InputData::setSampleSize(int sample_size)
     this->sample_size = sample_size;
 }
 
-std::string InputData::getSNPFilepath()
+std::string InputData::getSNPFilepath() const
 {
     return this->snp_vcf_filepath;
 }
@@ -144,7 +144,7 @@ void InputData::setSNPFilepath(std::string filepath)
     this->snp_vcf_filepath = filepath;
 }
 
-std::string InputData::getEthnicity()
+std::string InputData::getEthnicity() const
 {
     return this->ethnicity;
 }
@@ -154,7 +154,7 @@ void InputData::setEthnicity(std::string ethnicity)
     this->ethnicity = ethnicity;
 }
 
-int InputData::getMinCNVLength()
+int InputData::getMinCNVLength() const
 {
     return this->min_cnv_length;
 }
@@ -169,7 +169,7 @@ void InputData::setChromosome(std::string chr)
     this->chr = chr;
 }
 
-std::string InputData::getChromosome()
+std::string InputData::getChromosome() const
 {
     return this->chr;
 }
@@ -205,12 +205,12 @@ void InputData::setRegion(std::string region)
     }
 }
 
-std::pair<int32_t, int32_t> InputData::getRegion()
+std::pair<int32_t, int32_t> InputData::getRegion() const
 {
     return this->start_end;
 }
 
-bool InputData::isRegionSet()
+bool InputData::isRegionSet() const
 {
     return this->region_set;
 }
@@ -299,14 +299,14 @@ void InputData::setAlleleFreqFilepaths(std::string filepath)
     }
 }
 
-std::string InputData::getAlleleFreqFilepath(std::string chr)
+std::string InputData::getAlleleFreqFilepath(std::string chr) const
 {
     // Remove the chr notation
     if (chr.find("chr") != std::string::npos)
     {
         chr = chr.substr(3, chr.size() - 3);
     }
-    return this->pfb_filepaths[chr];
+    return this->pfb_filepaths.at(chr);
 }
 
 void InputData::setThreadCount(int thread_count)
@@ -314,12 +314,12 @@ void InputData::setThreadCount(int thread_count)
     this->thread_count = thread_count;
 }
 
-int InputData::getThreadCount()
+int InputData::getThreadCount() const
 {
     return this->thread_count;
 }
 
-std::string InputData::getHMMFilepath()
+std::string InputData::getHMMFilepath() const
 {
     return this->hmm_filepath;
 }
@@ -361,7 +361,7 @@ void InputData::saveCNVData(bool save_cnv_data)
     this->save_cnv_data = save_cnv_data;
 }
 
-bool InputData::getSaveCNVData()
+bool InputData::getSaveCNVData() const
 {
     return this->save_cnv_data;
 }

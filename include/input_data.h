@@ -23,39 +23,35 @@ class InputData {
     public:
         InputData();
 
-        std::string getShortReadBam();
+        std::string getShortReadBam() const;
 
         void setShortReadBam(std::string filepath);
 
-        std::string getLongReadBam();
+        std::string getLongReadBam() const;
 
         void setLongReadBam(std::string filepath);
 
         // Set the filepath to the HMM parameters.
         void setHMMFilepath(std::string filepath);
-        std::string getHMMFilepath();
+        std::string getHMMFilepath() const;
 
         // Set the filepath to the reference genome FASTA file.
 		void setRefGenome(std::string fasta_filepath);
 
         // Return a reference to the ReferenceGenome object.
         const ReferenceGenome& getRefGenome() const;
-
-        // Query the reference genome for a sequence.
         std::string queryRefGenome(const std::string& chr, uint32_t pos_start, uint32_t pos_end) const;
 
         // Get the chromosomes in the reference genome.
-        std::vector<std::string> getRefGenomeChromosomes();
+        std::vector<std::string> getRefGenomeChromosomes() const;
 
         // Get a chromosome's length in the reference genome.
-        uint32_t getRefGenomeChromosomeLength(std::string chr);
+        uint32_t getRefGenomeChromosomeLength(std::string chr) const;
 
         // Set the filepath to the text file containing the locations of the
         // VCF files with population frequencies for each chromosome.
         void setAlleleFreqFilepaths(std::string filepath);
-
-        // Get the chromosome's VCF filepath with population frequencies.
-        std::string getAlleleFreqFilepath(std::string chr);
+        std::string getAlleleFreqFilepath(std::string chr) const;
 
         // Get the population frequency map.
         // PFBMap getPFBMap();
@@ -63,36 +59,36 @@ class InputData {
         // Set the filepath to the VCF file with SNP calls used for CNV
         // detection with the HMM.
         void setSNPFilepath(std::string filepath);
-        std::string getSNPFilepath();
+        std::string getSNPFilepath() const;
 
         // Set the ethnicity for SNP population frequencies.
         void setEthnicity(std::string ethnicity);
-        std::string getEthnicity();
+        std::string getEthnicity() const;
 
         // Set the sample size for HMM predictions.
         void setSampleSize(int sample_size);
-        int getSampleSize();
+        int getSampleSize() const;
 
         // Set the minimum CNV length to use for copy number predictions.
         void setMinCNVLength(int min_cnv_length);
-        int getMinCNVLength();
+        int getMinCNVLength() const;
 
         // Set the chromosome to analyze.
         void setChromosome(std::string chr);
-        std::string getChromosome();
+        std::string getChromosome() const;
 
         // Set the region to analyze.
         void setRegion(std::string region);
-        std::pair<int32_t, int32_t> getRegion();
-        bool isRegionSet();
+        std::pair<int32_t, int32_t> getRegion() const;
+        bool isRegionSet() const;
 
         // Set the output directory where the results will be written.
         void setOutputDir(std::string dirpath);
-        std::string getOutputDir();
+        std::string getOutputDir() const;
 
         // Set the number of threads to use when parallelization is possible.
         void setThreadCount(int thread_count);
-        int getThreadCount();
+        int getThreadCount() const;
 
         // Set the verbose flag to true if verbose output is desired.
         void setVerbose(bool verbose);
@@ -101,7 +97,7 @@ class InputData {
         // Set whether to extend the SNP CNV regions around the SV breakpoints
         // (+/- 1/2 SV length), save a TSV file, and generate HTML reports.
         void saveCNVData(bool save_cnv_data);
-        bool getSaveCNVData();
+        bool getSaveCNVData() const;
         
     private:
         std::string short_read_bam;

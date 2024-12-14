@@ -161,12 +161,12 @@ std::string ReferenceGenome::getContigHeader() const
     return contig_header;
 }
 
-std::vector<std::string> ReferenceGenome::getChromosomes()
+std::vector<std::string> ReferenceGenome::getChromosomes() const
 {
     return this->chromosomes;
 }
 
-uint32_t ReferenceGenome::getChromosomeLength(std::string chr)
+uint32_t ReferenceGenome::getChromosomeLength(std::string chr) const
 {
-    return this->chr_to_seq[chr].length();
+    return this->chr_to_seq.at(chr).length();
 }

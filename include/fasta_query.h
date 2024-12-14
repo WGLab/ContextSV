@@ -25,10 +25,10 @@ class ReferenceGenome {
         std::string getContigHeader() const;
 
         // Get the list of chromosomes, used for whole genome analysis
-        std::vector<std::string> getChromosomes();
+        std::vector<std::string> getChromosomes() const;
 
         // Get the length of a chromosome
-        uint32_t getChromosomeLength(std::string chr);
+        uint32_t getChromosomeLength(std::string chr) const;
 };
 
 #endif // FASTA_QUERY_H
