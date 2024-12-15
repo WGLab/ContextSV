@@ -19,9 +19,7 @@ ContextSV::ContextSV(InputData& input_data)
 
 int ContextSV::run()
 {
-    printMemoryUsage("Before creating SV caller, ");
     SVCaller sv_caller(this->input_data); 
-    printMemoryUsage("After creating SV caller, ");
     sv_caller.run();
 
     return 0;

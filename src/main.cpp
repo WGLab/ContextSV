@@ -22,13 +22,10 @@ void runContextSV(const std::unordered_map<std::string, std::string>& args)
     }
 
     // Set up input data
-    printMemoryUsage("Before setting up input data, ");
     InputData input_data;
     input_data.setLongReadBam(args.at("bam-file"));
     input_data.setShortReadBam(args.at("bam-file"));
-    printMemoryUsage("Before reading reference genome, ");
     input_data.setRefGenome(args.at("ref-file"));
-    printMemoryUsage("After reading reference genome, ");
     input_data.setSNPFilepath(args.at("snps-file"));
     input_data.setOutputDir(args.at("output-dir"));
     if (args.find("chr") != args.end()) {
@@ -61,7 +58,6 @@ void runContextSV(const std::unordered_map<std::string, std::string>& args)
     if (args.find("debug") != args.end()) {
         input_data.setVerbose(true);
     }
-    printMemoryUsage("After setting up input data, ");
 
     // Run ContextSV
     run(input_data);

@@ -94,9 +94,8 @@ std::tuple<double, SVType, std::string, bool> CNVCaller::runCopyNumberPrediction
         return std::make_tuple(0.0, SVType::UNKNOWN, "./.", false);
     }
 
-    // Run the Viterbi algorithm on SNPs in the SV region +/- 1/2
-    // the SV length
-    // Only extened the region if "save CNV data" is enabled
+    // Run the Viterbi algorithm on SNPs in the SV region
+    // Only extend the region if "save CNV data" is enabled
     uint32_t snp_start_pos = start_pos;
     uint32_t snp_end_pos = end_pos;
     if (this->input_data.getSaveCNVData())
@@ -105,26 +104,18 @@ std::tuple<double, SVType, std::string, bool> CNVCaller::runCopyNumberPrediction
         snp_start_pos = start_pos > sv_half_length ? start_pos - sv_half_length : 1;
         snp_end_pos = end_pos + sv_half_length;
     }
-    // uint32_t sv_half_length = (end_pos - start_pos) / 2.0;
-    // uint32_t snp_start_pos = start_pos > sv_half_length ? start_pos - sv_half_length : 1;
-    // uint32_t snp_end_pos = end_pos + sv_half_length;
 
     // Query the SNP region for the SV candidate
     SNPData snp_data;
     querySNPRegion(chr, snp_start_pos, snp_end_pos, pos_depth_map, mean_chr_cov, snp_data);
-    // std::pair<SNPData, bool> snp_call = querySNPRegion(chr, snp_start_pos, snp_end_pos, pos_depth_map, mean_chr_cov);
-    // SNPData& sv_snps = snp_call.first;
-    // bool sv_snps_found = snp_call.second;
 
     // Run the Viterbi algorithm
-    printMemoryUsage("Before running Viterbi algorithm, ");
     std::pair<std::vector<int>, double> prediction;
     runViterbi(hmm, snp_data, prediction);
     if (prediction.first.size() == 0)
     {
         return std::make_tuple(0.0, SVType::UNKNOWN, "./.", false);
     }
-    printMemoryUsage("After running Viterbi algorithm, ");
 
     std::vector<int>& state_sequence = prediction.first;
     double likelihood = prediction.second;
@@ -213,8 +204,6 @@ void CNVCaller::runCIGARCopyNumberPrediction(std::string chr, std::vector<SVCall
             continue;
         }
 
-        // Loop through the SV region +/- 1/2 SV length and run copy number
-        // predictions
         // Only extend the region if "save CNV data" is enabled
         uint32_t snp_start_pos = start_pos;
         uint32_t snp_end_pos = end_pos;
@@ -239,7 +228,6 @@ void CNVCaller::runCIGARCopyNumberPrediction(std::string chr, std::vector<SVCall
         double likelihood = prediction.second;
 
         // Get all the states in the SV region
-        // printMessage("Getting states for SV " + chr + ":" + std::to_string((int)start_pos) + "-" + std::to_string((int)end_pos) + "...");
         std::vector<int> sv_states;
         for (size_t i = 0; i < state_sequence.size(); i++)
         {
@@ -276,7 +264,6 @@ void CNVCaller::runCIGARCopyNumberPrediction(std::string chr, std::vector<SVCall
         std::string genotype = cnv_genotype_map[max_state];
 
         // Determine the SV calling method used to call the SV
-        // (SNPCNV=SNP-based, Log2CNV=coverage-based)
         std::string data_type;
         data_type = "HMM";
 
@@ -289,7 +276,6 @@ void CNVCaller::runCIGARCopyNumberPrediction(std::string chr, std::vector<SVCall
         }
 
         // Update the SV type if known
-        // printMessage("Updating SV copy number data for SV " + chr + ":" + std::to_string((int)start_pos) + "-" + std::to_string((int)end_pos) + "...");
         if (updated_sv_type != SVType::UNKNOWN && updated_sv_type != SVType::NEUTRAL)
         {
             std::string sv_type_str = getSVTypeString(updated_sv_type);
@@ -340,7 +326,6 @@ std::vector<std::string> CNVCaller::splitRegionIntoChunks(std::string chr, uint3
 // Calculate the mean chromosome coverage
 double CNVCaller::calculateMeanChromosomeCoverage(std::string chr, std::vector<uint32_t>& chr_pos_depth_map)
 {
-    printMemoryUsage("Before calculating mean chromosome coverage, ");
     {
         // Lock the bam file
         std::lock_guard<std::mutex> lock(this->bam_file_mtx);
@@ -354,7 +339,11 @@ double CNVCaller::calculateMeanChromosomeCoverage(std::string chr, std::vector<u
             return 0.0;
         }
 
-        // Enable multi-threading
+        // Enable multi-threading if running on a single chromosome
+        if (this->input_data.getChromosome() != "")
+        {
+            hts_set_threads(bam_file, this->input_data.getThreadCount());
+        }
         // hts_set_threads(bam_file, this->input_data.getThreadCount());
 
         // Read the header
@@ -450,7 +439,6 @@ double CNVCaller::calculateMeanChromosomeCoverage(std::string chr, std::vector<u
         bam_hdr_destroy(bam_header);
         sam_close(bam_file);
     }
-    printMemoryUsage("After calculating mean chromosome coverage, ");
 
     // Calculate the mean chromosome coverage for positions with non-zero depth
     uint64_t cum_depth = 0;
@@ -494,14 +482,11 @@ void CNVCaller::calculateRegionLog2Ratio(uint32_t start_pos, uint32_t end_pos, i
         } catch (const std::out_of_range& e) {
             log2_region[i] = 0.0;
         }
-        // printMessage("Position: " + std::to_string((int)pos) + ", log2 ratio: " + std::to_string(log2_region[i]));
     }
 }
 
 void CNVCaller::readSNPAlleleFrequencies(std::string chr, uint32_t start_pos, uint32_t end_pos, std::vector<uint32_t>& snp_pos, std::vector<double>& snp_baf, std::vector<double>& snp_pfb, std::vector<bool>& is_snp) const
-{
-    printMemoryUsage("Reading SNP allele frequencies for " + chr + ":" + std::to_string((int)start_pos) + "-" + std::to_string((int)end_pos) + ", ");
-    
+{    
     // --------- SNP file ---------
     // Get the SNP file path
     std::string snp_filepath = this->input_data.getSNPFilepath();
@@ -515,7 +500,6 @@ void CNVCaller::readSNPAlleleFrequencies(std::string chr, uint32_t start_pos, ui
     bcf_srs_t *snp_reader = bcf_sr_init();
     if (!snp_reader)
     {
-        // throw std::runtime_error("ERROR: Could not initialize SNP reader.");
         printError("ERROR: Could not initialize SNP reader.");
         return;
     }
@@ -536,7 +520,6 @@ void CNVCaller::readSNPAlleleFrequencies(std::string chr, uint32_t start_pos, ui
         printError("ERROR: Could not add SNP file to reader: " + snp_filepath);
         return;
     }
-    printMemoryUsage("After adding SNP file to reader, ");
 
     // Get the header
     bcf_hdr_t *snp_header = bcf_sr_get_header(snp_reader, 0);
@@ -555,8 +538,7 @@ void CNVCaller::readSNPAlleleFrequencies(std::string chr, uint32_t start_pos, ui
     if (pfb_filepath.empty())
     {
         use_pfb = false;
-        // printError("ERROR: Population allele frequency file path is empty.");
-        // return;
+        printMessage("WARNING: No population allele frequency file provided for chromosome " + chr);
     }
     
     bcf_srs_t *pfb_reader = bcf_sr_init();
@@ -615,7 +597,6 @@ void CNVCaller::readSNPAlleleFrequencies(std::string chr, uint32_t start_pos, ui
             printError("ERROR: Could not add population allele frequency file to reader: " + pfb_filepath);
             return;
         }
-        printMemoryUsage("After adding population allele frequency file to reader, ");
 
         // Get the header
         bcf_hdr_t *pfb_header = bcf_sr_get_header(pfb_reader, 0);
@@ -645,7 +626,6 @@ void CNVCaller::readSNPAlleleFrequencies(std::string chr, uint32_t start_pos, ui
         // Read the SNP data ----------------------------------------------
 
         // Set the region
-        printMemoryUsage("Before setting region for SNP reader, ");
         std::string region_str = region_chunks[i];
         if (bcf_sr_set_regions(snp_reader, region_str.c_str(), 0) < 0)
         {
@@ -653,10 +633,7 @@ void CNVCaller::readSNPAlleleFrequencies(std::string chr, uint32_t start_pos, ui
             printError("ERROR: Could not set region for SNP reader: " + region_str);
             return;
         }
-        printMemoryUsage("After setting region for SNP reader, and before reading SNPs, ");
 
-        // std::cout << "Iterating through SNPs in region " << region_str <<
-        // "..." << std::endl;
         // printMessage("Iterating through SNPs in region " + std::to_string(current_region) + " of " + std::to_string((int) region_chunks.size()) + " with length " + std::to_string((int) (end_pos - start_pos)) + " bp...");
         bool snp_found = false;
         while (bcf_sr_next_line(snp_reader) > 0)
@@ -727,8 +704,6 @@ void CNVCaller::readSNPAlleleFrequencies(std::string chr, uint32_t start_pos, ui
             }
         }
 
-        printMemoryUsage("After reading SNPs for " + chr + ":" + std::to_string((int)start_pos) + "-" + std::to_string((int)end_pos) + ", ");
-
         if (snp_reader->errnum)
         {
             printError("ERROR: " + std::string(bcf_sr_strerror(snp_reader->errnum)));
@@ -739,8 +714,6 @@ void CNVCaller::readSNPAlleleFrequencies(std::string chr, uint32_t start_pos, ui
         {
             continue;
         }
-
-        printMemoryUsage("Before reading population allele frequencies for " + chr + ":" + std::to_string((int)start_pos) + "-" + std::to_string((int)end_pos) + ", ");
 
         // Read the population allele frequency data ----------------------
         if (use_pfb)
@@ -808,7 +781,6 @@ void CNVCaller::readSNPAlleleFrequencies(std::string chr, uint32_t start_pos, ui
                 printError("ERROR: " + std::string(bcf_sr_strerror(pfb_reader->errnum)));
             }
         }
-        printMemoryUsage("After reading population allele frequencies for " + chr + ":" + std::to_string((int)start_pos) + "-" + std::to_string((int)end_pos) + ", ");
     }
     bcf_sr_destroy(snp_reader);
     bcf_sr_destroy(pfb_reader);
