@@ -130,7 +130,7 @@ void SVCaller::getAlignmentMismatchMap(samFile *fp_in, hts_idx_t *idx, bam_hdr_t
     }
 
     // Main loop to process the alignments
-    std::vector<int> match_map;
+    std::vector<int> match_map(bam1->core.l_qseq, 0);  // Query position to match/mismatch (1/0) map
     uint32_t query_start = 0;
     uint32_t query_end = 0;
     uint32_t query_pos = 0;
