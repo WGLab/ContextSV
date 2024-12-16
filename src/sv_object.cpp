@@ -21,8 +21,7 @@ void addSVCall(std::vector<SVCall>& sv_calls, uint32_t start, uint32_t end, std:
         return;
     }
 
-    // Set the alt allele to <DUP> or <DEL> if the SV type is DUP or DEL, throw
-    // an error otherwise
+    // Set the alt allele to <DUP> or <DEL> if the SV type is DUP or DEL
     if (sv_type == "DUP" && alt_allele == ".") {
         printError("ERROR: Invalid alt allele for duplication at position " + std::to_string(start) + "-" + std::to_string(end) + ": " + alt_allele);
         alt_allele = "<DUP>";
@@ -32,7 +31,8 @@ void addSVCall(std::vector<SVCall>& sv_calls, uint32_t start, uint32_t end, std:
     }
     
     if (start >= end) {
-        throw std::runtime_error("ERROR: Invalid SV at position " + std::to_string(start) + "-" + std::to_string(end));
+        printError("ERROR: Invalid SV at position " + std::to_string(start) + "-" + std::to_string(end));
+        return;
     }
 
     // Insert the SV call in sorted order
@@ -69,7 +69,7 @@ void updateSVType(std::vector<SVCall>& sv_calls, uint32_t start, uint32_t end, s
         it->genotype = genotype;
         it->hmm_likelihood = hmm_likelihood;
     } else {
-        throw std::runtime_error("ERROR: SV call not found for update at position " + std::to_string(start) + "-" + std::to_string(end));
+        printError("ERROR: SV call not found for update at position " + std::to_string(start) + "-" + std::to_string(end));
     }
 }
 

@@ -89,7 +89,6 @@ std::tuple<double, SVType, std::string, bool> CNVCaller::runCopyNumberPrediction
     // Check that the start position is less than the end position
     if (start_pos >= end_pos)
     {
-        // throw std::runtime_error("ERROR: Invalid SV region for copy number prediction: " + chr + ":" + std::to_string((int)start_pos) + "-" + std::to_string((int)end_pos));
         printError("ERROR: Invalid SV region for copy number prediction: " + chr + ":" + std::to_string((int)start_pos) + "-" + std::to_string((int)end_pos));
         return std::make_tuple(0.0, SVType::UNKNOWN, "./.", false);
     }

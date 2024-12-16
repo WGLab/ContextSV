@@ -61,8 +61,6 @@ class SVCaller {
         // sequence
         double calculateMismatchRate(const MismatchData& mismatch_data) const;
 
-        std::pair<uint32_t, uint32_t> generateMatchMismatchMap(samFile *fp_in, hts_idx_t *idx, bam_hdr_t *bamHdr, hts_itr_t *itr, std::vector<int>& match_map) const;
-
         void saveToVCF(const std::unordered_map<std::string, std::vector<SVCall>>& sv_calls);
 
         void trimOverlappingAlignments(GenomicRegion& primary_alignment, GenomicRegion& supp_alignment, const MismatchData& primary_mismatches, const MismatchData& supp_mismatches) const;

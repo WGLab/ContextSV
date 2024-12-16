@@ -47,7 +47,8 @@ void SVCaller::getSplitAlignments(samFile* fp_in, hts_idx_t* idx, bam_hdr_t* bam
         hts_idx_destroy(idx);
         bam_hdr_destroy(bamHdr);
         sam_close(fp_in);
-        throw std::runtime_error("ERROR: failed to initialize BAM record");
+        printError("ERROR: failed to initialize BAM record");
+        return;
     }
     hts_itr_t *itr = sam_itr_querys(idx, bamHdr, region.c_str());
     if (!itr) {
@@ -55,7 +56,8 @@ void SVCaller::getSplitAlignments(samFile* fp_in, hts_idx_t* idx, bam_hdr_t* bam
         hts_idx_destroy(idx);
         bam_hdr_destroy(bamHdr);
         sam_close(fp_in);
-        throw std::runtime_error("ERROR: failed to query region " + region);
+        printError("ERROR: failed to query region " + region);
+        return;
     }
 
     uint32_t primary_count = 0;
@@ -104,7 +106,8 @@ void SVCaller::getAlignmentMismatchMap(samFile *fp_in, hts_idx_t *idx, bam_hdr_t
         hts_idx_destroy(idx);
         bam_hdr_destroy(bamHdr);
         sam_close(fp_in);
-        throw std::runtime_error("ERROR: failed to initialize BAM record");
+        printError("ERROR: failed to initialize BAM record");
+        return;
     }
     // hts_itr_t *itr = sam_itr_queryi(idx, region.tid, region.start, region.end);
     hts_itr_t *itr = sam_itr_queryi(idx, region.tid, region.start - 1, region.end);
@@ -113,16 +116,9 @@ void SVCaller::getAlignmentMismatchMap(samFile *fp_in, hts_idx_t *idx, bam_hdr_t
         hts_idx_destroy(idx);
         bam_hdr_destroy(bamHdr);
         sam_close(fp_in);
-        throw std::runtime_error("ERROR: failed to query region " + std::to_string(region.tid) + ":" + std::to_string(region.start) + "-" + std::to_string(region.end));
+        printError("ERROR: failed to query region " + std::to_string(region.tid) + ":" + std::to_string(region.start) + "-" + std::to_string(region.end));
+        return;
     }
-
-    // // Read the alignment
-    // if (readNextAlignment(fp_in, itr, bam1) < 0) {
-    //     bam_destroy1(bam1);
-    //     hts_itr_destroy(itr);
-    //     printError("ERROR: failed to read alignment");
-    //     return;
-    // }
 
     // Find the correct alignment
     bool success = false;
@@ -147,11 +143,6 @@ void SVCaller::getAlignmentMismatchMap(samFile *fp_in, hts_idx_t *idx, bam_hdr_t
             success = true;
             break;
         } else {
-            // std::string type_str = is_primary ? "primary" : "supplementary";
-            // std::string strand_str = region.strand ? "forward" : "reverse";
-            // fail_str = "ERROR: Incorrect alignment start and end positions for region: " + std::to_string(region.start) + "-" + std::to_string(region.end) + ", Got: " + std::to_string(bam1->core.pos + 1) + "-" + std::to_string(bam_endpos(bam1)) + " with type: " + type_str + " and strand: " + strand_str;
-            // printError(fail_str);
-            // printError("ERROR: Incorrect alignment start and end positions for region: " + std::to_string(region.start) + "-" + std::to_string(region.end) + ", Got: " + std::to_string(bam1->core.pos) + "-" + std::to_string(bam_endpos(bam1)));
             continue;
         }
     }
@@ -159,7 +150,6 @@ void SVCaller::getAlignmentMismatchMap(samFile *fp_in, hts_idx_t *idx, bam_hdr_t
     // Check if the alignment was found
     if (!success) {
         printError("ERROR: Failed to find alignment for region: " + std::to_string(region.start) + "-" + std::to_string(region.end) + " with type: " + (is_primary ? "primary" : "supplementary") + " and strand: " + (region.strand ? "forward" : "reverse"));
-        // printError(fail_str);
         hts_itr_destroy(itr);
         bam_destroy1(bam1);
         return;
@@ -207,7 +197,10 @@ void SVCaller::getAlignmentMismatchMap(samFile *fp_in, hts_idx_t *idx, bam_hdr_t
 
             // Check that the two sequence lengths are equal
             if (cmatch_seq_str.length() != cmatch_ref_str.length()) {
-                throw std::runtime_error("ERROR: Sequence lengths do not match for CIGAR operation: " + std::to_string(op));
+                printError("ERROR: Sequence lengths do not match for CIGAR operation: " + std::to_string(op));
+                hts_itr_destroy(itr);
+                bam_destroy1(bam1);
+                return;
             }
 
             // Compare the two sequences and update the mismatch map
@@ -238,9 +231,10 @@ void SVCaller::getAlignmentMismatchMap(samFile *fp_in, hts_idx_t *idx, bam_hdr_t
         // https://samtools.github.io/hts-specs/SAMv1.pdf
         if (op == BAM_CMATCH || op == BAM_CDEL || op == BAM_CREF_SKIP || op == BAM_CEQUAL || op == BAM_CDIFF) {
             pos += op_len;
+        }
 
         // Update the query position
-        } else if (op == BAM_CMATCH || op == BAM_CINS || op == BAM_CSOFT_CLIP || op == BAM_CEQUAL || op == BAM_CDIFF) {
+        if (op == BAM_CMATCH || op == BAM_CINS || op == BAM_CSOFT_CLIP || op == BAM_CEQUAL || op == BAM_CDIFF) {
             query_pos += op_len;
         }
     }
@@ -264,7 +258,8 @@ void SVCaller::detectCIGARSVs(samFile* fp_in, hts_idx_t* idx, bam_hdr_t* bamHdr,
         hts_idx_destroy(idx);
         bam_hdr_destroy(bamHdr);
         sam_close(fp_in);
-        throw std::runtime_error("ERROR: failed to initialize BAM record");
+        printError("ERROR: failed to initialize BAM record");
+        return;
     }
     hts_itr_t *itr = sam_itr_querys(idx, bamHdr, region.c_str());
     if (!itr) {
@@ -272,7 +267,8 @@ void SVCaller::detectCIGARSVs(samFile* fp_in, hts_idx_t* idx, bam_hdr_t* bamHdr,
         hts_idx_destroy(idx);
         bam_hdr_destroy(bamHdr);
         sam_close(fp_in);
-        throw std::runtime_error("ERROR: failed to query region " + region);
+        printError("ERROR: failed to query region " + region);
+        return;
     }
 
     // Main loop to process the alignments
@@ -293,8 +289,6 @@ void SVCaller::detectCIGARSVs(samFile* fp_in, hts_idx_t* idx, bam_hdr_t* bamHdr,
     bam_destroy1(bam1);
 }
 
-// double SVCaller::calculateMismatchRate(const std::vector<int>& mismatch_map,
-// int32_t start, int32_t end)
 double SVCaller::calculateMismatchRate(const MismatchData& mismatch_data) const
 {
     int start = mismatch_data.query_start;
@@ -323,115 +317,6 @@ double SVCaller::calculateMismatchRate(const MismatchData& mismatch_data) const
 
     return mismatch_rate;
 }
-// {
-//     start = std::max(start, 0);
-//     end = std::min(end, (int32_t)mismatch_map.size() - 1);
-//     int match_count = 0;
-//     int mismatch_count = 0;
-//     int MATCH = 1;
-//     int MISMATCH = -1;
-//     for (int i = start; i <= end; i++) {
-//         if (mismatch_map[i] == MATCH) {
-//             match_count++;
-//         } else if (mismatch_map[i] == MISMATCH) {
-//             mismatch_count++;
-//         }
-//     }
-
-//     // Avoid division by zero
-//     if (match_count + mismatch_count == 0) {
-//         return 0.0;
-//     }
-
-//     double mismatch_rate = static_cast<double>(mismatch_count) / static_cast<double>(match_count + mismatch_count);
-
-//     return mismatch_rate;
-// }
-
-std::pair<uint32_t, uint32_t> SVCaller::generateMatchMismatchMap(samFile* fp_in, hts_idx_t* idx, bam_hdr_t* bamHdr, hts_itr_t* itr, std::vector<int>& match_map) const
-{
-    // Create a read and iterator for the region
-    bam1_t *bam1 = bam_init1();
-    if (!bam1) {
-        printError("ERROR: failed to initialize BAM record");
-        return std::make_pair(0, 0);
-    }
-
-    // Read the alignment
-    if (readNextAlignment(fp_in, itr, bam1) < 0) {
-        bam_destroy1(bam1);
-        printError("ERROR: failed to read alignment");
-        return std::make_pair(0, 0);
-    }
-
-    // Main loop to process the alignments
-    std::string chr = bamHdr->target_name[bam1->core.tid];  // Chromosome name
-    uint32_t pos = (uint32_t)bam1->core.pos;  // Leftmost position of the alignment in the reference genome (0-based)
-    uint32_t query_pos = 0;
-    uint32_t query_start = 0;
-    uint32_t query_end = 0;
-    bool first_op = true;
-
-    // Get the CIGAR string
-    uint32_t* cigar = bam_get_cigar(bam1);  // CIGAR array
-    int cigar_len = bam1->core.n_cigar;
-    for (int i = 0; i < cigar_len; i++) {
-        int op = bam_cigar_op(cigar[i]);  // CIGAR operation
-        int op_len = bam_cigar_oplen(cigar[i]);  // CIGAR operation length
-        
-        // Update match/mismatch query map
-        int MATCH = 1;
-        int MISMATCH = -1;
-        if (op == BAM_CEQUAL) {
-            for (int j = 0; j < op_len; j++) {
-                match_map[query_pos + j] = MATCH;
-            }
-        } else if (op == BAM_CDIFF) {
-            for (int j = 0; j < op_len; j++) {
-                match_map[query_pos + j] = MISMATCH;
-            }
-        } else if (op == BAM_CMATCH) {
-            // Get the read sequence
-            uint8_t* seq_ptr = bam_get_seq(bam1);
-            std::string cmatch_seq_str = "";
-            for (int j = 0; j < op_len; j++) {
-                cmatch_seq_str += seq_nt16_str[bam_seqi(seq_ptr, query_pos + j)];
-            }
-
-            // Get the corresponding reference sequence
-            int cmatch_pos = pos + 1;  // Querying the reference genome is 1-based
-            // printMessage("Checking window for match: " + chr + ":" + std::to_string(cmatch_pos) + "-" + std::to_string(cmatch_pos + op_len - 1));
-            std::string cmatch_ref_str = this->input_data.queryRefGenome(chr, cmatch_pos, cmatch_pos + op_len - 1);
-
-            // Check that the two sequence lengths are equal
-            if (cmatch_seq_str.length() != cmatch_ref_str.length()) {
-                throw std::runtime_error("ERROR: Sequence lengths do not match for CIGAR operation: " + std::to_string(op));
-            }
-
-            // Compare the two sequences and update the mismatch map
-            for (int j = 0; j < op_len; j++) {
-                if (cmatch_seq_str[j] != cmatch_ref_str[j]) {
-                    match_map[query_pos + j] = MISMATCH;
-                } else {
-                    match_map[query_pos + j] = MATCH;
-                }
-            }
-        } else if (first_op && (op == BAM_CSOFT_CLIP || op == BAM_CHARD_CLIP)) {
-            query_start = query_pos + op_len;
-            first_op = false;
-        }
-        
-        // Update the query position
-        if (op == BAM_CMATCH || op == BAM_CINS || op == BAM_CSOFT_CLIP || op == BAM_CEQUAL || op == BAM_CDIFF) {
-            query_pos += op_len;
-        }
-    }
-    query_end = query_pos;
-    
-    bam_destroy1(bam1);  // Clean up the alignment
-
-    return std::make_pair(query_start, query_end);
-}
 
 void SVCaller::detectSVsFromCIGAR(bam_hdr_t* header, bam1_t* alignment, std::vector<SVCall>& sv_calls, bool is_primary, const std::vector<uint32_t>& pos_depth_map)
 {
@@ -440,19 +325,11 @@ void SVCaller::detectSVsFromCIGAR(bam_hdr_t* header, bam1_t* alignment, std::vec
     uint32_t* cigar = bam_get_cigar(alignment);  // CIGAR array
     int cigar_len = alignment->core.n_cigar;
     uint32_t query_pos = 0;
-    // std::unordered_map<int, int> query_match_map;  // Query position to
-    // match/mismatch (1/0) map
-    // std::vector<int> query_match_map(alignment->core.l_qseq, 0);  // Query position to match/mismatch (1/0) map
 
     // Loop through the CIGAR string, process operations, detect SVs (primary
-    // only), update clipped base support, calculate sequence identity for
-    // potential duplications (primary only), and calculate
-    // the clipped base support and mismatch rate
+    // only), and calculate sequence identity for potential duplications (primary only)
     uint32_t ref_pos;
     uint32_t ref_end;
-    // uint32_t query_start = 0;  // First alignment position in the query
-    // uint32_t query_end = 0;    // Last alignment position in the query
-    // bool first_op = false;  // First alignment operation for the query
     double default_lh = 0.0;
     for (int i = 0; i < cigar_len; i++) {
 
@@ -478,8 +355,6 @@ void SVCaller::detectSVsFromCIGAR(bam_hdr_t* header, bam1_t* alignment, std::vec
                 bool is_duplication = false;
                 int ins_ref_pos;
                 uint32_t dup_start = std::max(0, (int)pos - op_len);
-                // int dup_start = std::max(0, pos - op_len);
-                // for (int j = pos - op_len; j <= pos; j++) {
                 for (uint32_t j = dup_start; j <= pos; j++) {
 
                     // Get the string for the window (1-based coordinates)
@@ -537,81 +412,19 @@ void SVCaller::detectSVsFromCIGAR(bam_hdr_t* header, bam1_t* alignment, std::vec
                 int read_depth = this->calculateReadDepth(pos_depth_map, ref_pos, ref_end);
                 addSVCall(sv_calls, ref_pos, ref_end, "DEL", "<DEL>", "CIGARDEL", "./.", default_lh, read_depth);
             }
-
-        // Check if the CIGAR operation is a clipped base
-        } else if (op == BAM_CSOFT_CLIP || op == BAM_CHARD_CLIP) {
-
-            // sv_calls.updateClippedBaseSupport(chr, pos);  // Update clipped base support
-
-            // Update the query alignment start position
-            // if (!first_op) {
-            //     query_start = query_pos + op_len;
-            //     first_op = true;
-            // }
         }
 
-        // // Update match/mismatch query map
-        // int MATCH = 1;
-        // int MISMATCH = -1;
-        // if (op == BAM_CEQUAL) {
-        //     for (int j = 0; j < op_len; j++) {
-        //         query_match_map[query_pos + j] = MATCH;
-        //     }
-        // } else if (op == BAM_CDIFF) {
-        //     for (int j = 0; j < op_len; j++) {
-        //         query_match_map[query_pos + j] = MISMATCH;
-        //     }
-        // } else if (op == BAM_CMATCH) {
-        //     // Get the read sequence
-        //     uint8_t* seq_ptr = bam_get_seq(alignment);
-        //     std::string cmatch_seq_str = "";
-        //     for (int j = 0; j < op_len; j++) {
-        //         cmatch_seq_str += seq_nt16_str[bam_seqi(seq_ptr, query_pos + j)];
-        //     }
-
-        //     // Get the corresponding reference sequence
-        //     int cmatch_pos = pos + 1;  // Querying the reference genome is 1-based
-        //     // printMessage("Checking window for match: " + chr + ":" + std::to_string(cmatch_pos) + "-" + std::to_string(cmatch_pos + op_len - 1));
-        //     std::string cmatch_ref_str = this->input_data.queryRefGenome(chr, cmatch_pos, cmatch_pos + op_len - 1);
-
-        //     // Check that the two sequence lengths are equal
-        //     if (cmatch_seq_str.length() != cmatch_ref_str.length()) {
-        //         throw std::runtime_error("ERROR: Sequence lengths do not match for CIGAR operation: " + std::to_string(op));
-        //     }
-
-        //     // Compare the two sequences and update the mismatch map
-        //     for (int j = 0; j < op_len; j++) {
-        //         if (cmatch_seq_str[j] != cmatch_ref_str[j]) {
-        //             query_match_map[query_pos + j] = MISMATCH;
-        //         } else {
-        //             query_match_map[query_pos + j] = MATCH;
-        //         }
-        //     }
-        // }
-
-        // Update the reference coordinate based on the CIGAR operation
+        // Update the reference position
         // https://samtools.github.io/hts-specs/SAMv1.pdf
         if (op == BAM_CMATCH || op == BAM_CDEL || op == BAM_CREF_SKIP || op == BAM_CEQUAL || op == BAM_CDIFF) {
             pos += op_len;
-        } else if (op == BAM_CINS || op == BAM_CSOFT_CLIP || op == BAM_CHARD_CLIP || op == BAM_CPAD) {
-            // Do nothing
-        } else {
-            throw std::runtime_error("ERROR: Unknown CIGAR operation: " + std::to_string(op));
         }
-
-        // Update the query position based on the CIGAR operation (M, I, S, H)
+        
+        // Update the query position
         if (op == BAM_CMATCH || op == BAM_CINS || op == BAM_CSOFT_CLIP || op == BAM_CEQUAL || op == BAM_CDIFF) {
             query_pos += op_len;
-        } else if (op == BAM_CDEL || op == BAM_CREF_SKIP || op == BAM_CHARD_CLIP || op == BAM_CPAD) {
-            // Do nothing
-        } else {
-            throw std::runtime_error("ERROR: Unknown CIGAR operation: " + std::to_string(op));
         }
     }
-
-    // query_end = query_pos;  // Last alignment position in the query
-
-    // query_info = std::tuple<std::vector<int>, uint32_t, uint32_t>(std::move(query_match_map), query_start, query_end);
 }
 
 void SVCaller::processChromosome(const std::string& chr, const CHMM& hmm, std::vector<SVCall>& combined_sv_calls)
@@ -620,14 +433,16 @@ void SVCaller::processChromosome(const std::string& chr, const CHMM& hmm, std::v
     std::string bam_filepath = this->input_data.getLongReadBam();
     samFile *fp_in = sam_open(bam_filepath.c_str(), "r");
     if (!fp_in) {
-        throw std::runtime_error("ERROR: failed to open " + bam_filepath);
+        printError("ERROR: failed to open " + bam_filepath);
+        return;
     }
 
     // Load the header
     bam_hdr_t *bamHdr = sam_hdr_read(fp_in);
     if (!bamHdr) {
         sam_close(fp_in);
-        throw std::runtime_error("ERROR: failed to read header from " + bam_filepath);
+        printError("ERROR: failed to read header from " + bam_filepath);
+        return;
     }
 
     // Load the index
@@ -635,7 +450,8 @@ void SVCaller::processChromosome(const std::string& chr, const CHMM& hmm, std::v
     if (!idx) {
         bam_hdr_destroy(bamHdr);
         sam_close(fp_in);
-        throw std::runtime_error("ERROR: failed to load index for " + bam_filepath);
+        printError("ERROR: failed to load index for " + bam_filepath);
+        return;
     }
 
     // Split the chromosome into chunks for memory efficiency
@@ -651,7 +467,6 @@ void SVCaller::processChromosome(const std::string& chr, const CHMM& hmm, std::v
         int region_end = region.second;
         std::string chunk = chr + ":" + std::to_string(region_start) + "-" + std::to_string(region_end);
         region_chunks.push_back(chunk);
-        // std::cout << "Using specified region " << chunk << "..." << std::endl;
         
     } else {
         int chunk_size = std::ceil((double)chr_len / chunk_count);
@@ -668,7 +483,6 @@ void SVCaller::processChromosome(const std::string& chr, const CHMM& hmm, std::v
     }
 
     // Load chromosome data for copy number predictions
-    // std::cout << "Loading chromosome data for copy number predictions..." << std::endl;
     printMessage(chr + ": Loading chromosome data...");
     CNVCaller cnv_caller(this->input_data);
     std::vector<uint32_t> chr_pos_depth_map(chr_len+1, 0);  // 1-based index
@@ -987,8 +801,10 @@ void SVCaller::saveToVCF(const std::unordered_map<std::string, std::vector<SVCal
     std::cout << "Writing VCF file to " << output_vcf << std::endl;
 	std::ofstream vcf_stream(output_vcf);
     if (!vcf_stream.is_open()) {
-        throw std::runtime_error("Failed to open VCF file for writing.");
+        printError("Failed to open VCF file for writing.");
+        return;
     }
+    
     std::string sample_name = "SAMPLE";
 
     std::cout << "Getting reference genome filepath..." << std::endl;

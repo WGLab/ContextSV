@@ -425,7 +425,6 @@ CHMM ReadCHMM(const std::string filename)
 	std::ifstream file(filename);
 	if (!file.is_open())
 	{
-		// throw std::runtime_error("Error opening file");
 		printError("Error opening file");
 		return CHMM();
 	}
@@ -437,7 +436,6 @@ CHMM ReadCHMM(const std::string filename)
 	std::getline(file, line);
 	if (sscanf(line.c_str(), "M=%d", &hmm.M) != 1)
 	{
-		// throw std::runtime_error("Error reading M");
 		printError("Error reading M");
 		return CHMM();
 	}
@@ -446,7 +444,6 @@ CHMM ReadCHMM(const std::string filename)
 	std::getline(file, line);
 	if (sscanf(line.c_str(), "N=%d", &hmm.N) != 1)
 	{
-		// throw std::runtime_error("Error reading N");
 		printError("Error reading N");
 		return CHMM();
 	}
@@ -455,14 +452,12 @@ CHMM ReadCHMM(const std::string filename)
 	std::getline(file, line);
 	if (line != "A:")
 	{
-		// throw std::runtime_error("Error reading A");
 		printError("Error reading A");
 		return CHMM();
 	}
 	hmm.A = readMatrix(file, hmm.N, hmm.N);
 	if (hmm.A.size() != (size_t)hmm.N || hmm.A[0].size() != (size_t)hmm.N)
 	{
-		// throw std::runtime_error("Error reading A");
 		printError("Error reading A");
 		return CHMM();
 	}
@@ -471,14 +466,12 @@ CHMM ReadCHMM(const std::string filename)
 	std::getline(file, line);
 	if (line != "B:")
 	{
-		// throw std::runtime_error("Error reading B");
 		printError("Error reading B");
 		return CHMM();
 	}
 	hmm.B = readMatrix(file, hmm.N, hmm.M);
 	if (hmm.B.size() != (size_t)hmm.N || hmm.B[0].size() != (size_t)hmm.M)
 	{
-		// throw std::runtime_error("Error reading B");
 		printError("Error reading B");
 		return CHMM();
 	}
@@ -487,14 +480,12 @@ CHMM ReadCHMM(const std::string filename)
 	std::getline(file, line);
 	if (line != "pi:")
 	{
-		// throw std::runtime_error("Error reading pi");
 		printError("Error reading pi");
 		return CHMM();
 	}
 	hmm.pi = readVector(file, hmm.N);
 	if (hmm.pi.size() != (size_t)hmm.N)
 	{
-		// throw std::runtime_error("Error reading pi");
 		printError("Error reading pi");
 		return CHMM();
 	}
@@ -503,14 +494,12 @@ CHMM ReadCHMM(const std::string filename)
 	std::getline(file, line);
 	if (line != "B1_mean:")
 	{
-		// throw std::runtime_error("Error reading B1_mean");
 		printError("Error reading B1_mean");
 		return CHMM();
 	}
 	hmm.B1_mean = readVector(file, hmm.N);
 	if (hmm.B1_mean.size() != (size_t)hmm.N)
 	{
-		// throw std::runtime_error("Error reading B1_mean");
 		printError("Error reading B1_mean");
 		return CHMM();
 	}
@@ -519,14 +508,12 @@ CHMM ReadCHMM(const std::string filename)
 	std::getline(file, line);
 	if (line != "B1_sd:")
 	{
-		// throw std::runtime_error("Error reading B1_sd");
 		printError("Error reading B1_sd");
 		return CHMM();
 	}
 	hmm.B1_sd = readVector(file, hmm.N);
 	if (hmm.B1_sd.size() != (size_t)hmm.N)
 	{
-		// throw std::runtime_error("Error reading B1_sd");
 		printError("Error reading B1_sd");
 		return CHMM();
 	}
@@ -535,7 +522,6 @@ CHMM ReadCHMM(const std::string filename)
 	std::getline(file, line);
 	if (line != "B1_uf:")
 	{
-		// throw std::runtime_error("Error reading B1_uf");
 		printError("Error reading B1_uf");
 		return CHMM();
 	}
@@ -543,7 +529,6 @@ CHMM ReadCHMM(const std::string filename)
 	try {
 		hmm.B1_uf = std::stod(line);
 	} catch (const std::invalid_argument& e) {
-		// throw std::runtime_error("Error reading B1_uf");
 		printError("Error reading B1_uf");
 		return CHMM();
 	}
@@ -552,37 +537,44 @@ CHMM ReadCHMM(const std::string filename)
 	std::getline(file, line);
 	if (line != "B2_mean:")
 	{
-		throw std::runtime_error("Error reading B2_mean");
+		printError("Error reading B2_mean");
+		return CHMM();
 	}
 	hmm.B2_mean = readVector(file, 5);
 	if (hmm.B2_mean.size() != (size_t)5)
 	{
-		throw std::runtime_error("Error reading B2_mean");
+		printError("Error reading B2_mean");
+		return CHMM();
 	}
 
 	// Read B2_sd
 	std::getline(file, line);
 	if (line != "B2_sd:")
 	{
-		throw std::runtime_error("Error reading B2_sd");
+		printError("Error reading B2_sd");
+		return CHMM();
 	}
 	hmm.B2_sd = readVector(file, 5);
 	if (hmm.B2_sd.size() != (size_t)5)
 	{
-		throw std::runtime_error("Error reading B2_sd");
+		printError("Error reading B2_sd");
+		return CHMM();
+
 	}
 
 	// Read B2_uf
 	std::getline(file, line);
 	if (line != "B2_uf:")
 	{
-		throw std::runtime_error("Error reading B2_uf");
+		printError("Error reading B2_uf");
+		return CHMM();
 	}
 	std::getline(file, line);
 	try {
 		hmm.B2_uf = std::stod(line);
 	} catch (const std::invalid_argument& e) {
-		throw std::runtime_error("Error reading B2_uf");
+		printError("Error reading B2_uf");
+		return CHMM();
 	}
 
 	return hmm;
@@ -597,7 +589,8 @@ std::vector<std::vector<double>> readMatrix(std::ifstream &file, int rows, int c
 		{
 			if (!(file >> matrix[i][j]))
 			{
-				throw std::runtime_error("Error reading matrix");
+				printError("Error reading matrix");
+				return std::vector<std::vector<double>>();
 			}
 		}
 	}
@@ -612,7 +605,8 @@ std::vector<double> readVector(std::ifstream &file, int size)
 	{
 		if (!(file >> vector[i]))
 		{
-			throw std::runtime_error("Error reading vector");
+			printError("Error reading vector");
+			return std::vector<double>();
 		}
 	}
 	file.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
