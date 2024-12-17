@@ -306,7 +306,15 @@ std::string InputData::getAlleleFreqFilepath(std::string chr) const
     {
         chr = chr.substr(3, chr.size() - 3);
     }
-    return this->pfb_filepaths.at(chr);
+
+    try
+    {
+        return this->pfb_filepaths.at(chr);
+    }
+    catch (const std::out_of_range& e)
+    {
+        return "";
+    }
 }
 
 void InputData::setThreadCount(int thread_count)

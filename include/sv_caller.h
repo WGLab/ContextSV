@@ -65,8 +65,6 @@ class SVCaller {
 
         void trimOverlappingAlignments(GenomicRegion& primary_alignment, GenomicRegion& supp_alignment, const MismatchData& primary_mismatches, const MismatchData& supp_mismatches) const;
 
-        // void trimOverlappingAlignments(uint32_t& primary_start, uint32_t& primary_end, uint32_t& supp_start, uint32_t& supp_end, const std::vector<int>& primary_match_map, const std::vector<int>& supp_match_map);
-
         // Calculate the read depth (INFO/DP) for a region
         int calculateReadDepth(const std::vector<uint32_t>& pos_depth_map, uint32_t start, uint32_t end);
 

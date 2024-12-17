@@ -485,8 +485,10 @@ void SVCaller::processChromosome(const std::string& chr, const CHMM& hmm, std::v
     // Load chromosome data for copy number predictions
     printMessage(chr + ": Loading chromosome data...");
     CNVCaller cnv_caller(this->input_data);
+    printMessage(chr + ": LENGTH: " + std::to_string(chr_len));
     std::vector<uint32_t> chr_pos_depth_map(chr_len+1, 0);  // 1-based index
     double mean_chr_cov = cnv_caller.calculateMeanChromosomeCoverage(chr, chr_pos_depth_map);
+    printMessage(chr + ": POSDEPTH: " + std::to_string(chr_pos_depth_map.size()));
     if (mean_chr_cov == 0.0 || chr_pos_depth_map.size() == 0) {
         hts_idx_destroy(idx);
         bam_hdr_destroy(bamHdr);
@@ -529,7 +531,6 @@ void SVCaller::processChromosome(const std::string& chr, const CHMM& hmm, std::v
         // std::cout << "Detecting copy number variants from split reads..." << std::endl;
         printMessage(chr + ": Split read SVs...");
         this->detectSVsFromSplitReads(sub_region, fp_in, idx, bamHdr, subregion_sv_calls, cnv_caller, hmm, mean_chr_cov, chr_pos_depth_map);
-        // this->detectSVsFromSplitReads(subregion_sv_calls, primary_map, supp_map, cnv_caller, hmm, mean_chr_cov, chr_pos_depth_map);
 
         // Merge the SV calls from the current region
         // std::cout << "Merge SV calls from " << sub_region << "..." << std::endl;
@@ -689,31 +690,31 @@ void SVCaller::detectSVsFromSplitReads(const std::string& region, samFile* fp_in
 
                     // Print error if the start position is greater than the end
                     // position
-                    if (supp_start+1 > supp_end+1) {
-                        printError("ERROR: Invalid inversion coordinates: " + primary_chr + ":" + std::to_string(supp_start+1) + "-" + std::to_string(supp_end+1));
+                    if (supp_start > supp_end) {
+                        printError("ERROR: Invalid inversion coordinates: " + primary_chr + ":" + std::to_string(supp_start) + "-" + std::to_string(supp_end));
                         continue;
                     }
 
-                    std::tuple<double, SVType, std::string, bool> result = cnv_caller.runCopyNumberPrediction(primary_chr, hmm, supp_start+1, supp_end+1, mean_chr_cov, pos_depth_map);
+                    std::tuple<double, SVType, std::string, bool> result = cnv_caller.runCopyNumberPrediction(primary_chr, hmm, supp_start, supp_end, mean_chr_cov, pos_depth_map);
                     if (std::get<1>(result) == SVType::UNKNOWN) {
                         continue;
                     }
 
                     double supp_lh = std::get<0>(result);
                     SVType supp_type = std::get<1>(result);
-                    int read_depth = this->calculateReadDepth(pos_depth_map, supp_start+1, supp_end+1);
+                    int read_depth = this->calculateReadDepth(pos_depth_map, supp_start, supp_end);
                     if (supp_type == SVType::NEUTRAL) {
-                        addSVCall(sv_calls, supp_start+1, supp_end+1, "INV", "<INV>", "HMM", "./.", supp_lh, read_depth);
+                        addSVCall(sv_calls, supp_start, supp_end, "INV", "<INV>", "HMM", "./.", supp_lh, read_depth);
                         
                         sv_count++;
                     } else if (supp_type == SVType::DUP) {
-                        addSVCall(sv_calls, supp_start+1, supp_end+1, "INVDUP", "<INV>", "HMM", "./.", supp_lh, read_depth);
+                        addSVCall(sv_calls, supp_start, supp_end, "INVDUP", "<INV>", "HMM", "./.", supp_lh, read_depth);
                     }
                 } else {
                     // Add the inversion without running copy number predictions
                     // (too small for predictions)
-                    int read_depth = this->calculateReadDepth(pos_depth_map, supp_start+1, supp_end+1);
-                    addSVCall(sv_calls, supp_start+1, supp_end+1, "INV", "<INV>", "REV", "./.", 0.0, read_depth);
+                    int read_depth = this->calculateReadDepth(pos_depth_map, supp_start, supp_end);
+                    addSVCall(sv_calls, supp_start, supp_end, "INV", "<INV>", "REV", "./.", 0.0, read_depth);
                 }
             }
         }
@@ -725,16 +726,16 @@ void SVCaller::detectSVsFromSplitReads(const std::string& region, samFile* fp_in
         bool gap_exists = false;
         uint32_t boundary_left, boundary_right, gap_left, gap_right;
         if (primary_region.start < largest_supp_region.start) {  // Primary before supp
-            boundary_left = primary_region.start + 1;
-            boundary_right = std::max(primary_region.end, largest_supp_region.end) + 1;
-            gap_left = primary_region.end + 1;
-            gap_right = largest_supp_region.start + 1;
+            boundary_left = primary_region.start;
+            boundary_right = std::max(primary_region.end, largest_supp_region.end);
+            gap_left = primary_region.end;
+            gap_right = largest_supp_region.start;
             gap_exists = gap_left < gap_right;
         } else {
-            boundary_left = largest_supp_region.start + 1;
-            boundary_right = std::max(primary_region.end, largest_supp_region.end) + 1;
-            gap_left = largest_supp_region.end + 1;
-            gap_right = primary_region.start + 1;
+            boundary_left = largest_supp_region.start;
+            boundary_right = std::max(primary_region.end, largest_supp_region.end);
+            gap_left = largest_supp_region.end;
+            gap_right = primary_region.start;
             gap_exists = gap_left < gap_right;
         }
         
@@ -966,21 +967,8 @@ void SVCaller::saveToVCF(const std::unordered_map<std::string, std::vector<SVCal
 
 void SVCaller::trimOverlappingAlignments(GenomicRegion& primary_alignment, GenomicRegion& supp_alignment, const MismatchData& primary_mismatches, const MismatchData& supp_mismatches) const
 {
-    // Get the start and end read positions for the primary and supplementary
-    // alignments
-    // uint32_t primary_alignment_start = std::get<1>(primary_alignment);
-    // uint32_t primary_alignment_end = std::get<2>(primary_alignment);
-    // uint32_t supp_alignment_start = std::get<1>(supp_alignment);
-    // uint32_t supp_alignment_end = std::get<2>(supp_alignment);
-    // uint32_t primary_query_start = std::get<3>(primary_alignment);
-    // uint32_t primary_query_end = std::get<4>(primary_alignment);
-    // uint32_t supp_query_start = std::get<3>(supp_alignment);
-    // uint32_t supp_query_end = std::get<4>(supp_alignment);
-    // const std::vector<int>& primary_match_map = std::get<5>(primary_alignment);
-    // const std::vector<int>& supp_match_map = std::get<5>(supp_alignment);
 
     // Check for overlapping read alignments
-    // bool primary_before_supp = primary_query_start < supp_query_start;
     if (primary_mismatches.query_start < supp_mismatches.query_start) {
         // Primary before supplementary in the query
 
@@ -989,74 +977,47 @@ void SVCaller::trimOverlappingAlignments(GenomicRegion& primary_alignment, Genom
             // Calculate the mismatch rates at the overlapping region
             double primary_mismatch_rate = this->calculateMismatchRate(primary_mismatches);
             double supp_mismatch_rate = this->calculateMismatchRate(supp_mismatches);
-            // uint32_t overlap_length = primary_query_end - supp_query_start +
-            // 1;
             hts_pos_t overlap_length = primary_mismatches.query_end - supp_mismatches.query_start + 1;
 
             // Trim the ailgnment with the higher mismatch rate
             if (primary_mismatch_rate > supp_mismatch_rate) {
                 // Trim the end of the primary alignment, ensuring that the new
                 // end is not less than the start
-                // if (primary_alignment_end > overlap_length &&
-                // (primary_alignment_end - overlap_length) >
-                // primary_alignment_start) {
                 if (primary_alignment.end > overlap_length && (primary_alignment.end - overlap_length) > primary_alignment.start) {
                     // Trim the end of the primary alignment
-                    // uint32_t new_end = primary_alignment_end - overlap_length;
-                    // std::get<2>(primary_alignment) = new_end;
                     primary_alignment.end = primary_alignment.end - overlap_length;
                 }
             } else {
                 // Trim the beginning of the supplementary alignment, ensuring
                 // that the new start is not greater than the end
-                // if (supp_alignment_start + overlap_length <
-                // supp_alignment_end) {
                 if (supp_alignment.start + overlap_length < supp_alignment.end) {
                     // Trim the beginning of the supplementary alignment
-                    // uint32_t new_start = supp_alignment_start + overlap_length;
-                    // std::get<1>(supp_alignment) = new_start;
                     supp_alignment.start = supp_alignment.start + overlap_length;
                 }
             }
         }
 
-    // } else if (supp_mismatches.query_end >= primary_mismatches.query_start) {
     } else {
         // Supplementary before primary in the query
         if (primary_mismatches.query_start <= supp_mismatches.query_end) {
             // Calculate the mismatch rates at the overlapping region
-            // double primary_mismatch_rate = this->calculateMismatchRate(primary_match_map, primary_query_start, supp_query_end);
-            // double supp_mismatch_rate =
-            // this->calculateMismatchRate(supp_match_map, primary_query_start,
-            // supp_query_end);
             double primary_mismatch_rate = this->calculateMismatchRate(primary_mismatches);
             double supp_mismatch_rate = this->calculateMismatchRate(supp_mismatches);
-            // hts_pos_t overlap_length = supp_query_end - primary_query_start +
-            // 1;
             hts_pos_t overlap_length = supp_mismatches.query_end - primary_mismatches.query_start + 1;
 
             // Trim the ailgnment with the higher mismatch rate
             if (supp_mismatch_rate > primary_mismatch_rate) {
                 // Trim the end of the supplementary alignment, ensuring that
                 // the new end is not less than the start
-                // if (supp_alignment_end > overlap_length &&
-                // (supp_alignment_end - overlap_length) > supp_alignment_start)
-                // {
                 if (supp_alignment.end > overlap_length && (supp_alignment.end - overlap_length) > supp_alignment.start) {
                     // Trim the end of the supplementary alignment
-                    // uint32_t new_end = supp_alignment_end - overlap_length;
-                    // std::get<2>(supp_alignment) = new_end;
                     supp_alignment.end = supp_alignment.end - overlap_length;
                 }
             } else {
                 // Trim the beginning of the primary alignment, ensuring that
                 // the new start is not greater than the end
-                // if (primary_alignment_start + overlap_length <
-                // primary_alignment_end) {
                 if (primary_alignment.start + overlap_length < primary_alignment.end) {
                     // Trim the beginning of the primary alignment
-                    // uint32_t new_start = primary_alignment_start + overlap_length;
-                    // std::get<1>(primary_alignment) = new_start;
                     primary_alignment.start = primary_alignment.start + overlap_length;
                 }
             }
@@ -1077,7 +1038,7 @@ int SVCaller::calculateReadDepth(const std::vector<uint32_t>& pos_depth_map, uin
         // printMessage("Read depth at end: " + std::to_string(pos_depth_map.at(end)) + " for SV at " + std::to_string(start) + "-" + std::to_string(end) + " with length " + std::to_string(end-start));
         read_depth += pos_depth_map.at(end);
     } catch (const std::out_of_range& e) {
-        std::cerr << "Warning: End position " << end << " not found in depth map." << std::endl;
+        std::cerr << "Warning: End position " << end << " not found in depth map of size " << pos_depth_map.size() << "." << std::endl;
     }
     // printMessage("Read depth for SV at " + std::to_string(start) + "-" + std::to_string(end) + " with length " + std::to_string(end-start) + ": " + std::to_string(read_depth));
     return read_depth;

@@ -104,26 +104,14 @@ std::string ReferenceGenome::query(const std::string& chr, uint32_t pos_start, u
     pos_start--;
     pos_end--;
 
-    // Ensure that the start position is not negative, and the end position is
-    // not larger than the chromosome length
-    if (pos_start < 0)
-    {
-        return "";
-    }
-    // if (pos_end >= (uint32_t)this->chr_to_seq[chr].length())
+    // Ensure that the end position is not larger than the chromosome length
     if (pos_end >= (uint32_t)this->chr_to_seq.at(chr).length())
     {
         return "";
     }
 
     uint32_t length = pos_end - pos_start + 1;
-    
-    // Get the sequence
     const std::string& sequence = this->chr_to_seq.at(chr);
-    // const std::string& sequence = this->chr_to_seq[chr];
-
-    // Get the substring
-    // std::string subsequence = sequence.substr(pos_start, length);
 
     // If the subsequence is empty, return empty string
     if (sequence.substr(pos_start, length).empty())

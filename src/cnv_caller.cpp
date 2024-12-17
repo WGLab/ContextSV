@@ -326,10 +326,8 @@ std::vector<std::string> CNVCaller::splitRegionIntoChunks(std::string chr, uint3
 double CNVCaller::calculateMeanChromosomeCoverage(std::string chr, std::vector<uint32_t>& chr_pos_depth_map)
 {
     {
-        // Lock the bam file
-        std::lock_guard<std::mutex> lock(this->bam_file_mtx);
-
         // Open the BAM file
+        std::lock_guard<std::mutex> lock(this->bam_file_mtx);  // Lock the BAM file
         std::string bam_filepath = this->input_data.getShortReadBam();
         samFile *bam_file = sam_open(bam_filepath.c_str(), "r");
         if (!bam_file)
@@ -398,7 +396,7 @@ double CNVCaller::calculateMeanChromosomeCoverage(std::string chr, std::vector<u
             
             // Parse the CIGAR string to get the depth (match, sequence match, and
             // mismatch)
-            uint32_t pos = bam_record->core.pos + 1;  // 0-based to 1-based
+            uint32_t pos = (uint32_t)bam_record->core.pos + 1;  // 0-based to 1-based
             uint32_t ref_pos = pos;
             uint32_t cigar_len = bam_record->core.n_cigar;
             uint32_t *cigar = bam_get_cigar(bam_record);
@@ -457,7 +455,6 @@ double CNVCaller::calculateMeanChromosomeCoverage(std::string chr, std::vector<u
         mean_chr_cov = static_cast<double>(cum_depth) / static_cast<double>(pos_count);
     }
 
-    // return std::make_pair(mean_chr_cov, chr_pos_depth_map);
     return mean_chr_cov;
 }
 
