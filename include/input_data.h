@@ -36,25 +36,13 @@ class InputData {
         std::string getHMMFilepath() const;
 
         // Set the filepath to the reference genome FASTA file.
-		void setRefGenome(std::string fasta_filepath);
-
-        // Return a reference to the ReferenceGenome object.
-        const ReferenceGenome& getRefGenome() const;
-        std::string queryRefGenome(const std::string& chr, uint32_t pos_start, uint32_t pos_end) const;
-
-        // Get the chromosomes in the reference genome.
-        std::vector<std::string> getRefGenomeChromosomes() const;
-
-        // Get a chromosome's length in the reference genome.
-        uint32_t getRefGenomeChromosomeLength(std::string chr) const;
+		void setRefGenome(std::string filepath);
+        std::string getRefGenome() const;
 
         // Set the filepath to the text file containing the locations of the
         // VCF files with population frequencies for each chromosome.
         void setAlleleFreqFilepaths(std::string filepath);
         std::string getAlleleFreqFilepath(std::string chr) const;
-
-        // Get the population frequency map.
-        // PFBMap getPFBMap();
 
         // Set the filepath to the VCF file with SNP calls used for CNV
         // detection with the HMM.
@@ -71,11 +59,12 @@ class InputData {
 
         // Set the minimum CNV length to use for copy number predictions.
         void setMinCNVLength(int min_cnv_length);
-        int getMinCNVLength() const;
+        uint32_t getMinCNVLength() const;
 
         // Set the chromosome to analyze.
         void setChromosome(std::string chr);
         std::string getChromosome() const;
+        bool isSingleChr() const;
 
         // Set the region to analyze.
         void setRegion(std::string region);
@@ -106,10 +95,9 @@ class InputData {
         std::string snp_vcf_filepath;
         std::string ethnicity;
         std::unordered_map<std::string, std::string> pfb_filepaths;  // Map of population frequency VCF filepaths by chromosome
-        ReferenceGenome fasta_query;
         std::string output_dir;
         int sample_size;
-        int min_cnv_length;
+        uint32_t min_cnv_length;
         std::string chr;  // Chromosome to analyze
         std::pair<int32_t, int32_t> start_end;  // Region to analyze
         bool region_set;  // True if a region is set
@@ -118,6 +106,7 @@ class InputData {
         std::string cnv_filepath;
         bool verbose;  // True if verbose output is enabled
         bool save_cnv_data;  // True if SNP CNV regions should be extended around SV breakpoints, and saved to a TSV file (Large performance hit)
+        bool single_chr;
 };
 
 #endif // INPUT_DATA_H

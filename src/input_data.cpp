@@ -30,6 +30,7 @@ InputData::InputData()
     this->hmm_filepath = "data/wgs.hmm";
     this->verbose = false;
     this->save_cnv_data = false;
+    this->single_chr = false;
 }
 
 std::string InputData::getShortReadBam() const
@@ -84,30 +85,14 @@ void InputData::setLongReadBam(std::string filepath)
     }
 }
 
-void InputData::setRefGenome(std::string fasta_filepath)
+void InputData::setRefGenome(std::string filepath)
 {
-    // Set the reference genome
-    this->fasta_query.setFilepath(fasta_filepath);
+    this->ref_filepath = filepath;
 }
 
-const ReferenceGenome& InputData::getRefGenome() const
+std::string InputData::getRefGenome() const
 {
-    return this->fasta_query;
-}
-
-std::string InputData::queryRefGenome(const std::string& chr, uint32_t pos_start, uint32_t pos_end) const
-{
-    return this->fasta_query.query(chr, pos_start, pos_end);
-}
-
-std::vector<std::string> InputData::getRefGenomeChromosomes() const
-{
-    return this->fasta_query.getChromosomes();
-}
-
-uint32_t InputData::getRefGenomeChromosomeLength(std::string chr) const
-{
-    return this->fasta_query.getChromosomeLength(chr);
+    return this->ref_filepath;
 }
 
 std::string InputData::getOutputDir() const
@@ -154,24 +139,30 @@ void InputData::setEthnicity(std::string ethnicity)
     this->ethnicity = ethnicity;
 }
 
-int InputData::getMinCNVLength() const
+uint32_t InputData::getMinCNVLength() const
 {
     return this->min_cnv_length;
 }
 
 void InputData::setMinCNVLength(int min_cnv_length)
 {
-    this->min_cnv_length = min_cnv_length;
+    this->min_cnv_length = (uint32_t) min_cnv_length;
 }
 
 void InputData::setChromosome(std::string chr)
 {
     this->chr = chr;
+    this->single_chr = true;
 }
 
 std::string InputData::getChromosome() const
 {
     return this->chr;
+}
+
+bool InputData::isSingleChr() const
+{
+    return this->single_chr;
 }
 
 void InputData::setRegion(std::string region)

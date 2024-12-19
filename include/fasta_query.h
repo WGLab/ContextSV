@@ -8,6 +8,7 @@
 #include <map>
 #include <unordered_map>
 #include <vector>
+#include <mutex>
 /// @endcond
 
 class ReferenceGenome {
@@ -15,6 +16,7 @@ class ReferenceGenome {
         std::string fasta_filepath;
         std::vector<std::string> chromosomes;
         std::unordered_map<std::string, std::string> chr_to_seq;
+        mutable std::mutex mtx;
 
     public:
         int setFilepath(std::string fasta_filepath);

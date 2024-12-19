@@ -7,14 +7,13 @@
 
 
 // Run the CLI with the given parameters
-int run(InputData input_data)
+int run(const InputData& input_data)
 {
-
 	// Run ContextSV
-	ContextSV contextsv(input_data);
+	ContextSV contextsv;
 	try
 	{	
-		contextsv.run();
+		contextsv.run(input_data);
 	}
 
 	catch (std::exception& e)

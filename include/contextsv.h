@@ -10,14 +10,12 @@
 
 
 class ContextSV {
-	private:
-		InputData& input_data;
-
 	public:
-		explicit ContextSV(InputData& input_data);
+		// explicit ContextSV(InputData& input_data);
+		ContextSV() = default;
 
 		// Entry point
-		int run();
+		int run(const InputData& input_data) const;
 };
 
 #endif  // CONTEXTSV_H

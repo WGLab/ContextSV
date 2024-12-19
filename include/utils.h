@@ -3,11 +3,61 @@
 #ifndef UTILS_H
 #define UTILS_H
 
+#include <htslib/sam.h>
+#include <htslib/synced_bcf_reader.h>
+
 /// @cond
 #include <string>
 #include <mutex>
 #include <chrono>
 /// @endcond
+
+
+// Guard to close the BAM file
+struct BamFileGuard {
+    samFile* fp_in;
+    hts_idx_t* idx;
+    bam_hdr_t* bamHdr;
+
+    BamFileGuard(samFile* fp_in, hts_idx_t* idx, bam_hdr_t* bamHdr)
+        : fp_in(fp_in), idx(idx), bamHdr(bamHdr) {}
+
+    ~BamFileGuard() {
+        if (idx) {
+            hts_idx_destroy(idx);
+        }
+        if (bamHdr) {
+            bam_hdr_destroy(bamHdr);
+        }
+        if (fp_in) {
+            sam_close(fp_in);
+        }
+    }
+
+    BamFileGuard(const BamFileGuard&) = delete;  // Non-copyable
+    BamFileGuard& operator=(const BamFileGuard&) = delete;  // Non-assignable
+};
+
+// Guard to close the BCF file
+struct BcfFileGuard {
+    bcf_srs_t* reader;
+    bcf_hdr_t* hdr;
+
+    BcfFileGuard(bcf_srs_t* reader, bcf_hdr_t* hdr)
+        : reader(reader), hdr(hdr) {}
+
+    ~BcfFileGuard() {
+        if (hdr) {
+            bcf_hdr_destroy(hdr);
+        }
+        if (reader) {
+            bcf_sr_destroy(reader);
+        }
+    }
+
+    BcfFileGuard(const BcfFileGuard&) = delete;  // Non-copyable
+    BcfFileGuard& operator=(const BcfFileGuard&) = delete;  // Non-assignable
+};
 
 // Print the progress of a task
 void printProgress(int progress, int total);

@@ -148,23 +148,8 @@ void mergeSVs(std::vector<SVCall>& sv_calls)
 
 void filterSVsWithLowSupport(std::vector<SVCall>& sv_calls, int min_support)
 {
-    // int prev_size = sv_calls.size();
-
     // Filter SV calls with low read support
     sv_calls.erase(std::remove_if(sv_calls.begin(), sv_calls.end(), [min_support](const SVCall& sv_call) {
         return sv_call.support < min_support;
     }), sv_calls.end());
-
-    // // Print read depth for each SV call
-    // for (const auto& sv_call : sv_calls) {
-    //     std::cout << "SV call: " << sv_call.start << "-" << sv_call.end << " with depth " << sv_call.read_depth << " and length " << (sv_call.end - sv_call.start) << std::endl;
-    // }
-
-    // // Remove SV calls with low read depth
-    // sv_calls.erase(std::remove_if(sv_calls.begin(), sv_calls.end(), [min_depth](const SVCall& sv_call) {
-    //     return sv_call.read_depth < min_depth;
-    // }), sv_calls.end());
-
-    // int updated_size = sv_calls.size();
-    // printMessage("Filtered " + std::to_string(prev_size) + " SV calls to " + std::to_string(updated_size) + " SV calls with DP >= " + std::to_string(min_depth));
 }

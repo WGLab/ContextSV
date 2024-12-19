@@ -12,15 +12,11 @@
 #include "utils.h"
 /// @endcond
 
-ContextSV::ContextSV(InputData& input_data)
-    : input_data(input_data)  // Initialize the input data
-{
-}
 
-int ContextSV::run()
+int ContextSV::run(const InputData& input_data) const
 {
-    SVCaller sv_caller(this->input_data); 
-    sv_caller.run();
+    SVCaller sv_caller;
+    sv_caller.run(input_data);
 
     return 0;
 }

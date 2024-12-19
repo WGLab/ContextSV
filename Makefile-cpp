@@ -22,6 +22,13 @@ CXXFLAGS := -std=c++14 -g -I$(INCL_DIR) -I$(CONDA_INCL_DIR) -Wall -Wextra -pedan
 LDFLAGS := -L$(LIB_DIR) -L$(CONDA_LIB_DIR) -Wl,-rpath=$(CONDA_LIB_DIR)  # Add rpath for shared libraries
 LDLIBS := -lhts  # Link with libhts.a or libhts.so
 
+# Enable thread sanitizer (TSan)
+# ifeq ($(TSAN),1)
+# TSAN_FLAGS := -fsanitize=thread -fPIE -pie -g
+# CXXFLAGS += $(TSAN_FLAGS)
+# LDFLAGS += $(TSAN_FLAGS)
+# endif
+
 # Sources and Output
 # SOURCES := $(wildcard $(SRC_DIR)/*.cpp)
 SOURCES := $(filter-out $(SRC_DIR)/swig_wrapper.cpp, $(wildcard $(SRC_DIR)/*.cpp))  # Filter out the SWIG wrapper from the sources
