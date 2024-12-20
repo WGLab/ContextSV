@@ -388,14 +388,11 @@ void SVCaller::detectSVsFromCIGAR(bam_hdr_t* header, bam1_t* alignment, std::vec
                 // the reference position plus the length of the insertion
                 ref_end = ref_pos + op_len - 1;
                 if (is_duplication) {
-                    // ref_end = std::min(ref_pos + op_len - 1,
-                    // ref_genome.getChromosomeLength(chr));
                     uint32_t bp1 = ref_pos;
                     uint32_t bp2 = std::min(ref_pos + op_len - 1, ref_genome.getChromosomeLength(chr));
                     int read_depth = this->calculateReadDepth(pos_depth_map, bp1, bp2);
                     addSVCall(sv_calls, ref_pos, ref_end, "DUP", ins_seq_str, "CIGARDUP", "./.", default_lh, read_depth);
                 } else {
-                    // ref_end = ref_pos;
                     uint32_t bp1 = std::max(1, (int)ref_pos - 1);
                     uint32_t bp2 = ref_pos;
                     int read_depth = this->calculateReadDepth(pos_depth_map, bp1, bp2);
@@ -430,7 +427,7 @@ void SVCaller::detectSVsFromCIGAR(bam_hdr_t* header, bam1_t* alignment, std::vec
     }
 }
 
-void SVCaller::processChromosome(const std::string& chr, const CHMM& hmm, std::vector<SVCall>& chr_sv_calls, const InputData& input_data, const ReferenceGenome& ref_genome)
+void SVCaller::processChromosome(const std::string& chr, const CHMM& hmm, std::vector<SVCall>& chr_sv_calls, const InputData& input_data, const ReferenceGenome& ref_genome, std::mutex& snp_mutex, std::mutex& pfb_mutex)
 {
     int filter_threshold = 4;  // Minimum number of supporting reads for an SV call
     bool single_chr = input_data.getChromosome() != "";
@@ -488,23 +485,23 @@ void SVCaller::processChromosome(const std::string& chr, const CHMM& hmm, std::v
     printMessage(chr + ": CIGAR SVs...");
     this->detectCIGARSVs(fp_in, idx, bamHdr, region, chr_sv_calls, chr_pos_depth_map, ref_genome);
 
-    /*
     printMessage(chr + ": Merging CIGAR...");
     filterSVsWithLowSupport(chr_sv_calls, filter_threshold);
     mergeSVs(chr_sv_calls);
     int region_sv_count = getSVCount(chr_sv_calls);
-    // printMessage("Total SVs detected from CIGAR string: " + std::to_string(region_sv_count));
+    printMessage("Total SVs detected from CIGAR string: " + std::to_string(region_sv_count));
 
+    // Testing on HG002 whole genome
     // Run copy number variant predictions on the SVs detected from the
     // CIGAR string, using a minimum CNV length threshold
     if (region_sv_count > 0) {
         printMessage(chr + ": CIGAR predictions...");
-        cnv_caller.runCIGARCopyNumberPrediction(chr, chr_sv_calls, hmm, mean_chr_cov, chr_pos_depth_map, input_data);
+        cnv_caller.runCIGARCopyNumberPrediction(chr, chr_sv_calls, hmm, mean_chr_cov, chr_pos_depth_map, input_data, snp_mutex, pfb_mutex);
     }
 
     // Run split-read SV and copy number variant predictions
     printMessage(chr + ": Split read SVs...");
-    this->detectSVsFromSplitReads(region, fp_in, idx, bamHdr, chr_sv_calls, cnv_caller, hmm, mean_chr_cov, chr_pos_depth_map, input_data);
+    this->detectSVsFromSplitReads(region, fp_in, idx, bamHdr, chr_sv_calls, cnv_caller, hmm, mean_chr_cov, chr_pos_depth_map, input_data, snp_mutex, pfb_mutex);
 
     // Merge the SV calls from the current region
     printMessage(chr + ": Merging split reads...");
@@ -514,7 +511,6 @@ void SVCaller::processChromosome(const std::string& chr, const CHMM& hmm, std::v
     // Run a final merge on the combined SV calls
     printMessage(chr + ": Merging final calls...");
     mergeSVs(chr_sv_calls);
-    */
     printMessage("Completed chromosome " + chr);
 }
 
@@ -551,18 +547,20 @@ void SVCaller::run(const InputData& input_data)
     // Shared resources
     std::unordered_map<std::string, std::vector<SVCall>> whole_genome_sv_calls;
     std::mutex sv_mutex;
+    std::mutex snp_mutex;
+    std::mutex pfb_mutex;
 
     // Lambda to process a chromosome
     auto process_chr = [&](const std::string& chr) {
         try {
             std::vector<SVCall> sv_calls;
             InputData chr_input_data = input_data;  // Use a thread-local copy
-            this->processChromosome(chr, hmm, sv_calls, chr_input_data, ref_genome);
+            this->processChromosome(chr, hmm, sv_calls, chr_input_data, ref_genome, snp_mutex, pfb_mutex);
             {
                 std::lock_guard<std::mutex> lock(sv_mutex);
                 whole_genome_sv_calls[chr] = std::move(sv_calls);
             }
-            printMessage("Completed chromosome " + chr);
+            // printMessage("Completed chromosome " + chr);
         } catch (const std::exception& e) {
             printError("Error processing chromosome " + chr + ": " + e.what());
         } catch (...) {
@@ -610,7 +608,7 @@ void SVCaller::run(const InputData& input_data)
 
 
 // Detect SVs from split read alignments
-void SVCaller::detectSVsFromSplitReads(const std::string& region, samFile* fp_in, hts_idx_t* idx, bam_hdr_t* bamHdr, std::vector<SVCall>& sv_calls, const CNVCaller& cnv_caller, const CHMM& hmm, double mean_chr_cov, const std::vector<uint32_t>& pos_depth_map, const InputData& input_data) const
+void SVCaller::detectSVsFromSplitReads(const std::string& region, samFile* fp_in, hts_idx_t* idx, bam_hdr_t* bamHdr, std::vector<SVCall>& sv_calls, const CNVCaller& cnv_caller, const CHMM& hmm, double mean_chr_cov, const std::vector<uint32_t>& pos_depth_map, const InputData& input_data, std::mutex& snp_mutex, std::mutex& pfb_mutex) const
 {
     printMessage(region + ": Getting split alignments...");
     std::unordered_map<std::string, GenomicRegion> primary_map;
@@ -671,8 +669,8 @@ void SVCaller::detectSVsFromSplitReads(const std::string& region, samFile* fp_in
                         continue;
                     }
 
-                    printMessage(region + ": Running copy number prediction for inversion...");
-                    std::tuple<double, SVType, std::string, bool> result = cnv_caller.runCopyNumberPrediction(primary_chr, hmm, supp_start, supp_end, mean_chr_cov, pos_depth_map, input_data);
+                    printMessage(region + ": Running copy number prediction for inversion (position: " + std::to_string(supp_start) + "-" + std::to_string(supp_end) + ")...");
+                    std::tuple<double, SVType, std::string, bool> result = cnv_caller.runCopyNumberPrediction(primary_chr, hmm, supp_start, supp_end, mean_chr_cov, pos_depth_map, input_data, snp_mutex, pfb_mutex);
                     if (std::get<1>(result) == SVType::UNKNOWN) {
                         continue;
                     }
@@ -732,7 +730,7 @@ void SVCaller::detectSVsFromSplitReads(const std::string& region, samFile* fp_in
             }
 
             printMessage(region + ": Running copy number prediction for boundary...");
-            std::tuple<double, SVType, std::string, bool> bd_result = cnv_caller.runCopyNumberPrediction(primary_chr, hmm, boundary_left, boundary_right, mean_chr_cov, pos_depth_map, input_data);
+            std::tuple<double, SVType, std::string, bool> bd_result = cnv_caller.runCopyNumberPrediction(primary_chr, hmm, boundary_left, boundary_right, mean_chr_cov, pos_depth_map, input_data, snp_mutex, pfb_mutex);
             if (std::get<1>(bd_result) == SVType::UNKNOWN) {
                 continue;
             }
@@ -750,7 +748,7 @@ void SVCaller::detectSVsFromSplitReads(const std::string& region, samFile* fp_in
                 }
 
                 printMessage(region + ": Running copy number prediction for gap...");
-                std::tuple<double, SVType, std::string, bool> gap_result = cnv_caller.runCopyNumberPrediction(primary_chr, hmm, gap_left, gap_right, mean_chr_cov, pos_depth_map, input_data);
+                std::tuple<double, SVType, std::string, bool> gap_result = cnv_caller.runCopyNumberPrediction(primary_chr, hmm, gap_left, gap_right, mean_chr_cov, pos_depth_map, input_data, snp_mutex, pfb_mutex);
                 if (std::get<1>(gap_result) == SVType::UNKNOWN) {
                     continue;
                 }

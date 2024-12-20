@@ -42,7 +42,7 @@ class SVCaller {
         // mismatch rate, and the start and end positions of the query sequence
         void detectSVsFromCIGAR(bam_hdr_t* header, bam1_t* alignment, std::vector<SVCall>& sv_calls, bool is_primary, const std::vector<uint32_t>& pos_depth_map, const ReferenceGenome& ref_genome) const;
 
-        void processChromosome(const std::string& chr, const CHMM& hmm, std::vector<SVCall>& combined_sv_calls, const InputData& input_data, const ReferenceGenome& ref_genome);
+        void processChromosome(const std::string& chr, const CHMM& hmm, std::vector<SVCall>& combined_sv_calls, const InputData& input_data, const ReferenceGenome& ref_genome, std::mutex& snp_mutex, std::mutex& pfb_mutex);
 
         // Detect SVs at a region from long read alignments. This is used for
         // whole genome analysis running in parallel.
@@ -53,7 +53,7 @@ class SVCaller {
         int readNextAlignment(samFile *fp_in, hts_itr_t *itr, bam1_t *bam1) const;
 
         // Detect SVs from split alignments
-        void detectSVsFromSplitReads(const std::string& region, samFile* fp_in, hts_idx_t* idx, bam_hdr_t* bamHdr, std::vector<SVCall>& sv_calls, const CNVCaller& cnv_caller, const CHMM& hmm, double mean_chr_cov, const std::vector<uint32_t>& pos_depth_map, const InputData& input_data) const;
+        void detectSVsFromSplitReads(const std::string& region, samFile* fp_in, hts_idx_t* idx, bam_hdr_t* bamHdr, std::vector<SVCall>& sv_calls, const CNVCaller& cnv_caller, const CHMM& hmm, double mean_chr_cov, const std::vector<uint32_t>& pos_depth_map, const InputData& input_data, std::mutex& snp_mutex, std::mutex& pfb_mutex) const;
 
         // Calculate the mismatch rate given a map of query positions to
         // match/mismatch (1/0) values within a specified range of the query
@@ -68,7 +68,6 @@ class SVCaller {
         int calculateReadDepth(const std::vector<uint32_t>& pos_depth_map, uint32_t start, uint32_t end) const;
 
     public:
-        // explicit SVCaller(InputData& input_data);
         // Constructor with no arguments
         SVCaller() = default;
 
