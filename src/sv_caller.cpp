@@ -83,6 +83,18 @@ void SVCaller::getSplitAlignments(samFile* fp_in, hts_idx_t* idx, bam_hdr_t* bam
         num_alignments++;
     }
 
+    // Remove primary alignments without supplementary alignments
+    std::vector<std::string> to_remove;
+    for (const auto& entry : primary_map) {
+        const std::string& qname = entry.first;
+        if (supp_map.find(qname) == supp_map.end()) {
+            to_remove.push_back(qname);
+        }
+    }
+    for (const std::string& qname : to_remove) {
+        primary_map.erase(qname);
+    }
+
     // Clean up the iterator and alignment
     hts_itr_destroy(itr);
     bam_destroy1(bam1);
@@ -627,9 +639,9 @@ void SVCaller::detectSVsFromSplitReads(const std::string& region, samFile* fp_in
         GenomicRegion& primary_region = entry.second;
 
         // Skip primary alignments that do not have supplementary alignments
-        if (supp_map.find(qname) == supp_map.end()) {
-            continue;
-        }
+        // if (supp_map.find(qname) == supp_map.end()) {
+        //     continue;
+        // }
 
         // Get the read match/mismatch map
         // printMessage(region + ": Getting mismatch map for " + std::to_string(current_primary) + " of " + std::to_string(primary_count) + " primary alignments...");
@@ -638,7 +650,7 @@ void SVCaller::detectSVsFromSplitReads(const std::string& region, samFile* fp_in
         GenomicRegion largest_supp_region = supp_map[qname][0];
         uint32_t largest_supp_length = 0;
 
-        printMessage(region + ": Processing supplementary alignments for " + std::to_string(current_primary) + " of " + std::to_string(primary_count) + " primary alignments...");
+        // printMessage(region + ": Processing supplementary alignments for " + std::to_string(current_primary) + " of " + std::to_string(primary_count) + " primary alignments...");
         const std::string& primary_chr = bamHdr->target_name[primary_region.tid];
         for (auto it = supp_map[qname].begin(); it != supp_map[qname].end(); ++it) {
             GenomicRegion& supp_region = *it;
@@ -669,7 +681,7 @@ void SVCaller::detectSVsFromSplitReads(const std::string& region, samFile* fp_in
                         continue;
                     }
 
-                    printMessage(region + ": Running copy number prediction for inversion (position: " + std::to_string(supp_start) + "-" + std::to_string(supp_end) + ")...");
+                    // printMessage(region + ": Running copy number prediction for inversion (position: " + std::to_string(supp_start) + "-" + std::to_string(supp_end) + ")...");
                     std::tuple<double, SVType, std::string, bool> result = cnv_caller.runCopyNumberPrediction(primary_chr, hmm, supp_start, supp_end, mean_chr_cov, pos_depth_map, input_data, snp_mutex, pfb_mutex);
                     if (std::get<1>(result) == SVType::UNKNOWN) {
                         continue;
@@ -686,13 +698,14 @@ void SVCaller::detectSVsFromSplitReads(const std::string& region, samFile* fp_in
                     } else if (supp_type == SVType::DUP) {
                         addSVCall(sv_calls, supp_start, supp_end, "INVDUP", "<INV>", "HMM", "./.", supp_lh, read_depth);
                     }
-                } else {
-                    // Add the inversion without running copy number predictions
-                    // (too small for predictions)
-                    // printMessage("Test4");
-                    int read_depth = this->calculateReadDepth(pos_depth_map, supp_start, supp_end);
-                    addSVCall(sv_calls, supp_start, supp_end, "INV", "<INV>", "REV", "./.", 0.0, read_depth);
                 }
+                // } else {
+                //     // Add the inversion without running copy number predictions
+                //     // (too small for predictions)
+                //     // printMessage("Test4");
+                //     int read_depth = this->calculateReadDepth(pos_depth_map, supp_start, supp_end);
+                //     addSVCall(sv_calls, supp_start, supp_end, "INV", "<INV>", "REV", "./.", 0.0, read_depth);
+                // }
             }
         }
 
@@ -729,7 +742,7 @@ void SVCaller::detectSVsFromSplitReads(const std::string& region, samFile* fp_in
                 continue;
             }
 
-            printMessage(region + ": Running copy number prediction for boundary...");
+            // printMessage(region + ": Running copy number prediction for boundary...");
             std::tuple<double, SVType, std::string, bool> bd_result = cnv_caller.runCopyNumberPrediction(primary_chr, hmm, boundary_left, boundary_right, mean_chr_cov, pos_depth_map, input_data, snp_mutex, pfb_mutex);
             if (std::get<1>(bd_result) == SVType::UNKNOWN) {
                 continue;
@@ -747,7 +760,7 @@ void SVCaller::detectSVsFromSplitReads(const std::string& region, samFile* fp_in
                     continue;
                 }
 
-                printMessage(region + ": Running copy number prediction for gap...");
+                // printMessage(region + ": Running copy number prediction for gap...");
                 std::tuple<double, SVType, std::string, bool> gap_result = cnv_caller.runCopyNumberPrediction(primary_chr, hmm, gap_left, gap_right, mean_chr_cov, pos_depth_map, input_data, snp_mutex, pfb_mutex);
                 if (std::get<1>(gap_result) == SVType::UNKNOWN) {
                     continue;
