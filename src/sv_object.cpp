@@ -14,7 +14,7 @@ bool SVCall::operator<(const SVCall & other) const
 	return start < other.start || (start == other.start && end < other.end);
 }
 
-void addSVCall(std::vector<SVCall>& sv_calls, uint32_t start, uint32_t end, std::string sv_type, std::string alt_allele, std::string data_type, std::string genotype, double hmm_likelihood, int read_depth)
+void addSVCall(std::vector<SVCall>& sv_calls, uint32_t start, uint32_t end, std::string sv_type, const std::string& alt_allele, std::string data_type, std::string genotype, double hmm_likelihood, int read_depth)
 {
     // Ignore unknown SV types
     if (sv_type == "UNKNOWN" || sv_type == "NEUTRAL") {
@@ -22,13 +22,13 @@ void addSVCall(std::vector<SVCall>& sv_calls, uint32_t start, uint32_t end, std:
     }
 
     // Set the alt allele to <DUP> or <DEL> if the SV type is DUP or DEL
-    if (sv_type == "DUP" && alt_allele == ".") {
-        printError("ERROR: Invalid alt allele for duplication at position " + std::to_string(start) + "-" + std::to_string(end) + ": " + alt_allele);
-        alt_allele = "<DUP>";
-    } else if (sv_type == "DEL" && alt_allele == ".") {
-        printError("ERROR: Invalid alt allele for deletion at position " + std::to_string(start) + "-" + std::to_string(end) + ": " + alt_allele);
-        alt_allele = "<DEL>";
-    }
+    // if (sv_type == "DUP" && alt_allele == ".") {
+    //     printError("ERROR: Invalid alt allele for duplication at position " + std::to_string(start) + "-" + std::to_string(end) + ": " + alt_allele);
+    //     alt_allele = "<DUP>";
+    // } else if (sv_type == "DEL" && alt_allele == ".") {
+    //     printError("ERROR: Invalid alt allele for deletion at position " + std::to_string(start) + "-" + std::to_string(end) + ": " + alt_allele);
+    //     alt_allele = "<DEL>";
+    // }
     
     if (start >= end) {
         printError("ERROR: Invalid SV at position " + std::to_string(start) + "-" + std::to_string(end));

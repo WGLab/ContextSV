@@ -100,7 +100,7 @@ std::string ReferenceGenome::getFilepath() const
 // Function to get the reference sequence at a given position range
 std::string ReferenceGenome::query(const std::string& chr, uint32_t pos_start, uint32_t pos_end) const
 {
-    std::lock_guard<std::mutex> lock(this->mtx);
+    std::lock_guard<std::mutex> lock(this->shared_mutex);
     
     // Convert positions from 1-indexed (reference) to 0-indexed (string indexing)
     pos_start--;
@@ -127,7 +127,7 @@ std::string ReferenceGenome::query(const std::string& chr, uint32_t pos_start, u
 // Function to get the chromosome contig lengths in VCF header format
 std::string ReferenceGenome::getContigHeader() const
 {
-    std::lock_guard<std::mutex> lock(this->mtx);
+    std::lock_guard<std::mutex> lock(this->shared_mutex);
     std::string contig_header = "";
 
     // Sort the chromosomes
@@ -154,12 +154,12 @@ std::string ReferenceGenome::getContigHeader() const
 
 std::vector<std::string> ReferenceGenome::getChromosomes() const
 {
-    std::lock_guard<std::mutex> lock(this->mtx);
+    std::lock_guard<std::mutex> lock(this->shared_mutex);
     return this->chromosomes;
 }
 
 uint32_t ReferenceGenome::getChromosomeLength(std::string chr) const
 {
-    std::lock_guard<std::mutex> lock(this->mtx);
+    std::lock_guard<std::mutex> lock(this->shared_mutex);
     return this->chr_to_seq.at(chr).length();
 }

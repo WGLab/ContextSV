@@ -16,9 +16,12 @@ class ReferenceGenome {
         std::string fasta_filepath;
         std::vector<std::string> chromosomes;
         std::unordered_map<std::string, std::string> chr_to_seq;
-        mutable std::mutex mtx;
+        //mutable std::mutex mtx;
+        std::mutex& shared_mutex;
 
     public:
+	    ReferenceGenome(std::mutex& mtx) : shared_mutex(mtx) {}
+    
         int setFilepath(std::string fasta_filepath);
         std::string getFilepath() const;
         std::string query(const std::string& chr, uint32_t pos_start, uint32_t pos_end) const;

@@ -48,7 +48,7 @@ void CNVCaller::runViterbi(const CHMM& hmm, SNPData& snp_data, std::pair<std::ve
 }
 
 // Function to obtain SNP information for a region
-void CNVCaller::querySNPRegion(std::string chr, uint32_t start_pos, uint32_t end_pos, const std::vector<uint32_t>& pos_depth_map, double mean_chr_cov, SNPData& snp_data, const InputData& input_data, std::mutex& snp_mutex, std::mutex& pfb_mutex) const
+void CNVCaller::querySNPRegion(std::string chr, uint32_t start_pos, uint32_t end_pos, const std::vector<uint32_t>& pos_depth_map, double mean_chr_cov, SNPData& snp_data, const InputData& input_data) const
 {
     // Initialize the SNP data with default values and sample size length
     int sample_size = input_data.getSampleSize();
@@ -63,7 +63,7 @@ void CNVCaller::querySNPRegion(std::string chr, uint32_t start_pos, uint32_t end
     std::vector<double> snp_pfb(sample_size, 0.5);
     std::vector<double> snp_log2_cov(sample_size, 0.0);
     std::vector<bool> is_snp(sample_size, false);
-    this->readSNPAlleleFrequencies(chr, start_pos, end_pos, snp_pos, snp_baf, snp_pfb, is_snp, input_data, snp_mutex, pfb_mutex);
+    this->readSNPAlleleFrequencies(chr, start_pos, end_pos, snp_pos, snp_baf, snp_pfb, is_snp, input_data);
 
     // Get the log2 ratio for <sample_size> evenly spaced positions in the
     // region
@@ -77,7 +77,7 @@ void CNVCaller::querySNPRegion(std::string chr, uint32_t start_pos, uint32_t end
     snp_data.is_snp = std::move(is_snp);
 }
 
-std::tuple<double, SVType, std::string, bool> CNVCaller::runCopyNumberPrediction(std::string chr, const CHMM& hmm, uint32_t start_pos, uint32_t end_pos, double mean_chr_cov, const std::vector<uint32_t>& pos_depth_map, const InputData& input_data, std::mutex& snp_mutex, std::mutex& pfb_mutex) const
+std::tuple<double, SVType, std::string, bool> CNVCaller::runCopyNumberPrediction(std::string chr, const CHMM& hmm, uint32_t start_pos, uint32_t end_pos, double mean_chr_cov, const std::vector<uint32_t>& pos_depth_map, const InputData& input_data) const
 {
     // Check that the start position is less than the end position
     if (start_pos >= end_pos)
@@ -99,7 +99,7 @@ std::tuple<double, SVType, std::string, bool> CNVCaller::runCopyNumberPrediction
 
     // Query the SNP region for the SV candidate
     SNPData snp_data;
-    querySNPRegion(chr, snp_start_pos, snp_end_pos, pos_depth_map, mean_chr_cov, snp_data, input_data, snp_mutex, pfb_mutex);
+    querySNPRegion(chr, snp_start_pos, snp_end_pos, pos_depth_map, mean_chr_cov, snp_data, input_data);
 
     // Run the Viterbi algorithm
     std::pair<std::vector<int>, double> prediction;
@@ -124,7 +124,8 @@ std::tuple<double, SVType, std::string, bool> CNVCaller::runCopyNumberPrediction
 
     // Determine if there is a majority state within the SV region and if it
     // is greater than 75%
-    double pct_threshold = 0.75;
+    //double pct_threshold = 0.75;
+    double pct_threshold = 0.90;
     int max_state = 0;
     int max_count = 0;
 
@@ -167,7 +168,7 @@ std::tuple<double, SVType, std::string, bool> CNVCaller::runCopyNumberPrediction
 }
 
 
-void CNVCaller::runCIGARCopyNumberPrediction(std::string chr, std::vector<SVCall>& sv_candidates, const CHMM& hmm, double mean_chr_cov, const std::vector<uint32_t>& pos_depth_map, const InputData& input_data, std::mutex& snp_mutex, std::mutex& pfb_mutex) const
+void CNVCaller::runCIGARCopyNumberPrediction(std::string chr, std::vector<SVCall>& sv_candidates, const CHMM& hmm, double mean_chr_cov, const std::vector<uint32_t>& pos_depth_map, const InputData& input_data) const
 {
     // Map with counts for each CNV type
     std::map<int, int> cnv_type_counts;
@@ -199,7 +200,7 @@ void CNVCaller::runCIGARCopyNumberPrediction(std::string chr, std::vector<SVCall
 
         // Only extend the region if "save CNV data" is enabled
         SNPData snp_data;
-        this->querySNPRegion(chr, start_pos, end_pos, pos_depth_map, mean_chr_cov, snp_data, input_data, snp_mutex, pfb_mutex);
+        this->querySNPRegion(chr, start_pos, end_pos, pos_depth_map, mean_chr_cov, snp_data, input_data);
 
         // Run the Viterbi algorithm
         if (snp_data.pos.size() == 0) {
@@ -300,7 +301,7 @@ double CNVCaller::calculateMeanChromosomeCoverage(std::string chr, std::vector<u
 {
     {
         // Open the BAM file
-        std::lock_guard<std::mutex> lock(this->bam_file_mtx);  // Lock the BAM file
+        std::lock_guard<std::mutex> lock(this->shared_mutex);  // Lock the BAM file
         samFile *bam_file = sam_open(bam_filepath.c_str(), "r");
         if (!bam_file)
         {
@@ -444,7 +445,7 @@ void CNVCaller::calculateRegionLog2Ratio(uint32_t start_pos, uint32_t end_pos, i
     }
 }
 
-void CNVCaller::readSNPAlleleFrequencies(std::string chr, uint32_t start_pos, uint32_t end_pos, std::vector<uint32_t>& snp_pos, std::vector<double>& snp_baf, std::vector<double>& snp_pfb, std::vector<bool>& is_snp, const InputData& input_data, std::mutex& snp_mutex, std::mutex& pfb_mutex) const
+void CNVCaller::readSNPAlleleFrequencies(std::string chr, uint32_t start_pos, uint32_t end_pos, std::vector<uint32_t>& snp_pos, std::vector<double>& snp_baf, std::vector<double>& snp_pfb, std::vector<bool>& is_snp, const InputData& input_data) const
 {
     // --------- SNP file ---------
     const std::string snp_filepath = input_data.getSNPFilepath();
@@ -567,8 +568,7 @@ void CNVCaller::readSNPAlleleFrequencies(std::string chr, uint32_t start_pos, ui
     {
         current_region++;
         // Lock during reading
-        // std::lock_guard<std::mutex> lock(this->snp_file_mtx);
-        std::lock_guard<std::mutex> lock(snp_mutex);
+        std::lock_guard<std::mutex> lock(this->shared_mutex);
 
         // Read the SNP data ----------------------------------------------
 
@@ -671,7 +671,7 @@ void CNVCaller::readSNPAlleleFrequencies(std::string chr, uint32_t start_pos, ui
         if (use_pfb)
         {
             // Lock during reading
-            std::lock_guard<std::mutex> lock(pfb_mutex);
+            //std::lock_guard<std::mutex> lock(this->shared_mutex);
 
             // Set the region as the SNP position
             uint32_t target_snp_pos = snp_pos[i];  // Already 1-based
