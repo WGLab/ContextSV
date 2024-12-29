@@ -124,8 +124,9 @@ std::tuple<double, SVType, std::string, bool> CNVCaller::runCopyNumberPrediction
 
     // Determine if there is a majority state within the SV region and if it
     // is greater than 75%
-    //double pct_threshold = 0.75;
-    double pct_threshold = 0.90;
+    double pct_threshold = 0.75;
+    // double pct_threshold = 0.90;
+    // double pct_threshold = 0.80;
     int max_state = 0;
     int max_count = 0;
 

@@ -27,7 +27,7 @@
 #include "fasta_query.h"
 /// @endcond
 
-# define DUP_SEQSIM_THRESHOLD 0.99  // Sequence similarity threshold for duplication detection
+# define DUP_SEQSIM_THRESHOLD 0.90  // Sequence similarity threshold for duplication detection
 
 //std::mutex bam_mutex;
 
