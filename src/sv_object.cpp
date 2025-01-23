@@ -30,7 +30,7 @@ void addSVCall(std::vector<SVCall>& sv_calls, uint32_t start, uint32_t end, std:
     //     alt_allele = "<DEL>";
     // }
     
-    if (start >= end) {
+    if (start > end) {
         printError("ERROR: Invalid SV at position " + std::to_string(start) + "-" + std::to_string(end));
         return;
     }

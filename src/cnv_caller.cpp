@@ -80,7 +80,7 @@ void CNVCaller::querySNPRegion(std::string chr, uint32_t start_pos, uint32_t end
 std::tuple<double, SVType, std::string, bool> CNVCaller::runCopyNumberPrediction(std::string chr, const CHMM& hmm, uint32_t start_pos, uint32_t end_pos, double mean_chr_cov, const std::vector<uint32_t>& pos_depth_map, const InputData& input_data) const
 {
     // Check that the start position is less than the end position
-    if (start_pos >= end_pos)
+    if (start_pos > end_pos)
     {
         printError("ERROR: Invalid SV region for copy number prediction: " + chr + ":" + std::to_string((int)start_pos) + "-" + std::to_string((int)end_pos));
         return std::make_tuple(0.0, SVType::UNKNOWN, "./.", false);
@@ -187,7 +187,7 @@ void CNVCaller::runCIGARCopyNumberPrediction(std::string chr, std::vector<SVCall
         uint32_t end_pos = sv_call.end;
         
         // Error if start > end
-        if (start_pos >= end_pos)
+        if (start_pos > end_pos)
         {
             printError("ERROR: Invalid SV region for copy number prediction: " + chr + ":" + std::to_string((int)start_pos) + "-" + std::to_string((int)end_pos));
         	continue;
@@ -310,11 +310,12 @@ double CNVCaller::calculateMeanChromosomeCoverage(std::string chr, std::vector<u
             return 0.0;
         }
 
-        // Enable multi-threading if running on a single chromosome
-        if (single_chr)
-        {
-            hts_set_threads(bam_file, thread_count);
-        }
+        // Enable multi-threading. This is possible here due to the lock
+        hts_set_threads(bam_file, thread_count);
+        // if (single_chr)
+        // {
+        //     hts_set_threads(bam_file, thread_count);
+        // }
 
         // Read the header
         bam_hdr_t *bam_header = sam_hdr_read(bam_file);
@@ -465,13 +466,14 @@ void CNVCaller::readSNPAlleleFrequencies(std::string chr, uint32_t start_pos, ui
     }
     snp_reader->require_index = 1;
 
-    // Set multi-threading if running on a single chromosome
+    // Use multi-threading. This is possible here due to the lock
     int thread_count = input_data.getThreadCount();
-    if (input_data.isSingleChr())
-    {
-        printMessage("Setting SNP reader threads to " + std::to_string(std::max(1, thread_count / 2)));
-        bcf_sr_set_threads(snp_reader, std::max(1, thread_count / 2));
-    }
+    bcf_sr_set_threads(snp_reader, thread_count);
+    // if (input_data.isSingleChr())
+    // {
+    //     printMessage("Setting SNP reader threads to " + std::to_string(std::max(1, thread_count / 2)));
+    //     bcf_sr_set_threads(snp_reader, std::max(1, thread_count / 2));
+    // }
 
     // Add the SNP file to the reader
     if (bcf_sr_add_reader(snp_reader, snp_filepath.c_str()) < 0)
@@ -495,7 +497,6 @@ void CNVCaller::readSNPAlleleFrequencies(std::string chr, uint32_t start_pos, ui
     bcf_srs_t *pfb_reader = bcf_sr_init();
     std::string chr_gnomad;
     std::string AF_key;
-    // BcfFileGuard pfb_guard(nullptr, nullptr);  // Guard to close the population allele frequency file
     if (use_pfb)
     {
         // Determine the ethnicity-specific allele frequency key
@@ -537,13 +538,6 @@ void CNVCaller::readSNPAlleleFrequencies(std::string chr, uint32_t start_pos, ui
         }
         pfb_reader->require_index = 1;
 
-        // Set multi-threading if running on a single chromosome
-        if (input_data.isSingleChr())
-        {
-            printMessage("Setting population allele frequency reader threads to " + std::to_string(std::max(1, thread_count / 2)));
-            bcf_sr_set_threads(pfb_reader, std::max(1, thread_count / 2));
-        }
-
         // Add the population allele frequency file to the reader
         if (bcf_sr_add_reader(pfb_reader, pfb_filepath.c_str()) < 0)
         {
@@ -551,10 +545,17 @@ void CNVCaller::readSNPAlleleFrequencies(std::string chr, uint32_t start_pos, ui
 
             // Clean up
             bcf_sr_destroy(pfb_reader);
-            // bcf_hdr_destroy(snp_header);
             bcf_sr_destroy(snp_reader);
             return;
         }
+
+        // Use multi-threading. This is possible here due to the lock
+        bcf_sr_set_threads(pfb_reader, thread_count);
+        // if (input_data.isSingleChr())
+        // {
+        //     printMessage("Setting population allele frequency reader threads to " + std::to_string(std::max(1, thread_count / 2)));
+        //     bcf_sr_set_threads(pfb_reader, std::max(1, thread_count / 2));
+        // }
     }
 
     // Split the region into samples

@@ -38,27 +38,6 @@ struct BamFileGuard {
     BamFileGuard& operator=(const BamFileGuard&) = delete;  // Non-assignable
 };
 
-// Guard to close the BCF file
-struct BcfFileGuard {
-    bcf_srs_t* reader;
-    bcf_hdr_t* hdr;
-
-    BcfFileGuard(bcf_srs_t* reader, bcf_hdr_t* hdr)
-        : reader(reader), hdr(hdr) {}
-
-    ~BcfFileGuard() {
-        if (hdr) {
-            bcf_hdr_destroy(hdr);
-        }
-        if (reader) {
-            bcf_sr_destroy(reader);
-        }
-    }
-
-    BcfFileGuard(const BcfFileGuard&) = delete;  // Non-copyable
-    BcfFileGuard& operator=(const BcfFileGuard&) = delete;  // Non-assignable
-};
-
 // Print the progress of a task
 void printProgress(int progress, int total);
 

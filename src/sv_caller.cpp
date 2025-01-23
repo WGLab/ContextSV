@@ -27,7 +27,7 @@
 #include "fasta_query.h"
 /// @endcond
 
-# define DUP_SEQSIM_THRESHOLD 0.90  // Sequence similarity threshold for duplication detection
+# define DUP_SEQSIM_THRESHOLD 0.9  // Sequence similarity threshold for duplication detection
 
 //std::mutex bam_mutex;
 
@@ -336,174 +336,188 @@ void SVCaller::detectSVsFromCIGAR(bam_hdr_t* header, bam1_t* alignment, std::vec
     // List of ambiguous bases
     const std::string amb_bases = "RYKMSWBDHV";
     for (int i = 0; i < cigar_len; i++) {
-
-        int op = bam_cigar_op(cigar[i]);  // CIGAR operation
         int op_len = bam_cigar_oplen(cigar[i]);  // CIGAR operation length
+        int op = bam_cigar_op(cigar[i]);  // CIGAR operation
+        if (op_len >= 50) {
+            // Process SVs
+            
+            // Process the CIGAR operation
+            if (op == BAM_CINS && is_primary) {
 
-        if (op_len == 0) {
-            printError("Warning: Encountered CIGAR operation with length 0 at position " + std::to_string(pos+1) + " in chromosome " + chr);
-            continue;
-        }
-        
-        // Process the CIGAR operation
-        if (op == BAM_CINS && is_primary) {
-
-            // Get the sequence of the insertion from the query
-            std::string ins_seq_str(op_len, ' ');
-            for (int j = 0; j < op_len; j++) {
-                // Replace ambiguous bases with N
-                char base = seq_nt16_str[bam_seqi(bam_get_seq(alignment), query_pos + j)];
-                if (amb_bases.find(base) != std::string::npos) {
-                    ins_seq_str[j] = 'N';
-                } else {
-                    ins_seq_str[j] = base;
+                // Get the sequence of the insertion from the query
+                std::string ins_seq_str(op_len, ' ');
+                for (int j = 0; j < op_len; j++) {
+                    // Replace ambiguous bases with N
+                    char base = seq_nt16_str[bam_seqi(bam_get_seq(alignment), query_pos + j)];
+                    if (amb_bases.find(base) != std::string::npos) {
+                        ins_seq_str[j] = 'N';
+                    } else {
+                        ins_seq_str[j] = base;
+                    }
+                    // Get the sequence character from the query
+                    // ins_seq_str[j] = seq_nt16_str[bam_seqi(bam_get_seq(alignment), query_pos + j)];
                 }
-                // Get the sequence character from the query
-                // ins_seq_str[j] = seq_nt16_str[bam_seqi(bam_get_seq(alignment), query_pos + j)];
-            }
+                
+                // To determine whether the insertion is a duplication, check
+                // for sequence identity between the insertion and the
+                // reference genome (duplications are typically >= 90%):
+                // Loop through the reference sequence and calculate the
+                // sequence identity +/- insertion length from the insertion
+                // position.
+                // bool is_duplication = false;
+                // int ins_ref_pos;
+                // uint32_t dup_start = std::max(0, (int)pos - op_len);
+                // for (uint32_t j = dup_start; j <= pos; j++) {
 
-            // To determine whether the insertion is a duplication, check
-            // for sequence identity between the insertion and the
-            // reference genome (duplications are typically >= 90%):
-            // Loop through the reference sequence and calculate the
-            // sequence identity +/- insertion length from the insertion
-            // position.
-            // bool is_duplication = false;
-            // int ins_ref_pos;
-            // uint32_t dup_start = std::max(0, (int)pos - op_len);
-            // for (uint32_t j = dup_start; j <= pos; j++) {
+                //     // Get the string for the window (1-based coordinates)
+                //     ins_ref_pos = j + 1;
+                //     std::string window_str = ref_genome.query(chr, ins_ref_pos, ins_ref_pos + op_len - 1);
 
-            //     // Get the string for the window (1-based coordinates)
-            //     ins_ref_pos = j + 1;
-            //     std::string window_str = ref_genome.query(chr, ins_ref_pos, ins_ref_pos + op_len - 1);
+                //     // Continue if the window string is empty (out-of-range)
+                //     if (window_str == "") {
+                //         continue;
+                //     }
 
-            //     // Continue if the window string is empty (out-of-range)
-            //     if (window_str == "") {
-            //         continue;
-            //     }
+                //     // Calculate the sequence identity
+                //     int num_matches = 0;
+                //     for (int k = 0; k < op_len; k++) {
+                //         if (ins_seq_str[k] == window_str[k] && ins_seq_str[k] != 'N' && window_str[k] != 'N') {
+                //             num_matches++;
+                //         }
+                //     }
+                //     float seq_identity = (float)num_matches / (float)op_len;
 
-            //     // Calculate the sequence identity
-            //     int num_matches = 0;
-            //     for (int k = 0; k < op_len; k++) {
-            //         if (ins_seq_str[k] == window_str[k] && ins_seq_str[k] != 'N' && window_str[k] != 'N') {
-            //             num_matches++;
-            //         }
-            //     }
-            //     float seq_identity = (float)num_matches / (float)op_len;
+                //     // Check if the target sequence identity is reached
+                //     if (seq_identity >= DUP_SEQSIM_THRESHOLD) {
+                //         is_duplication = true;
+                //         break;
+                //     }
+                // }
 
-            //     // Check if the target sequence identity is reached
-            //     if (seq_identity >= DUP_SEQSIM_THRESHOLD) {
-            //         is_duplication = true;
-            //         break;
-            //     }
-            // }
-
-            // Calculate the sequence identity at the insertion position +/-
-            // length
-            // Before the insertion
-            if (pos >= (uint32_t)op_len-1)
-            {
-                uint32_t bp1 = pos - (op_len - 1);
-                uint32_t bp2 = pos;
-                const std::string& window_str = ref_genome.query(chr, bp1 + 1, bp2 + 1);
-                if (window_str.length() > 0)
+                // Calculate the sequence identity at the insertion position +/-
+                // length if >= 50bp
+                //if (op_len >= 50) {
+                
+                // Before the insertion
+                if (pos >= (uint32_t)op_len-1)
                 {
-                    int num_matches = 0;
-                    for (int k = 0; k < op_len; k++)
+                    uint32_t bp1 = pos - (op_len - 1) + 1;
+                    uint32_t bp2 = bp1 + op_len - 1; //pos + 1;
+                    const std::string& window_str = ref_genome.query(chr, bp1, bp2);
+                    if (window_str.length() > 0)
                     {
-                        if (ins_seq_str[k] == window_str[k] && ins_seq_str[k] != 'N' && window_str[k] != 'N')
+                        int num_matches = 0;
+                        for (int k = 0; k < op_len; k++)
                         {
-                            num_matches++;
+                            if (ins_seq_str[k] == window_str[k] && ins_seq_str[k] != 'N' && window_str[k] != 'N')
+                            {
+                                num_matches++;
+                            }
+                        }
+                        float seq_identity = (float)num_matches / (float)op_len;
+                        if (seq_identity >= DUP_SEQSIM_THRESHOLD)
+                        {
+                            //uint32_t dup_bp1 = bp1 + 1;
+                            //uint32_t dup_bp2 = std::min(dup_bp1 + op_len - 1, ref_genome.getChromosomeLength(chr));
+                            int read_depth = this->calculateReadDepth(pos_depth_map, bp1, bp2);
+                            //printMessage("TEST3");
+                            addSVCall(sv_calls, bp1, bp2, "DUP", "<DUP>", "LSEQSIM", "./.", default_lh, read_depth);
+
+                            // Continue to the next CIGAR operation
+                            continue;
                         }
                     }
-                    float seq_identity = (float)num_matches / (float)op_len;
-                    if (seq_identity >= DUP_SEQSIM_THRESHOLD)
-                    {
-                        uint32_t dup_bp1 = bp1 + 1;
-                        uint32_t dup_bp2 = std::min(dup_bp1 + op_len - 1, ref_genome.getChromosomeLength(chr));
-                        int read_depth = this->calculateReadDepth(pos_depth_map, dup_bp1, dup_bp2);
-                        addSVCall(sv_calls, dup_bp1, dup_bp2, "DUP", ins_seq_str, "LSEQSIM", "./.", default_lh, read_depth);
-
-                        // Continue to the next CIGAR operation
-                        continue;
-                    }
                 }
-            }
 
-            // After the insertion
-            if (pos + op_len < ref_genome.getChromosomeLength(chr))
-            {
-                uint32_t bp1 = pos + 1;
-                uint32_t bp2 = bp1 + op_len - 1;
-                const std::string& window_str = ref_genome.query(chr, bp1 + 1, bp2 + 1);
-                if (window_str.length() > 0)
+                // After the insertion
+                if (pos + op_len < ref_genome.getChromosomeLength(chr))
                 {
-                    int num_matches = 0;
-                    for (int k = 0; k < op_len; k++)
+                    uint32_t bp1 = pos + 1;
+                    //uint32_t bp2 = std::min(bp1 + op_len - 1, ref_genome.getChromosomeLength(chr));
+                    uint32_t bp2 = bp1 + op_len - 1;
+                    const std::string& window_str = ref_genome.query(chr, bp1, bp2);
+                    if (window_str.length() > 0)
                     {
-                        if (ins_seq_str[k] == window_str[k] && ins_seq_str[k] != 'N' && window_str[k] != 'N')
+                        int num_matches = 0;
+                        for (int k = 0; k < op_len; k++)
                         {
-                            num_matches++;
+                            if (ins_seq_str[k] == window_str[k] && ins_seq_str[k] != 'N' && window_str[k] != 'N')
+                            {
+                                num_matches++;
+                            }
+                        }
+                        float seq_identity = (float)num_matches / (float)op_len;
+                        if (seq_identity >= DUP_SEQSIM_THRESHOLD)
+                        {
+                            //uint32_t dup_bp1 = bp1 + 1;
+                            //uint32_t dup_bp2 = std::min(dup_bp1 + op_len - 1, ref_genome.getChromosomeLength(chr));
+                            int read_depth = this->calculateReadDepth(pos_depth_map, bp1, bp2);
+                            //printMessage("TEST1");
+                            addSVCall(sv_calls, bp1, bp2, "DUP", "<DUP>", "RSEQSIM", "./.", default_lh, read_depth);
+
+                            // Continue to the next CIGAR operation
+                            continue;
                         }
                     }
-                    float seq_identity = (float)num_matches / (float)op_len;
-                    if (seq_identity >= DUP_SEQSIM_THRESHOLD)
-                    {
-                        uint32_t dup_bp1 = bp1 + 1;
-                        uint32_t dup_bp2 = std::min(dup_bp1 + op_len - 1, ref_genome.getChromosomeLength(chr));
-                        int read_depth = this->calculateReadDepth(pos_depth_map, dup_bp1, dup_bp2);
-                        addSVCall(sv_calls, dup_bp1, dup_bp2, "DUP", ins_seq_str, "RSEQSIM", "./.", default_lh, read_depth);
-
-                        // Continue to the next CIGAR operation
-                        continue;
-                    }
                 }
+
+                // Add as an insertion
+                // For read depth calculation, use the previous and current
+                // positions (1-based)
+
+                //uint32_t ins_pos = pos;
+                //uint32_t ins_end = ins_pos + op_len -1;
+                uint32_t ins_pos = pos + 1;
+                uint32_t ins_end = ins_pos + op_len - 1;
+                int read_depth = this->calculateReadDepth(pos_depth_map, ins_pos-1, ins_pos);
+                //printMessage("TEST2: " + std::to_string(ins_pos) + ", " + std::to_string(ins_end) + ", OPLEN=" + std::to_string(op_len));
+                
+                // Determine the ALT allele format based on small vs. large insertion
+                std::string alt_allele = "<INS>";
+                if (op_len <= 50) {
+                    alt_allele = ins_seq_str;
+                }
+                
+                addSVCall(sv_calls, ins_pos, ins_end, "INS", alt_allele, "CIGARINS", "./.", default_lh, read_depth);
+
+                // Determine whether to use a symbolic allele (>50bp) or the
+                // actual sequence
+                // if (op_len > 50) {
+                //     ins_seq_str = "<INS>";
+                // } else {
+                //     ins_seq_str = ins_seq_str;
+                // }
+
+                // Add to SV calls (1-based) with the appropriate SV type
+                // ref_pos = pos+1;
+
+                // // For insertions, the reference end position is the same as the
+                // // reference position
+                // // For duplications, the reference end position is the same as
+                // // the reference position plus the length of the insertion
+                // ref_end = ref_pos + op_len - 1;
+                // if (is_duplication) {
+                //     uint32_t bp1 = ref_pos;
+                //     uint32_t bp2 = std::min(ref_pos + op_len - 1, ref_genome.getChromosomeLength(chr));
+                //     int read_depth = this->calculateReadDepth(pos_depth_map, bp1, bp2);
+                //     addSVCall(sv_calls, ref_pos, ref_end, "DUP", ins_seq_str, "CIGARDUP", "./.", default_lh, read_depth);
+                // } else {
+                //     uint32_t bp1 = std::max(1, (int)ref_pos - 1);
+                //     uint32_t bp2 = ref_pos;
+                //     int read_depth = this->calculateReadDepth(pos_depth_map, bp1, bp2);
+                //     addSVCall(sv_calls, ref_pos, ref_end, "INS", ins_seq_str, "CIGARINS", "./.", default_lh, read_depth);
+                // }
+
+            // Check if the CIGAR operation is a deletion
+            } else if (op == BAM_CDEL && is_primary) {
+
+                ref_pos = pos+1;
+                ref_end = ref_pos + op_len -1;
+                // printMessage("Test2");
+                int read_depth = this->calculateReadDepth(pos_depth_map, ref_pos, ref_end);
+                //printMessage("TEST4: " + std::to_string(ref_pos) + ", " + std::to_string(ref_end) + ", OPLEN=" + std::to_string(op_len));
+                addSVCall(sv_calls, ref_pos, ref_end, "DEL", "<DEL>", "CIGARDEL", "./.", default_lh, read_depth);
             }
-
-            // Add as an insertion
-            // For read depth calculation, use the previous and current
-            // positions (1-based)
-            int read_depth = this->calculateReadDepth(pos_depth_map, std::max(1, (int)pos), pos + 1);
-            uint32_t ins_pos = pos + 1;
-            uint32_t ins_end = ins_pos + op_len - 1;
-            addSVCall(sv_calls, ins_pos, ins_end, "INS", ins_seq_str, "CIGARINS", "./.", default_lh, read_depth);
-
-            // Determine whether to use a symbolic allele (>50bp) or the
-            // actual sequence
-            // if (op_len > 50) {
-            //     ins_seq_str = "<INS>";
-            // } else {
-            //     ins_seq_str = ins_seq_str;
-            // }
-
-            // Add to SV calls (1-based) with the appropriate SV type
-            // ref_pos = pos+1;
-
-            // // For insertions, the reference end position is the same as the
-            // // reference position
-            // // For duplications, the reference end position is the same as
-            // // the reference position plus the length of the insertion
-            // ref_end = ref_pos + op_len - 1;
-            // if (is_duplication) {
-            //     uint32_t bp1 = ref_pos;
-            //     uint32_t bp2 = std::min(ref_pos + op_len - 1, ref_genome.getChromosomeLength(chr));
-            //     int read_depth = this->calculateReadDepth(pos_depth_map, bp1, bp2);
-            //     addSVCall(sv_calls, ref_pos, ref_end, "DUP", ins_seq_str, "CIGARDUP", "./.", default_lh, read_depth);
-            // } else {
-            //     uint32_t bp1 = std::max(1, (int)ref_pos - 1);
-            //     uint32_t bp2 = ref_pos;
-            //     int read_depth = this->calculateReadDepth(pos_depth_map, bp1, bp2);
-            //     addSVCall(sv_calls, ref_pos, ref_end, "INS", ins_seq_str, "CIGARINS", "./.", default_lh, read_depth);
-            // }
-
-        // Check if the CIGAR operation is a deletion
-        } else if (op == BAM_CDEL && is_primary) {
-
-            ref_pos = pos+1;
-            ref_end = ref_pos + op_len -1;
-            // printMessage("Test2");
-            int read_depth = this->calculateReadDepth(pos_depth_map, ref_pos, ref_end);
-            addSVCall(sv_calls, ref_pos, ref_end, "DEL", "<DEL>", "CIGARDEL", "./.", default_lh, read_depth);
         }
 
         // Update the reference position
@@ -521,9 +535,10 @@ void SVCaller::detectSVsFromCIGAR(bam_hdr_t* header, bam1_t* alignment, std::vec
 
 void SVCaller::processChromosome(const std::string& chr, const CHMM& hmm, std::vector<SVCall>& chr_sv_calls, const InputData& input_data, const ReferenceGenome& ref_genome)
 {
-    // int filter_threshold = 4;  // Minimum number of supporting reads for an
+    // int filter_threshold = 4;  // Minimum number of supporting reads for an SV call
+    // int filter_threshold = 10;  // Minimum number of supporting reads for an
     // SV call
-    int filter_threshold = 10;  // Minimum number of supporting reads for an SV call
+    int filter_threshold = input_data.getMinReadSupport();  // Minimum number of supporting reads for an SV call
     bool single_chr = input_data.getChromosome() != "";
 
     // Open the BAM file
@@ -533,6 +548,10 @@ void SVCaller::processChromosome(const std::string& chr, const CHMM& hmm, std::v
         printError("ERROR: failed to open " + bam_filepath);
         return;
     }
+
+    // Set multi-threading
+    int num_threads = input_data.getThreadCount();
+    hts_set_threads(fp_in, num_threads);
 
     // Load the header
     bam_hdr_t *bamHdr = sam_hdr_read(fp_in);
@@ -962,10 +981,12 @@ void SVCaller::saveToVCF(const std::unordered_map<std::string, std::vector<SVCal
             std::string data_type_str = sv_call.data_type;
             std::string alt_allele = sv_call.alt_allele;
             double hmm_likelihood = sv_call.hmm_likelihood;
-            int sv_length = end - start;
+            int sv_length = end - start + 1;
+            /*
             if (sv_type_str == "DEL") {
             	sv_length++;
         	}
+        	*/
             int read_depth = sv_call.read_depth;
             std::string ref_allele = ".";
             int support = sv_call.support;

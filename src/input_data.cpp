@@ -26,6 +26,7 @@ InputData::InputData()
     this->output_dir = "";
     this->sample_size = 100;
     this->min_cnv_length = 1000;
+    this->min_reads = 5;
     this->thread_count = 1;
     this->hmm_filepath = "data/wgs.hmm";
     this->verbose = false;
@@ -103,10 +104,15 @@ std::string InputData::getOutputDir() const
 void InputData::setOutputDir(std::string dirpath)
 {
     this->output_dir = dirpath;
-
-    // Create the output directory
     std::string cmd = "mkdir -p " + output_dir;
-    system(cmd.c_str());
+    try
+    {
+        std::system(cmd.c_str());
+    } catch (const std::exception& e)
+    {
+        std::cerr << "Error creating output directory: " << e.what() << std::endl;
+        exit(1);
+    }
 }
 
 int InputData::getSampleSize() const
@@ -147,6 +153,16 @@ uint32_t InputData::getMinCNVLength() const
 void InputData::setMinCNVLength(int min_cnv_length)
 {
     this->min_cnv_length = (uint32_t) min_cnv_length;
+}
+
+void InputData::setMinReadSupport(int min_reads)
+{
+    this->min_reads = min_reads;
+}
+
+int InputData::getMinReadSupport() const
+{
+    return this->min_reads;
 }
 
 void InputData::setChromosome(std::string chr)

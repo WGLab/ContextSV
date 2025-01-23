@@ -46,6 +46,9 @@ void runContextSV(const std::unordered_map<std::string, std::string>& args)
     if (args.find("min-cnv") != args.end()) {
         input_data.setMinCNVLength(std::stoi(args.at("min-cnv")));
     }
+    if (args.find("min-reads") != args.end()) {
+        input_data.setMinReadSupport(std::stoi(args.at("min-reads")));
+    }
     if (args.find("eth") != args.end()) {
         input_data.setEthnicity(args.at("eth"));
     }
@@ -76,6 +79,7 @@ void printUsage(const std::string& programName) {
                 << "  -h, --hmm <hmm_file>          HMM file\n"
                 << "  -n, --sample-size <size>      Sample size for HMM predictions\n"
                 << "     --min-cnv <min_length>     Minimum CNV length\n"
+                << "     --min-reads <min_reads>    Minimum read support\n"
                 << "  -e, --eth <eth_file>          ETH file\n"
                 << "  -p, --pfb <pfb_file>          PFB file\n"
                 << "     --save-cnv                 Save CNV data\n"
@@ -110,6 +114,8 @@ std::unordered_map<std::string, std::string> parseArguments(int argc, char* argv
             args["sample-size"] = argv[++i];
         } else if (arg == "--min-cnv" && i + 1 < argc) {
             args["min-cnv"] = argv[++i];
+        } else if (arg == "--min-reads" && i + 1 < argc) {
+            args["min-reads"] = argv[++i];
         } else if ((arg == "-e" || arg == "--eth") && i + 1 < argc) {
             args["eth"] = argv[++i];
         } else if ((arg == "-p" || arg == "--pfb") && i + 1 < argc) {
