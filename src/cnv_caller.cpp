@@ -298,7 +298,7 @@ std::vector<std::string> CNVCaller::splitRegionIntoChunks(std::string chr, uint3
 }
 
 // Calculate the mean chromosome coverage
-double CNVCaller::calculateMeanChromosomeCoverage(std::string chr, std::vector<uint32_t>& chr_pos_depth_map, const std::string& bam_filepath, int thread_count, bool single_chr) const
+double CNVCaller::calculateMeanChromosomeCoverage(std::string chr, std::vector<uint32_t>& chr_pos_depth_map, const std::string& bam_filepath, int thread_count) const
 {
     {
         // Open the BAM file
@@ -449,6 +449,9 @@ void CNVCaller::calculateRegionLog2Ratio(uint32_t start_pos, uint32_t end_pos, i
 
 void CNVCaller::readSNPAlleleFrequencies(std::string chr, uint32_t start_pos, uint32_t end_pos, std::vector<uint32_t>& snp_pos, std::vector<double>& snp_baf, std::vector<double>& snp_pfb, std::vector<bool>& is_snp, const InputData& input_data) const
 {
+    // Lock during reading
+    std::lock_guard<std::mutex> lock(this->shared_mutex);
+
     // --------- SNP file ---------
     const std::string snp_filepath = input_data.getSNPFilepath();
     if (snp_filepath.empty())
@@ -458,6 +461,7 @@ void CNVCaller::readSNPAlleleFrequencies(std::string chr, uint32_t start_pos, ui
     }
 
     // Initialize the SNP file reader
+    // printMessage("Initializing SNP reader...");
     bcf_srs_t *snp_reader = bcf_sr_init();
     if (!snp_reader)
     {
@@ -469,19 +473,16 @@ void CNVCaller::readSNPAlleleFrequencies(std::string chr, uint32_t start_pos, ui
     // Use multi-threading. This is possible here due to the lock
     int thread_count = input_data.getThreadCount();
     bcf_sr_set_threads(snp_reader, thread_count);
-    // if (input_data.isSingleChr())
-    // {
-    //     printMessage("Setting SNP reader threads to " + std::to_string(std::max(1, thread_count / 2)));
-    //     bcf_sr_set_threads(snp_reader, std::max(1, thread_count / 2));
-    // }
 
     // Add the SNP file to the reader
+    // printMessage("Adding SNP file to reader...");
     if (bcf_sr_add_reader(snp_reader, snp_filepath.c_str()) < 0)
     {
         bcf_sr_destroy(snp_reader);
         printError("ERROR: Could not add SNP file to reader: " + snp_filepath);
         return;
     }
+    // printMessage("SNP file added to reader.");
 
     // --------- Population allele frequency file ---------
 
@@ -491,7 +492,6 @@ void CNVCaller::readSNPAlleleFrequencies(std::string chr, uint32_t start_pos, ui
     if (pfb_filepath.empty())
     {
         use_pfb = false;
-        // printMessage("WARNING: No population allele frequency file provided for chromosome " + chr);
     }
     
     bcf_srs_t *pfb_reader = bcf_sr_init();
@@ -532,13 +532,13 @@ void CNVCaller::readSNPAlleleFrequencies(std::string chr, uint32_t start_pos, ui
             printError("ERROR: Could not initialize population allele frequency reader.");
 
             // Clean up
-            // bcf_hdr_destroy(snp_header);
             bcf_sr_destroy(snp_reader);
             return;
         }
         pfb_reader->require_index = 1;
 
         // Add the population allele frequency file to the reader
+        // printMessage("Adding population allele frequency file to reader...");
         if (bcf_sr_add_reader(pfb_reader, pfb_filepath.c_str()) < 0)
         {
             printError("ERROR: Could not add population allele frequency file to reader: " + pfb_filepath);
@@ -551,11 +551,6 @@ void CNVCaller::readSNPAlleleFrequencies(std::string chr, uint32_t start_pos, ui
 
         // Use multi-threading. This is possible here due to the lock
         bcf_sr_set_threads(pfb_reader, thread_count);
-        // if (input_data.isSingleChr())
-        // {
-        //     printMessage("Setting population allele frequency reader threads to " + std::to_string(std::max(1, thread_count / 2)));
-        //     bcf_sr_set_threads(pfb_reader, std::max(1, thread_count / 2));
-        // }
     }
 
     // Split the region into samples
@@ -564,25 +559,26 @@ void CNVCaller::readSNPAlleleFrequencies(std::string chr, uint32_t start_pos, ui
 
     // Loop through the samples and read the SNP data, storing the first
     // SNP position and BAF value for each sample
-    int print_count = 0;
+    // int print_count = 0;
     int current_region = 0;
     for (size_t i = 0; i < region_chunks.size(); ++i)
     {
         current_region++;
         // Lock during reading
-        std::lock_guard<std::mutex> lock(this->shared_mutex);
+        // std::lock_guard<std::mutex> lock(this->shared_mutex);
 
         // Read the SNP data ----------------------------------------------
 
         // Set the region
+        // printMessage("Setting region for SNP reader...");
         std::string region_str = region_chunks[i];
         if (bcf_sr_set_regions(snp_reader, region_str.c_str(), 0) < 0)
         {
             printError("ERROR: Could not set region for SNP reader: " + region_str);
             break;
         }
+        // printMessage("Region set for SNP reader, loading SNP data...");
 
-        // printMessage("Iterating through SNPs in region " + std::to_string(current_region) + " of " + std::to_string((int) region_chunks.size()) + " with length " + std::to_string((int) (end_pos - start_pos)) + " bp...");
         bool snp_found = false;
         while (bcf_sr_next_line(snp_reader) > 0)
         {
@@ -609,10 +605,7 @@ void CNVCaller::readSNPAlleleFrequencies(std::string chr, uint32_t start_pos, ui
 
                 // Extract DP from FORMAT field
                 int32_t *dp = 0;
-                // int dp_values[2];
                 int dp_count = 0;
-                // int dp_ret = bcf_get_format_int32(snp_header, snp_record,
-                // "DP", &dp, &dp_count);
                 int dp_ret = bcf_get_format_int32(snp_reader->readers[0].header, snp_record, "DP", &dp, &dp_count);
                 if (dp_ret < 0 || dp[0] <= 10)
                 {
@@ -621,8 +614,6 @@ void CNVCaller::readSNPAlleleFrequencies(std::string chr, uint32_t start_pos, ui
                 free(dp);
 
                 // Skip if the SNP does not pass the filter
-                // if (bcf_has_filter(snp_header, snp_record,
-                // const_cast<char*>("PASS")) != 1)
                 if (bcf_has_filter(snp_reader->readers[0].header, snp_record, const_cast<char*>("PASS")) != 1)
                 {
                     continue;
@@ -630,21 +621,14 @@ void CNVCaller::readSNPAlleleFrequencies(std::string chr, uint32_t start_pos, ui
 
                 // Extract AD from FORMAT field
                 int32_t *ad = 0;
-                // int ad_values[2];
                 int ad_count = 0;
-                // int ad_ret = bcf_get_format_int32(snp_header, snp_record,
-                // "AD", &ad, &ad_count);
                 int ad_ret = bcf_get_format_int32(snp_reader->readers[0].header, snp_record, "AD", &ad, &ad_count);
-                // int ad_ret = bcf_get_format_int32(snp_header, snp_record,
-                // "AD", &ad, &ad_count);
                 if (ad_ret < 0 || ad_count < 2)
                 {
                     continue;
                 }
 
                 // Calculate the B-allele frequency (BAF)
-                // double baf = (double) ad_values[1] / (double) (ad_values[0] +
-                // ad_values[1]);
                 double baf = (double) ad[1] / (double) (ad[0] + ad[1]);
                 free(ad);
 
@@ -672,10 +656,8 @@ void CNVCaller::readSNPAlleleFrequencies(std::string chr, uint32_t start_pos, ui
         // Read the population allele frequency data ----------------------
         if (use_pfb)
         {
-            // Lock during reading
-            //std::lock_guard<std::mutex> lock(this->shared_mutex);
-
             // Set the region as the SNP position
+            // printMessage("Setting region for population allele frequency reader...");
             uint32_t target_snp_pos = snp_pos[i];  // Already 1-based
             std::string snp_region_str = chr_gnomad + ":" + std::to_string(target_snp_pos) + "-" + std::to_string(target_snp_pos);
             if (bcf_sr_set_regions(pfb_reader, snp_region_str.c_str(), 0) < 0)
@@ -683,61 +665,74 @@ void CNVCaller::readSNPAlleleFrequencies(std::string chr, uint32_t start_pos, ui
                 printError("ERROR: Could not set region for population allele frequency reader: " + region_str);
                 break;
             }
+            // printMessage("Region set for population allele frequency reader, loading population allele frequency data...");
 
             // Find the SNP position in the population allele frequency file
+            float *pfb_f = NULL;
+            int count = 0;
             while (bcf_sr_next_line(pfb_reader) > 0)
             {
-                if (!bcf_sr_has_line(pfb_reader, 0))
+                // Get the SNP record and validate
+                bcf1_t *pfb_record = bcf_sr_get_line(pfb_reader, 0);
+                if (!pfb_record || !bcf_is_snp(pfb_record))
+                {
+                    continue;  // Skip if not a SNP
+                }
+
+                // if (!bcf_sr_has_line(pfb_reader, 0))
+                // {
+                //     continue;
+                // }
+                // bcf1_t *pfb_record = bcf_sr_get_line(pfb_reader, 0);
+                // if (pfb_record)
+                // {
+                //     // Skip if not a SNP
+                //     if (!bcf_is_snp(pfb_record))
+                //     {
+                //         continue;
+                //     }
+
+                // Get the population frequency for the SNP
+                // float *pfb_f = NULL;
+                // int count = 0;
+                int pfb_status = bcf_get_info_float(pfb_reader->readers[0].header, pfb_record, AF_key.c_str(), &pfb_f, &count);
+                if (pfb_status < 0 || count == 0)
                 {
                     continue;
                 }
-                bcf1_t *pfb_record = bcf_sr_get_line(pfb_reader, 0);
-                if (pfb_record)
+                // double pfb = (double) pfb_f[0];
+                double pfb = static_cast<double>(pfb_f[0]);
+                // free(pfb_f);
+
+                // Skip if outside the acceptable range
+                if (pfb <= MIN_PFB || pfb >= MAX_PFB)
                 {
-                    // Skip if not a SNP
-                    if (!bcf_is_snp(pfb_record))
-                    {
-                        continue;
-                    }
-
-                    // Get the population frequency for the SNP
-                    float *pfb_f = NULL;
-                    int count = 0;
-                    int pfb_status = bcf_get_info_float(pfb_reader->readers[0].header, pfb_record, AF_key.c_str(), &pfb_f, &count);
-                    if (pfb_status < 0 || count == 0)
-                    {
-                        continue;
-                    }
-                    double pfb = (double) pfb_f[0];
-                    free(pfb_f);
-
-                    // Continue if the population frequency is outside the threshold
-                    if (pfb <= MIN_PFB || pfb >= MAX_PFB)
-                    {
-                        continue;
-                    }
-
-                    // Add the population frequency to the SNP data
-                    snp_pfb[i] = pfb;
-
-                    // Break after finding the SNP position
-                    break;
-
-                    if (print_count < 20) {
-                        printMessage("SNP " + std::to_string(snp_pos[i]) + " BAF: " + std::to_string(snp_baf[i]) + " PFB: " + std::to_string(snp_pfb[i]) + " (Region: " + snp_region_str + ")");
-                        print_count++;
-                    }
+                    continue;
                 }
+
+                // Add the population frequency to the SNP data
+                snp_pfb[i] = pfb;
+
+                // Break after finding the SNP position
+                break;
+
+                // if (print_count < 20) {
+                //     printMessage("SNP " + std::to_string(snp_pos[i]) + " BAF: " + std::to_string(snp_baf[i]) + " PFB: " + std::to_string(snp_pfb[i]) + " (Region: " + snp_region_str + ")");
+                //     print_count++;
+                // }
             }
+            free(pfb_f);
+
+            // }
             if (pfb_reader->errnum)
             {
                 printError("ERROR: " + std::string(bcf_sr_strerror(pfb_reader->errnum)));
             }
         }
+        // printMessage("SNP region " + std::to_string(current_region) + " of " + std::to_string(region_chunks.size()) + " completed.");
     }
 
     // Clean up
-    // bcf_hdr_destroy(snp_header);
     bcf_sr_destroy(snp_reader);
     bcf_sr_destroy(pfb_reader);
 }

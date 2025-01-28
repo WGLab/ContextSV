@@ -9,6 +9,7 @@
 #include <unordered_map>
 #include <vector>
 #include <mutex>
+#include <string_view>
 /// @endcond
 
 class ReferenceGenome {
@@ -16,6 +17,7 @@ class ReferenceGenome {
         std::string fasta_filepath;
         std::vector<std::string> chromosomes;
         std::unordered_map<std::string, std::string> chr_to_seq;
+        std::map<std::string, uint32_t> chr_to_length;
         //mutable std::mutex mtx;
         std::mutex& shared_mutex;
 
@@ -24,7 +26,8 @@ class ReferenceGenome {
     
         int setFilepath(std::string fasta_filepath);
         std::string getFilepath() const;
-        std::string query(const std::string& chr, uint32_t pos_start, uint32_t pos_end) const;
+        std::string_view query(const std::string& chr, uint32_t pos_start, uint32_t pos_end) const;
+        bool compare(const std::string& chr, uint32_t pos_start, uint32_t pos_end, const std::string& compare_seq, float match_threshold) const;
 
         // Get the chromosome contig lengths in VCF header format
         std::string getContigHeader() const;

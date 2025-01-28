@@ -20,15 +20,6 @@ void addSVCall(std::vector<SVCall>& sv_calls, uint32_t start, uint32_t end, std:
     if (sv_type == "UNKNOWN" || sv_type == "NEUTRAL") {
         return;
     }
-
-    // Set the alt allele to <DUP> or <DEL> if the SV type is DUP or DEL
-    // if (sv_type == "DUP" && alt_allele == ".") {
-    //     printError("ERROR: Invalid alt allele for duplication at position " + std::to_string(start) + "-" + std::to_string(end) + ": " + alt_allele);
-    //     alt_allele = "<DUP>";
-    // } else if (sv_type == "DEL" && alt_allele == ".") {
-    //     printError("ERROR: Invalid alt allele for deletion at position " + std::to_string(start) + "-" + std::to_string(end) + ": " + alt_allele);
-    //     alt_allele = "<DEL>";
-    // }
     
     if (start > end) {
         printError("ERROR: Invalid SV at position " + std::to_string(start) + "-" + std::to_string(end));
@@ -44,7 +35,6 @@ void addSVCall(std::vector<SVCall>& sv_calls, uint32_t start, uint32_t end, std:
     if (it != sv_calls.end() && it->start == start && it->end == end)
     {
         it->support += 1;  // Update the read support
-        // printMessage("Updating SV call with length " + std::to_string(end - start) + " and type " + sv_type + " and support " + std::to_string(it->support));
         if (hmm_likelihood != 0.0 && hmm_likelihood > it->hmm_likelihood)
         {
             // Update the SV call
@@ -151,5 +141,13 @@ void filterSVsWithLowSupport(std::vector<SVCall>& sv_calls, int min_support)
     // Filter SV calls with low read support
     sv_calls.erase(std::remove_if(sv_calls.begin(), sv_calls.end(), [min_support](const SVCall& sv_call) {
         return sv_call.support < min_support;
+    }), sv_calls.end());
+}
+
+void filterSVsWithLowSupport(std::vector<SVCall> &sv_calls, int min_support, const std::string &data_type)
+{
+    // Filter SV calls with low read depth only for the specified data type, keeping the rest
+    sv_calls.erase(std::remove_if(sv_calls.begin(), sv_calls.end(), [min_support, data_type](const SVCall& sv_call) {
+        return sv_call.support < min_support && sv_call.data_type == data_type;
     }), sv_calls.end());
 }

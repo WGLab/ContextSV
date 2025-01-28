@@ -157,6 +157,11 @@ void InputData::setMinCNVLength(int min_cnv_length)
 
 void InputData::setMinReadSupport(int min_reads)
 {
+    // Ensure that the minimum read support is an integer and greater than 0
+    if (min_reads < 1)
+    {
+        throw std::runtime_error("Minimum read support must be an integer greater than 0");
+    }
     this->min_reads = min_reads;
 }
 

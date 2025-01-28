@@ -94,7 +94,7 @@ class CNVCaller {
         // Run copy number prediction for SVs meeting the minimum length threshold obtained from CIGAR strings
         void runCIGARCopyNumberPrediction(std::string chr, std::vector<SVCall>& sv_candidates, const CHMM& hmm, double mean_chr_cov, const std::vector<uint32_t>& pos_depth_map, const InputData& input_data) const;
 
-        double calculateMeanChromosomeCoverage(std::string chr, std::vector<uint32_t>& chr_pos_depth_map, const std::string& bam_filepath, int thread_count, bool single_chr) const;
+        double calculateMeanChromosomeCoverage(std::string chr, std::vector<uint32_t>& chr_pos_depth_map, const std::string& bam_filepath, int thread_count) const;
 
         void calculateRegionLog2Ratio(uint32_t start_pos, uint32_t end_pos, int sample_size, const std::vector<uint32_t>& pos_depth_map, double mean_chr_cov, std::vector<double>& pos_log2) const;
 

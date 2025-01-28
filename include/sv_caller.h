@@ -34,8 +34,6 @@ class SVCaller {
         int min_mapq = 20;          // Minimum mapping quality to be considered
         std::mutex shared_mutex;
 
-        void getAlignmentMismatchMap(samFile* fp_in, hts_idx_t* idx, bam_hdr_t* bamHdr, const GenomicRegion& region, MismatchData& mismatch_data, bool is_primary, const ReferenceGenome& ref_genome);
-
         void getSplitAlignments(samFile* fp_in, hts_idx_t* idx, bam_hdr_t* bamHdr, const std::string& region, std::unordered_map<std::string, GenomicRegion>& primary_map, std::unordered_map<std::string, std::vector<GenomicRegion>>& supp_map);
 
         // Detect SVs from the CIGAR string of a read alignment, and return the
@@ -53,7 +51,7 @@ class SVCaller {
         int readNextAlignment(samFile *fp_in, hts_itr_t *itr, bam1_t *bam1);
 
         // Detect SVs from split alignments
-        void detectSVsFromSplitReads(const std::string& region, samFile* fp_in, hts_idx_t* idx, bam_hdr_t* bamHdr, std::vector<SVCall>& sv_calls, const CNVCaller& cnv_caller, const CHMM& hmm, double mean_chr_cov, const std::vector<uint32_t>& pos_depth_map, const InputData& input_data, const ReferenceGenome& ref_genome);
+        void detectSVsFromSplitReads(const std::string& region, samFile* fp_in, hts_idx_t* idx, bam_hdr_t* bamHdr, std::vector<SVCall>& sv_calls, const CNVCaller& cnv_caller, const CHMM& hmm, double mean_chr_cov, const std::vector<uint32_t>& pos_depth_map, const InputData& input_data);
 
         // Calculate the mismatch rate given a map of query positions to
         // match/mismatch (1/0) values within a specified range of the query

@@ -34,6 +34,8 @@ void mergeSVs(std::vector<SVCall>& sv_calls);
 
 void filterSVsWithLowSupport(std::vector<SVCall> &sv_calls, int min_depth);
 
+void filterSVsWithLowSupport(std::vector<SVCall> &sv_calls, int min_depth, const std::string& data_type);
+
 uint32_t getSVCount(const std::vector<SVCall>& sv_calls);
 
 void concatenateSVCalls(std::vector<SVCall>& sv_calls, const std::vector<SVCall>& sv_calls_update);
