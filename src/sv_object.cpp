@@ -27,7 +27,9 @@ void addSVCall(std::vector<SVCall>& sv_calls, uint32_t start, uint32_t end, std:
     }
 
     // Insert the SV call in sorted order
-    SVCall sv_call{start, end, sv_type, alt_allele, data_type, genotype, hmm_likelihood, read_depth, 1};
+    // SVCall sv_call{start, end, sv_type, alt_allele, data_type, genotype,
+    // hmm_likelihood, read_depth, 1};
+    SVCall sv_call{start, end, sv_type, alt_allele, data_type, genotype, hmm_likelihood, read_depth, 1, 1};
     auto it = std::lower_bound(sv_calls.begin(), sv_calls.end(), sv_call);
 
     // Update the SV type if the SV call already exists (if likelihood is
@@ -51,7 +53,9 @@ void addSVCall(std::vector<SVCall>& sv_calls, uint32_t start, uint32_t end, std:
 void updateSVType(std::vector<SVCall>& sv_calls, uint32_t start, uint32_t end, std::string sv_type, std::string data_type, std::string genotype, double hmm_likelihood)
 {
     // Update the SV type for an existing SV call
-    auto it = std::lower_bound(sv_calls.begin(), sv_calls.end(), SVCall{start, end, "", "", "", "", 0.0, 0, 0});
+    // auto it = std::lower_bound(sv_calls.begin(), sv_calls.end(),
+    // SVCall{start, end, "", "", "", "", 0.0, 0, 0});
+    auto it = std::lower_bound(sv_calls.begin(), sv_calls.end(), SVCall(start, end, "", "", "", "", 0.0, 0, 0, 0));
     if (it != sv_calls.end() && it->start == start && it->end == end)
     {
         it->sv_type = sv_type;
@@ -103,14 +107,17 @@ void mergeSVs(std::vector<SVCall>& sv_calls)
                 //XprintMessage("Merging SV calls with overlap " + std::to_string(overlap_fraction));
                 // Keep the SV call with the higher read support
                 if (next.support > current_merge.support) {
+                    next.cluster_size = current_merge.cluster_size + 1;  // Update the cluster size
                     current_merge = next;
                 } else if (next.support == current_merge.support) {
                     // Keep the SV call with the higher likelihood
                     if (next.hmm_likelihood != 0.0 && current_merge.hmm_likelihood != 0.0 && next.hmm_likelihood > current_merge.hmm_likelihood) {
+                        next.cluster_size = current_merge.cluster_size + 1;  // Update the cluster size
                         current_merge = next;
                     } else if (next.hmm_likelihood == current_merge.hmm_likelihood) {
                         // Keep the SV call with the higher read depth
                         if (next.read_depth > current_merge.read_depth) {
+                            next.cluster_size = current_merge.cluster_size + 1;  // Update the cluster size
                             current_merge = next;
                         }
                     }
@@ -120,10 +127,12 @@ void mergeSVs(std::vector<SVCall>& sv_calls)
 				uint32_t current_length = current_merge.end - current_merge.start;
 				uint32_t next_length = next.end - next.start;
 				if (next_length > current_length) {  // And support meets threshold
+                    next.cluster_size = current_merge.cluster_size + 1;  // Update the cluster size
 					current_merge = next;
 				}
             }
         } else {
+            // Store the merged SV call and move to the next SV call
             merged_sv_calls.push_back(current_merge);
             current_merge = next;
         }
@@ -138,9 +147,9 @@ void mergeSVs(std::vector<SVCall>& sv_calls)
 
 void filterSVsWithLowSupport(std::vector<SVCall>& sv_calls, int min_support)
 {
-    // Filter SV calls with low read support
+    // Filter SV calls with low read support or low cluster size
     sv_calls.erase(std::remove_if(sv_calls.begin(), sv_calls.end(), [min_support](const SVCall& sv_call) {
-        return sv_call.support < min_support;
+        return sv_call.support < min_support && sv_call.cluster_size < min_support;
     }), sv_calls.end());
 }
 
