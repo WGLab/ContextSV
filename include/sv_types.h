@@ -57,6 +57,18 @@ namespace sv_types {
     inline SVType getSVTypeFromCNState(int cn_state) {
         return CNVTypeMap.at(cn_state);
     }
+
+    // Function to check if an SV type is a valid update from copy number predictions
+    inline bool isValidCopyNumberUpdate(SVType sv_type, SVType updated_sv_type) {
+        if (updated_sv_type == SVType::UNKNOWN) {
+            return false;
+        } else if (sv_type == SVType::DEL && updated_sv_type != SVType::DEL) {
+            return false;
+        } else if (sv_type == SVType::INS && updated_sv_type != SVType::DUP) {
+            return false;
+        }
+        return true;
+    }
 }
 
 #endif // SV_TYPES_H

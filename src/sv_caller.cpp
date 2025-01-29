@@ -257,7 +257,7 @@ void SVCaller::detectSVsFromCIGAR(bam_hdr_t* header, bam1_t* alignment, std::vec
                     if (ref_genome.compare(chr, bp1, bp2, ins_seq_str, DUP_SEQSIM_THRESHOLD))
                     {
                         int read_depth = this->calculateReadDepth(pos_depth_map, bp1, bp2);
-                        addSVCall(sv_calls, bp1, bp2, "DUP", "<DUP>", "LSEQSIM", "./.", default_lh, read_depth);
+                        addSVCall(sv_calls, bp1, bp2, SVType::DUP, "<DUP>", "LSEQSIM", "./.", default_lh, read_depth);
                         continue;
                     }
                 }
@@ -271,7 +271,7 @@ void SVCaller::detectSVsFromCIGAR(bam_hdr_t* header, bam1_t* alignment, std::vec
                     if (ref_genome.compare(chr, bp1, bp2, ins_seq_str, DUP_SEQSIM_THRESHOLD))
                     {
                         int read_depth = this->calculateReadDepth(pos_depth_map, bp1, bp2);
-                        addSVCall(sv_calls, bp1, bp2, "DUP", "<DUP>", "RSEQSIM", "./.", default_lh, read_depth);
+                        addSVCall(sv_calls, bp1, bp2, SVType::DUP, "<DUP>", "RSEQSIM", "./.", default_lh, read_depth);
                         continue;
                     }
                 }
@@ -289,7 +289,7 @@ void SVCaller::detectSVsFromCIGAR(bam_hdr_t* header, bam1_t* alignment, std::vec
                     alt_allele = ins_seq_str;
                 }
                 
-                addSVCall(sv_calls, ins_pos, ins_end, "INS", alt_allele, "CIGARINS", "./.", default_lh, read_depth);
+                addSVCall(sv_calls, ins_pos, ins_end, SVType::INS, alt_allele, "CIGARINS", "./.", default_lh, read_depth);
 
             // Check if the CIGAR operation is a deletion
             } else if (op == BAM_CDEL && is_primary) {
@@ -297,7 +297,7 @@ void SVCaller::detectSVsFromCIGAR(bam_hdr_t* header, bam1_t* alignment, std::vec
                 ref_pos = pos+1;
                 ref_end = ref_pos + op_len -1;
                 int read_depth = this->calculateReadDepth(pos_depth_map, ref_pos, ref_end);
-                addSVCall(sv_calls, ref_pos, ref_end, "DEL", "<DEL>", "CIGARDEL", "./.", default_lh, read_depth);
+                addSVCall(sv_calls, ref_pos, ref_end, SVType::DEL, "<DEL>", "CIGARDEL", "./.", default_lh, read_depth);
             }
         }
 
@@ -383,8 +383,9 @@ void SVCaller::processChromosome(const std::string& chr, const CHMM& hmm, std::v
     this->detectCIGARSVs(fp_in, idx, bamHdr, region, chr_sv_calls, chr_pos_depth_map, ref_genome);
 
     printMessage(chr + ": Merging CIGAR...");
-    filterSVsWithLowSupport(chr_sv_calls, cigar_sv_support_threshold);
-    mergeSVs(chr_sv_calls);
+    // filterSVsWithLowSupport(chr_sv_calls, cigar_sv_support_threshold);
+    // mergeSVs(chr_sv_calls);
+    // filterSVsWithLowSupport(chr_sv_calls, cigar_sv_support_threshold);
     int region_sv_count = getSVCount(chr_sv_calls);
     printMessage("Total SVs detected from CIGAR string: " + std::to_string(region_sv_count));
 
@@ -544,7 +545,7 @@ void SVCaller::detectSVsFromSplitReads(const std::string& region, samFile* fp_in
                 // Reverse-oriented relative to the reference
                 alt_allele = "N]" + supp_chr + ":" + std::to_string(largest_supp.start) + "]";
             }
-            addSVCall(sv_calls, primary.start, primary.end, "BND", alt_allele, "SPLIT", "./.", 0.0, 0);
+            addSVCall(sv_calls, primary.start, primary.end, SVType::BND, alt_allele, "SPLIT", "./.", 0.0, 0);
 
             // Create the alternate allele format for the second BND record
             alt_allele = "N[" + primary_chr + ":" + std::to_string(primary.start) + "[";
@@ -552,7 +553,7 @@ void SVCaller::detectSVsFromSplitReads(const std::string& region, samFile* fp_in
                 // Reverse-oriented relative to the reference
                 alt_allele = "N]" + primary_chr + ":" + std::to_string(primary.start) + "]";
             }
-            addSVCall(sv_calls, largest_supp.start, largest_supp.end, "BND", alt_allele, "SPLIT", "./.", 0.0, 0);
+            addSVCall(sv_calls, largest_supp.start, largest_supp.end, SVType::BND, alt_allele, "SPLIT", "./.", 0.0, 0);
 
             continue;
         }
@@ -588,13 +589,13 @@ void SVCaller::detectSVsFromSplitReads(const std::string& region, samFile* fp_in
                 if (supp_type == SVType::NEUTRAL) {
                     // addSVCall(sv_calls, supp_start, supp_end, "INV",
                     // "<INV>", "SPLIT", "./.", supp_lh, read_depth);
-                    addSVCall(sv_calls, largest_supp.start, largest_supp.end, "INV", "<INV>", "SPLIT", "./.", supp_lh, read_depth);
+                    addSVCall(sv_calls, largest_supp.start, largest_supp.end, SVType::INV, "<INV>", "SPLIT", "./.", supp_lh, read_depth);
                     continue;
                     
                 } else if (supp_type == SVType::DUP) {
                     // addSVCall(sv_calls, supp_start, supp_end, "INVDUP",
                     // "<INV>", "SPLIT", "./.", supp_lh, read_depth);
-                    addSVCall(sv_calls, largest_supp.start, largest_supp.end, "INVDUP", "<INV>", "SPLIT", "./.", supp_lh, read_depth);
+                    addSVCall(sv_calls, largest_supp.start, largest_supp.end, SVType::INV_DUP, "<INV>", "SPLIT", "./.", supp_lh, read_depth);
                     continue;
                 }
             }
@@ -733,18 +734,18 @@ void SVCaller::detectSVsFromSplitReads(const std::string& region, samFile* fp_in
                 if (gap_lh > bd_lh) {
                     int read_depth = this->calculateReadDepth(pos_depth_map, gap_left, gap_right);
                     std::string alt_allele = gap_type == SVType::NEUTRAL ? "." : "<" + getSVTypeString(gap_type) + ">";
-                    addSVCall(sv_calls, gap_left, gap_right, getSVTypeString(gap_type), alt_allele, "SPLIT", "./.", gap_lh, read_depth);
+                    addSVCall(sv_calls, gap_left, gap_right, gap_type, alt_allele, "SPLIT", "./.", gap_lh, read_depth);
                 } else {
                     // Add the boundary as the SV call
                     int read_depth = this->calculateReadDepth(pos_depth_map, boundary_left, boundary_right);
                     std::string alt_allele = bd_type == SVType::NEUTRAL ? "." : "<" + getSVTypeString(bd_type) + ">";
-                    addSVCall(sv_calls, boundary_left, boundary_right, getSVTypeString(bd_type), alt_allele, "SPLIT", "./.", bd_lh, read_depth);
+                    addSVCall(sv_calls, boundary_left, boundary_right, bd_type, alt_allele, "SPLIT", "./.", bd_lh, read_depth);
                 }
             } else {
                 // Add the boundary as the SV call
                 int read_depth = this->calculateReadDepth(pos_depth_map, boundary_left, boundary_right);
                 std::string alt_allele = bd_type == SVType::NEUTRAL ? "." : "<" + getSVTypeString(bd_type) + ">";
-                addSVCall(sv_calls, boundary_left, boundary_right, getSVTypeString(bd_type), alt_allele, "SPLIT", "./.", bd_lh, read_depth);
+                addSVCall(sv_calls, boundary_left, boundary_right, bd_type, alt_allele, "SPLIT", "./.", bd_lh, read_depth);
             }
         }
 
@@ -836,7 +837,7 @@ void SVCaller::saveToVCF(const std::unordered_map<std::string, std::vector<SVCal
             // Get the SV candidate and SV info
             uint32_t start = sv_call.start;
             uint32_t end = sv_call.end;
-            std::string sv_type_str = sv_call.sv_type;
+            std::string sv_type_str = getSVTypeString(sv_call.sv_type);
             std::string genotype = sv_call.genotype;
             std::string data_type_str = sv_call.data_type;
             std::string alt_allele = sv_call.alt_allele;

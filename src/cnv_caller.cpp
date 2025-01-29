@@ -246,29 +246,43 @@ void CNVCaller::runCIGARCopyNumberPrediction(std::string chr, std::vector<SVCall
             max_state = 0;
         }
 
-        // Update the SV calls with the CNV type and genotype
+        // Update the SV information if it does not conflict with the current SV type
         SVType updated_sv_type = getSVTypeFromCNState(max_state);
-        std::string genotype = cnv_genotype_map.at(max_state);
-
-        // Determine the SV calling method used to call the SV
-        std::string data_type;
-        data_type = "HMM";
-
-        // Update the SV genotype if known
-        // printMessage("Updating SV call for " + chr + ":" + std::to_string((int)start_pos) + "-" + std::to_string((int)end_pos) + "...");
-        if (updated_sv_type != SVType::UNKNOWN)
+        bool is_valid_update = isValidCopyNumberUpdate(sv_call.sv_type, updated_sv_type);
+        // if (updated_sv_type != SVType::UNKNOWN && updated_sv_type !=
+        // SVType::NEUTRAL)
+        if (is_valid_update)
         {
+            std::string genotype = cnv_genotype_map.at(max_state);
+            std::string data_type = "CIGAR+HMM";
+            // std::string sv_type_str = getSVTypeString(updated_sv_type);
+            sv_call.sv_type = updated_sv_type;
+            sv_call.hmm_likelihood = likelihood;
             sv_call.genotype = genotype;
             sv_call.data_type = data_type;
-            sv_call.hmm_likelihood = likelihood;
         }
 
-        // Update the SV type if known
-        if (updated_sv_type != SVType::UNKNOWN && updated_sv_type != SVType::NEUTRAL)
-        {
-            std::string sv_type_str = getSVTypeString(updated_sv_type);
-            sv_call.sv_type = sv_type_str;
-        }
+        // Update the SV genotype if known
+        // printMessage("Updating SV call for " + chr + ":" +
+        // std::to_string((int)start_pos) + "-" + std::to_string((int)end_pos) +
+        // "...");
+        // std::string genotype = cnv_genotype_map.at(max_state);
+        // std::string data_type = "CIGAR+HMM";
+        // if (updated_sv_type != SVType::UNKNOWN)
+        // {
+        //     sv_call.genotype = genotype;
+        //     sv_call.data_type = data_type;
+        //     sv_call.hmm_likelihood = likelihood;
+        // }
+
+        // Update the SV type if known and it does not conflict with the current
+        // SV type
+        // SVType updated_sv_type = getSVTypeFromCNState(max_state);
+        // if (updated_sv_type != SVType::UNKNOWN && updated_sv_type != SVType::NEUTRAL)
+        // {
+        //     std::string sv_type_str = getSVTypeString(updated_sv_type);
+        //     sv_call.sv_type = sv_type_str;
+        // }
     }
 }
 

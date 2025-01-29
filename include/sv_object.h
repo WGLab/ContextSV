@@ -8,11 +8,16 @@
 #include <stdexcept>
 #include <unordered_map>
 
+#include "sv_types.h"
+
+using namespace sv_types;
+
 // Struct to represent a structural variant call
 struct SVCall {
     uint32_t start;
     uint32_t end;
-    std::string sv_type = "NA";
+    // std::string sv_type = "NA";
+    SVType sv_type = SVType::UNKNOWN;
     std::string alt_allele = ".";
     std::string data_type = "NA";
     std::string genotype = "./.";
@@ -25,14 +30,14 @@ struct SVCall {
     bool operator<(const SVCall& other) const;
 
     // Constructor with parameters for all fields
-    SVCall(uint32_t start, uint32_t end, std::string sv_type, const std::string& alt_allele, std::string data_type, std::string genotype, double hmm_likelihood, int read_depth, int support, int cluster_size) :
+    SVCall(uint32_t start, uint32_t end, SVType sv_type, const std::string& alt_allele, std::string data_type, std::string genotype, double hmm_likelihood, int read_depth, int support, int cluster_size) :
         start(start), end(end), sv_type(sv_type), alt_allele(alt_allele), data_type(data_type), genotype(genotype), hmm_likelihood(hmm_likelihood), read_depth(read_depth), support(support), cluster_size(cluster_size) {}
         
     // SVCall(uint32_t start, uint32_t end, std::string sv_type, const std::string& alt_allele, std::string data_type, std::string genotype, double hmm_likelihood, int read_depth, int support) :
     //     start(start), end(end), sv_type(sv_type), alt_allele(alt_allele), data_type(data_type), genotype(genotype), hmm_likelihood(hmm_likelihood), read_depth(read_depth), support(support) {}
 };
 
-void addSVCall(std::vector<SVCall>& sv_calls, uint32_t start, uint32_t end, std::string sv_type, const std::string& alt_allele, std::string data_type, std::string genotype, double hmm_likelihood, int read_depth);
+void addSVCall(std::vector<SVCall>& sv_calls, uint32_t start, uint32_t end, SVType sv_type, const std::string& alt_allele, std::string data_type, std::string genotype, double hmm_likelihood, int read_depth);
 
 void mergeSVs(std::vector<SVCall>& sv_calls);
 

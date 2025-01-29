@@ -14,10 +14,13 @@ bool SVCall::operator<(const SVCall & other) const
 	return start < other.start || (start == other.start && end < other.end);
 }
 
-void addSVCall(std::vector<SVCall>& sv_calls, uint32_t start, uint32_t end, std::string sv_type, const std::string& alt_allele, std::string data_type, std::string genotype, double hmm_likelihood, int read_depth)
+void addSVCall(std::vector<SVCall>& sv_calls, uint32_t start, uint32_t end, SVType sv_type, const std::string& alt_allele, std::string data_type, std::string genotype, double hmm_likelihood, int read_depth)
 {
     // Ignore unknown SV types
-    if (sv_type == "UNKNOWN" || sv_type == "NEUTRAL") {
+    // if (sv_type == "UNKNOWN" || sv_type == "NEUTRAL") {
+    //     return;
+    // }
+    if (sv_type == SVType::UNKNOWN || sv_type == SVType::NEUTRAL) {
         return;
     }
     
@@ -47,23 +50,6 @@ void addSVCall(std::vector<SVCall>& sv_calls, uint32_t start, uint32_t end, std:
         }
     } else {
         sv_calls.insert(it, sv_call);  // Insert the new SV call
-    }
-}
-
-void updateSVType(std::vector<SVCall>& sv_calls, uint32_t start, uint32_t end, std::string sv_type, std::string data_type, std::string genotype, double hmm_likelihood)
-{
-    // Update the SV type for an existing SV call
-    // auto it = std::lower_bound(sv_calls.begin(), sv_calls.end(),
-    // SVCall{start, end, "", "", "", "", 0.0, 0, 0});
-    auto it = std::lower_bound(sv_calls.begin(), sv_calls.end(), SVCall(start, end, "", "", "", "", 0.0, 0, 0, 0));
-    if (it != sv_calls.end() && it->start == start && it->end == end)
-    {
-        it->sv_type = sv_type;
-        it->data_type = data_type;
-        it->genotype = genotype;
-        it->hmm_likelihood = hmm_likelihood;
-    } else {
-        printError("ERROR: SV call not found for update at position " + std::to_string(start) + "-" + std::to_string(end));
     }
 }
 
