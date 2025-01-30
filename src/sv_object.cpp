@@ -31,8 +31,6 @@ void addSVCall(std::vector<SVCall>& sv_calls, uint32_t start, uint32_t end, SVTy
     }
 
     // Insert the SV call in sorted order
-    // SVCall sv_call{start, end, sv_type, alt_allele, data_type, genotype,
-    // hmm_likelihood, read_depth, 1};
     SVCall sv_call{start, end, sv_type, alt_allele, data_type, genotype, hmm_likelihood, read_depth, 1, 1, qual};
     auto it = std::lower_bound(sv_calls.begin(), sv_calls.end(), sv_call);
 
@@ -84,57 +82,71 @@ void mergeSVs(std::vector<SVCall>& sv_calls)
     for (size_t i = 0; i < sv_calls.size(); i++) {
         if (merged[i]) continue;
 
-        size_t best_index = i;
-        int total_cluster_size = sv_calls[i].cluster_size;  // Track total cluster size
+        std::vector<SVCall> cluster;
+        cluster.push_back(sv_calls[i]);
+        merged[i] = true;
 
+        // Use 10% of the length of the first SV as the threshold
+        uint32_t sv_a_window = (uint32_t) std::ceil((double) (sv_calls[i].end - sv_calls[i].start + 1) * 0.1);
+
+        // Find SVs that have start or end positions within 10% of each other's length
         for (size_t j = i + 1; j < sv_calls.size(); j++) {
             if (merged[j]) continue;
 
-            // Compute overlap
-            uint32_t overlap_start = std::max(sv_calls[i].start, sv_calls[j].start);
-            uint32_t overlap_end = std::min(sv_calls[i].end, sv_calls[j].end);
-            uint32_t overlap_length = (overlap_end > overlap_start) ? (overlap_end - overlap_start) : 0;
-
-            // Compute union length correctly
-            uint32_t union_start = std::min(sv_calls[i].start, sv_calls[j].start);
-            uint32_t union_end = std::max(sv_calls[i].end, sv_calls[j].end);
-            uint32_t union_length = union_end - union_start;  // No +1 to prevent off-by-one errors
-
-            double overlap_fraction = (union_length > 0) ? (static_cast<double>(overlap_length) / union_length) : 0.0;
-
-            // Throw error if fraction > 1
-            if (overlap_fraction > 1.0) {
-                throw std::runtime_error("Error: Overlap fraction = " + std::to_string(overlap_fraction) + " > 1.0");
-            }
-
-            // if (overlap_fraction > 0.5) {
-            if (overlap_fraction > 0.5) {  // Changed from 0.5
-                total_cluster_size += sv_calls[j].cluster_size;
-                if (sv_calls[j].support > sv_calls[best_index].support) {
-                    best_index = j;
-                }
-                merged[j] = true;  // Mark SV as merged
+            // Check if the SVs are within 10% of the largest SV's length
+            uint32_t sv_b_window = (uint32_t) std::ceil((double) (sv_calls[j].end - sv_calls[j].start + 1) * 0.1);
+            uint32_t sv_window = std::max(sv_a_window, sv_b_window);
+            bool start_within_window = std::abs((int) sv_calls[j].start - (int) sv_calls[i].start) <= (int) sv_window;
+            bool end_within_window = std::abs((int) sv_calls[j].end - (int) sv_calls[i].end) <= (int) sv_window;
+            if (start_within_window && end_within_window) {
+                cluster.push_back(sv_calls[j]);
+                merged[j] = true;
             }
         }
 
-        sv_calls[best_index].cluster_size = total_cluster_size; // Update best SV with total size
-        merged_sv_calls.push_back(sv_calls[best_index]); // Keep the strongest SV
+        // Remove clusters with single SVs that have low support
+        if (cluster.size() < 2 && cluster[0].support < 2) {
+            continue;
+        }
+
+        std::vector<SVCall> filtered_cluster = cluster;
+
+        // If any SV length equals 2039, print all the SV calls in the cluster
+        bool found_2039 = false;
+        for (const auto& sv : filtered_cluster) {
+            if (sv.end - sv.start == 2039) {
+                printMessage("[TEST] Found SV with length 2039 at " + std::to_string(sv.start) + "-" + std::to_string(sv.end) + " (SUP=" + std::to_string(sv.support) + ")");
+                found_2039 = true;
+            }
+        }
+        if (found_2039) {
+            std::cout << "[TEST] Cluster of SVs with size " << filtered_cluster.size() << ":" << std::endl;
+            for (const auto& sv : filtered_cluster) {
+                printMessage("SV: " + std::to_string(sv.start) + "-" + std::to_string(sv.end) + " (SUP=" + std::to_string(sv.support) + ", LEN=" + std::to_string(sv.end - sv.start) + ")");
+            }
+        }
+
+        // Find the median-length SV in the cluster and use it as the merged SV
+        // Sort the cluster by length
+        std::sort(filtered_cluster.begin(), filtered_cluster.end(), [](const SVCall& a, const SVCall& b) {
+            return (a.end - a.start) < (b.end - b.start);
+        });
+
+        // Get the median SV
+        size_t median_index = filtered_cluster.size() / 2;
+        SVCall median_sv = filtered_cluster[median_index];
+
+        median_sv.cluster_size = (int) cluster.size();
+        
+        // Add the merged SV to the list
+        merged_sv_calls.push_back(median_sv);
     }
-
-    // Filter out merged SVs with low support or cluster size
-    // merged_sv_calls.erase(std::remove_if(merged_sv_calls.begin(), merged_sv_calls.end(), [initial_size](const SVCall& sv_call) {
-    //     return sv_call.support < 2 && sv_call.cluster_size < 10;  // Adjust thresholds as needed
-    // }), merged_sv_calls.end());
-    // merged_sv_calls.erase(std::remove_if(merged_sv_calls.begin(), merged_sv_calls.end(), [initial_size](const SVCall& sv_call) {
-    //     return sv_call.support < 2 && sv_call.cluster_size < 3;  // Adjust thresholds as needed
-    // }), merged_sv_calls.end());
-
     sv_calls = std::move(merged_sv_calls); // Replace with filtered list
 
     // Print SVs that have length 2039
     for (const auto& sv_call : sv_calls) {
         if (sv_call.end - sv_call.start == 2039) {
-            printMessage("Found merged SV with length 2039 at " + std::to_string(sv_call.start) + "-" + std::to_string(sv_call.end) + " (SUP=" + std::to_string(sv_call.support) + ")");
+            printMessage("[TEST] Found merged SV with length 2039 at " + std::to_string(sv_call.start) + "-" + std::to_string(sv_call.end) + " (SUP=" + std::to_string(sv_call.support) + ")");
         }
     }
 
