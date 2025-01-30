@@ -6,6 +6,7 @@
 #include <cmath>
 #include <stdexcept>
 #include <iostream>
+#include <numeric>
 
 #include "utils.h"
 
@@ -14,7 +15,7 @@ bool SVCall::operator<(const SVCall & other) const
 	return start < other.start || (start == other.start && end < other.end);
 }
 
-void addSVCall(std::vector<SVCall>& sv_calls, uint32_t start, uint32_t end, SVType sv_type, const std::string& alt_allele, std::string data_type, std::string genotype, double hmm_likelihood, int read_depth)
+void addSVCall(std::vector<SVCall>& sv_calls, uint32_t start, uint32_t end, SVType sv_type, const std::string& alt_allele, std::string data_type, std::string genotype, double hmm_likelihood, int read_depth, uint8_t qual)
 {
     // Ignore unknown SV types
     // if (sv_type == "UNKNOWN" || sv_type == "NEUTRAL") {
@@ -32,14 +33,15 @@ void addSVCall(std::vector<SVCall>& sv_calls, uint32_t start, uint32_t end, SVTy
     // Insert the SV call in sorted order
     // SVCall sv_call{start, end, sv_type, alt_allele, data_type, genotype,
     // hmm_likelihood, read_depth, 1};
-    SVCall sv_call{start, end, sv_type, alt_allele, data_type, genotype, hmm_likelihood, read_depth, 1, 1};
+    SVCall sv_call{start, end, sv_type, alt_allele, data_type, genotype, hmm_likelihood, read_depth, 1, 1, qual};
     auto it = std::lower_bound(sv_calls.begin(), sv_calls.end(), sv_call);
 
-    // Update the SV type if the SV call already exists (if likelihood is
-    // higher)
+    // Determine if the SV call already exists
     if (it != sv_calls.end() && it->start == start && it->end == end)
     {
         it->support += 1;  // Update the read support
+
+        // Update SV type if likelihood is higher
         if (hmm_likelihood != 0.0 && hmm_likelihood > it->hmm_likelihood)
         {
             // Update the SV call
@@ -47,6 +49,7 @@ void addSVCall(std::vector<SVCall>& sv_calls, uint32_t start, uint32_t end, SVTy
             it->data_type = data_type;
             it->genotype = genotype;
             it->hmm_likelihood = hmm_likelihood;
+            it->qual = qual;
         }
     } else {
         sv_calls.insert(it, sv_call);  // Insert the new SV call
@@ -68,67 +71,75 @@ void mergeSVs(std::vector<SVCall>& sv_calls)
     if (sv_calls.size() < 2) {
         return;
     }
+    int initial_size = sv_calls.size();
 
-    // Merge SV calls if they overlap
-    // int initial_size = sv_calls.size();
-    
-    // Merge any SV calls that have >90% reciprocal overlap
+    std::vector<bool> merged(sv_calls.size(), false);
     std::vector<SVCall> merged_sv_calls;
-    SVCall current_merge = sv_calls[0];
-    for (size_t i = 1; i < sv_calls.size(); i++) {
-        SVCall& next = sv_calls[i];
-        // Check for overlap
-        if (next.start <= current_merge.end) {
-            //XprintMessage("Comparing SV " + std::to_string(current_merge.start) + "-" + std::to_string(current_merge.end) + " (support " + std::to_string(current_merge.support) + ", length " + std::to_string(current_merge.end - current_merge.start) + ") with " + std::to_string(next.start) + "-" + std::to_string(next.end) + " (support " + std::to_string(next.support) + ", length " + std::to_string(next.end - next.start) + ")");
-            
-            // if (current_merge.start <= next.end && next.start <= current_merge.end) {
-            // Calculate reciprocal overlap
-            uint32_t overlap = std::max(0, (int)std::min(current_merge.end, next.end) - (int)std::max(current_merge.start, next.start));
-            uint32_t union_length = std::max(current_merge.end, next.end) - std::min(current_merge.start, next.start);
-            double overlap_fraction = static_cast<double>(overlap) / union_length;
-            //XprintMessage("Overlap fraction: " + std::to_string(overlap_fraction));
 
-            // Merge if reciprocal overlap is >90%
-            if (overlap_fraction > 0.90) {
-                //XprintMessage("Merging SV calls with overlap " + std::to_string(overlap_fraction));
-                // Keep the SV call with the higher read support
-                if (next.support > current_merge.support) {
-                    next.cluster_size = current_merge.cluster_size + 1;  // Update the cluster size
-                    current_merge = next;
-                } else if (next.support == current_merge.support) {
-                    // Keep the SV call with the higher likelihood
-                    if (next.hmm_likelihood != 0.0 && current_merge.hmm_likelihood != 0.0 && next.hmm_likelihood > current_merge.hmm_likelihood) {
-                        next.cluster_size = current_merge.cluster_size + 1;  // Update the cluster size
-                        current_merge = next;
-                    } else if (next.hmm_likelihood == current_merge.hmm_likelihood) {
-                        // Keep the SV call with the higher read depth
-                        if (next.read_depth > current_merge.read_depth) {
-                            next.cluster_size = current_merge.cluster_size + 1;  // Update the cluster size
-                            current_merge = next;
-                        }
-                    }
-                }
-            } else {
-            	// Continue with the larger length
-				uint32_t current_length = current_merge.end - current_merge.start;
-				uint32_t next_length = next.end - next.start;
-				if (next_length > current_length) {  // And support meets threshold
-                    next.cluster_size = current_merge.cluster_size + 1;  // Update the cluster size
-					current_merge = next;
-				}
+    // Sort SVs by start position to improve efficiency
+    std::sort(sv_calls.begin(), sv_calls.end(), [](const SVCall& a, const SVCall& b) {
+        return a.start < b.start;
+    });
+
+    for (size_t i = 0; i < sv_calls.size(); i++) {
+        if (merged[i]) continue;
+
+        size_t best_index = i;
+        int total_cluster_size = sv_calls[i].cluster_size;  // Track total cluster size
+
+        for (size_t j = i + 1; j < sv_calls.size(); j++) {
+            if (merged[j]) continue;
+
+            // Compute overlap
+            uint32_t overlap_start = std::max(sv_calls[i].start, sv_calls[j].start);
+            uint32_t overlap_end = std::min(sv_calls[i].end, sv_calls[j].end);
+            uint32_t overlap_length = (overlap_end > overlap_start) ? (overlap_end - overlap_start) : 0;
+
+            // Compute union length correctly
+            uint32_t union_start = std::min(sv_calls[i].start, sv_calls[j].start);
+            uint32_t union_end = std::max(sv_calls[i].end, sv_calls[j].end);
+            uint32_t union_length = union_end - union_start;  // No +1 to prevent off-by-one errors
+
+            double overlap_fraction = (union_length > 0) ? (static_cast<double>(overlap_length) / union_length) : 0.0;
+
+            // Throw error if fraction > 1
+            if (overlap_fraction > 1.0) {
+                throw std::runtime_error("Error: Overlap fraction = " + std::to_string(overlap_fraction) + " > 1.0");
             }
-        } else {
-            // Store the merged SV call and move to the next SV call
-            merged_sv_calls.push_back(current_merge);
-            current_merge = next;
+
+            // if (overlap_fraction > 0.5) {
+            if (overlap_fraction > 0.5) {  // Changed from 0.5
+                total_cluster_size += sv_calls[j].cluster_size;
+                if (sv_calls[j].support > sv_calls[best_index].support) {
+                    best_index = j;
+                }
+                merged[j] = true;  // Mark SV as merged
+            }
+        }
+
+        sv_calls[best_index].cluster_size = total_cluster_size; // Update best SV with total size
+        merged_sv_calls.push_back(sv_calls[best_index]); // Keep the strongest SV
+    }
+
+    // Filter out merged SVs with low support or cluster size
+    // merged_sv_calls.erase(std::remove_if(merged_sv_calls.begin(), merged_sv_calls.end(), [initial_size](const SVCall& sv_call) {
+    //     return sv_call.support < 2 && sv_call.cluster_size < 10;  // Adjust thresholds as needed
+    // }), merged_sv_calls.end());
+    // merged_sv_calls.erase(std::remove_if(merged_sv_calls.begin(), merged_sv_calls.end(), [initial_size](const SVCall& sv_call) {
+    //     return sv_call.support < 2 && sv_call.cluster_size < 3;  // Adjust thresholds as needed
+    // }), merged_sv_calls.end());
+
+    sv_calls = std::move(merged_sv_calls); // Replace with filtered list
+
+    // Print SVs that have length 2039
+    for (const auto& sv_call : sv_calls) {
+        if (sv_call.end - sv_call.start == 2039) {
+            printMessage("Found merged SV with length 2039 at " + std::to_string(sv_call.start) + "-" + std::to_string(sv_call.end) + " (SUP=" + std::to_string(sv_call.support) + ")");
         }
     }
 
-    merged_sv_calls.push_back(current_merge);  // Add the last SV call
-    sv_calls = merged_sv_calls;  // Update the SV calls
-
-    // int updated_size = sv_calls.size();
-    // std::cout << "Merged " << initial_size << " SV calls into " << updated_size << " SV calls" << std::endl;
+    int updated_size = sv_calls.size();
+    printMessage("Merged " + std::to_string(initial_size) + " SV calls into " + std::to_string(updated_size) + " SV calls");
 }
 
 void filterSVsWithLowSupport(std::vector<SVCall>& sv_calls, int min_support)

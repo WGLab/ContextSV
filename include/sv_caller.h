@@ -21,6 +21,7 @@ struct GenomicRegion {
     hts_pos_t start;
     hts_pos_t end;
     bool strand;
+    uint8_t qual;
 };
 
 struct MismatchData {
