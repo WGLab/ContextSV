@@ -4,7 +4,7 @@ tests](https://github.com/WGLab/ContextSV/actions/workflows/build-tests.yml/badg
 # ContextSV
 
 <p>
-<img src="https://github.com/user-attachments/assets/b6dca03c-11f8-4882-852f-d06c23bebebb" alt="ContextSV" align="left" style="width:100px;"/>
+<img src="https://github.com/user-attachments/assets/03603ad1-df9d-438d-911c-81af0cf612e3" alt="ContextSV" align="left" style="width:100px;"/>
 A long-read, whole-genome structural variant (SV) caller. It takes as input long read alignments (BAM), the 
 corresponding reference genome (FASTA), a VCF with high-quality SNPs 
  (e.g. via GATK, Deepvariant, <a href="https://github.com/WGLab/NanoCaller">NanoCaller</a>, and <a href="https://gnomad.broadinstitute.org/downloads">gnomAD</a> database
