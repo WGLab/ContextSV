@@ -8,6 +8,7 @@
 #include <iostream>
 #include <numeric>
 
+#include "dbscan.h"
 #include "utils.h"
 
 bool SVCall::operator<(const SVCall & other) const
@@ -71,84 +72,98 @@ void mergeSVs(std::vector<SVCall>& sv_calls)
     }
     int initial_size = sv_calls.size();
 
-    std::vector<bool> merged(sv_calls.size(), false);
+    // Cluster SVs using DBSCAN for each SV type
     std::vector<SVCall> merged_sv_calls;
 
-    // Sort SVs by start position to improve efficiency
-    std::sort(sv_calls.begin(), sv_calls.end(), [](const SVCall& a, const SVCall& b) {
-        return a.start < b.start;
-    });
+    // Create a set of size intervals and corresponding DBSCAN epsilons
+    std::map<std::pair<int, int>, double> size_to_eps;
+    size_to_eps[{0, 1000}] = 200;
+    size_to_eps[{1000, 5000}] = 500;
+    size_to_eps[{5000, 10000}] = 3000;
+    size_to_eps[{10000, 50000}] = 4000;
+    size_to_eps[{50000, 100000}] = 5000;
+    size_to_eps[{100000, 500000}] = 10000;
+    size_to_eps[{500000, 1000000}] = 20000;
 
-    for (size_t i = 0; i < sv_calls.size(); i++) {
-        if (merged[i]) continue;
+    for (auto& size_interval : size_to_eps) {
 
-        std::vector<SVCall> cluster;
-        cluster.push_back(sv_calls[i]);
-        merged[i] = true;
+        // Calculate epsilon as 20% of the size interval
+        double epsilon = 0.2 * (size_interval.first.second - size_interval.first.first);
+        printMessage("Clustering SVs with size " + std::to_string(size_interval.first.first) + "-" + std::to_string(size_interval.first.second) + " with epsilon " + std::to_string(epsilon));
 
-        // Use 10% of the length of the first SV as the threshold
-        uint32_t sv_a_window = (uint32_t) std::ceil((double) (sv_calls[i].end - sv_calls[i].start + 1) * 0.1);
-
-        // Find SVs that have start or end positions within 10% of each other's length
-        for (size_t j = i + 1; j < sv_calls.size(); j++) {
-            if (merged[j]) continue;
-
-            // Check if the SVs are within 10% of the largest SV's length
-            uint32_t sv_b_window = (uint32_t) std::ceil((double) (sv_calls[j].end - sv_calls[j].start + 1) * 0.1);
-            uint32_t sv_window = std::max(sv_a_window, sv_b_window);
-            bool start_within_window = std::abs((int) sv_calls[j].start - (int) sv_calls[i].start) <= (int) sv_window;
-            bool end_within_window = std::abs((int) sv_calls[j].end - (int) sv_calls[i].end) <= (int) sv_window;
-            if (start_within_window && end_within_window) {
-                cluster.push_back(sv_calls[j]);
-                merged[j] = true;
-            }
-        }
-
-        // Remove clusters with single SVs that have low support
-        if (cluster.size() < 2 && cluster[0].support < 2) {
-            continue;
-        }
-
-        std::vector<SVCall> filtered_cluster = cluster;
-
-        // If any SV length equals 2039, print all the SV calls in the cluster
-        bool found_2039 = false;
-        for (const auto& sv : filtered_cluster) {
-            if (sv.end - sv.start == 2039) {
-                printMessage("[TEST] Found SV with length 2039 at " + std::to_string(sv.start) + "-" + std::to_string(sv.end) + " (SUP=" + std::to_string(sv.support) + ")");
-                found_2039 = true;
-            }
-        }
-        if (found_2039) {
-            std::cout << "[TEST] Cluster of SVs with size " << filtered_cluster.size() << ":" << std::endl;
-            for (const auto& sv : filtered_cluster) {
-                printMessage("SV: " + std::to_string(sv.start) + "-" + std::to_string(sv.end) + " (SUP=" + std::to_string(sv.support) + ", LEN=" + std::to_string(sv.end - sv.start) + ")");
-            }
-        }
-
-        // Find the median-length SV in the cluster and use it as the merged SV
-        // Sort the cluster by length
-        std::sort(filtered_cluster.begin(), filtered_cluster.end(), [](const SVCall& a, const SVCall& b) {
-            return (a.end - a.start) < (b.end - b.start);
-        });
-
-        // Get the median SV
-        size_t median_index = filtered_cluster.size() / 2;
-        SVCall median_sv = filtered_cluster[median_index];
-
-        median_sv.cluster_size = (int) cluster.size();
+        DBSCAN dbscan(size_interval.second, 2);
         
-        // Add the merged SV to the list
-        merged_sv_calls.push_back(median_sv);
+        for ( const auto& sv_type : {
+            SVType::DEL,
+            SVType::DUP,
+            SVType::INV,
+            SVType::INS,
+            SVType::BND,
+            SVType::INV_DUP
+        })
+        {
+            // DBSCAN dbscan(1000, 2);
+
+            // Create a vector of SV calls for the current SV type and size interval
+            std::vector<SVCall> sv_type_calls;
+            
+            // If the final size interval, then don't set an upper bound
+            int lower_bound = size_interval.first.first;
+            int upper_bound = size_interval.first.second;
+            if (lower_bound == 500000)
+            {
+                std::copy_if(sv_calls.begin(), sv_calls.end(), std::back_inserter(sv_type_calls), [sv_type, lower_bound](const SVCall& sv_call) {
+                    return sv_call.sv_type == sv_type && static_cast<int>(sv_call.end - sv_call.start) >= lower_bound;
+                });
+                // std::copy_if(sv_calls.begin(), sv_calls.end(), std::back_inserter(sv_type_calls), [sv_type](const SVCall& sv_call) {
+                //     return sv_call.sv_type == sv_type && (sv_call.end - sv_call.start) >= lower_bound;
+                // });
+            } else {
+                std::copy_if(sv_calls.begin(), sv_calls.end(), std::back_inserter(sv_type_calls), [sv_type, lower_bound, upper_bound](const SVCall& sv_call) {
+                    return sv_call.sv_type == sv_type && static_cast<int>(sv_call.end - sv_call.start) >= lower_bound && static_cast<int>(sv_call.end - sv_call.start) <= upper_bound;
+                });
+                // std::copy_if(sv_calls.begin(), sv_calls.end(), std::back_inserter(sv_type_calls), [sv_type, &size_interval](const SVCall& sv_call) {
+                //     return sv_call.sv_type == sv_type && (sv_call.end - sv_call.start) >= lower_bound && (sv_call.end - sv_call.start) <= upper_bound;
+                // });
+            }
+            // std::copy_if(sv_calls.begin(), sv_calls.end(), std::back_inserter(sv_type_calls), [sv_type](const SVCall& sv_call) {
+            //     return sv_call.sv_type == sv_type && (sv_call.end - sv_call.start) >= size_interval.first && (sv_call.end - sv_call.start) <= size_interval.second;
+            // });
+
+            if (sv_type_calls.size() < 2) {
+                continue;
+            }
+
+            dbscan.fit(sv_type_calls);
+            const std::vector<int>& clusters = dbscan.getClusters();
+            std::map<int, std::vector<SVCall>> cluster_map;
+            for (size_t i = 0; i < clusters.size(); ++i) {
+                cluster_map[clusters[i]].push_back(sv_type_calls[i]);
+            }
+
+            // Merge SVs in each cluster
+            for (auto& cluster : cluster_map) {
+                int cluster_id = cluster.first;
+                // const std::vector<SVCall>& cluster_sv_calls = cluster.second;
+                std::vector<SVCall>& cluster_sv_calls = cluster.second;
+                if (cluster_id < 0) {
+                    continue;  // Skip noise and unclassified points
+                } else {
+                    // Use the median length SV
+                    // Sort the SVs in the cluster by their length
+                    std::sort(cluster_sv_calls.begin(), cluster_sv_calls.end(), [](const SVCall& a, const SVCall& b) {
+                        return (a.end - a.start) < (b.end - b.start);
+                    });
+                    int median_index = cluster_sv_calls.size() / 2;
+                    SVCall median_sv_call = cluster_sv_calls[median_index];
+                    median_sv_call.cluster_size = (int) cluster_sv_calls.size();
+                    merged_sv_calls.push_back(median_sv_call);
+                }
+            }
+            printMessage("Completed clustering for " + getSVTypeString(sv_type));
+        }
     }
     sv_calls = std::move(merged_sv_calls); // Replace with filtered list
-
-    // Print SVs that have length 2039
-    for (const auto& sv_call : sv_calls) {
-        if (sv_call.end - sv_call.start == 2039) {
-            printMessage("[TEST] Found merged SV with length 2039 at " + std::to_string(sv_call.start) + "-" + std::to_string(sv_call.end) + " (SUP=" + std::to_string(sv_call.support) + ")");
-        }
-    }
 
     int updated_size = sv_calls.size();
     printMessage("Merged " + std::to_string(initial_size) + " SV calls into " + std::to_string(updated_size) + " SV calls");

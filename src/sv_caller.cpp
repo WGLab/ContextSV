@@ -373,7 +373,6 @@ void SVCaller::processChromosome(const std::string& chr, const CHMM& hmm, std::v
         int region_start = region_data.first;
         int region_end = region_data.second;
         region = chr + ":" + std::to_string(region_start) + "-" + std::to_string(region_end);
-        
     }
 
     // Load chromosome data for copy number predictions
