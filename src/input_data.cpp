@@ -27,6 +27,8 @@ InputData::InputData()
     this->sample_size = 100;
     this->min_cnv_length = 1000;
     this->min_reads = 5;
+    this->dbscan_epsilon = 0.5;
+    this->dbscan_min_pts = 5;
     this->thread_count = 1;
     this->hmm_filepath = "data/wgs.hmm";
     this->verbose = false;
@@ -168,6 +170,26 @@ void InputData::setMinReadSupport(int min_reads)
 int InputData::getMinReadSupport() const
 {
     return this->min_reads;
+}
+
+void InputData::setDBSCAN_Epsilon(double epsilon)
+{
+    this->dbscan_epsilon = epsilon;
+}
+
+double InputData::getDBSCAN_Epsilon() const
+{
+    return this->dbscan_epsilon;
+}
+
+void InputData::setDBSCAN_MinPts(int min_pts)
+{
+    this->dbscan_min_pts = min_pts;
+}
+
+int InputData::getDBSCAN_MinPts() const
+{
+    return this->dbscan_min_pts;
 }
 
 void InputData::setChromosome(std::string chr)

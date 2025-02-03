@@ -62,6 +62,15 @@ void runContextSV(const std::unordered_map<std::string, std::string>& args)
         input_data.setVerbose(true);
     }
 
+    // DBSCAN parameters
+    if (args.find("epsilon") != args.end()) {
+        input_data.setDBSCAN_Epsilon(std::stod(args.at("epsilon")));
+    }
+
+    if (args.find("min-pts") != args.end()) {
+        input_data.setDBSCAN_MinPts(std::stoi(args.at("min-pts")));
+    }
+
     // Run ContextSV
     run(input_data);
 }
@@ -80,6 +89,8 @@ void printUsage(const std::string& programName) {
                 << "  -n, --sample-size <size>      Sample size for HMM predictions\n"
                 << "     --min-cnv <min_length>     Minimum CNV length\n"
                 << "     --min-reads <min_reads>    Minimum read support\n"
+                << "     --eps <epsilon>             DBSCAN epsilon\n"
+                << "     --min-pts <min_pts>         DBSCAN minimum points\n"
                 << "  -e, --eth <eth_file>          ETH file\n"
                 << "  -p, --pfb <pfb_file>          PFB file\n"
                 << "     --save-cnv                 Save CNV data\n"
@@ -116,6 +127,10 @@ std::unordered_map<std::string, std::string> parseArguments(int argc, char* argv
             args["min-cnv"] = argv[++i];
         } else if (arg == "--min-reads" && i + 1 < argc) {
             args["min-reads"] = argv[++i];
+        } else if (arg == "--eps" && i + 1 < argc) {
+            args["epsilon"] = argv[++i];
+        } else if (arg == "--min-pts" && i + 1 < argc) {
+            args["min-pts"] = argv[++i];
         } else if ((arg == "-e" || arg == "--eth") && i + 1 < argc) {
             args["eth"] = argv[++i];
         } else if ((arg == "-p" || arg == "--pfb") && i + 1 < argc) {

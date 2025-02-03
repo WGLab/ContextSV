@@ -331,7 +331,10 @@ void SVCaller::processChromosome(const std::string& chr, const CHMM& hmm, std::v
     // int split_sv_support_threshold = 4;  // Minimum number of supporting
     // reads for an SV call
     int split_sv_support_threshold = input_data.getMinReadSupport();
-    // printMessage("Processing chromosome " + chr + " with filter threshold: " + std::to_string(filter_threshold));
+    // printMessage("Processing chromosome " + chr + " with filter threshold: "
+    // + std::to_string(filter_threshold));
+    double dbscan_epsilon = input_data.getDBSCAN_Epsilon();
+    int dbscan_min_pts = input_data.getDBSCAN_MinPts();
 
     // Open the BAM file
     std::string bam_filepath = input_data.getLongReadBam();
@@ -391,7 +394,7 @@ void SVCaller::processChromosome(const std::string& chr, const CHMM& hmm, std::v
 
     printMessage(chr + ": Merging CIGAR...");
     // filterSVsWithLowSupport(chr_sv_calls, cigar_sv_support_threshold);
-    mergeSVs(chr_sv_calls, 0.8, 5);
+    mergeSVs(chr_sv_calls, dbscan_epsilon, dbscan_min_pts);
     // filterSVsWithLowSupport(chr_sv_calls, cigar_sv_support_threshold);
     int region_sv_count = getSVCount(chr_sv_calls);
     printMessage("Total SVs detected from CIGAR string: " + std::to_string(region_sv_count));

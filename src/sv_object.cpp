@@ -77,42 +77,9 @@ void mergeSVs(std::vector<SVCall>& sv_calls, double epsilon, int min_pts)
     std::vector<SVCall> merged_sv_calls;
 
     // Create a set of size intervals and corresponding DBSCAN epsilons
+    printMessage("Merging SVs with DBSCAN, eps=" + std::to_string(epsilon) + ", min_pts=" + std::to_string(min_pts));
     std::map<std::pair<int, int>, double> size_to_eps;
-    // size_to_eps[{0, 1000}] = 200;
-    // size_to_eps[{1000, 5000}] = 500;
-    // size_to_eps[{5000, 10000}] = 3000;
-    // size_to_eps[{10000, 50000}] = 4000;
-    // size_to_eps[{50000, 100000}] = 5000;
-    // size_to_eps[{100000, 500000}] = 10000;
-    // size_to_eps[{500000, 1000000}] = 20000;
-
-    // Small SVs
-    // size_to_eps[{50, 200}] = 50;
-
-    // // Medium SVs
-    // size_to_eps[{200, 1000}] = 200;
-
-    // // Large SVs
-    // size_to_eps[{1000, 10000}] = 1000;
-
-    // // Very large SVs
-    // size_to_eps[{10000, 100000}] = 10000;
-
-    // // Extreme SVs
-    // size_to_eps[{100000, 1000000}] = 20000;
-
-    // std::vector<double> epsilons = {50, 200, 1000, 10000, 100000, 500000};
-    // std::vector<double> epsilons = {0.2};
-
-    // double epsilon = size_interval.second;
-    // // Calculate epsilon as 20% of the largest size in the interval
-    // double epsilon = 0.1 * size_interval.first.second;
-    // printMessage("Clustering SVs with size " + std::to_string(size_interval.first.first) + "-" + std::to_string(size_interval.first.second) + " with epsilon " + std::to_string(epsilon));
-    // int min_pts = 2;
-    // int min_pts = 2;
     DBSCAN dbscan(epsilon, min_pts);
-    // DBSCAN dbscan(size_interval.second, 2);
-    
     for ( const auto& sv_type : {
         SVType::DEL,
         SVType::DUP,
@@ -122,8 +89,6 @@ void mergeSVs(std::vector<SVCall>& sv_calls, double epsilon, int min_pts)
         SVType::INV_DUP
     })
     {
-        // DBSCAN dbscan(1000, 2);
-
         // Create a vector of SV calls for the current SV type and size interval
         std::vector<SVCall> sv_type_calls;
         std::copy_if(sv_calls.begin(), sv_calls.end(), std::back_inserter(sv_type_calls), [sv_type](const SVCall& sv_call) {

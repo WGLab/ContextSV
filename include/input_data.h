@@ -65,6 +65,14 @@ class InputData {
         void setMinReadSupport(int min_reads);
         int getMinReadSupport() const;
 
+        // Set the epsilon parameter for DBSCAN clustering.
+        void setDBSCAN_Epsilon(double epsilon);
+        double getDBSCAN_Epsilon() const;
+
+        // Set the minimum number of points in a cluster for DBSCAN.
+        void setDBSCAN_MinPts(int min_pts);
+        int getDBSCAN_MinPts() const;
+
         // Set the chromosome to analyze.
         void setChromosome(std::string chr);
         std::string getChromosome() const;
@@ -103,6 +111,8 @@ class InputData {
         int sample_size;
         uint32_t min_cnv_length;
         int min_reads;
+        double dbscan_epsilon;
+        int dbscan_min_pts;
         std::string chr;  // Chromosome to analyze
         std::pair<int32_t, int32_t> start_end;  // Region to analyze
         bool region_set;  // True if a region is set
