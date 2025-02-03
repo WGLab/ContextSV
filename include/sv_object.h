@@ -47,4 +47,6 @@ uint32_t getSVCount(const std::vector<SVCall>& sv_calls);
 
 void concatenateSVCalls(std::vector<SVCall>& sv_calls, const std::vector<SVCall>& sv_calls_update);
 
+void mergeSVs(std::vector<SVCall> &sv_calls, double epsilon, int min_pts);
+
 #endif // SV_OBJECT_H
