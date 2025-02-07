@@ -192,13 +192,21 @@ def generate_sv_size_plot(input_vcf, output_png, plot_title="SV Caller"):
     # Add the bin edges to the x-axis ticks as a range
     fig.update_xaxes(tickvals=x_values, ticktext=bin_labels)
 
-    # Move the legend to the top right inside the plot
+    # # Move the legend to the top right inside the plot
+    # fig.update_layout(legend=dict(
+    #     orientation='v',
+    #     yanchor='top',
+    #     y=0.75,
+    #     xanchor='right',
+    #     x=0.75,
+    # ))
+    # Move the legend to the bottom right outside the plot
     fig.update_layout(legend=dict(
         orientation='v',
         yanchor='top',
-        y=0.75,
+        y=1.0,
         xanchor='right',
-        x=0.75,
+        x=1.15,
     ))
 
     # Set a larger font size for all text in the plot

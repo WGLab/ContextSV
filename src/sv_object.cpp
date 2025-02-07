@@ -77,9 +77,8 @@ void mergeSVs(std::vector<SVCall>& sv_calls, double epsilon, int min_pts)
     std::vector<SVCall> merged_sv_calls;
 
     // Create a set of size intervals and corresponding DBSCAN epsilons
-    printMessage("Merging SVs with DBSCAN, eps=" + std::to_string(epsilon) + ", min_pts=" + std::to_string(min_pts));
-    std::map<std::pair<int, int>, double> size_to_eps;
-    DBSCAN dbscan(epsilon, min_pts);
+    // printMessage("Merging SVs with DBSCAN, eps=" + std::to_string(epsilon) + ", min_pts=" + std::to_string(min_pts));
+    // DBSCAN dbscan(epsilon, min_pts);
     for ( const auto& sv_type : {
         SVType::DEL,
         SVType::DUP,
@@ -89,6 +88,16 @@ void mergeSVs(std::vector<SVCall>& sv_calls, double epsilon, int min_pts)
         SVType::INV_DUP
     })
     {
+        // Create a DBSCAN object for the current SV type
+        if (sv_type == SVType::DEL) {
+            epsilon = 0.45;
+            min_pts = 16;
+        } else {
+            epsilon = 0.65;
+            min_pts = 15;
+        }
+        DBSCAN dbscan(epsilon, min_pts);
+
         // Create a vector of SV calls for the current SV type and size interval
         std::vector<SVCall> sv_type_calls;
         std::copy_if(sv_calls.begin(), sv_calls.end(), std::back_inserter(sv_type_calls), [sv_type](const SVCall& sv_call) {

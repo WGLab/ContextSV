@@ -27,6 +27,7 @@
 #include "sv_types.h"
 #include "version.h"
 #include "fasta_query.h"
+#include "dbscan.h"
 /// @endcond
 
 # define DUP_SEQSIM_THRESHOLD 0.9  // Sequence similarity threshold for duplication detection
@@ -107,45 +108,106 @@ void SVCaller::getSplitAlignments(samFile* fp_in, hts_idx_t* idx, bam_hdr_t* bam
     bam_destroy1(bam1);
     printMessage(region + ": Found " + std::to_string(primary_map.size()) + " primary and " + std::to_string(supplementary_count) + " supplementary alignments");
 
-    // Filter overlapping primary alignments and keep the one with the highest mapping
-    // quality
-    // std::vector<std::string> to_remove_overlapping;
-    std::unordered_set<std::string> to_remove_overlapping;
-    for (const auto& entry1 : primary_map) {
-        const std::string& qname1 = entry1.first;
-        const GenomicRegion& primary1 = entry1.second;
-        for (const auto& entry2 : primary_map) {
-            const std::string& qname2 = entry2.first;
-            if (qname1 == qname2) {
-                continue;
+    // Create a set of dummy SVs from the primary alignments for each chromosome
+    // and run DBSCAN to merge them
+    std::unordered_map<std::string, std::vector<SVCall>> dummy_sv_map;
+    std::unordered_map<std::string, std::vector<std::string>> dummy_sv_qnames;
+    for (const auto& entry : primary_map) {
+        const std::string& chrom = bamHdr->target_name[entry.second.tid];
+        uint32_t start = entry.second.start;
+        uint32_t end = entry.second.end;
+        const std::string& qname = entry.first;
+        SVCall sv_call(start, end, SVType::DUP, ".", qname, ".", 0.0, 0, 0, 0, 0);
+        dummy_sv_map[chrom].emplace_back(sv_call);
+        dummy_sv_qnames[chrom].emplace_back(entry.first);
+    }
+
+    // Run DBSCAN to merge the dummy SVs
+    double epsilon = 0.65;
+    int min_pts = 2;
+    std::unordered_set<std::string> qnames_to_keep;
+    for (const auto& entry : dummy_sv_map) {
+        const std::string& chrom = entry.first;
+        const std::vector<SVCall>& sv_calls = entry.second;
+        DBSCAN dbscan(epsilon, min_pts);
+        dbscan.fit(sv_calls);
+        const std::vector<int>& clusters = dbscan.getClusters();
+        std::map<int, std::vector<SVCall>> cluster_map;
+        for (size_t i = 0; i < clusters.size(); ++i) {
+            cluster_map[clusters[i]].push_back(sv_calls[i]);
+        }
+
+        // Merge the SVs in each cluster, using the median of the start and end
+        // positions of the SVs in each cluster
+        for (auto& cluster : cluster_map) {
+            int cluster_id = cluster.first;
+            std::vector<SVCall>& cluster_sv_calls = cluster.second;
+            if (cluster_id < 0) {
+                continue;  // Skip noise and unclassified points
             }
-            const GenomicRegion& primary2 = entry2.second;
-            if (primary1.tid == primary2.tid && primary1.start <= primary2.end && primary1.end >= primary2.start) {
-                // Overlapping primary alignments
-                // printMessage("Overlapping primary alignments with quality " + std::to_string(primary_map_qual[qname1]) + " and " + std::to_string(primary_map_qual[qname2]));
-                // if (primary_map_qual[qname1] < primary_map_qual[qname2]) {
-                if (primary1.qual < primary2.qual) {
-                    // to_remove_overlapping.push_back(qname1);
-                    to_remove_overlapping.insert(qname1);
-                } else {
-                    // If equal, remove the shorter alignment
-                    if (primary1.end - primary1.start < primary2.end - primary2.start) {
-                        // to_remove_overlapping.push_back(qname1);
-                        to_remove_overlapping.insert(qname1);
-                    } else {
-                        // to_remove_overlapping.push_back(qname2);
-                        to_remove_overlapping.insert(qname2);
-                    }
-                }
-            }
+            
+            // Use the median length SV as the representative SV
+            std::sort(cluster_sv_calls.begin(), cluster_sv_calls.end(), [](const SVCall& a, const SVCall& b) {
+                return (a.end - a.start) < (b.end - b.start);
+            });
+            SVCall median_sv = cluster_sv_calls[cluster_sv_calls.size() / 2];
+            const std::string& qname = median_sv.data_type;
+            qnames_to_keep.insert(qname);
         }
     }
 
-    for (const std::string& qname : to_remove_overlapping) {
+    // Remove the SVs that are not in the qnames_to_keep set
+    std::unordered_set<std::string> qnames_to_remove;
+    for (const auto& entry : primary_map) {
+        const std::string& qname = entry.first;
+        if (qnames_to_keep.find(qname) == qnames_to_keep.end()) {
+            qnames_to_remove.insert(qname);
+        }
+    }
+
+    for (const std::string& qname : qnames_to_remove) {
         primary_map.erase(qname);
         supp_map.erase(qname);
     }
-    printMessage(region + ": Removed " + std::to_string(to_remove_overlapping.size()) + " overlapping primary alignments");
+
+    // Filter overlapping primary alignments and keep the one with the highest mapping
+    // quality
+
+    // for (const auto& entry1 : primary_map) {
+    //     const std::string& qname1 = entry1.first;
+    //     const GenomicRegion& primary1 = entry1.second;
+    //     for (const auto& entry2 : primary_map) {
+    //         const std::string& qname2 = entry2.first;
+    //         if (qname1 == qname2) {
+    //             continue;
+    //         }
+    //         const GenomicRegion& primary2 = entry2.second;
+    //         if (primary1.tid == primary2.tid && primary1.start <= primary2.end && primary1.end >= primary2.start) {
+    //             // Overlapping primary alignments
+    //             // printMessage("Overlapping primary alignments with quality " + std::to_string(primary_map_qual[qname1]) + " and " + std::to_string(primary_map_qual[qname2]));
+    //             // if (primary_map_qual[qname1] < primary_map_qual[qname2]) {
+    //             if (primary1.qual < primary2.qual) {
+    //                 // to_remove_overlapping.push_back(qname1);
+    //                 to_remove_overlapping.insert(qname1);
+    //             } else {
+    //                 // If equal, remove the shorter alignment
+    //                 if (primary1.end - primary1.start < primary2.end - primary2.start) {
+    //                     // to_remove_overlapping.push_back(qname1);
+    //                     to_remove_overlapping.insert(qname1);
+    //                 } else {
+    //                     // to_remove_overlapping.push_back(qname2);
+    //                     to_remove_overlapping.insert(qname2);
+    //                 }
+    //             }
+    //         }
+    //     }
+    // }
+
+    // for (const std::string& qname : to_remove_overlapping) {
+    //     primary_map.erase(qname);
+    //     supp_map.erase(qname);
+    // }
+    // printMessage(region + ": Removed " + std::to_string(to_remove_overlapping.size()) + " overlapping primary alignments");
     printMessage(region + ": Found " + std::to_string(primary_map.size()) + " primary and " + std::to_string(supp_map.size()) + " supplementary alignments after filtering");
 }
 
@@ -230,6 +292,7 @@ void SVCaller::detectSVsFromCIGAR(bam_hdr_t* header, bam1_t* alignment, std::vec
     std::bitset<256> amb_bases_bitset;
     for (char base : amb_bases) {
         amb_bases_bitset.set(base);
+        amb_bases_bitset.set(std::tolower(base));
     }
     for (int i = 0; i < cigar_len; i++) {
         int op_len = bam_cigar_oplen(cigar[i]);  // CIGAR operation length
@@ -686,9 +749,9 @@ void SVCaller::detectSVsFromSplitReads(const std::string& region, samFile* fp_in
         }
     }
 
-    // Merge the split-read SV calls
-    printMessage(region + ": Merging split-read SVs...");
-    mergeSVs(split_sv_calls, 0.1, 2);
+    // // Merge the split-read SV calls
+    // printMessage(region + ": Merging split-read SVs...");
+    // mergeSVs(split_sv_calls, 0.1, 2);
 
     // Unify the SV calls
     sv_calls.insert(sv_calls.end(), split_sv_calls.begin(), split_sv_calls.end());
@@ -855,6 +918,19 @@ void SVCaller::saveToVCF(const std::unordered_map<std::string, std::vector<SVCal
                 printMessage("REF allele for DUP at " + chr + ":" + std::to_string(start) + "-" + std::to_string(end) + ": " + ref_allele + ", ALT allele: " + alt_allele);
             }
 
+            // Fix ambiguous bases in the reference allele
+            const std::string amb_bases = "RYKMSWBDHV";  // Ambiguous bases
+            std::bitset<256> amb_bases_bitset;
+            for (char base : amb_bases) {
+                amb_bases_bitset.set(base);
+                amb_bases_bitset.set(std::tolower(base));
+            }
+            for (char& base : ref_allele) {
+                if (amb_bases_bitset.test(base)) {
+                    base = 'N';
+                }
+            }
+
             // Create the VCF parameter strings
             std::string info_str = "END=" + std::to_string(end) + ";SVTYPE=" + sv_type_str + \
                 ";SVLEN=" + std::to_string(sv_length) + ";SVMETHOD=" + sv_method + ";ALN=" + data_type_str + \
@@ -885,66 +961,6 @@ void SVCaller::saveToVCF(const std::unordered_map<std::string, std::vector<SVCal
 
     // Print the number of SV calls skipped
     std::cout << "Finished writing VCF file. Total SV calls: " << total_count << ", skipped: " << skip_count << " with unknown SV type" << std::endl;
-}
-
-void SVCaller::trimOverlappingAlignments(GenomicRegion& primary_alignment, GenomicRegion& supp_alignment, const MismatchData& primary_mismatches, const MismatchData& supp_mismatches)
-{
-
-    // Check for overlapping read alignments
-    if (primary_mismatches.query_start < supp_mismatches.query_start) {
-        // Primary before supplementary in the query
-
-        // if (primary_query_end >= supp_query_start) {
-        if (primary_mismatches.query_end >= supp_mismatches.query_start) {
-            // Calculate the mismatch rates at the overlapping region
-            double primary_mismatch_rate = this->calculateMismatchRate(primary_mismatches);
-            double supp_mismatch_rate = this->calculateMismatchRate(supp_mismatches);
-            hts_pos_t overlap_length = primary_mismatches.query_end - supp_mismatches.query_start + 1;
-
-            // Trim the ailgnment with the higher mismatch rate
-            if (primary_mismatch_rate > supp_mismatch_rate) {
-                // Trim the end of the primary alignment, ensuring that the new
-                // end is not less than the start
-                if (primary_alignment.end > overlap_length && (primary_alignment.end - overlap_length) > primary_alignment.start) {
-                    // Trim the end of the primary alignment
-                    primary_alignment.end = primary_alignment.end - overlap_length;
-                }
-            } else {
-                // Trim the beginning of the supplementary alignment, ensuring
-                // that the new start is not greater than the end
-                if (supp_alignment.start + overlap_length < supp_alignment.end) {
-                    // Trim the beginning of the supplementary alignment
-                    supp_alignment.start = supp_alignment.start + overlap_length;
-                }
-            }
-        }
-
-    } else {
-        // Supplementary before primary in the query
-        if (primary_mismatches.query_start <= supp_mismatches.query_end) {
-            // Calculate the mismatch rates at the overlapping region
-            double primary_mismatch_rate = this->calculateMismatchRate(primary_mismatches);
-            double supp_mismatch_rate = this->calculateMismatchRate(supp_mismatches);
-            hts_pos_t overlap_length = supp_mismatches.query_end - primary_mismatches.query_start + 1;
-
-            // Trim the ailgnment with the higher mismatch rate
-            if (supp_mismatch_rate > primary_mismatch_rate) {
-                // Trim the end of the supplementary alignment, ensuring that
-                // the new end is not less than the start
-                if (supp_alignment.end > overlap_length && (supp_alignment.end - overlap_length) > supp_alignment.start) {
-                    // Trim the end of the supplementary alignment
-                    supp_alignment.end = supp_alignment.end - overlap_length;
-                }
-            } else {
-                // Trim the beginning of the primary alignment, ensuring that
-                // the new start is not greater than the end
-                if (primary_alignment.start + overlap_length < primary_alignment.end) {
-                    // Trim the beginning of the primary alignment
-                    primary_alignment.start = primary_alignment.start + overlap_length;
-                }
-            }
-        }
-    }
 }
 
 int SVCaller::calculateReadDepth(const std::vector<uint32_t>& pos_depth_map, uint32_t start, uint32_t end)
