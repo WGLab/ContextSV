@@ -20,8 +20,9 @@ namespace sv_types {
         INS = 3,
         BND = 4,
         NEUTRAL = 5,  // Neutral copy number with unknown type
-        INV_DUP = 6,  // Inversion duplication
-        COMPLEX = 7  // Complex SV
+        INV_DUP = 6,  // Inverted duplication
+        INV_DEL = 7,  // Inverted deletion
+        COMPLEX = 8  // Complex SV
     };
 
     // Mapping of SV types to strings
@@ -34,6 +35,7 @@ namespace sv_types {
         {SVType::BND, "BND"},
         {SVType::NEUTRAL, "NEUTRAL"},
         {SVType::INV_DUP, "INVDUP"},
+        {SVType::INV_DEL, "INVDEL"},
         {SVType::COMPLEX, "COMPLEX"}
     };
 

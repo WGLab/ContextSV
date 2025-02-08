@@ -16,12 +16,8 @@ bool SVCall::operator<(const SVCall & other) const
 	return start < other.start || (start == other.start && end < other.end);
 }
 
-void addSVCall(std::vector<SVCall>& sv_calls, uint32_t start, uint32_t end, SVType sv_type, const std::string& alt_allele, std::string data_type, std::string genotype, double hmm_likelihood, int read_depth, uint8_t qual)
+void addSVCall(std::vector<SVCall>& sv_calls, uint32_t start, uint32_t end, SVType sv_type, const std::string& alt_allele, std::string data_type, std::string genotype, double hmm_likelihood, int read_depth)
 {
-    // Ignore unknown SV types
-    // if (sv_type == "UNKNOWN" || sv_type == "NEUTRAL") {
-    //     return;
-    // }
     if (sv_type == SVType::UNKNOWN || sv_type == SVType::NEUTRAL) {
         return;
     }
@@ -32,28 +28,9 @@ void addSVCall(std::vector<SVCall>& sv_calls, uint32_t start, uint32_t end, SVTy
     }
 
     // Insert the SV call in sorted order
-    SVCall sv_call{start, end, sv_type, alt_allele, data_type, genotype, hmm_likelihood, read_depth, 1, 1, qual};
+    SVCall sv_call{start, end, sv_type, alt_allele, data_type, genotype, hmm_likelihood, read_depth, 1, 1};
     auto it = std::lower_bound(sv_calls.begin(), sv_calls.end(), sv_call);
     sv_calls.insert(it, sv_call);
-
-    // // Determine if the SV call already exists
-    // if (it != sv_calls.end() && it->start == start && it->end == end)
-    // {
-    //     it->support += 1;  // Update the read support
-
-    //     // Update SV type if likelihood is higher
-    //     if (hmm_likelihood != 0.0 && hmm_likelihood > it->hmm_likelihood)
-    //     {
-    //         // Update the SV call
-    //         it->sv_type = sv_type;
-    //         it->data_type = data_type;
-    //         it->genotype = genotype;
-    //         it->hmm_likelihood = hmm_likelihood;
-    //         it->qual = qual;
-    //     }
-    // } else {
-    //     sv_calls.insert(it, sv_call);  // Insert the new SV call
-    // }
 }
 
 uint32_t getSVCount(const std::vector<SVCall>& sv_calls)
@@ -68,6 +45,8 @@ void concatenateSVCalls(std::vector<SVCall> &target, const std::vector<SVCall>& 
 
 void mergeSVs(std::vector<SVCall>& sv_calls, double epsilon, int min_pts)
 {
+    printMessage("Merging SVs with DBSCAN, eps=" + std::to_string(epsilon) + ", min_pts=" + std::to_string(min_pts));
+    
     if (sv_calls.size() < 2) {
         return;
     }
@@ -76,9 +55,8 @@ void mergeSVs(std::vector<SVCall>& sv_calls, double epsilon, int min_pts)
     // Cluster SVs using DBSCAN for each SV type
     std::vector<SVCall> merged_sv_calls;
 
-    // Create a set of size intervals and corresponding DBSCAN epsilons
-    // printMessage("Merging SVs with DBSCAN, eps=" + std::to_string(epsilon) + ", min_pts=" + std::to_string(min_pts));
-    // DBSCAN dbscan(epsilon, min_pts);
+    // Cluster SVs using DBSCAN for each SV type
+    DBSCAN dbscan(epsilon, min_pts);
     for ( const auto& sv_type : {
         SVType::DEL,
         SVType::DUP,
@@ -89,14 +67,22 @@ void mergeSVs(std::vector<SVCall>& sv_calls, double epsilon, int min_pts)
     })
     {
         // Create a DBSCAN object for the current SV type
-        if (sv_type == SVType::DEL) {
-            epsilon = 0.45;
-            min_pts = 16;
-        } else {
-            epsilon = 0.65;
-            min_pts = 15;
-        }
-        DBSCAN dbscan(epsilon, min_pts);
+        // epsilon = 0.45;
+        // min_pts = 15;
+        // if (sv_type == SVType::DEL) {
+        //     epsilon = 0.45;
+        //     min_pts = 16;
+        // } else {
+        //     // epsilon = 0.65;
+        //     // min_pts = 15;
+        //     // epsilon = 0.45;
+        //     // min_pts = 16;
+        //     // epsilon = 0.45;
+        //     // min_pts = 2;
+        //     // epsilon = 0.45;
+        //     // min_pts = 15;
+        // }
+        // DBSCAN dbscan(epsilon, min_pts);
 
         // Create a vector of SV calls for the current SV type and size interval
         std::vector<SVCall> sv_type_calls;
@@ -120,22 +106,95 @@ void mergeSVs(std::vector<SVCall>& sv_calls, double epsilon, int min_pts)
         for (auto& cluster : cluster_map) {
             int cluster_id = cluster.first;
             std::vector<SVCall>& cluster_sv_calls = cluster.second;
-            if (cluster_id < 0) {
-                continue;  // Skip noise and unclassified points
-            } else {
-                // Use the median length SV
-                std::sort(cluster_sv_calls.begin(), cluster_sv_calls.end(), [](const SVCall& a, const SVCall& b) {
-                    return (a.end - a.start) < (b.end - b.start);
-                });
-                int median_index = cluster_sv_calls.size() / 2;
-                SVCall median_sv_call = cluster_sv_calls[median_index];
-                median_sv_call.cluster_size = (int) cluster_sv_calls.size();
-                merged_sv_calls.push_back(median_sv_call);
+            // if (cluster_id < 0) {
+            //     continue;  // Skip noise and unclassified points
+            // } else {
+            if (true) {
+                // Use the highest HMM likelihood normalized by SV size as the
+                // representative SV (if any non-zero likelihoods exist)
+                bool has_nonzero_likelihood = false;
+                if (cluster_sv_calls.size() > 0) {
+                    for (const auto& sv_call : cluster_sv_calls) {
+
+                        // Check if any SV has a non-zero likelihood
+                        if (sv_call.hmm_likelihood != 0.0) {
+                            has_nonzero_likelihood = true;
+                            break;
+                        }
+                    }
+                }
+
+                // [TEST] Check if any SV has a length greater than 600kb
+                bool found_large_sv = false;
+                for (const auto& sv_call : cluster_sv_calls) {
+                    if (sv_call.end - sv_call.start > 600000) {
+                        found_large_sv = true;
+                        break;
+                    }
+                }
+                if (found_large_sv) {
+                    printMessage("Found large SV with length greater than 600kb");
+                    printMessage("Found " + std::to_string(cluster_sv_calls.size()) + " SVs in cluster " + std::to_string(cluster_id) + " of type " + getSVTypeString(sv_type) + ", with epsilon=" + std::to_string(epsilon) + ", min_pts=" + std::to_string(min_pts));
+                }
+                
+                SVCall merged_sv_call = cluster_sv_calls[0];
+                if (has_nonzero_likelihood) {
+                    // Use the highest HMM likelihood normalized by SV size as the
+                    // representative SV
+                    // std::vector<double> likelihoods;
+                    // Default very low log-likelihood for zero likelihoods
+                    std::vector<double> likelihoods(cluster_sv_calls.size(), -std::numeric_limits<double>::infinity());
+                    // for (const auto& sv_call : cluster_sv_calls) {
+                    int i = 0;
+                    for (const auto& sv_call : cluster_sv_calls) {
+                        if (sv_call.hmm_likelihood != 0.0) {
+                            uint32_t sv_size = (uint32_t) (sv_call.end - sv_call.start);
+                            if (sv_size > 0) {
+                                likelihoods[i] = sv_call.hmm_likelihood / sv_size;
+                                // likelihoods.push_back(sv_call.hmm_likelihood / sv_size);
+                            }
+                        }
+
+                        // Print the SV length, likelihood, and normalized
+                        // likelihood
+                        if (found_large_sv) {
+                            printMessage("Start: " + std::to_string(sv_call.start) + ", end: " + std::to_string(sv_call.end) + ", likelihood: " + std::to_string(sv_call.hmm_likelihood) + ", normalized likelihood: " + std::to_string(likelihoods[i]) + ", length: " + std::to_string(sv_call.end - sv_call.start));
+                            // printMessage("SV length: " + std::to_string(sv_call.end - sv_call.start) + ", likelihood: " + std::to_string(sv_call.hmm_likelihood) + ", normalized likelihood: " + std::to_string(likelihoods[i]) + ", start: " + std::to_string(sv_call.start) + ", end: " + std::to_string(sv_call.end));
+                        }
+                        i++;
+                    }
+                    
+                    // Find the index of the maximum element in the likelihoods
+                    // vector
+                    auto max_likelihood_it = std::max_element(likelihoods.begin(), likelihoods.end());
+                    int max_likelihood_index = std::distance(likelihoods.begin(), max_likelihood_it);
+                    merged_sv_call = cluster_sv_calls[max_likelihood_index];
+                    printMessage("Merged SV with highest normalized likelihood: " + std::to_string(merged_sv_call.start) + "-" + std::to_string(merged_sv_call.end) + ", likelihood: " + std::to_string(merged_sv_call.hmm_likelihood) + ", normalized likelihood: " + std::to_string(merged_sv_call.hmm_likelihood / (merged_sv_call.end - merged_sv_call.start)) + ", size: " + std::to_string(merged_sv_call.end - merged_sv_call.start));
+
+                } else {
+                    // Use the median length SV
+                    std::sort(cluster_sv_calls.begin(), cluster_sv_calls.end(), [](const SVCall& a, const SVCall& b) {
+                        return (a.end - a.start) < (b.end - b.start);
+                    });
+                    int median_index = cluster_sv_calls.size() / 2;
+                    merged_sv_call = cluster_sv_calls[median_index];
+                    printMessage("Merged SV with median length: " + std::to_string(merged_sv_call.start) + "-" + std::to_string(merged_sv_call.end) + ", likelihood: " + std::to_string(merged_sv_call.hmm_likelihood) + ", size: " + std::to_string(merged_sv_call.end - merged_sv_call.start));
+                
+                if (cluster_id < 0) {
+                    merged_sv_call.cluster_size = cluster_id;
+                } else {
+                    merged_sv_call.cluster_size = (int) cluster_sv_calls.size();
+                }
+                // merged_sv_call.cluster_size = (int) cluster_sv_calls.size();
+                merged_sv_calls.push_back(merged_sv_call);
                 cluster_count++;
+                }
             }
         }
         printMessage("Completed DBSCAN with epsilon " + std::to_string(epsilon) + " for " + std::to_string(cluster_count) + " clusters of " + getSVTypeString(sv_type));
     }
+
+    printMessage("[TEST] Merged " + std::to_string(initial_size) + " SV calls into " + std::to_string(merged_sv_calls.size()) + " SV calls");
     sv_calls = std::move(merged_sv_calls); // Replace with filtered list
 
     int updated_size = sv_calls.size();

@@ -52,7 +52,7 @@ class SVCaller {
         int readNextAlignment(samFile *fp_in, hts_itr_t *itr, bam1_t *bam1);
 
         // Detect SVs from split alignments
-        void detectSVsFromSplitReads(const std::string& region, samFile* fp_in, hts_idx_t* idx, bam_hdr_t* bamHdr, std::vector<SVCall>& sv_calls, const CNVCaller& cnv_caller, const CHMM& hmm, double mean_chr_cov, const std::vector<uint32_t>& pos_depth_map, const InputData& input_data);
+        void detectSVsFromSplitReads(const std::string& region, samFile* fp_in, hts_idx_t* idx, bam_hdr_t* bamHdr, std::vector<SVCall>& split_sv_calls, const CNVCaller& cnv_caller, const CHMM& hmm, double mean_chr_cov, const std::vector<uint32_t>& pos_depth_map, const InputData& input_data);
 
         // Calculate the mismatch rate given a map of query positions to
         // match/mismatch (1/0) values within a specified range of the query
