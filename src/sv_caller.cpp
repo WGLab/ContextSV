@@ -61,7 +61,6 @@ std::vector<SVCall> SVCaller::getSplitAlignments(samFile* fp_in, hts_idx_t* idx,
     uint32_t supplementary_count = 0;
 
     // Main loop to process the alignments
-    // std::unordered_map<std::string, uint8_t> primary_map_qual;
     uint32_t num_alignments = 0;
     while (readNextAlignment(fp_in, itr, bam1) >= 0) {
 
@@ -81,7 +80,6 @@ std::vector<SVCall> SVCaller::getSplitAlignments(samFile* fp_in, hts_idx_t* idx,
 
         // Process supplementary alignments
         } else if (bam1->core.flag & BAM_FSUPPLEMENTARY) {
-            // supp_map[qname].push_back(itr);
             // Store chromosome (TID), start, and end positions (1-based) of the
             // supplementary alignment, and the strand (true for forward, false for reverse)
             supp_map[qname].push_back(GenomicRegion{bam1->core.tid, bam1->core.pos + 1, bam_endpos(bam1), !(bam1->core.flag & BAM_FREVERSE), mapq, 0});
@@ -106,46 +104,6 @@ std::vector<SVCall> SVCaller::getSplitAlignments(samFile* fp_in, hts_idx_t* idx,
     hts_itr_destroy(itr);
     bam_destroy1(bam1);
     printMessage(region + ": Found " + std::to_string(primary_map.size()) + " primary and " + std::to_string(supplementary_count) + " supplementary alignments");
-
-    // Create a set of dummy SVs from the primary alignments for each chromosome
-    // and run DBSCAN to cluster them
-    // std::vector<SVCall> dummy_sv_map;
-    // std::vector<std::string> dummy_sv_qnames;
-    // for (const auto& entry : primary_map) {
-    //     const std::string& chrom = bamHdr->target_name[entry.second.tid];
-    //     if (chrom != region) {
-    //         continue;  // Skip alignments not in the same chromosome
-    //     }
-    //     uint32_t start = entry.second.start;
-    //     uint32_t end = entry.second.end;
-    //     const std::string& qname = entry.first;
-    //     SVCall sv_call(start, end, SVType::DUP, ".", qname, ".", 0.0, 0, 0, 0);
-    //     dummy_sv_map.emplace_back(sv_call);
-    //     dummy_sv_qnames.emplace_back(entry.first);
-    // }
-
-    // // Run DBSCAN to merge the dummy SVs
-    // // double epsilon = 0.65;
-    // double epsilon = 0.45;
-    // int min_pts = 2;
-    // std::vector<std::vector<std::string>> primary_clusters;
-    // DBSCAN dbscan(epsilon, min_pts);
-    // dbscan.fit(dummy_sv_map);
-    // const std::vector<int>& cluster_ids = dbscan.getClusters();
-    
-    // // Create the 2D vector of clusters
-    // for (int cluster_id : cluster_ids) {
-    //     if (cluster_id < 0) {
-    //         continue;  // Skip noise and unclassified points
-    //     }
-    //     std::vector<std::string> cluster;
-    //     for (size_t i = 0; i < cluster_ids.size(); ++i) {
-    //         if (cluster_ids[i] == cluster_id) {
-    //             cluster.push_back(dummy_sv_qnames[i]);
-    //         }
-    //     }
-    //     primary_clusters.push_back(cluster);
-    // }
 
     // Identify overlapping primary alignments and then cluster their primary
     // start, end vs. supplementary alignment start, end positions, keeping the
@@ -509,23 +467,23 @@ void SVCaller::processChromosome(const std::string& chr, const CHMM& hmm, std::v
     }
 
     // Detect SVs from the CIGAR strings
-    // printMessage(chr + ": CIGAR SVs...");
-    // this->detectCIGARSVs(fp_in, idx, bamHdr, region, chr_sv_calls, chr_pos_depth_map, ref_genome);
+    printMessage(chr + ": CIGAR SVs...");
+    this->detectCIGARSVs(fp_in, idx, bamHdr, region, chr_sv_calls, chr_pos_depth_map, ref_genome);
 
-    // printMessage(chr + ": Merging CIGAR...");
-    // double cigar_epsilon = 0.45;
-    // int cigar_min_pts = 15;
-    // mergeSVs(chr_sv_calls, cigar_epsilon, cigar_min_pts);
+    printMessage(chr + ": Merging CIGAR...");
+    double cigar_epsilon = 0.45;
+    int cigar_min_pts = 15;
+    mergeSVs(chr_sv_calls, cigar_epsilon, cigar_min_pts);
 
-    // int region_sv_count = getSVCount(chr_sv_calls);
-    // printMessage("Total SVs detected from CIGAR string: " + std::to_string(region_sv_count));
+    int region_sv_count = getSVCount(chr_sv_calls);
+    printMessage("Total SVs detected from CIGAR string: " + std::to_string(region_sv_count));
 
     // Run copy number variant predictions on the SVs detected from the
     // CIGAR string, using a minimum CNV length threshold
-    // if (region_sv_count > 0) {
-    //     printMessage(chr + ": CIGAR predictions...");
-    //     cnv_caller.runCIGARCopyNumberPrediction(chr, chr_sv_calls, hmm, mean_chr_cov, chr_pos_depth_map, input_data);
-    // }
+    if (region_sv_count > 0) {
+        printMessage(chr + ": CIGAR predictions...");
+        cnv_caller.runCIGARCopyNumberPrediction(chr, chr_sv_calls, hmm, mean_chr_cov, chr_pos_depth_map, input_data);
+    }
 
     // Run split-read SV and copy number variant predictions
     printMessage(chr + ": Split read SVs...");
