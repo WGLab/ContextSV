@@ -28,6 +28,7 @@
 #include "version.h"
 #include "fasta_query.h"
 #include "dbscan.h"
+#include "dbscan1d.h"
 /// @endcond
 
 # define DUP_SEQSIM_THRESHOLD 0.9  // Sequence similarity threshold for duplication detection
@@ -41,19 +42,19 @@ int SVCaller::readNextAlignment(samFile *fp_in, hts_itr_t *itr, bam1_t *bam1)
     return ret;
 }
 
-void SVCaller::getSplitAlignments(samFile* fp_in, hts_idx_t* idx, bam_hdr_t* bamHdr, const std::string& region, std::unordered_map<std::string, GenomicRegion>& primary_map, std::unordered_map<std::string, std::vector<GenomicRegion>>& supp_map)
+std::vector<SVCall> SVCaller::getSplitAlignments(samFile* fp_in, hts_idx_t* idx, bam_hdr_t* bamHdr, const std::string& region, std::unordered_map<std::string, GenomicRegion>& primary_map, std::unordered_map<std::string, std::vector<GenomicRegion>>& supp_map)
 {
     // Create a read and iterator for the region
     bam1_t *bam1 = bam_init1();
     if (!bam1) {
         printError("ERROR: failed to initialize BAM record");
-        return;
+        return {};
     }
     hts_itr_t *itr = sam_itr_querys(idx, bamHdr, region.c_str());
     if (!itr) {
         bam_destroy1(bam1);
         printError("ERROR: failed to query region " + region);
-        return;
+        return {};
     }
 
     uint32_t primary_count = 0;
@@ -73,11 +74,9 @@ void SVCaller::getSplitAlignments(samFile* fp_in, hts_idx_t* idx, bam_hdr_t* bam
 
         // Process primary alignments
         if (!(bam1->core.flag & BAM_FSUPPLEMENTARY)) {
-            // primary_map[qname] = itr;
             // Store chromosome (TID), start, and end positions (1-based) of the
             // primary alignment, and the strand (true for forward, false for reverse)
-            primary_map[qname] = GenomicRegion{bam1->core.tid, bam1->core.pos + 1, bam_endpos(bam1), !(bam1->core.flag & BAM_FREVERSE), mapq};
-            // primary_map_qual[qname] = bam1->core.qual;
+            primary_map[qname] = GenomicRegion{bam1->core.tid, bam1->core.pos + 1, bam_endpos(bam1), !(bam1->core.flag & BAM_FREVERSE), mapq, 0};
             primary_count++;
 
         // Process supplementary alignments
@@ -85,7 +84,7 @@ void SVCaller::getSplitAlignments(samFile* fp_in, hts_idx_t* idx, bam_hdr_t* bam
             // supp_map[qname].push_back(itr);
             // Store chromosome (TID), start, and end positions (1-based) of the
             // supplementary alignment, and the strand (true for forward, false for reverse)
-            supp_map[qname].push_back(GenomicRegion{bam1->core.tid, bam1->core.pos + 1, bam_endpos(bam1), !(bam1->core.flag & BAM_FREVERSE), mapq});
+            supp_map[qname].push_back(GenomicRegion{bam1->core.tid, bam1->core.pos + 1, bam_endpos(bam1), !(bam1->core.flag & BAM_FREVERSE), mapq, 0});
             supplementary_count++;
         }
         num_alignments++;
@@ -109,106 +108,157 @@ void SVCaller::getSplitAlignments(samFile* fp_in, hts_idx_t* idx, bam_hdr_t* bam
     printMessage(region + ": Found " + std::to_string(primary_map.size()) + " primary and " + std::to_string(supplementary_count) + " supplementary alignments");
 
     // Create a set of dummy SVs from the primary alignments for each chromosome
-    // and run DBSCAN to merge them
-    std::unordered_map<std::string, std::vector<SVCall>> dummy_sv_map;
-    std::unordered_map<std::string, std::vector<std::string>> dummy_sv_qnames;
-    for (const auto& entry : primary_map) {
-        const std::string& chrom = bamHdr->target_name[entry.second.tid];
-        uint32_t start = entry.second.start;
-        uint32_t end = entry.second.end;
-        const std::string& qname = entry.first;
-        SVCall sv_call(start, end, SVType::DUP, ".", qname, ".", 0.0, 0, 0, 0);
-        dummy_sv_map[chrom].emplace_back(sv_call);
-        dummy_sv_qnames[chrom].emplace_back(entry.first);
-    }
+    // and run DBSCAN to cluster them
+    // std::vector<SVCall> dummy_sv_map;
+    // std::vector<std::string> dummy_sv_qnames;
+    // for (const auto& entry : primary_map) {
+    //     const std::string& chrom = bamHdr->target_name[entry.second.tid];
+    //     if (chrom != region) {
+    //         continue;  // Skip alignments not in the same chromosome
+    //     }
+    //     uint32_t start = entry.second.start;
+    //     uint32_t end = entry.second.end;
+    //     const std::string& qname = entry.first;
+    //     SVCall sv_call(start, end, SVType::DUP, ".", qname, ".", 0.0, 0, 0, 0);
+    //     dummy_sv_map.emplace_back(sv_call);
+    //     dummy_sv_qnames.emplace_back(entry.first);
+    // }
 
-    // Run DBSCAN to merge the dummy SVs
-    double epsilon = 0.65;
-    int min_pts = 2;
-    std::unordered_set<std::string> qnames_to_keep;
-    for (const auto& entry : dummy_sv_map) {
-        const std::string& chrom = entry.first;
-        const std::vector<SVCall>& sv_calls = entry.second;
-        DBSCAN dbscan(epsilon, min_pts);
-        dbscan.fit(sv_calls);
-        const std::vector<int>& clusters = dbscan.getClusters();
-        std::map<int, std::vector<SVCall>> cluster_map;
-        for (size_t i = 0; i < clusters.size(); ++i) {
-            cluster_map[clusters[i]].push_back(sv_calls[i]);
-        }
-
-        // Merge the SVs in each cluster, using the median of the start and end
-        // positions of the SVs in each cluster
-        for (auto& cluster : cluster_map) {
-            int cluster_id = cluster.first;
-            std::vector<SVCall>& cluster_sv_calls = cluster.second;
-            if (cluster_id < 0) {
-                continue;  // Skip noise and unclassified points
-            }
-            
-            // Use the median length SV as the representative SV
-            std::sort(cluster_sv_calls.begin(), cluster_sv_calls.end(), [](const SVCall& a, const SVCall& b) {
-                return (a.end - a.start) < (b.end - b.start);
-            });
-            SVCall median_sv = cluster_sv_calls[cluster_sv_calls.size() / 2];
-            const std::string& qname = median_sv.data_type;
-            qnames_to_keep.insert(qname);
-        }
-    }
-
-    // Remove the SVs that are not in the qnames_to_keep set
-    std::unordered_set<std::string> qnames_to_remove;
-    for (const auto& entry : primary_map) {
-        const std::string& qname = entry.first;
-        if (qnames_to_keep.find(qname) == qnames_to_keep.end()) {
-            qnames_to_remove.insert(qname);
-        }
-    }
-
-    for (const std::string& qname : qnames_to_remove) {
-        primary_map.erase(qname);
-        supp_map.erase(qname);
-    }
-
-    // Filter overlapping primary alignments and keep the one with the highest mapping
-    // quality
-
-    // for (const auto& entry1 : primary_map) {
-    //     const std::string& qname1 = entry1.first;
-    //     const GenomicRegion& primary1 = entry1.second;
-    //     for (const auto& entry2 : primary_map) {
-    //         const std::string& qname2 = entry2.first;
-    //         if (qname1 == qname2) {
-    //             continue;
-    //         }
-    //         const GenomicRegion& primary2 = entry2.second;
-    //         if (primary1.tid == primary2.tid && primary1.start <= primary2.end && primary1.end >= primary2.start) {
-    //             // Overlapping primary alignments
-    //             // printMessage("Overlapping primary alignments with quality " + std::to_string(primary_map_qual[qname1]) + " and " + std::to_string(primary_map_qual[qname2]));
-    //             // if (primary_map_qual[qname1] < primary_map_qual[qname2]) {
-    //             if (primary1.qual < primary2.qual) {
-    //                 // to_remove_overlapping.push_back(qname1);
-    //                 to_remove_overlapping.insert(qname1);
-    //             } else {
-    //                 // If equal, remove the shorter alignment
-    //                 if (primary1.end - primary1.start < primary2.end - primary2.start) {
-    //                     // to_remove_overlapping.push_back(qname1);
-    //                     to_remove_overlapping.insert(qname1);
-    //                 } else {
-    //                     // to_remove_overlapping.push_back(qname2);
-    //                     to_remove_overlapping.insert(qname2);
-    //                 }
-    //             }
+    // // Run DBSCAN to merge the dummy SVs
+    // // double epsilon = 0.65;
+    // double epsilon = 0.45;
+    // int min_pts = 2;
+    // std::vector<std::vector<std::string>> primary_clusters;
+    // DBSCAN dbscan(epsilon, min_pts);
+    // dbscan.fit(dummy_sv_map);
+    // const std::vector<int>& cluster_ids = dbscan.getClusters();
+    
+    // // Create the 2D vector of clusters
+    // for (int cluster_id : cluster_ids) {
+    //     if (cluster_id < 0) {
+    //         continue;  // Skip noise and unclassified points
+    //     }
+    //     std::vector<std::string> cluster;
+    //     for (size_t i = 0; i < cluster_ids.size(); ++i) {
+    //         if (cluster_ids[i] == cluster_id) {
+    //             cluster.push_back(dummy_sv_qnames[i]);
     //         }
     //     }
+    //     primary_clusters.push_back(cluster);
     // }
 
-    // for (const std::string& qname : to_remove_overlapping) {
-    //     primary_map.erase(qname);
-    //     supp_map.erase(qname);
-    // }
-    // printMessage(region + ": Removed " + std::to_string(to_remove_overlapping.size()) + " overlapping primary alignments");
-    printMessage(region + ": Found " + std::to_string(primary_map.size()) + " primary and " + std::to_string(supp_map.size()) + " supplementary alignments after filtering");
+    // Identify overlapping primary alignments and then cluster their primary
+    // start, end vs. supplementary alignment start, end positions, keeping the
+    // median of the largest cluster for the primary and supplementary positions
+    // as the final genome coordinates of the SV
+    IntervalNode* root = nullptr;
+    for (const auto& entry : primary_map) {
+        const std::string& qname = entry.first;
+        const GenomicRegion& region = entry.second;
+        root = insert(root, region, qname);
+    }
+    std::vector<std::vector<std::string>> primary_clusters;
+    std::set<std::string> processed;
+
+    for (const auto& entry : primary_map) {
+        const std::string& qname = entry.first;
+        if (processed.find(qname) != processed.end()) {
+            continue;  // Skip already processed primary alignments
+        }
+        const GenomicRegion& region = entry.second;
+        std::vector<std::string> overlap_group;
+        findOverlaps(root, region, overlap_group);
+        for (const std::string& qname : overlap_group) {
+            processed.insert(qname);
+        }
+        if (overlap_group.size() > 1) {
+            primary_clusters.push_back(overlap_group);
+        }
+    }
+    printMessage(region + ": Found " + std::to_string(primary_clusters.size()) + " groups of overlapping primary alignments");
+
+    // For each primary alignment cluster the supplementary alignment start and
+    // end positions, keeping the median of the largest cluster
+    std::vector<SVCall> sv_candidates;
+    int current_group = 0;
+    int min_length = 2000;
+    int max_length = 1000000;
+    for (const auto& primary_group : primary_clusters) {
+        // Use DBSCAN to cluster primary alignment start, end positions
+        DBSCAN1D dbscan(100, 5);
+        current_group++;
+        std::vector<int> starts;
+        std::vector<int> ends;
+        for (const std::string& qname : primary_group) {
+            const GenomicRegion& region = primary_map[qname];
+            starts.push_back(region.start);
+            ends.push_back(region.end);
+        }
+
+        // Get the largest cluster of primary alignment start positions
+        dbscan.fit(starts);
+        std::vector<int> primary_start_cluster = dbscan.getLargestCluster(starts);
+
+        // Get the largest cluster of primary alignment end positions
+        dbscan.fit(ends);
+        std::vector<int> primary_end_cluster = dbscan.getLargestCluster(ends);
+
+        // Get the supplementary alignment positions
+        std::vector<int> supp_starts;
+        std::vector<int> supp_ends;
+        for (const std::string& qname : primary_group) {
+            const std::vector<GenomicRegion>& regions = supp_map[qname];
+            for (const GenomicRegion& region : regions) {
+                supp_starts.push_back(region.start);
+                supp_ends.push_back(region.end);
+            }
+        }
+
+        // Get the largest cluster of supplementary alignment start positions
+        dbscan.fit(supp_starts);
+        std::vector<int> supp_start_cluster = dbscan.getLargestCluster(supp_starts);
+
+        // Get the largest cluster of supplementary alignment end positions
+        dbscan.fit(supp_ends);
+        std::vector<int> supp_end_cluster = dbscan.getLargestCluster(supp_ends);
+
+        // Use the median of the largest cluster of primary and supplementary
+        // alignment start, end positions as the final genome coordinates of the
+        // SV
+        int primary_pos = -1;
+        if (primary_start_cluster.size() > primary_end_cluster.size()) {
+            std::sort(primary_start_cluster.begin(), primary_start_cluster.end());
+            primary_pos = primary_start_cluster[primary_start_cluster.size() / 2];
+        } else if (primary_end_cluster.size() > primary_start_cluster.size()) {
+            std::sort(primary_end_cluster.begin(), primary_end_cluster.end());
+            primary_pos = primary_end_cluster[primary_end_cluster.size() / 2];
+        }
+
+        // Get the supplementary alignment positions
+        int supp_pos = -1;
+        if (supp_start_cluster.size() > supp_end_cluster.size()) {
+            std::sort(supp_start_cluster.begin(), supp_start_cluster.end());
+            supp_pos = supp_start_cluster[supp_start_cluster.size() / 2];
+        } else if (supp_end_cluster.size() > supp_start_cluster.size()) {
+            std::sort(supp_end_cluster.begin(), supp_end_cluster.end());
+            supp_pos = supp_end_cluster[supp_end_cluster.size() / 2];
+        }
+
+        if (primary_pos == -1 || supp_pos == -1) {
+            continue;
+        }
+
+        // Store the SV candidate if the length is between 2kb and 1Mb
+        int sv_start = std::min(primary_pos, supp_pos);
+        int sv_end = std::max(primary_pos, supp_pos);
+        int sv_length = sv_end - sv_start + 1;
+        if (sv_length >= min_length && sv_length <= max_length) {
+            SVCall sv_candidate(sv_start, sv_end, SVType::UNKNOWN, ".", "NA", "./.", 0.0, 0, 0, 0);
+            sv_candidates.push_back(sv_candidate);
+        }
+    }
+
+    return sv_candidates;
 }
 
 
@@ -323,7 +373,10 @@ void SVCaller::detectSVsFromCIGAR(bam_hdr_t* header, bam1_t* alignment, std::vec
                     if (ref_genome.compare(chr, bp1, bp2, ins_seq_str, DUP_SEQSIM_THRESHOLD))
                     {
                         int read_depth = this->calculateReadDepth(pos_depth_map, bp1, bp2);
-                        addSVCall(sv_calls, bp1, bp2, SVType::DUP, "<DUP>", "LSEQSIM", "./.", default_lh, read_depth);
+                        // addSVCall(sv_calls, bp1, bp2, SVType::DUP, "<DUP>",
+                        // "LSEQSIM", "./.", default_lh, read_depth);
+                        SVCall sv_call(bp1, bp2, SVType::DUP, "<DUP>", "LSEQSIM", "./.", default_lh, read_depth, 1, 0);
+                        addSVCall(sv_calls, sv_call);
                         continue;
                     }
                 }
@@ -337,7 +390,9 @@ void SVCaller::detectSVsFromCIGAR(bam_hdr_t* header, bam1_t* alignment, std::vec
                     if (ref_genome.compare(chr, bp1, bp2, ins_seq_str, DUP_SEQSIM_THRESHOLD))
                     {
                         int read_depth = this->calculateReadDepth(pos_depth_map, bp1, bp2);
-                        addSVCall(sv_calls, bp1, bp2, SVType::DUP, "<DUP>", "RSEQSIM", "./.", default_lh, read_depth);
+                        SVCall sv_call(bp1, bp2, SVType::DUP, "<DUP>", "RSEQSIM", "./.", default_lh, read_depth, 1, 0);
+                        addSVCall(sv_calls, sv_call);
+                        // addSVCall(sv_calls, bp1, bp2, SVType::DUP, "<DUP>", "RSEQSIM", "./.", default_lh, read_depth);
                         continue;
                     }
                 }
@@ -354,8 +409,9 @@ void SVCaller::detectSVsFromCIGAR(bam_hdr_t* header, bam1_t* alignment, std::vec
                 if (op_len <= 50) {
                     alt_allele = ins_seq_str;
                 }
-                
-                addSVCall(sv_calls, ins_pos, ins_end, SVType::INS, alt_allele, "CIGARINS", "./.", default_lh, read_depth);
+                SVCall sv_call(ins_pos, ins_end, SVType::INS, alt_allele, "CIGARINS", "./.", default_lh, read_depth, 1, 0);
+                addSVCall(sv_calls, sv_call);                
+                // addSVCall(sv_calls, ins_pos, ins_end, SVType::INS, alt_allele, "CIGARINS", "./.", default_lh, read_depth);
 
             // Check if the CIGAR operation is a deletion
             } else if (op == BAM_CDEL && is_primary) {
@@ -363,7 +419,10 @@ void SVCaller::detectSVsFromCIGAR(bam_hdr_t* header, bam1_t* alignment, std::vec
                 ref_pos = pos+1;
                 ref_end = ref_pos + op_len -1;
                 int read_depth = this->calculateReadDepth(pos_depth_map, ref_pos, ref_end);
-                addSVCall(sv_calls, ref_pos, ref_end, SVType::DEL, "<DEL>", "CIGARDEL", "./.", default_lh, read_depth);
+                // addSVCall(sv_calls, ref_pos, ref_end, SVType::DEL, "<DEL>",
+                // "CIGARDEL", "./.", default_lh, read_depth);
+                SVCall sv_call(ref_pos, ref_end, SVType::DEL, "<DEL>", "CIGARDEL", "./.", default_lh, read_depth, 1, 0);
+                addSVCall(sv_calls, sv_call);
 
                 // Print if the ref pos is within the range 44007800-44007930
                 if (ref_pos >= 44007800 && ref_pos <= 44007930) {
@@ -450,23 +509,23 @@ void SVCaller::processChromosome(const std::string& chr, const CHMM& hmm, std::v
     }
 
     // Detect SVs from the CIGAR strings
-    printMessage(chr + ": CIGAR SVs...");
-    this->detectCIGARSVs(fp_in, idx, bamHdr, region, chr_sv_calls, chr_pos_depth_map, ref_genome);
+    // printMessage(chr + ": CIGAR SVs...");
+    // this->detectCIGARSVs(fp_in, idx, bamHdr, region, chr_sv_calls, chr_pos_depth_map, ref_genome);
 
-    printMessage(chr + ": Merging CIGAR...");
-    double cigar_epsilon = 0.45;
-    int cigar_min_pts = 15;
-    mergeSVs(chr_sv_calls, cigar_epsilon, cigar_min_pts);
+    // printMessage(chr + ": Merging CIGAR...");
+    // double cigar_epsilon = 0.45;
+    // int cigar_min_pts = 15;
+    // mergeSVs(chr_sv_calls, cigar_epsilon, cigar_min_pts);
 
-    int region_sv_count = getSVCount(chr_sv_calls);
-    printMessage("Total SVs detected from CIGAR string: " + std::to_string(region_sv_count));
+    // int region_sv_count = getSVCount(chr_sv_calls);
+    // printMessage("Total SVs detected from CIGAR string: " + std::to_string(region_sv_count));
 
     // Run copy number variant predictions on the SVs detected from the
     // CIGAR string, using a minimum CNV length threshold
-    if (region_sv_count > 0) {
-        printMessage(chr + ": CIGAR predictions...");
-        cnv_caller.runCIGARCopyNumberPrediction(chr, chr_sv_calls, hmm, mean_chr_cov, chr_pos_depth_map, input_data);
-    }
+    // if (region_sv_count > 0) {
+    //     printMessage(chr + ": CIGAR predictions...");
+    //     cnv_caller.runCIGARCopyNumberPrediction(chr, chr_sv_calls, hmm, mean_chr_cov, chr_pos_depth_map, input_data);
+    // }
 
     // Run split-read SV and copy number variant predictions
     printMessage(chr + ": Split read SVs...");
@@ -479,27 +538,16 @@ void SVCaller::processChromosome(const std::string& chr, const CHMM& hmm, std::v
     int split_min_pts = 2;
     mergeSVs(split_sv_calls, split_epsilon, split_min_pts);
 
-    // Unify the SV calls
     printMessage(chr + ": Unifying SVs...");
     chr_sv_calls.insert(chr_sv_calls.end(), split_sv_calls.begin(), split_sv_calls.end());
 
-    // printMessage(chr + ": Final merge...");
-    // mergeSVs(chr_sv_calls, dbscan_epsilon, dbscan_min_pts);
-
-    // TODO: Merge subsets based on highest HMM likelihood
+    mergeSVSubsets(chr_sv_calls);
 
     // Sort the SV calls by start position
     std::sort(chr_sv_calls.begin(), chr_sv_calls.end(), [](const SVCall& a, const SVCall& b) {
         return a.start < b.start;
     });
 
-    // Merge the SV calls from the current region
-    // printMessage(chr + ": Merging split reads...");
-    // filterSVsWithLowSupport(chr_sv_calls, split_sv_support_threshold);
-    // filterSVsWithLowSupport(chr_sv_calls, split_sv_support_threshold, "SPLIT");
-
-    // Run a final merge on the combined SV calls
-    // printMessage(chr + ": Merging final calls...");
     printMessage("Completed chromosome " + chr);
 }
 
@@ -602,156 +650,205 @@ void SVCaller::detectSVsFromSplitReads(const std::string& region, samFile* fp_in
     // printMessage(region + ": Getting split alignments...");
     std::unordered_map<std::string, GenomicRegion> primary_map;
     std::unordered_map<std::string, std::vector<GenomicRegion>> supp_map;
-    this->getSplitAlignments(fp_in, idx, bamHdr, region, primary_map, supp_map);
+    std::vector<SVCall> sv_candidates = this->getSplitAlignments(fp_in, idx, bamHdr, region, primary_map, supp_map);
 
-    // Find split-read SV evidence
-    // printMessage(region + ": Finding split-read SVs...");
-    // std::vector<SVCall> split_sv_calls;
-    int current_primary = 0;
-    int primary_count = primary_map.size();
-    uint32_t min_cnv_length = input_data.getMinCNVLength();
-    for (auto& entry : primary_map) {
-        current_primary++;
-        const std::string& qname = entry.first;
-        GenomicRegion& primary = entry.second;
-        const std::string& primary_chr = bamHdr->target_name[primary.tid];
-
-      	// Find the largest supplementary alignment
-        auto& supp_regions = supp_map[qname];
-        // GenomicRegion largest_supp = supp_regions[0];
-        auto it = std::max_element(supp_regions.begin(), supp_regions.end(), [](const GenomicRegion& a, const GenomicRegion& b) {
-            return a.end - a.start < b.end - b.start;
-        });
-        GenomicRegion largest_supp = *it;
-
-        // If on a different chromosome, label as a translocation
-        if (primary.tid != largest_supp.tid) {
-            // Note that these do not currently have a likelihood score or read depth
-            // Create two BND records for the translocation
-            // Create the alternate allele format for the first BND record
-            const std::string& supp_chr = bamHdr->target_name[largest_supp.tid];
-            std::string alt_allele = "N[" + supp_chr + ":" + std::to_string(largest_supp.start) + "[";
-            if (largest_supp.strand == false) {
-                // Reverse-oriented relative to the reference
-                alt_allele = "N]" + supp_chr + ":" + std::to_string(largest_supp.start) + "]";
-            }
-            addSVCall(split_sv_calls, primary.start, primary.end, SVType::BND, alt_allele, "SPLIT", "./.", 0.0, 0);
-
-            // Create the alternate allele format for the second BND record
-            alt_allele = "N[" + primary_chr + ":" + std::to_string(primary.start) + "[";
-            if (primary.strand == false) {
-                // Reverse-oriented relative to the reference
-                alt_allele = "N]" + primary_chr + ":" + std::to_string(primary.start) + "]";
-            }
-            addSVCall(split_sv_calls, largest_supp.start, largest_supp.end, SVType::BND, alt_allele, "SPLIT", "./.", 0.0, 0);
-
+    // Run copy number predictions on the SVs detected from the split reads
+    printMessage(region + ": Split read predictions...");
+    int current_sv = 0;
+    int total_svs = sv_candidates.size();
+    int min_cnv_length = input_data.getMinCNVLength();
+    for (auto& sv_candidate : sv_candidates) {
+        // Skip if the SV is too small
+        if ((int)sv_candidate.end - (int)sv_candidate.start <= min_cnv_length) {
             continue;
         }
 
-        // Inversion detection
-        bool is_opposite_strand = primary.strand != largest_supp.strand;
-        if (is_opposite_strand) {
-            if (largest_supp.end - largest_supp.start >= min_cnv_length) {
-
-                // Print error if the start position is greater than the end
-                // position
-                if (largest_supp.start > largest_supp.end) {
-                    printError("ERROR: Invalid inversion coordinates: " + primary_chr + ":" + std::to_string(largest_supp.start) + "-" + std::to_string(largest_supp.end));
-                    continue;
-                }
-
-                std::tuple<double, SVType, std::string, bool> result = cnv_caller.runCopyNumberPrediction(primary_chr, hmm, largest_supp.start, largest_supp.end, mean_chr_cov, pos_depth_map, input_data);
-                if (std::get<1>(result) == SVType::UNKNOWN) {
-                    continue;
-                }
-
-                double supp_lh = std::get<0>(result);
-                SVType supp_type = std::get<1>(result);
-                int read_depth = this->calculateReadDepth(pos_depth_map, largest_supp.start, largest_supp.end);
-                if (supp_type == SVType::NEUTRAL) {
-                    addSVCall(split_sv_calls, largest_supp.start, largest_supp.end, SVType::INV, "<INV>", "SPLIT", "./.", supp_lh, read_depth);
-                    continue;
-                    
-                } else if (supp_type == SVType::DUP) {
-                    addSVCall(split_sv_calls, largest_supp.start, largest_supp.end, SVType::INV_DUP, "<INV>", "SPLIT", "./.", supp_lh, read_depth);
-                    continue;
-                } else if (supp_type == SVType::DEL) {
-                    addSVCall(split_sv_calls, largest_supp.start, largest_supp.end, SVType::INV_DEL, "<INV>", "SPLIT", "./.", supp_lh, read_depth);
-                    continue;
-                }
-            }
+        std::tuple<double, SVType, std::string, bool> result = cnv_caller.runCopyNumberPrediction(region, hmm, sv_candidate.start, sv_candidate.end, mean_chr_cov, pos_depth_map, input_data);
+        if (std::get<1>(result) == SVType::UNKNOWN) {
+            continue;
         }
 
-        // Analyze split-read evidence for deletions and duplications
-        bool gap_exists = false;
-        uint32_t boundary_left, boundary_right, gap_left, gap_right;
-        boundary_left = std::min(primary.start, largest_supp.start);
-        boundary_right = std::max(primary.end, largest_supp.end);
-        gap_left = std::min(primary.end, largest_supp.start);
-        gap_right = std::max(primary.start, largest_supp.end);
-        gap_exists = gap_left < gap_right;
-        
-        // Run copy number variant predictions on the boundary if large enough
-        if (boundary_right - boundary_left >= min_cnv_length) {
-
-            // Print error if the start position is greater than the end
-            // position
-            if (boundary_left > boundary_right) {
-                printError("ERROR: Invalid boundary coordinates: " + primary_chr + ":" + std::to_string(boundary_left) + "-" + std::to_string(boundary_right));
-                continue;
-            }
-            
-            std::tuple<double, SVType, std::string, bool> bd_result = cnv_caller.runCopyNumberPrediction(primary_chr, hmm, boundary_left, boundary_right, mean_chr_cov, pos_depth_map, input_data);
-            if (std::get<1>(bd_result) == SVType::UNKNOWN) {
-                continue;
-            }
-            double bd_lh = std::get<0>(bd_result);
-            SVType bd_type = std::get<1>(bd_result);
-
-            // Run copy number variant predictions on the gap if it exists
-            if (gap_exists && gap_right - gap_left >= min_cnv_length) {
-
-                // Print error if the start position is greater than the end
-                // position
-                if (gap_left > gap_right) {
-                    printError("ERROR: Invalid gap coordinates: " + primary_chr + ":" + std::to_string(gap_left) + "-" + std::to_string(gap_right));
-                    continue;
-                }
-
-                // printMessage(region + ": Running copy number prediction for
-                // gap...");
-                // printMessage("Running copy number prediction, length: " + std::to_string(gap_right - gap_left));
-                std::tuple<double, SVType, std::string, bool> gap_result = cnv_caller.runCopyNumberPrediction(primary_chr, hmm, gap_left, gap_right, mean_chr_cov, pos_depth_map, input_data);
-                if (std::get<1>(gap_result) == SVType::UNKNOWN) {
-                    continue;
-                }
-                double gap_lh = std::get<0>(gap_result);
-                SVType gap_type = std::get<1>(gap_result);
-
-                // If higher likelihood than the boundary, add the gap as the SV call
-                if (gap_lh > bd_lh) {
-                    int read_depth = this->calculateReadDepth(pos_depth_map, gap_left, gap_right);
-                    std::string alt_allele = gap_type == SVType::NEUTRAL ? "." : "<" + getSVTypeString(gap_type) + ">";
-                    addSVCall(split_sv_calls, gap_left, gap_right, gap_type, alt_allele, "SPLIT", "./.", gap_lh, read_depth);
-                } else {
-                    // Add the boundary as the SV call
-                    int read_depth = this->calculateReadDepth(pos_depth_map, boundary_left, boundary_right);
-                    std::string alt_allele = bd_type == SVType::NEUTRAL ? "." : "<" + getSVTypeString(bd_type) + ">";
-                    addSVCall(split_sv_calls, boundary_left, boundary_right, bd_type, alt_allele, "SPLIT", "./.", bd_lh, read_depth);
-                }
-            } else {
-                // Add the boundary as the SV call
-                int read_depth = this->calculateReadDepth(pos_depth_map, boundary_left, boundary_right);
-                std::string alt_allele = bd_type == SVType::NEUTRAL ? "." : "<" + getSVTypeString(bd_type) + ">";
-                addSVCall(split_sv_calls, boundary_left, boundary_right, bd_type, alt_allele, "SPLIT", "./.", bd_lh, read_depth);
-            }
+        double supp_lh = std::get<0>(result);
+        SVType supp_type = std::get<1>(result);
+        // int read_depth = this->calculateReadDepth(pos_depth_map, sv_candidate.start, sv_candidate.end);
+        if (supp_type != SVType::NEUTRAL) {
+            int read_depth = this->calculateReadDepth(pos_depth_map, sv_candidate.start, sv_candidate.end);
+            std::string alt_allele = supp_type == SVType::NEUTRAL ? "." : "<" + getSVTypeString(supp_type) + ">";
+            SVCall sv_call(sv_candidate.start, sv_candidate.end, supp_type, alt_allele, "SPLIT", "./.", supp_lh, read_depth, 1, sv_candidate.cluster_size);
+            addSVCall(split_sv_calls, sv_call);
         }
-
-        // Print progress every 1000 primary alignments
-        if (current_primary % 1000 == 0) {
-            printMessage(region + ": Processed " + std::to_string(current_primary) + " of " + std::to_string(primary_count) + " primary alignments...");
+        current_sv++;
+        if (current_sv % 1000 == 0) {
+            printMessage("Processed " + std::to_string(current_sv) + " of " + std::to_string(total_svs) + " SV candidates");
         }
     }
+
+    // // Find split-read SV evidence
+    // // printMessage(region + ": Finding split-read SVs...");
+    // // std::vector<SVCall> split_sv_calls;
+    // int current_primary = 0;
+    // int primary_count = primary_map.size();
+    // uint32_t min_cnv_length = input_data.getMinCNVLength();
+    // for (auto& entry : primary_map) {
+    //     current_primary++;
+    //     const std::string& qname = entry.first;
+    //     GenomicRegion& primary = entry.second;
+    //     const std::string& primary_chr = bamHdr->target_name[primary.tid];
+    //     int primary_cluster_size = primary.cluster_size;
+
+    //   	// Find the largest supplementary alignment
+    //     auto& supp_regions = supp_map[qname];
+    //     // GenomicRegion largest_supp = supp_regions[0];
+    //     auto it = std::max_element(supp_regions.begin(), supp_regions.end(), [](const GenomicRegion& a, const GenomicRegion& b) {
+    //         return a.end - a.start < b.end - b.start;
+    //     });
+    //     GenomicRegion largest_supp = *it;
+
+    //     // If on a different chromosome, label as a translocation
+    //     if (primary.tid != largest_supp.tid) {
+    //         // Note that these do not currently have a likelihood score or read depth
+    //         // Create two BND records for the translocation
+    //         // Create the alternate allele format for the first BND record
+    //         const std::string& supp_chr = bamHdr->target_name[largest_supp.tid];
+    //         std::string alt_allele = "N[" + supp_chr + ":" + std::to_string(largest_supp.start) + "[";
+    //         if (largest_supp.strand == false) {
+    //             // Reverse-oriented relative to the reference
+    //             alt_allele = "N]" + supp_chr + ":" + std::to_string(largest_supp.start) + "]";
+    //         }
+    //         // addSVCall(split_sv_calls, primary.start, primary.end, SVType::BND, alt_allele, "SPLIT", "./.", 0.0, 0);
+    //         SVCall sv_call1(primary.start, primary.end, SVType::BND, alt_allele, "SPLIT", "./.", 0.0, 0, 1, primary_cluster_size);
+    //         addSVCall(split_sv_calls, sv_call1);
+
+    //         // Create the alternate allele format for the second BND record
+    //         alt_allele = "N[" + primary_chr + ":" + std::to_string(primary.start) + "[";
+    //         if (primary.strand == false) {
+    //             // Reverse-oriented relative to the reference
+    //             alt_allele = "N]" + primary_chr + ":" + std::to_string(primary.start) + "]";
+    //         }
+    //         // addSVCall(split_sv_calls, largest_supp.start, largest_supp.end,
+    //         // SVType::BND, alt_allele, "SPLIT", "./.", 0.0, 0);
+    //         SVCall sv_call2(largest_supp.start, largest_supp.end, SVType::BND, alt_allele, "SPLIT", "./.", 0.0, 0, 1, primary_cluster_size);
+    //         addSVCall(split_sv_calls, sv_call2);
+
+    //         continue;
+    //     }
+
+    //     // Inversion detection
+    //     bool is_opposite_strand = primary.strand != largest_supp.strand;
+    //     if (is_opposite_strand) {
+    //         if (largest_supp.end - largest_supp.start >= min_cnv_length) {
+
+    //             // Print error if the start position is greater than the end
+    //             // position
+    //             if (largest_supp.start > largest_supp.end) {
+    //                 printError("ERROR: Invalid inversion coordinates: " + primary_chr + ":" + std::to_string(largest_supp.start) + "-" + std::to_string(largest_supp.end));
+    //                 continue;
+    //             }
+
+    //             std::tuple<double, SVType, std::string, bool> result = cnv_caller.runCopyNumberPrediction(primary_chr, hmm, largest_supp.start, largest_supp.end, mean_chr_cov, pos_depth_map, input_data);
+    //             if (std::get<1>(result) == SVType::UNKNOWN) {
+    //                 continue;
+    //             }
+
+    //             double supp_lh = std::get<0>(result);
+    //             SVType supp_type = std::get<1>(result);
+    //             int read_depth = this->calculateReadDepth(pos_depth_map, largest_supp.start, largest_supp.end);
+    //             if (supp_type == SVType::NEUTRAL) {
+    //                 SVCall sv_call(largest_supp.start, largest_supp.end, SVType::INV, "<INV>", "SPLIT", "./.", supp_lh, read_depth, 1, primary_cluster_size);
+    //                 addSVCall(split_sv_calls, sv_call);
+    //                 // addSVCall(split_sv_calls, largest_supp.start, largest_supp.end, SVType::INV, "<INV>", "SPLIT", "./.", supp_lh, read_depth);
+    //                 continue;
+                    
+    //             } else if (supp_type == SVType::DUP) {
+    //                 SVCall sv_call(largest_supp.start, largest_supp.end, SVType::INV_DUP, "<INV>", "SPLIT", "./.", supp_lh, read_depth, 1, primary_cluster_size);
+    //                 addSVCall(split_sv_calls, sv_call);
+    //                 // addSVCall(split_sv_calls, largest_supp.start, largest_supp.end, SVType::INV_DUP, "<INV>", "SPLIT", "./.", supp_lh, read_depth);
+    //                 continue;
+    //             } else if (supp_type == SVType::DEL) {
+    //                 SVCall sv_call(largest_supp.start, largest_supp.end, SVType::INV_DEL, "<INV>", "SPLIT", "./.", supp_lh, read_depth, 1, primary_cluster_size);
+    //                 addSVCall(split_sv_calls, sv_call);
+    //                 // addSVCall(split_sv_calls, largest_supp.start, largest_supp.end, SVType::INV_DEL, "<INV>", "SPLIT", "./.", supp_lh, read_depth);
+    //                 continue;
+    //             }
+    //         }
+    //     }
+
+    //     // Analyze split-read evidence for deletions and duplications
+    //     bool gap_exists = false;
+    //     uint32_t boundary_left, boundary_right, gap_left, gap_right;
+    //     boundary_left = std::min(primary.start, largest_supp.start);
+    //     boundary_right = std::max(primary.end, largest_supp.end);
+    //     gap_left = std::min(primary.end, largest_supp.start);
+    //     gap_right = std::max(primary.start, largest_supp.end);
+    //     gap_exists = gap_left < gap_right;
+        
+    //     // Run copy number variant predictions on the boundary if large enough
+    //     if (boundary_right - boundary_left >= min_cnv_length) {
+
+    //         // Print error if the start position is greater than the end
+    //         // position
+    //         if (boundary_left > boundary_right) {
+    //             printError("ERROR: Invalid boundary coordinates: " + primary_chr + ":" + std::to_string(boundary_left) + "-" + std::to_string(boundary_right));
+    //             continue;
+    //         }
+            
+    //         std::tuple<double, SVType, std::string, bool> bd_result = cnv_caller.runCopyNumberPrediction(primary_chr, hmm, boundary_left, boundary_right, mean_chr_cov, pos_depth_map, input_data);
+    //         if (std::get<1>(bd_result) == SVType::UNKNOWN) {
+    //             continue;
+    //         }
+    //         double bd_lh = std::get<0>(bd_result);
+    //         SVType bd_type = std::get<1>(bd_result);
+
+    //         // Run copy number variant predictions on the gap if it exists
+    //         if (gap_exists && gap_right - gap_left >= min_cnv_length) {
+
+    //             // Print error if the start position is greater than the end
+    //             // position
+    //             if (gap_left > gap_right) {
+    //                 printError("ERROR: Invalid gap coordinates: " + primary_chr + ":" + std::to_string(gap_left) + "-" + std::to_string(gap_right));
+    //                 continue;
+    //             }
+
+    //             // printMessage(region + ": Running copy number prediction for
+    //             // gap...");
+    //             // printMessage("Running copy number prediction, length: " + std::to_string(gap_right - gap_left));
+    //             std::tuple<double, SVType, std::string, bool> gap_result = cnv_caller.runCopyNumberPrediction(primary_chr, hmm, gap_left, gap_right, mean_chr_cov, pos_depth_map, input_data);
+    //             if (std::get<1>(gap_result) == SVType::UNKNOWN) {
+    //                 continue;
+    //             }
+    //             double gap_lh = std::get<0>(gap_result);
+    //             SVType gap_type = std::get<1>(gap_result);
+
+    //             // If higher likelihood than the boundary, add the gap as the SV call
+    //             if (gap_lh > bd_lh) {
+    //                 int read_depth = this->calculateReadDepth(pos_depth_map, gap_left, gap_right);
+    //                 std::string alt_allele = gap_type == SVType::NEUTRAL ? "." : "<" + getSVTypeString(gap_type) + ">";
+    //                 SVCall sv_call(gap_left, gap_right, gap_type, alt_allele, "SPLIT", "./.", gap_lh, read_depth, 1, primary_cluster_size);
+    //                 addSVCall(split_sv_calls, sv_call);
+    //                 // addSVCall(split_sv_calls, gap_left, gap_right, gap_type, alt_allele, "SPLIT", "./.", gap_lh, read_depth);
+    //             } else {
+    //                 // Add the boundary as the SV call
+    //                 int read_depth = this->calculateReadDepth(pos_depth_map, boundary_left, boundary_right);
+    //                 std::string alt_allele = bd_type == SVType::NEUTRAL ? "." : "<" + getSVTypeString(bd_type) + ">";
+    //                 SVCall sv_call(boundary_left, boundary_right, bd_type, alt_allele, "SPLIT", "./.", bd_lh, read_depth, 1, primary_cluster_size);
+    //                 addSVCall(split_sv_calls, sv_call);
+    //                 // addSVCall(split_sv_calls, boundary_left, boundary_right, bd_type, alt_allele, "SPLIT", "./.", bd_lh, read_depth);
+    //             }
+    //         } else {
+    //             // Add the boundary as the SV call
+    //             int read_depth = this->calculateReadDepth(pos_depth_map, boundary_left, boundary_right);
+    //             std::string alt_allele = bd_type == SVType::NEUTRAL ? "." : "<" + getSVTypeString(bd_type) + ">";
+    //             SVCall sv_call(boundary_left, boundary_right, bd_type, alt_allele, "SPLIT", "./.", bd_lh, read_depth, 1, primary_cluster_size);
+    //             addSVCall(split_sv_calls, sv_call);
+    //             // addSVCall(split_sv_calls, boundary_left, boundary_right, bd_type, alt_allele, "SPLIT", "./.", bd_lh, read_depth);
+    //         }
+    //     }
+
+    //     // Print progress every 1000 primary alignments
+    //     if (current_primary % 1000 == 0) {
+    //         printMessage(region + ": Processed " + std::to_string(current_primary) + " of " + std::to_string(primary_count) + " primary alignments...");
+    //     }
+    // }
 
     // Unify the SV calls
     // sv_calls.insert(sv_calls.end(), split_sv_calls.begin(), split_sv_calls.end());
@@ -983,4 +1080,9 @@ int SVCaller::calculateReadDepth(const std::vector<uint32_t>& pos_depth_map, uin
     }
     // printMessage("Read depth for SV at " + std::to_string(start) + "-" + std::to_string(end) + " with length " + std::to_string(end-start) + ": " + std::to_string(read_depth));
     return read_depth;
+}
+
+bool SVCaller::regionOverlaps(const GenomicRegion &a, const GenomicRegion &b)
+{
+    return a.tid == b.tid && a.start <= b.end && b.start <= a.end;
 }

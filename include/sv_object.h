@@ -34,9 +34,12 @@ struct SVCall {
         start(start), end(end), sv_type(sv_type), alt_allele(alt_allele), data_type(data_type), genotype(genotype), hmm_likelihood(hmm_likelihood), read_depth(read_depth), support(support), cluster_size(cluster_size) {}
 };
 
-void addSVCall(std::vector<SVCall>& sv_calls, uint32_t start, uint32_t end, SVType sv_type, const std::string& alt_allele, std::string data_type, std::string genotype, double hmm_likelihood, int read_depth);
+// void addSVCall(std::vector<SVCall>& sv_calls, uint32_t start, uint32_t end, SVType sv_type, const std::string& alt_allele, std::string data_type, std::string genotype, double hmm_likelihood, int read_depth);
+void addSVCall(std::vector<SVCall>& sv_calls, SVCall& sv_call);
 
 void mergeSVs(std::vector<SVCall>& sv_calls);
+
+void mergeSVSubsets(std::vector<SVCall>& sv_calls);
 
 void filterSVsWithLowSupport(std::vector<SVCall> &sv_calls, int min_depth);
 
