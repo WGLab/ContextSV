@@ -77,6 +77,8 @@ class SVCaller {
         int min_mapq = 20;          // Minimum mapping quality to be considered
         std::mutex shared_mutex;
 
+        std::vector<std::string> getChromosomes(const std::string& bam_filepath);
+
         std::vector<SVCall> getSplitAlignments(samFile* fp_in, hts_idx_t* idx, bam_hdr_t* bamHdr, const std::string& region, std::unordered_map<std::string, GenomicRegion>& primary_map, std::unordered_map<std::string, std::vector<GenomicRegion>>& supp_map);
 
         // Detect SVs from the CIGAR string of a read alignment, and return the
