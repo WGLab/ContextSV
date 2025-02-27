@@ -26,8 +26,6 @@ const std::vector<int>& DBSCAN::getClusters() const {
     return clusters;
 }
 
-// bool DBSCAN::expandCluster(const std::vector<std::pair<double, double>>&
-// points, size_t pointIdx, int clusterId) {
 bool DBSCAN::expandCluster(const std::vector<SVCall>& sv_calls, size_t pointIdx, int clusterId) {
     std::vector<size_t> seeds = regionQuery(sv_calls, pointIdx);
     if (static_cast<int>(seeds.size()) < minPts) {

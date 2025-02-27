@@ -68,7 +68,8 @@ void mergeSVs(std::vector<SVCall>& sv_calls, double epsilon, int min_pts)
         SVType::INV,
         SVType::INS,
         SVType::BND,
-        SVType::INV_DUP
+        SVType::INV_DUP,
+        SVType::INV_DEL,
     })
     {
         // Create a vector of SV calls for the current SV type and size interval
