@@ -545,6 +545,13 @@ void SVCaller::processChromosome(const std::string& chr, const CHMM& hmm, std::v
         return;
     }
 
+    // Estimate DBSCAN minimum points
+    double dbscan_min_pts_pct = input_data.getDBSCAN_MinPtsPct();
+    if (dbscan_min_pts_pct > 0.0) {
+        dbscan_min_pts = (int)std::ceil(mean_chr_cov * dbscan_min_pts_pct);
+        printMessage(chr + ": Mean chr. cov.: " + std::to_string(mean_chr_cov) + " (DBSCAN min. pts.= " + std::to_string(dbscan_min_pts) + ", min. pts. pct.= " + std::to_string(dbscan_min_pts_pct) + ")");
+    }
+
     // Detect SVs from the CIGAR strings
     printMessage(chr + ": CIGAR SVs...");
     this->detectCIGARSVs(fp_in, idx, bamHdr, region, chr_sv_calls, chr_pos_depth_map, ref_genome);

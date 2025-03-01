@@ -26,11 +26,28 @@ import plotly.graph_objects as go
 
 def generate_sv_size_plot(input_vcf, output_png, plot_title="SV Caller"):
     # Read VCF file into a pandas DataFrame
-    vcf_df = pd.read_csv(input_vcf, sep='\t', comment='#', header=None, \
-                         names=['CHROM', 'POS', 'ID', 'REF', 'ALT', 'QUAL', 'FILTER', 'INFO', 'FORMAT', 'SAMPLE'], \
-                            dtype={'CHROM': str, 'POS': np.int64, 'ID': str, 'REF': str, 'ALT': str, 'QUAL': str, \
-                                   'FILTER': str, 'INFO': str, 'FORMAT': str, 'SAMPLE': str})
-
+    try:
+        vcf_df = pd.read_csv(input_vcf, sep='\t', comment='#', header=None, \
+                            names=['CHROM', 'POS', 'ID', 'REF', 'ALT', 'QUAL', 'FILTER', 'INFO', 'FORMAT', 'SAMPLE'], \
+                                dtype={'CHROM': str, 'POS': np.int64, 'ID': str, 'REF': str, 'ALT': str, 'QUAL': str, \
+                                    'FILTER': str, 'INFO': str, 'FORMAT': str, 'SAMPLE': str})
+    except Exception as e:
+        try:
+            print("[DEBUG] Caught TypeError")
+            # Truvari merged VCF format with different columns
+            vcf_df = pd.read_csv(input_vcf, sep='\t', comment='#', header=None, \
+                                names=['CHROM', 'POS', 'ID', 'REF', 'ALT', 'QUAL', 'FILTER', 'INFO', 'FORMAT', 'SAMPLE', 'SAMPLE2'], \
+                                    dtype={'CHROM': str, 'POS': np.int64, 'ID': str, 'REF': str, 'ALT': str, 'QUAL': str, \
+                                        'FILTER': str, 'INFO': str, 'FORMAT': str, 'SAMPLE': str, 'SAMPLE2': str})
+        except Exception as e:
+            print("[DEBUG] Caught Exception")
+            # Platinum pedigree VCF format with different columns
+            vcf_df = pd.read_csv(input_vcf, sep='\t', comment='#', header=None, \
+                                names=['CHROM', 'POS', 'ID', 'REF', 'ALT', 'QUAL', 'FILTER', 'INFO', 'FORMAT', 'SAMPLE', 'SAMPLE2', 'SAMPLE3', 'SAMPLE4', 'SAMPLE5', 'SAMPLE6', 'SAMPLE7'], \
+                                    dtype={'CHROM': str, 'POS': np.int64, 'ID': str, 'REF': str, 'ALT': str, 'QUAL': str, \
+                                        'FILTER': str, 'INFO': str, 'FORMAT': str, 'SAMPLE1': str, 'SAMPLE2': str, 'SAMPLE3': str, 'SAMPLE4': str, \
+                                            'SAMPLE5': str, 'SAMPLE6': str, 'SAMPLE7': str})
+            
     # Initialize dictionaries to store SV sizes for each type of SV
     sv_sizes = {}
 
@@ -61,6 +78,7 @@ def generate_sv_size_plot(input_vcf, output_png, plot_title="SV Caller"):
         # Continue if SV type is BND (no SV size)
         if sv_type == "BND":
             continue
+
         # If the SV caller is DELLY, then we use the second SV size for non-INS
         # (they don't have SVLEN) and the first SV size for INS
         sv_size = None
@@ -71,7 +89,9 @@ def generate_sv_size_plot(input_vcf, output_png, plot_title="SV Caller"):
 
         # If the plot title is GIAB, then we need to convert INS to DUP if
         # INFO/SVTYPE is INS and INFO/REPTYPE is DUP
-        if plot_title == "GIAB" and sv_type == "INS":
+        # if plot_title == "GIAB" and sv_type == "INS":
+        # Check if GIAB is a substring of the plot title
+        if "GIAB" in plot_title and sv_type == "INS":
             if 'REPTYPE=DUP' in record['INFO']:
                 sv_type = "DUP"
 
@@ -192,22 +212,22 @@ def generate_sv_size_plot(input_vcf, output_png, plot_title="SV Caller"):
     # Add the bin edges to the x-axis ticks as a range
     fig.update_xaxes(tickvals=x_values, ticktext=bin_labels)
 
-    # # Move the legend to the top right inside the plot
-    # fig.update_layout(legend=dict(
-    #     orientation='v',
-    #     yanchor='top',
-    #     y=0.75,
-    #     xanchor='right',
-    #     x=0.75,
-    # ))
-    # Move the legend to the bottom right outside the plot
+    # Move the legend to the top right inside the plot
     fig.update_layout(legend=dict(
         orientation='v',
         yanchor='top',
-        y=1.0,
+        y=0.75,
         xanchor='right',
-        x=1.15,
+        x=0.75,
     ))
+    # # Move the legend to the bottom right outside the plot
+    # fig.update_layout(legend=dict(
+    #     orientation='v',
+    #     yanchor='top',
+    #     y=1.0,
+    #     xanchor='right',
+    #     x=1.15,
+    # ))
 
     # Set a larger font size for all text in the plot
     fig.update_layout(font=dict(size=26))

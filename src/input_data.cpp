@@ -27,8 +27,9 @@ InputData::InputData()
     this->sample_size = 100;
     this->min_cnv_length = 1000;
     this->min_reads = 5;
-    this->dbscan_epsilon = 0.5;
-    this->dbscan_min_pts = 5;
+    this->dbscan_epsilon = 0.99;
+    this->dbscan_min_pts = 15;
+    this->dbscan_min_pts_pct = 0.0;
     this->thread_count = 1;
     this->hmm_filepath = "data/wgs.hmm";
     this->verbose = false;
@@ -157,21 +158,6 @@ void InputData::setMinCNVLength(int min_cnv_length)
     this->min_cnv_length = (uint32_t) min_cnv_length;
 }
 
-void InputData::setMinReadSupport(int min_reads)
-{
-    // Ensure that the minimum read support is an integer and greater than 0
-    if (min_reads < 1)
-    {
-        throw std::runtime_error("Minimum read support must be an integer greater than 0");
-    }
-    this->min_reads = min_reads;
-}
-
-int InputData::getMinReadSupport() const
-{
-    return this->min_reads;
-}
-
 void InputData::setDBSCAN_Epsilon(double epsilon)
 {
     this->dbscan_epsilon = epsilon;
@@ -190,6 +176,16 @@ void InputData::setDBSCAN_MinPts(int min_pts)
 int InputData::getDBSCAN_MinPts() const
 {
     return this->dbscan_min_pts;
+}
+
+void InputData::setDBSCAN_MinPtsPct(double min_pts_pct)
+{
+    this->dbscan_min_pts_pct = min_pts_pct;
+}
+
+double InputData::getDBSCAN_MinPtsPct() const
+{
+    return this->dbscan_min_pts_pct;
 }
 
 void InputData::setChromosome(std::string chr)

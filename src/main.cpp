@@ -46,9 +46,6 @@ void runContextSV(const std::unordered_map<std::string, std::string>& args)
     if (args.find("min-cnv") != args.end()) {
         input_data.setMinCNVLength(std::stoi(args.at("min-cnv")));
     }
-    if (args.find("min-reads") != args.end()) {
-        input_data.setMinReadSupport(std::stoi(args.at("min-reads")));
-    }
     if (args.find("eth") != args.end()) {
         input_data.setEthnicity(args.at("eth"));
     }
@@ -71,6 +68,10 @@ void runContextSV(const std::unordered_map<std::string, std::string>& args)
         input_data.setDBSCAN_MinPts(std::stoi(args.at("min-pts")));
     }
 
+    if (args.find("min-pts-pct") != args.end()) {
+        input_data.setDBSCAN_MinPtsPct(std::stod(args.at("min-pts-pct")));
+    }
+
     // Run ContextSV
     run(input_data);
 }
@@ -88,9 +89,9 @@ void printUsage(const std::string& programName) {
                 << "  -h, --hmm <hmm_file>          HMM file\n"
                 << "  -n, --sample-size <size>      Sample size for HMM predictions\n"
                 << "     --min-cnv <min_length>     Minimum CNV length\n"
-                << "     --min-reads <min_reads>    Minimum read support\n"
                 << "     --eps <epsilon>             DBSCAN epsilon\n"
                 << "     --min-pts <min_pts>         DBSCAN minimum points\n"
+                << "     --min-pts-pct <min_pts_pct> Percentage of mean chr. coverage to use for DBSCAN minimum points\n"
                 << "  -e, --eth <eth_file>          ETH file\n"
                 << "  -p, --pfb <pfb_file>          PFB file\n"
                 << "     --save-cnv                 Save CNV data\n"
@@ -131,6 +132,8 @@ std::unordered_map<std::string, std::string> parseArguments(int argc, char* argv
             args["epsilon"] = argv[++i];
         } else if (arg == "--min-pts" && i + 1 < argc) {
             args["min-pts"] = argv[++i];
+        } else if (arg == "--min-pts-pct" && i + 1 < argc) {
+            args["min-pts-pct"] = argv[++i];
         } else if ((arg == "-e" || arg == "--eth") && i + 1 < argc) {
             args["eth"] = argv[++i];
         } else if ((arg == "-p" || arg == "--pfb") && i + 1 < argc) {

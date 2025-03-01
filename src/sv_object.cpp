@@ -31,11 +31,6 @@ void addSVCall(std::vector<SVCall>& sv_calls, SVCall& sv_call)
     // Insert the SV call in sorted order
     auto it = std::lower_bound(sv_calls.begin(), sv_calls.end(), sv_call);
     sv_calls.insert(it, sv_call);
-
-    // Insert the SV call in sorted order
-    // SVCall sv_call{start, end, sv_type, alt_allele, data_type, genotype, hmm_likelihood, read_depth, 1, 1};
-    // auto it = std::lower_bound(sv_calls.begin(), sv_calls.end(), sv_call);
-    // sv_calls.insert(it, sv_call);
 }
 
 uint32_t getSVCount(const std::vector<SVCall>& sv_calls)
@@ -55,12 +50,10 @@ void mergeSVs(std::vector<SVCall>& sv_calls, double epsilon, int min_pts)
     if (sv_calls.size() < 2) {
         return;
     }
+
+    // Cluster SVs using DBSCAN for each SV type
     int initial_size = sv_calls.size();
-
-    // Cluster SVs using DBSCAN for each SV type
     std::vector<SVCall> merged_sv_calls;
-
-    // Cluster SVs using DBSCAN for each SV type
     DBSCAN dbscan(epsilon, min_pts);
     for ( const auto& sv_type : {
         SVType::DEL,
@@ -94,10 +87,10 @@ void mergeSVs(std::vector<SVCall>& sv_calls, double epsilon, int min_pts)
         for (auto& cluster : cluster_map) {
             int cluster_id = cluster.first;
             std::vector<SVCall>& cluster_sv_calls = cluster.second;
-            // if (cluster_id < 0) {
-            //     continue;  // Skip noise and unclassified points
-            // } else {
-            if (true) {
+            if (cluster_id < 0) {
+                continue;  // Skip noise and unclassified points
+            } else {
+            // if (true) {
                 // Check if any SV has a non-zero likelihood
                 bool has_nonzero_likelihood = false;
                 if (cluster_sv_calls.size() > 0) {
