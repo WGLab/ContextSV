@@ -556,15 +556,6 @@ void SVCaller::processChromosome(const std::string& chr, const CHMM& hmm, std::v
     printMessage(chr + ": CIGAR SVs...");
     this->detectCIGARSVs(fp_in, idx, bamHdr, region, chr_sv_calls, chr_pos_depth_map, ref_genome);
 
-    // Calculate the median read depth across the SV calls
-    printMessage(chr + ": Calculating median SV read depth...");
-    uint32_t cumulative_depth = 0;
-    for (auto& sv_call : chr_sv_calls) {
-        cumulative_depth += sv_call.read_depth;
-    }
-    double median_sv_depth = (double)cumulative_depth / (double)chr_sv_calls.size();
-    printMessage("Median SV read depth: " + std::to_string(median_sv_depth));
-
     printMessage(chr + ": Merging CIGAR...");
     mergeSVs(chr_sv_calls, dbscan_epsilon, dbscan_min_pts);
 
