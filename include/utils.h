@@ -25,12 +25,15 @@ struct BamFileGuard {
     ~BamFileGuard() {
         if (idx) {
             hts_idx_destroy(idx);
+            idx = nullptr;
         }
         if (bamHdr) {
             bam_hdr_destroy(bamHdr);
+            bamHdr = nullptr;
         }
         if (fp_in) {
             sam_close(fp_in);
+            fp_in = nullptr;
         }
     }
 

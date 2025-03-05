@@ -8,7 +8,8 @@
 #include <map>
 #include <unordered_map>
 #include <vector>
-#include <mutex>
+// #include <mutex>
+#include <shared_mutex>
 #include <string_view>
 /// @endcond
 
@@ -18,11 +19,10 @@ class ReferenceGenome {
         std::vector<std::string> chromosomes;
         std::unordered_map<std::string, std::string> chr_to_seq;
         std::map<std::string, uint32_t> chr_to_length;
-        //mutable std::mutex mtx;
-        std::mutex& shared_mutex;
+        std::shared_mutex& shared_mutex;
 
     public:
-	    ReferenceGenome(std::mutex& mtx) : shared_mutex(mtx) {}
+	    ReferenceGenome(std::shared_mutex& shared_mutex) : shared_mutex(shared_mutex) {}
     
         int setFilepath(std::string fasta_filepath);
         std::string getFilepath() const;

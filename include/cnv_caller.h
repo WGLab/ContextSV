@@ -14,7 +14,8 @@
 #include <vector>
 #include <unordered_map>
 #include <set>
-#include <mutex>
+// #include <mutex>
+#include <shared_mutex>
 #include <future>
 
 /// @endcond
@@ -48,7 +49,8 @@ class CNVCaller {
         //mutable std::mutex snp_file_mtx;  // SNP file mutex
         //mutable std::mutex pfb_file_mtx;  // Population frequency file mutex
         //mutable std::mutex bam_file_mtx;  // BAM file mutex
-        std::mutex& shared_mutex;
+        // std::mutex& shared_mutex;
+        std::shared_mutex& shared_mutex;
 
         // Define a map of CNV genotypes by HMM predicted state.
         // We only use the first 3 genotypes (0/0, 0/1, 1/1) for the VCF output.
@@ -82,10 +84,7 @@ class CNVCaller {
         std::vector<std::string> splitRegionIntoChunks(std::string chr, uint32_t start_pos, uint32_t end_pos, int chunk_count) const;
 
     public:
-        // explicit CNVCaller(const InputData& input_data);
-        // Constructor with no arguments
-        //CNVCaller() = default;
-	    CNVCaller(std::mutex& mtx) : shared_mutex(mtx) {}
+	    CNVCaller(std::shared_mutex& shared_mutex) : shared_mutex(shared_mutex) {}
 
         // Run copy number prediction for a single SV candidate, returning the
         // likelihood, predicted CNV type, genotype, and whether SNPs were found
@@ -96,7 +95,7 @@ class CNVCaller {
 
         double calculateMeanChromosomeCoverage(std::string chr, std::vector<uint32_t>& chr_pos_depth_map, const std::string& bam_filepath, int thread_count) const;
 
-        void calculateRegionLog2Ratio(uint32_t start_pos, uint32_t end_pos, int sample_size, const std::vector<uint32_t>& pos_depth_map, double mean_chr_cov, std::vector<double>& pos_log2) const;
+        // void calculateRegionLog2Ratio(uint32_t start_pos, uint32_t end_pos, int sample_size, const std::vector<uint32_t>& pos_depth_map, double mean_chr_cov, std::vector<double>& pos_log2) const;
 
         void readSNPAlleleFrequencies(std::string chr, uint32_t start_pos, uint32_t end_pos, std::vector<uint32_t>& snp_pos, std::vector<double>& snp_baf, std::vector<double>& snp_pfb, std::vector<bool>& is_snp, const InputData& input_data) const;
 

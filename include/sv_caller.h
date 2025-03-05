@@ -11,7 +11,8 @@
 #include <htslib/sam.h>
 
 /// @cond
-#include <mutex>
+// #include <mutex>
+#include <shared_mutex>
 #include <unordered_map>
 #include <future>
 /// @endcond
@@ -30,28 +31,41 @@ struct IntervalNode {
     GenomicRegion region;
     std::string qname;
     hts_pos_t max_end;  // To optimize queries
-    IntervalNode* left;
-    IntervalNode* right;
+    // IntervalNode* left;
+    // IntervalNode* right;
+    std::unique_ptr<IntervalNode> left;
+    std::unique_ptr<IntervalNode> right;
 
     IntervalNode(GenomicRegion r, std::string name)
         : region(r), qname(name), max_end(r.end), left(nullptr), right(nullptr) {}
 };
 
-IntervalNode* insert(IntervalNode* root, GenomicRegion region, std::string qname) {
-    if (!root)
-        return new IntervalNode(region, qname);
+// IntervalNode* insert(IntervalNode* root, GenomicRegion region, std::string
+// qname) {
+void insert(std::unique_ptr<IntervalNode>& root, GenomicRegion region, std::string qname) {
+    if (!root) {
+        // return new IntervalNode(region, qname);
+        root = std::make_unique<IntervalNode>(region, qname);
+        return;
+    }
 
     if (region.start < root->region.start)
-        root->left = insert(root->left, region, qname);
-    else
-        root->right = insert(root->right, region, qname);
+    {
+        // root->left = insert(root->left, region, qname);
+        insert(root->left, region, qname);
+    } else {
+        // root->right = insert(root->right, region, qname);
+        insert(root->right, region, qname);
+    }
 
     // Update max_end
     root->max_end = std::max(root->max_end, region.end);
-    return root;
+    // return root;
 }
 
-void findOverlaps(IntervalNode* root, GenomicRegion query, std::vector<std::string>& result) {
+// void findOverlaps(IntervalNode* root, GenomicRegion query,
+// std::vector<std::string>& result) {
+void findOverlaps(const std::unique_ptr<IntervalNode>& root, GenomicRegion query, std::vector<std::string>& result) {
     if (!root) return;
 
     // If overlapping, add to result
@@ -75,17 +89,17 @@ struct MismatchData {
 class SVCaller {
     private:
         int min_mapq = 20;          // Minimum mapping quality to be considered
-        std::mutex shared_mutex;
+        mutable std::shared_mutex shared_mutex;  // Shared mutex for thread safety
 
         std::vector<std::string> getChromosomes(const std::string& bam_filepath);
 
-        std::vector<SVCall> getSplitAlignments(samFile* fp_in, hts_idx_t* idx, bam_hdr_t* bamHdr, const std::string& region, std::unordered_map<std::string, GenomicRegion>& primary_map, std::unordered_map<std::string, std::vector<GenomicRegion>>& supp_map);
+        void getSplitAlignments(samFile* fp_in, hts_idx_t* idx, bam_hdr_t* bamHdr, const std::string& region, std::vector<SVCall>& sv_calls);
 
         // Detect SVs from the CIGAR string of a read alignment, and return the
         // mismatch rate, and the start and end positions of the query sequence
         void detectSVsFromCIGAR(bam_hdr_t* header, bam1_t* alignment, std::vector<SVCall>& sv_calls, bool is_primary, const std::vector<uint32_t>& pos_depth_map, const ReferenceGenome& ref_genome);
 
-        void processChromosome(const std::string& chr, const CHMM& hmm, std::vector<SVCall>& combined_sv_calls, const InputData& input_data, const ReferenceGenome& ref_genome);
+        void processChromosome(const std::string& chr, const CHMM& hmm, std::vector<SVCall>& combined_sv_calls, const InputData& input_data, const ReferenceGenome& ref_genome, const std::vector<uint32_t>& chr_pos_depth_map, double mean_chr_cov, std::vector<SVCall>& split_sv_calls);
 
         // Detect SVs at a region from long read alignments. This is used for
         // whole genome analysis running in parallel.
@@ -96,14 +110,16 @@ class SVCaller {
         int readNextAlignment(samFile *fp_in, hts_itr_t *itr, bam1_t *bam1);
 
         // Detect SVs from split alignments
-        void detectSVsFromSplitReads(const std::string& region, samFile* fp_in, hts_idx_t* idx, bam_hdr_t* bamHdr, std::vector<SVCall>& split_sv_calls, const CNVCaller& cnv_caller, const CHMM& hmm, double mean_chr_cov, const std::vector<uint32_t>& pos_depth_map, const InputData& input_data);
+        // void detectSVsFromSplitReads(const std::string& region, samFile* fp_in, hts_idx_t* idx, bam_hdr_t* bamHdr, std::vector<SVCall>& split_sv_calls, const CNVCaller& cnv_caller, const CHMM& hmm, double mean_chr_cov, const std::vector<uint32_t>& pos_depth_map, const InputData& input_data);
 
         // Calculate the mismatch rate given a map of query positions to
         // match/mismatch (1/0) values within a specified range of the query
         // sequence
         double calculateMismatchRate(const MismatchData& mismatch_data);
 
-        void saveToVCF(const std::unordered_map<std::string, std::vector<SVCall>>& sv_calls, const std::string& output_dir, const ReferenceGenome& ref_genome) const;
+        void runSplitReadCopyNumberPredictions(const std::string& chr, std::vector<SVCall>& split_sv_calls, const CNVCaller &cnv_caller, const CHMM &hmm, double mean_chr_cov, const std::vector<uint32_t> &pos_depth_map, const InputData &input_data);
+
+        void saveToVCF(const std::unordered_map<std::string, std::vector<SVCall>> &sv_calls, const std::string &output_dir, const ReferenceGenome &ref_genome) const;
 
         // Calculate the read depth (INFO/DP) for a region
         int calculateReadDepth(const std::vector<uint32_t>& pos_depth_map, uint32_t start, uint32_t end);
