@@ -167,7 +167,7 @@ void SVCaller::getSplitAlignments(samFile *fp_in, hts_idx_t *idx, bam_hdr_t *bam
 
     // For each primary alignment cluster the supplementary alignment start and
     // end positions, keeping the median of the largest cluster
-    std::vector<SVCall> sv_candidates;
+    // std::vector<SVCall> sv_candidates;
     int current_group = 0;
     int min_length = 2000;
     int max_length = 1000000;
@@ -304,7 +304,7 @@ void SVCaller::getSplitAlignments(samFile *fp_in, hts_idx_t *idx, bam_hdr_t *bam
         SVType sv_type = inversion ? SVType::INV : SVType::UNKNOWN;
         if (sv_length >= min_length && sv_length <= max_length) {
             SVCall sv_candidate(sv_start, sv_end, sv_type, ".", "NA", "./.", 0.0, 0, 0, 0);
-            sv_candidates.push_back(sv_candidate);
+            sv_calls.push_back(sv_candidate);
         }
     }
 
@@ -592,10 +592,10 @@ void SVCaller::processChromosome(const std::string& chr, const CHMM& hmm, std::v
     // printMessage(chr + ": Unifying SVs...");
     // chr_sv_calls.insert(chr_sv_calls.end(), split_sv_calls.begin(), split_sv_calls.end());
 
-    // Sort the SV calls by start position
-    std::sort(chr_sv_calls.begin(), chr_sv_calls.end(), [](const SVCall& a, const SVCall& b) {
-        return a.start < b.start;
-    });
+    // // Sort the SV calls by start position
+    // std::sort(chr_sv_calls.begin(), chr_sv_calls.end(), [](const SVCall& a, const SVCall& b) {
+    //     return a.start < b.start;
+    // });
 
     printMessage("Completed chromosome " + chr);
 }
@@ -622,13 +622,13 @@ void SVCaller::run(const InputData& input_data)
     }
 
     // [TEST] Keep only the first 6 chromosomes
-    chromosomes.resize(4);
-    // Remove the first chromosome
-    chromosomes.erase(chromosomes.begin());
-    printMessage("Chromosomes: " + std::to_string(chromosomes.size()));
-    for (const auto& chr : chromosomes) {
-        printMessage("  " + chr);
-    }
+    // chromosomes.resize(4);
+    // // Remove the first chromosome
+    // chromosomes.erase(chromosomes.begin());
+    // printMessage("Chromosomes: " + std::to_string(chromosomes.size()));
+    // for (const auto& chr : chromosomes) {
+    //     printMessage("  " + chr);
+    // }
     
     // Read the HMM from the file
     std::string hmm_filepath = input_data.getHMMFilepath();
@@ -644,29 +644,63 @@ void SVCaller::run(const InputData& input_data)
     std::unordered_map<std::string, double> chr_mean_cov_map;
     const std::string bam_filepath = input_data.getLongReadBam();
     int chr_thread_count = input_data.getThreadCount();
-    std::cout << "Reading chromosome coverage..." << std::endl;
-    std::cout << "(Thread count: " << chr_thread_count << ")" << std::endl;
-    int current_chr = 0;
-    int total_chr_count = chromosomes.size();
+
+    // Initialize the chromosome position depth map and mean coverage map
     for (const auto& chr : chromosomes) {
-        current_chr++;
         uint32_t chr_len = ref_genome.getChromosomeLength(chr);
         if (chr_len == 0) {
-            printError("ERROR: chromosome " + chr + " not found in reference genome");
-            return;
+            printError("Chromosome " + chr + " not found in reference genome");
+            continue;
         }
-        printMessage("(" + std::to_string(current_chr) + "/" + std::to_string(total_chr_count) + ") Reading " + chr + "...");
-        std::vector<uint32_t> pos_depth_map(chr_len+1, 0);  // 1-based index
-        double mean_chr_cov = cnv_caller.calculateMeanChromosomeCoverage(chr, pos_depth_map, bam_filepath, chr_thread_count);
-        if (mean_chr_cov == 0.0 || pos_depth_map.size() == 0) {
-            printError("ERROR: failed to calculate mean chromosome coverage for " + chr);
-            return;
-        }
-        chr_pos_depth_map[chr] = std::move(pos_depth_map);
-        chr_mean_cov_map[chr] = mean_chr_cov;
-        printMessage("(" + std::to_string(current_chr) + "/" + std::to_string(total_chr_count) + ") Mean cov. for " + chr + ": " + std::to_string(mean_chr_cov));
+        chr_pos_depth_map[chr] = std::vector<uint32_t>(chr_len+1, 0);  // 1-based index
+        chr_mean_cov_map[chr] = 0.0;
     }
-    printMessage("Completed reading chromosome coverage.");
+    cnv_caller.calculateMeanChromosomeCoverage(chromosomes, chr_pos_depth_map, chr_mean_cov_map, bam_filepath, chr_thread_count);
+
+    // Remove chromosomes with no reads (mean coverage is zero)
+    std::vector<std::string> null_chr;
+    for (const auto& chr : chromosomes) {
+        if (chr_mean_cov_map[chr] == 0.0) {
+            null_chr.push_back(chr);
+        }
+    }
+    for (const auto& chr : null_chr) {
+        printMessage("Removing chromosome " + chr + " with no reads...");
+        chromosomes.erase(std::remove(chromosomes.begin(), chromosomes.end(), chr), chromosomes.end());
+    }
+    // std::cout << "Reading chromosome coverage..." << std::endl;
+    // std::cout << "(Thread count: " << chr_thread_count << ")" << std::endl;
+    // int current_chr = 0;
+    // int total_chr_count = chromosomes.size();
+    // std::vector<std::string> null_chr;
+    // for (const auto& chr : chromosomes) {
+    //     current_chr++;
+    //     uint32_t chr_len = ref_genome.getChromosomeLength(chr);
+    //     if (chr_len == 0) {
+    //         printError("ERROR: chromosome " + chr + " not found in reference genome");
+    //         return;
+    //     }
+    //     printMessage("(" + std::to_string(current_chr) + "/" + std::to_string(total_chr_count) + ") Reading " + chr + "...");
+    //     std::vector<uint32_t> pos_depth_map(chr_len+1, 0);  // 1-based index
+    //     double mean_chr_cov = cnv_caller.calculateMeanChromosomeCoverage(chr, pos_depth_map, bam_filepath, chr_thread_count);
+    //     if (mean_chr_cov == 0.0 || pos_depth_map.size() == 0) {
+    //         // No reads, continue to the next chromosome
+    //         null_chr.push_back(chr);
+    //         continue;
+    //         // printError("ERROR: failed to calculate mean chromosome coverage for " + chr);
+    //         // return;
+    //     }
+    //     chr_pos_depth_map[chr] = std::move(pos_depth_map);
+    //     chr_mean_cov_map[chr] = mean_chr_cov;
+    //     printMessage("(" + std::to_string(current_chr) + "/" + std::to_string(total_chr_count) + ") Mean cov. for " + chr + ": " + std::to_string(mean_chr_cov));
+    // }
+    // printMessage("Completed reading chromosome coverage.");
+
+    // Remove chromosomes with no reads
+    // for (const auto& chr : null_chr) {
+    //     printMessage("Removing chromosome " + chr + " with no reads...");
+    //     chromosomes.erase(std::remove(chromosomes.begin(), chromosomes.end(), chr), chromosomes.end());
+    // }
 
     // Use multi-threading across chromosomes. If a single chromosome is
     // specified, use a single main thread (multi-threading is used for file I/O)
@@ -708,7 +742,8 @@ void SVCaller::run(const InputData& input_data)
     }
 
     // Wait for all tasks to complete
-    current_chr = 0;
+    int current_chr = 0;
+    int total_chr_count = chromosomes.size();
     for (auto& future : futures) {
         try {
             current_chr++;
@@ -756,7 +791,21 @@ void SVCaller::run(const InputData& input_data)
         std::vector<SVCall>& sv_calls = entry.second;
         whole_genome_sv_calls[chr].insert(whole_genome_sv_calls[chr].end(), sv_calls.begin(), sv_calls.end());
     }
-    // sv_calls.insert(sv_calls.end(), split_sv_calls.begin(), split_sv_calls.end());
+    // sv_calls.insert(sv_calls.end(), split_sv_calls.begin(),
+    // split_sv_calls.end());
+    
+
+    // Sort the SV calls by start position
+    for (auto& entry : whole_genome_sv_calls) {
+        std::sort(entry.second.begin(), entry.second.end(), [](const SVCall& a, const SVCall& b) {
+            return a.start < b.start;
+        });
+    }
+        // // Sort the SV calls by start position
+        // std::sort(chr_sv_calls.begin(), chr_sv_calls.end(), [](const SVCall& a, const SVCall& b) {
+        //     return a.start < b.start;
+        // });
+
 
     // Print the total number of SVs detected for each chromosome
     uint32_t total_sv_count = 0;
@@ -858,6 +907,12 @@ void SVCaller::runSplitReadCopyNumberPredictions(const std::string& chr, std::ve
                 SVCall sv_call(sv_candidate.start, sv_candidate.end, supp_type, alt_allele, "SPLIT", genotype, supp_lh, read_depth, 1, sv_candidate.cluster_size);
                 addSVCall(split_sv_calls, sv_call);
             }
+        } else if (supp_type == SVType::UNKNOWN && sv_candidate.sv_type == SVType::INV) {
+            // Inversion with no CNV prediction
+            int read_depth = this->calculateReadDepth(pos_depth_map, sv_candidate.start, sv_candidate.end);
+            std::string alt_allele = "<INV>";
+            SVCall sv_call(sv_candidate.start, sv_candidate.end, SVType::INV, alt_allele, "SPLIT", genotype, supp_lh, read_depth, 1, sv_candidate.cluster_size);
+            addSVCall(split_sv_calls, sv_call);
         }
         current_sv++;
         if (current_sv % 1000 == 0) {

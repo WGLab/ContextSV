@@ -77,6 +77,7 @@ void CNVCaller::querySNPRegion(std::string chr, uint32_t start_pos, uint32_t end
     // this->calculateSNPLog2Ratios(snp_pos, snp_log2_cov, pos_depth_map,
     // mean_chr_cov, input_data);
     sample_size = std::max((int) snp_pos.size(), sample_size);
+    //printMessage("Sample size: " + std::to_string(sample_size));
     // std::vector<uint32_t> snp_pos_hmm(sample_size, 0);
     // std::vector<double> snp_baf_hmm(sample_size, -1.0);
     // std::vector<double> snp_pfb_hmm(sample_size, 0.5);
@@ -161,11 +162,11 @@ void CNVCaller::querySNPRegion(std::string chr, uint32_t start_pos, uint32_t end
     // this->calculateRegionLog2Ratio(start_pos, end_pos, sample_size, pos_depth_map, mean_chr_cov, snp_log2_cov);
 
     // Update the SNP data with all information
-    snp_data.pos = std::move(snp_pos);
-    snp_data.baf = std::move(snp_baf);
-    snp_data.pfb = std::move(snp_pfb);
+    snp_data.pos = std::move(snp_pos_hmm);
+    snp_data.baf = std::move(snp_baf_hmm);
+    snp_data.pfb = std::move(snp_pfb_hmm);
     snp_data.log2_cov = std::move(snp_log2_hmm);
-    snp_data.is_snp = std::move(is_snp);
+    snp_data.is_snp = std::move(is_snp_hmm);
 }
 
 std::tuple<double, SVType, std::string, bool> CNVCaller::runCopyNumberPrediction(std::string chr, const CHMM& hmm, uint32_t start_pos, uint32_t end_pos, double mean_chr_cov, const std::vector<uint32_t>& pos_depth_map, const InputData& input_data) const
@@ -379,67 +380,70 @@ std::vector<std::string> CNVCaller::splitRegionIntoChunks(std::string chr, uint3
 }
 
 // Calculate the mean chromosome coverage
-double CNVCaller::calculateMeanChromosomeCoverage(std::string chr, std::vector<uint32_t>& chr_pos_depth_map, const std::string& bam_filepath, int thread_count) const
+// double CNVCaller::calculateMeanChromosomeCoverage(std::string chr,
+// std::vector<uint32_t>& chr_pos_depth_map, const std::string& bam_filepath,
+// int thread_count) const
+void CNVCaller::calculateMeanChromosomeCoverage(const std::vector<std::string>& chromosomes, std::unordered_map<std::string, std::vector<uint32_t>>& chr_pos_depth_map, std::unordered_map<std::string, double>& chr_mean_cov_map, const std::string& bam_filepath, int thread_count) const
 {
+    // Open the BAM file
+    // std::shared_lock<std::shared_mutex> lock(this->shared_mutex);  // Lock the BAM file
+    printMessage("Opening BAM file: " + bam_filepath);
+    samFile *bam_file = sam_open(bam_filepath.c_str(), "r");
+    if (!bam_file)
     {
-        // Open the BAM file
-        // std::shared_lock<std::shared_mutex> lock(this->shared_mutex);  //
-        // Lock the BAM file
-        printMessage("Opening BAM file: " + bam_filepath);
-        samFile *bam_file = sam_open(bam_filepath.c_str(), "r");
-        if (!bam_file)
-        {
-            printError("ERROR: Could not open BAM file: " + bam_filepath);
-            return 0.0;
-        }
+        printError("ERROR: Could not open BAM file: " + bam_filepath);
+        return;
+    }
 
-        // Enable multi-threading while opening the BAM file
-        hts_set_threads(bam_file, thread_count);
+    // Enable multi-threading while opening the BAM file
+    hts_set_threads(bam_file, thread_count);
 
-        // Read the header
-        bam_hdr_t *bam_header = sam_hdr_read(bam_file);
-        if (!bam_header)
-        {
-            sam_close(bam_file);
-            printError("ERROR: Could not read header from BAM file: " + bam_filepath);
-            return 0.0;
-        }
+    // Read the header
+    bam_hdr_t *bam_header = sam_hdr_read(bam_file);
+    if (!bam_header)
+    {
+        sam_close(bam_file);
+        printError("ERROR: Could not read header from BAM file: " + bam_filepath);
+        return;
+    }
 
-        // Load the index
-        hts_idx_t *bam_index = sam_index_load(bam_file, bam_filepath.c_str());
-        if (!bam_index)
-        {
-            bam_hdr_destroy(bam_header);
-            sam_close(bam_file);
-            printError("ERROR: Could not load index for BAM file: " + bam_filepath);
-            return 0.0;
-        }
-        BamFileGuard bam_guard(bam_file, bam_index, bam_header);  // Guard to close the BAM file
+    // Load the index
+    hts_idx_t *bam_index = sam_index_load(bam_file, bam_filepath.c_str());
+    if (!bam_index)
+    {
+        bam_hdr_destroy(bam_header);
+        sam_close(bam_file);
+        printError("ERROR: Could not load index for BAM file: " + bam_filepath);
+        return;
+    }
+    BamFileGuard bam_guard(bam_file, bam_index, bam_header);  // Guard to close the BAM file
 
+    // Initialize the record
+    bam1_t *bam_record = bam_init1();
+    if (!bam_record)
+    {
+        // Clean up the BAM file and index
+        bam_hdr_destroy(bam_header);
+        sam_close(bam_file);
+        printError("ERROR: Could not initialize BAM record.");
+        return;
+    }
+
+    // Iterate through each chromosome and update the depth map
+    int current_chr = 0;
+    int total_chr_count = chromosomes.size();
+    for (const std::string& chr : chromosomes)
+    {
         // Create an iterator for the chromosome
         hts_itr_t *bam_iter = sam_itr_querys(bam_index, bam_header, chr.c_str());
         if (!bam_iter)
         {
             printError("ERROR: Could not create iterator for chromosome: " + chr + ", check if the chromosome exists in the BAM file.");
-            return 0.0;
+            continue;
         }
 
-        // Initialize the record
-        bam1_t *bam_record = bam_init1();
-        if (!bam_record)
-        {
-            hts_itr_destroy(bam_iter);
-            printError("ERROR: Could not initialize BAM record.");
-            return 0.0;
-        }
-
-        // Set threading back to 1 for reading the BAM file
-        // printMessage("Setting threads to 1 for reading BAM file...");
-        // hts_set_threads(bam_file, 1);
-        // printMessage("Threads set to 1 for reading BAM file.");
-
-        // Iterate through the chromosome and update the depth map
-        printMessage("Iterating through BAM file reads...");
+        printMessage("(" + std::to_string(++current_chr) + "/" + std::to_string(total_chr_count) + ") Reading BAM file for chromosome: " + chr);
+        std::vector<uint32_t>& pos_depth_map = chr_pos_depth_map[chr];
         while (sam_itr_next(bam_file, bam_iter, bam_record) >= 0)
         {
             // Ignore UNMAP, SECONDARY, QCFAIL, and DUP reads
@@ -468,12 +472,12 @@ double CNVCaller::calculateMeanChromosomeCoverage(std::string chr, std::vector<u
                     // Update the depth for each position in the alignment
                     for (uint32_t j = 0; j < op_len; j++)
                     {
-                        if (ref_pos + j >= chr_pos_depth_map.size())
+                        if (ref_pos + j >= pos_depth_map.size())
                         {
                             printError("ERROR: Reference position out of range for " + chr + ":" + std::to_string(ref_pos+j));
                             continue;
                         }
-                        chr_pos_depth_map[ref_pos + j]++;
+                        pos_depth_map[ref_pos + j]++;
                         // try {
                         //     chr_pos_depth_map[ref_pos + j]++;
                         // } catch (const std::out_of_range& oor) {
@@ -494,55 +498,58 @@ double CNVCaller::calculateMeanChromosomeCoverage(std::string chr, std::vector<u
             }
         }
 
-        // Clean up
-        bam_destroy1(bam_record);
+        // Clean up the iterator
         hts_itr_destroy(bam_iter);
+
+        printMessage("Finished reading BAM file, calculating mean chromosome coverage...");
+
+        // // Calculate the mean chromosome coverage for positions with non-zero depth
+        // uint64_t cum_depth = 0;
+        // uint32_t pos_count = 0;
+        // for (const auto& pos_depth : chr_pos_depth_map)
+        // {
+        //     if (pos_depth > 0)
+        //     {
+        //         cum_depth += pos_depth;
+        //         pos_count++;
+        //     }
+        // }
+
+        // double mean_chr_cov = 0.0;
+        // if (pos_count > 0)
+        // {
+        //     mean_chr_cov = static_cast<double>(cum_depth) / static_cast<double>(pos_count);
+        // }
+        // printMessage("Completed calculating mean chromosome coverage: " +
+        // std::to_string(mean_chr_cov));
+        
+        // Parallel sum of the depth map
+        uint64_t cum_depth = std::reduce(
+            std::execution::par,
+            pos_depth_map.begin(),
+            pos_depth_map.end(),
+            0ULL
+        );
+
+        // Parallel count of the non-zero depth positions
+        uint32_t pos_count = std::count_if(
+            std::execution::par,
+            pos_depth_map.begin(),
+            pos_depth_map.end(),
+            [](uint32_t depth) { return depth > 0; }
+        );
+
+        printMessage("Number of positions with non-zero depth: " + std::to_string(pos_count));
+        printMessage("Total depth: " + std::to_string(cum_depth));
+
+        double mean_chr_cov = (pos_count > 0) ? static_cast<double>(cum_depth) / static_cast<double>(pos_count) : 0.0;
+        chr_mean_cov_map[chr] = mean_chr_cov;
+
+        printMessage("(" + std::to_string(current_chr) + "/" + std::to_string(total_chr_count) + ") Mean chromosome coverage for " + chr + ": " + std::to_string(mean_chr_cov));
     }
-    printMessage("Finished reading BAM file, calculating mean chromosome coverage...");
 
-    // // Calculate the mean chromosome coverage for positions with non-zero depth
-    // uint64_t cum_depth = 0;
-    // uint32_t pos_count = 0;
-    // for (const auto& pos_depth : chr_pos_depth_map)
-    // {
-    //     if (pos_depth > 0)
-    //     {
-    //         cum_depth += pos_depth;
-    //         pos_count++;
-    //     }
-    // }
-
-    // double mean_chr_cov = 0.0;
-    // if (pos_count > 0)
-    // {
-    //     mean_chr_cov = static_cast<double>(cum_depth) / static_cast<double>(pos_count);
-    // }
-    // printMessage("Completed calculating mean chromosome coverage: " +
-    // std::to_string(mean_chr_cov));
-    
-    // Parallel sum of the depth map
-    uint64_t cum_depth = std::reduce(
-        std::execution::par,
-        chr_pos_depth_map.begin(),
-        chr_pos_depth_map.end(),
-        0ULL
-    );
-
-    // Parallel count of the non-zero depth positions
-    uint32_t pos_count = std::count_if(
-        std::execution::par,
-        chr_pos_depth_map.begin(),
-        chr_pos_depth_map.end(),
-        [](uint32_t depth) { return depth > 0; }
-    );
-
-    printMessage("Number of positions with non-zero depth: " + std::to_string(pos_count));
-    printMessage("Total depth: " + std::to_string(cum_depth));
-
-    double mean_chr_cov = (pos_count > 0) ? static_cast<double>(cum_depth) / static_cast<double>(pos_count) : 0.0;
-    printMessage("Completed calculating mean chromosome coverage: " + std::to_string(mean_chr_cov));
-
-    return mean_chr_cov;
+    // Clean up
+    // sam_close(bam_file);
 }
 
 // void CNVCaller::calculateSNPLog2Ratios(const std::vector<uint32_t>& snp_pos, const std::vector<double>& snp_log2_cov, const std::vector<uint32_t>& pos_depth_map, double mean_chr_cov) const
