@@ -630,12 +630,6 @@ void CNVCaller::readSNPAlleleFrequencies(std::string chr, uint32_t start_pos, ui
 
     // Use multi-threading if not threading by chromosome
     int thread_count = input_data.getThreadCount();
-    // if (!input_data.isSingleChr())
-    // {
-    //     // Use half of the threads for SNP reading
-    //     thread_count = std::max(1, input_data.getThreadCount() / 2);
-    // }
-    printMessage("Using " + std::to_string(thread_count) + " threads for SNP reading...");
     bcf_sr_set_threads(snp_reader, thread_count);
 
     // Add the SNP file to the reader
@@ -721,31 +715,11 @@ void CNVCaller::readSNPAlleleFrequencies(std::string chr, uint32_t start_pos, ui
 
         // Use multi-threading if not threading by chromosome
         int thread_count = input_data.getThreadCount();
-        // if (!input_data.isSingleChr())
-        // {
-        //     // Use half of the threads for population allele frequency reading
-        //     thread_count = std::max(1, input_data.getThreadCount() / 2);
-        // }
-        printMessage("Using " + std::to_string(thread_count) + " threads for population allele frequency reading...");
         bcf_sr_set_threads(pfb_reader, thread_count);
     }
 
-    // Split the region into samples
-    // int sample_size = snp_pos.size();
-    // std::vector<std::string> region_chunks = splitRegionIntoChunks(chr, start_pos, end_pos, sample_size);
-
-    // Loop through the samples and read the SNP data, storing the first
-    // SNP position and BAF value for each sample
-    int current_region = 0;
-    // for (size_t i = 0; i < region_chunks.size(); ++i)
-    // {
-    //     current_region++;
-
     // Read the SNP data ----------------------------------------------
-
     // Set the region
-    printMessage("Setting region for SNP reader...");
-    // std::string region_str = region_chunks[i];
     if (bcf_sr_set_regions(snp_reader, chr.c_str(), 0) < 0)
     {
         printError("ERROR: Could not set region for SNP reader: " + chr);
@@ -754,7 +728,6 @@ void CNVCaller::readSNPAlleleFrequencies(std::string chr, uint32_t start_pos, ui
         return;
     }
 
-    printMessage("Region set for SNP reader, loading SNP data...");
     bool snp_found = false;
     while (bcf_sr_next_line(snp_reader) > 0)
     {
@@ -849,13 +822,11 @@ void CNVCaller::readSNPAlleleFrequencies(std::string chr, uint32_t start_pos, ui
     {
         // Set the region for the population allele frequency reader
         std::string pfb_region_str = chr_gnomad + ":" + std::to_string(min_snp_pos) + "-" + std::to_string(max_snp_pos);
-        printMessage("Setting region for population allele frequency reader: " + pfb_region_str);
         if (bcf_sr_set_regions(pfb_reader, pfb_region_str.c_str(), 0) < 0)
         {
             printError("ERROR: Could not set region for population allele frequency reader: " + pfb_region_str);
         }
 
-        printMessage("Loading population allele frequency data...");
         // for (size_t i = 0; i < snp_pos.size(); ++i)
         // {
         // Set the region as the SNP position

@@ -246,35 +246,43 @@ void SVCaller::getSplitAlignments(samFile *fp_in, hts_idx_t *idx, bam_hdr_t *bam
         // SV
         int primary_pos = -1;
         int primary_pos2 = -1;
+        int primary_cluster_size = 0;
         if (primary_start_cluster.size() > primary_end_cluster.size()) {
             std::sort(primary_start_cluster.begin(), primary_start_cluster.end());
             primary_pos = primary_start_cluster[primary_start_cluster.size() / 2];
+            primary_cluster_size = primary_start_cluster.size();
         } else if (primary_end_cluster.size() > primary_start_cluster.size()) {
             std::sort(primary_end_cluster.begin(), primary_end_cluster.end());
             primary_pos = primary_end_cluster[primary_end_cluster.size() / 2];
+            primary_cluster_size = primary_end_cluster.size();
         } else {
             // Use both positions
             std::sort(primary_start_cluster.begin(), primary_start_cluster.end());
             std::sort(primary_end_cluster.begin(), primary_end_cluster.end());
             primary_pos = primary_start_cluster[primary_start_cluster.size() / 2];
             primary_pos2 = primary_end_cluster[primary_end_cluster.size() / 2];
+            primary_cluster_size = primary_start_cluster.size();
         }
 
         // Get the supplementary alignment positions
         int supp_pos = -1;
         int supp_pos2 = -1;
+        int supp_cluster_size = 0;
         if (supp_start_cluster.size() > supp_end_cluster.size()) {
             std::sort(supp_start_cluster.begin(), supp_start_cluster.end());
             supp_pos = supp_start_cluster[supp_start_cluster.size() / 2];
+            supp_cluster_size = supp_start_cluster.size();
         } else if (supp_end_cluster.size() > supp_start_cluster.size()) {
             std::sort(supp_end_cluster.begin(), supp_end_cluster.end());
             supp_pos = supp_end_cluster[supp_end_cluster.size() / 2];
+            supp_cluster_size = supp_end_cluster.size();
         } else {
             // Use both positions. This has been shown to occur in nested SVs
             std::sort(supp_start_cluster.begin(), supp_start_cluster.end());
             std::sort(supp_end_cluster.begin(), supp_end_cluster.end());
             supp_pos = supp_start_cluster[supp_start_cluster.size() / 2];
             supp_pos2 = supp_end_cluster[supp_end_cluster.size() / 2];
+            supp_cluster_size = supp_start_cluster.size();
         }
 
         // If two of either were found, use the larger SV candidate
@@ -301,12 +309,33 @@ void SVCaller::getSplitAlignments(samFile *fp_in, hts_idx_t *idx, bam_hdr_t *bam
         int sv_start = std::min(primary_pos, supp_pos);
         int sv_end = std::max(primary_pos, supp_pos);
         int sv_length = sv_end - sv_start + 1;
+        int cluster_size = std::max(primary_cluster_size, supp_cluster_size);
         SVType sv_type = inversion ? SVType::INV : SVType::UNKNOWN;
         if (sv_length >= min_length && sv_length <= max_length) {
-            SVCall sv_candidate(sv_start, sv_end, sv_type, ".", "NA", "./.", 0.0, 0, 0, 0);
-            sv_calls.push_back(sv_candidate);
+            SVCall sv_candidate(sv_start, sv_end, sv_type, ".", "PRIMSUPP", "./.", 0.0, 0, 0, cluster_size);
+            addSVCall(sv_calls, sv_candidate);
+            // printMessage(region + ": Found SV candidate " + std::to_string(sv_start) + "-" + std::to_string(sv_end) + " with length " + std::to_string(sv_length) + " for group " + std::to_string(current_group) + " with inversion status " + std::to_string(inversion));
         }
     }
+
+    // Combine SVs with identical start and end positions, and sum the cluster
+    // sizes
+    std::vector<SVCall> combined_sv_calls;
+    std::sort(sv_calls.begin(), sv_calls.end(), [](const SVCall& a, const SVCall& b) {
+        return a.start < b.start || (a.start == b.start && a.end < b.end);
+    });
+    int merge_count = 0;
+    for (size_t i = 0; i < sv_calls.size(); i++) {
+        SVCall& sv_call = sv_calls[i];
+        if (i > 0 && sv_call.start == sv_calls[i - 1].start && sv_call.end == sv_calls[i - 1].end) {
+            sv_calls[i - 1].cluster_size += sv_call.cluster_size;
+            merge_count++;
+        } else {
+            combined_sv_calls.push_back(sv_call);
+        }
+    }
+    sv_calls = std::move(combined_sv_calls);
+    printMessage(region + ": Merged " + std::to_string(merge_count) + " SV candidates with identical start and end positions");
 
     // return sv_candidates;
 }
@@ -456,7 +485,7 @@ void SVCaller::detectSVsFromCIGAR(bam_hdr_t* header, bam1_t* alignment, std::vec
                     alt_allele = ins_seq_str;
                 }
                 SVCall sv_call(ins_pos, ins_end, SVType::INS, alt_allele, "CIGARINS", "./.", default_lh, read_depth, 1, 0);
-                addSVCall(sv_calls, sv_call);                
+                addSVCall(sv_calls, sv_call);
 
             // Check if the CIGAR operation is a deletion
             } else if (op == BAM_CDEL && is_primary) {
@@ -565,13 +594,6 @@ void SVCaller::processChromosome(const std::string& chr, const CHMM& hmm, std::v
     int region_sv_count = getSVCount(chr_sv_calls);
     printMessage("Total SVs detected from CIGAR string: " + std::to_string(region_sv_count));
 
-    // Run copy number variant predictions on the SVs detected from the
-    // CIGAR string, using a minimum CNV length threshold
-    // if (region_sv_count > 0) {
-    //     printMessage(chr + ": CIGAR predictions...");
-    //     cnv_caller.runCIGARCopyNumberPrediction(chr, chr_sv_calls, hmm, mean_chr_cov, chr_pos_depth_map, input_data);
-    // }
-
     // [TEST] Before this section has no memory leaks
     // Run split-read SV and copy number variant predictions
     printMessage(chr + ": Split read SVs...");
@@ -580,6 +602,7 @@ void SVCaller::processChromosome(const std::string& chr, const CHMM& hmm, std::v
     // std::vector<SVCall> sv_candidates = this->getSplitAlignments(fp_in, idx,
     // bamHdr, region, primary_map, supp_map);
     this->getSplitAlignments(fp_in, idx, bamHdr, region, split_sv_calls);
+
     // std::vector<SVCall> split_sv_calls;
     // this->detectSVsFromSplitReads(region, fp_in, idx, bamHdr, split_sv_calls, cnv_caller, hmm, mean_chr_cov, chr_pos_depth_map, input_data);
 
@@ -773,15 +796,18 @@ void SVCaller::run(const InputData& input_data)
     for (auto& entry : whole_genome_split_sv_calls) {
         const std::string& chr = entry.first;
         std::vector<SVCall>& sv_calls = entry.second;
+
         if (sv_calls.size() > 0) {
-            printMessage("Running copy number predictions on " + chr + "...");
+            printMessage("Running copy number predictions on " + chr + " with " + std::to_string(sv_calls.size()) + " SV candidates...");
             this->runSplitReadCopyNumberPredictions(chr, sv_calls, cnv_caller, hmm, chr_mean_cov_map[chr], chr_pos_depth_map[chr], input_data);
 
             // Merge the split-read SVs separately
-            printMessage(chr + ": Merging split reads...");
-            double split_epsilon = 0.45;
-            int split_min_pts = 2;  // This is low since split alignments were already previously merged
-            mergeSVs(sv_calls, split_epsilon, split_min_pts);
+            // printMessage(chr + ": Merging split reads...");
+            // double split_epsilon = 0.45;
+            // // int split_min_pts = 2;  // This is low since split alignments
+            // // were already previously merged
+            // int split_min_pts = 1;
+            // mergeSVs(sv_calls, split_epsilon, split_min_pts);
         }
     }
 
@@ -796,11 +822,25 @@ void SVCaller::run(const InputData& input_data)
     
 
     // Sort the SV calls by start position
-    for (auto& entry : whole_genome_sv_calls) {
-        std::sort(entry.second.begin(), entry.second.end(), [](const SVCall& a, const SVCall& b) {
-            return a.start < b.start;
-        });
-    }
+    // printMessage("Sorting SVs...");
+    // for (auto& entry : whole_genome_sv_calls) {
+    //     std::sort(entry.second.begin(), entry.second.end(), [](const SVCall& a, const SVCall& b) {
+    //         return a.start < b.start || (a.start == b.start && a.end < b.end);
+    //     });
+
+    //     // Check that the SVs are sorted
+    //     bool unsorted = false;
+    //     for (size_t i = 1; i < entry.second.size(); i++) {
+    //         if (entry.second[i].start < entry.second[i-1].start || (entry.second[i].start == entry.second[i-1].start && entry.second[i].end < entry.second[i-1].end)) {
+    //             printError("ERROR: SVs are not sorted for chromosome " + entry.first);
+    //             unsorted = true;
+    //             break;
+    //         }
+    //     }
+    //     if (!unsorted) {
+    //         printMessage("SVs are sorted for chromosome " + entry.first);
+    //     }
+    // }
         // // Sort the SV calls by start position
         // std::sort(chr_sv_calls.begin(), chr_sv_calls.end(), [](const SVCall& a, const SVCall& b) {
         //     return a.start < b.start;
@@ -883,10 +923,6 @@ void SVCaller::runSplitReadCopyNumberPredictions(const std::string& chr, std::ve
         bool is_inversion = sv_candidate.sv_type == SVType::INV;
 
         std::tuple<double, SVType, std::string, bool> result = cnv_caller.runCopyNumberPrediction(chr, hmm, sv_candidate.start, sv_candidate.end, mean_chr_cov, pos_depth_map, input_data);
-        if (std::get<1>(result) == SVType::UNKNOWN) {
-            continue;
-        }
-
         double supp_lh = std::get<0>(result);
         SVType supp_type = std::get<1>(result);
         std::string genotype = std::get<2>(result);
@@ -905,6 +941,7 @@ void SVCaller::runSplitReadCopyNumberPredictions(const std::string& chr, std::ve
                 int read_depth = this->calculateReadDepth(pos_depth_map, sv_candidate.start, sv_candidate.end);
                 std::string alt_allele = "<" + getSVTypeString(supp_type) + ">";
                 SVCall sv_call(sv_candidate.start, sv_candidate.end, supp_type, alt_allele, "SPLIT", genotype, supp_lh, read_depth, 1, sv_candidate.cluster_size);
+                // printMessage("[SPLIT] Adding SV call: " + std::to_string(sv_call.start) + "-" + std::to_string(sv_call.end) + " " + getSVTypeString(sv_call.sv_type) + ", len=" + std::to_string(sv_call.end - sv_call.start) + ", type=" + getSVTypeString(sv_call.sv_type));
                 addSVCall(split_sv_calls, sv_call);
             }
         } else if (supp_type == SVType::UNKNOWN && sv_candidate.sv_type == SVType::INV) {
@@ -912,12 +949,13 @@ void SVCaller::runSplitReadCopyNumberPredictions(const std::string& chr, std::ve
             int read_depth = this->calculateReadDepth(pos_depth_map, sv_candidate.start, sv_candidate.end);
             std::string alt_allele = "<INV>";
             SVCall sv_call(sv_candidate.start, sv_candidate.end, SVType::INV, alt_allele, "SPLIT", genotype, supp_lh, read_depth, 1, sv_candidate.cluster_size);
+            // printMessage("[SPLIT] Adding SV call: " + std::to_string(sv_call.start) + "-" + std::to_string(sv_call.end) + " " + getSVTypeString(sv_call.sv_type) + ", len=" + std::to_string(sv_call.end - sv_call.start) + ", type=" + getSVTypeString(sv_call.sv_type));
             addSVCall(split_sv_calls, sv_call);
         }
         current_sv++;
-        if (current_sv % 1000 == 0) {
-            printMessage("Processed " + std::to_string(current_sv) + " of " + std::to_string(total_svs) + " SV candidates");
-        }
+        // if (current_sv % 1000 == 0) {
+        //     printMessage("Processed " + std::to_string(current_sv) + " of " + std::to_string(total_svs) + " SV candidates");
+        // }
     }
 }
 
@@ -1017,6 +1055,7 @@ void SVCaller::saveToVCF(const std::unordered_map<std::string, std::vector<SVCal
             // If the SV type is unknown, print a warning and skip
             if (sv_type == SVType::UNKNOWN || sv_type == SVType::NEUTRAL) {
                 std::cerr << "Warning: Unknown SV type for SV at " << chr << ":" << start << "-" << end << std::endl;
+                continue;
             } else {
                 total_count += 1;
             }
@@ -1035,7 +1074,7 @@ void SVCaller::saveToVCF(const std::unordered_map<std::string, std::vector<SVCal
             // Deletion
             if (sv_type == SVType::DEL) {
                 // Get the deleted sequence from the reference genome, also including the preceding base
-                int64_t preceding_pos = (int64_t) std::max(1, (int) start-1);  // Make sure the position is not negative
+                uint32_t preceding_pos = (uint32_t) std::max(1, (int) start-1);  // Make sure the position is not negative
                 ref_allele = ref_genome.query(chr, preceding_pos, end);
 
                 // Use the preceding base as the alternate allele 
@@ -1051,22 +1090,30 @@ void SVCaller::saveToVCF(const std::unordered_map<std::string, std::vector<SVCal
 
             // Other types (duplications, insertions, inversions)
             } else {
-                // Update the position to the preceding base
-                int64_t preceding_pos = (int64_t) std::max(1, (int) start-1);  // Make sure the position is not negative
-                ref_allele = ref_genome.query(chr, preceding_pos, preceding_pos);
-                start = preceding_pos;
-
-                // Update the end position to the same base for duplications and insertions
-                if (sv_type == SVType::DUP || sv_type == SVType::INS) {
-                    end = start;
-                }
 
                 if (sv_type == SVType::INS) {
+                    // Update the position to the preceding base
+                    int64_t preceding_pos = (int64_t) std::max(1, (int) start-1);  // Make sure the position is not negative
+                    ref_allele = ref_genome.query(chr, preceding_pos, preceding_pos);
+                    start = preceding_pos;
+
                     if (alt_allele != "<INS>") {
                         // Insert the reference allele before the insertion
                         alt_allele.insert(0, ref_allele);
                     }
+                } else {
+                    ref_allele = "N";  // Convention for INV and DUP
                 }
+                // // Update the position to the preceding base
+                // int64_t preceding_pos = (int64_t) std::max(1, (int) start-1);  // Make sure the position is not negative
+                // ref_allele = ref_genome.query(chr, preceding_pos, preceding_pos);
+                // start = preceding_pos;
+
+                end = start;  // Update the end position to the same base
+                // // Update the end position to the same base for duplications and insertions
+                // if (sv_type == SVType::DUP || sv_type == SVType::INS) {
+                //     end = start;
+                // }
             }
 
             // Fix ambiguous bases in the reference allele
@@ -1102,24 +1149,26 @@ void SVCaller::saveToVCF(const std::unordered_map<std::string, std::vector<SVCal
 
             // Write the SV call to the file (CHROM, POS, ID, REF, ALT, QUAL, FILTER, INFO, FORMAT, SAMPLES)
             vcf_stream << chr << "\t" << start << "\t" << "." << "\t" << ref_allele << "\t" << alt_allele << "\t" << "." << "\t" << "PASS" << "\t" << info_str << "\t" << format_str << "\t" << samples[0] << std::endl;
-            if (total_count % 1000 == 0)
-            {
-            	std::cout << "Wrote SV at " << chr << ": " << start << ", total=" << total_count << std::endl;
-        	}
+            
+            // std::cout << "Wrote SV at " << chr << ": " << start << ", " << end << std::endl;
+            // if (total_count % 1000 == 0)
+            // {
+            // 	std::cout << "Wrote SV at " << chr << ": " << start << ", total=" << total_count << std::endl;
+        	// }
         }
     }
     vcf_stream.close();
     std::cout << "Saved SV calls to " << output_vcf << std::endl;
 
     // Create a compressed and indexed VCF file
-    std::cout << "Creating compressed and indexed VCF file..." << std::endl;
-    std::string bgzip_cmd = "bgzip -f " + output_vcf;
-    std::string tabix_cmd = "tabix -p vcf " + output_vcf + ".gz";
-    std::system(bgzip_cmd.c_str());
-    std::system(tabix_cmd.c_str());
-    output_vcf += ".gz";
-    std::cout << "VCF file created: " << output_vcf << std::endl;
-    std::cout << "Index file created: " << output_vcf + ".tbi" << std::endl;
+    // std::cout << "Creating compressed and indexed VCF file..." << std::endl;
+    // std::string bgzip_cmd = "bgzip -f " + output_vcf;
+    // std::string tabix_cmd = "tabix -p vcf " + output_vcf + ".gz";
+    // std::system(bgzip_cmd.c_str());
+    // std::system(tabix_cmd.c_str());
+    // output_vcf += ".gz";
+    // std::cout << "VCF file created: " << output_vcf << std::endl;
+    // std::cout << "Index file created: " << output_vcf + ".tbi" << std::endl;
 
     // Print the number of SV calls skipped
     std::cout << "Finished writing VCF file. Total records: " << total_count << std::endl;

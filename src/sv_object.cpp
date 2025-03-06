@@ -18,9 +18,9 @@ bool SVCall::operator<(const SVCall & other) const
 
 void addSVCall(std::vector<SVCall>& sv_calls, SVCall& sv_call)
 {
-    if (sv_call.sv_type == SVType::UNKNOWN || sv_call.sv_type == SVType::NEUTRAL) {
-        return;
-    }
+    // if (sv_call.sv_type == SVType::UNKNOWN || sv_call.sv_type == SVType::NEUTRAL) {
+    //     return;
+    // }
 
     // Check if the SV call is valid
     if (sv_call.start > sv_call.end) {
