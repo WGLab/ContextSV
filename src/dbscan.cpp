@@ -70,11 +70,6 @@ std::vector<size_t> DBSCAN::regionQuery(const std::vector<SVCall>& sv_calls, siz
 }
 
 double DBSCAN::distance(const SVCall& point1, const SVCall& point2) const {
-    // return std::sqrt(std::pow(point1.first - point2.first, 2) +
-    // std::pow(point1.second - point2.second, 2));
-    // return std::sqrt(std::pow(static_cast<double>(point1.start) - static_cast<double>(point2.start), 2) +
-    // std::pow(static_cast<double>(point1.end) -
-    // static_cast<double>(point2.end), 2));
     
     // Calculate reciprocal overlap-based distance
     // https://genomebiology.biomedcentral.com/articles/10.1186/s13059-022-02840-6
@@ -85,6 +80,5 @@ double DBSCAN::distance(const SVCall& point1, const SVCall& point2) const {
 
     // Minimum reciprocal overlap
     double distance = 1.0 - std::min(static_cast<double>(overlap) / static_cast<double>(length1), static_cast<double>(overlap) / static_cast<double>(length2));
-    // double distance = 1.0 - static_cast<double>(overlap) / std::min(length1, length2);
     return distance;  // 0.0 means identical, 1.0 means no overlap
 }
