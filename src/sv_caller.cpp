@@ -67,29 +67,355 @@ std::vector<std::string> SVCaller::getChromosomes(const std::string &bam_filepat
     return chromosomes;
 }
 
-void SVCaller::getSplitAlignments(samFile *fp_in, hts_idx_t *idx, bam_hdr_t *bamHdr, const std::string &region, std::vector<SVCall>& sv_calls)
-{
-    std::unordered_map<std::string, GenomicRegion> primary_map;
-    std::unordered_map<std::string, std::vector<GenomicRegion>> supp_map;
+// void SVCaller::findSplitCNVBreakpoints(samFile *fp_in, hts_idx_t *idx, bam_hdr_t *bamHdr, const std::string &region, std::vector<SVCall>& sv_calls)
+// {
+//     std::unordered_map<std::string, GenomicRegion> primary_map;
+//     std::unordered_map<std::string, std::vector<GenomicRegion>> supp_map;
 
-    // Create a read and iterator for the region
+//     // Create a read and iterator for the region
+//     bam1_t *bam1 = bam_init1();
+//     if (!bam1) {
+//         printError("ERROR: failed to initialize BAM record");
+//         return;
+//     }
+//     hts_itr_t *itr = sam_itr_querys(idx, bamHdr, region.c_str());
+//     if (!itr) {
+//         bam_destroy1(bam1);
+//         printError("ERROR: failed to query region " + region);
+//         return;
+//     }
+
+//     uint32_t primary_count = 0;
+//     uint32_t supplementary_count = 0;
+
+//     // Main loop to process the alignments
+//     uint32_t num_alignments = 0;
+//     while (readNextAlignment(fp_in, itr, bam1) >= 0) {
+
+//         // Skip secondary and unmapped alignments, duplicates, QC failures, and low mapping quality
+//         if (bam1->core.flag & BAM_FSECONDARY || bam1->core.flag & BAM_FUNMAP || bam1->core.flag & BAM_FDUP || bam1->core.flag & BAM_FQCFAIL || bam1->core.qual < this->min_mapq) {
+//             continue;
+//         }
+//         const std::string qname = bam_get_qname(bam1);  // Query template name
+
+//         // Process primary alignments
+//         if (!(bam1->core.flag & BAM_FSUPPLEMENTARY)) {
+//             // Store chromosome (TID), start, and end positions (1-based) of the
+//             // primary alignment, and the strand (true for forward, false for reverse)
+//             primary_map[qname] = GenomicRegion{bam1->core.tid, bam1->core.pos + 1, bam_endpos(bam1), !(bam1->core.flag & BAM_FREVERSE), 0};
+//             primary_count++;
+
+//         // Process supplementary alignments
+//         } else if (bam1->core.flag & BAM_FSUPPLEMENTARY) {
+//             // Store chromosome (TID), start, and end positions (1-based) of the
+//             // supplementary alignment, and the strand (true for forward, false for reverse)
+//             supp_map[qname].push_back(GenomicRegion{bam1->core.tid, bam1->core.pos + 1, bam_endpos(bam1), !(bam1->core.flag & BAM_FREVERSE), 0});
+//             supplementary_count++;
+//         }
+//         num_alignments++;
+//     }
+
+//     // Remove primary alignments without supplementary alignments
+//     std::vector<std::string> to_remove;
+//     for (const auto& entry : primary_map) {
+//         const std::string& qname = entry.first;
+//         if (supp_map.find(qname) == supp_map.end()) {
+//             to_remove.push_back(qname);
+//         }
+//     }
+//     for (const std::string& qname : to_remove) {
+//         primary_map.erase(qname);
+//     }
+
+//     // // Clean up the iterator and alignment
+//     // hts_itr_destroy(itr);
+//     // bam_destroy1(bam1);
+//     // printMessage(region + ": Found " + std::to_string(primary_map.size()) + " primary and " + std::to_string(supplementary_count) + " supplementary alignments");
+
+//     // Identify overlapping primary alignments and then cluster their primary
+//     // start, end vs. supplementary alignment start, end positions, keeping the
+//     // median of the largest cluster for the primary and supplementary positions
+//     // as the final genome coordinates of the SV
+//     // IntervalNode* root = nullptr;
+//     std::unique_ptr<IntervalNode> root = nullptr;
+//     for (const auto& entry : primary_map) {
+//         const std::string& qname = entry.first;
+//         const GenomicRegion& region = entry.second;
+//         // root = insert(root, region, qname);
+//         insert(root, region, qname);
+//     }
+//     std::vector<std::vector<std::string>> primary_clusters;
+//     std::set<std::string> processed;
+
+//     for (const auto& entry : primary_map) {
+//         const std::string& qname = entry.first;
+//         if (processed.find(qname) != processed.end()) {
+//             continue;  // Skip already processed primary alignments
+//         }
+//         const GenomicRegion& region = entry.second;
+//         std::vector<std::string> overlap_group;
+//         findOverlaps(root, region, overlap_group);
+//         for (const std::string& qname : overlap_group) {
+//             processed.insert(qname);
+//         }
+//         if (overlap_group.size() > 1) {
+//             primary_clusters.push_back(overlap_group);
+//         }
+//     }
+//     printMessage(region + ": Found " + std::to_string(primary_clusters.size()) + " groups of overlapping primary alignments");
+
+//     // For each primary alignment cluster the supplementary alignment start and
+//     // end positions, keeping the median of the largest cluster
+//     // std::vector<SVCall> sv_candidates;
+//     int current_group = 0;
+//     int min_length = 2000;
+//     int max_length = 1000000;
+//     for (const auto& primary_cluster : primary_clusters) {
+//         // Determine if the primary alignments are mostly on opposite strands to
+//         // the corresponding supplementary alignments (potential inversions)
+//         bool inversion = false;
+//         for (const std::string& qname : primary_cluster) {
+//             const std::vector<GenomicRegion>& supp_alns = supp_map[qname];
+//             int num_supp = (int) supp_alns.size();
+//             int num_opposite_strand = 0;
+//             for (const GenomicRegion& supp_aln : supp_alns) {
+//                 // Opposite-strand alignment on the same chromosome
+//                 // (Since the iterator is single-chromosome, this is the case)
+//                 if (supp_aln.strand != primary_map[qname].strand) {
+//                     num_opposite_strand++;
+//                 }
+//             }
+//             if (static_cast<double>(num_opposite_strand) / static_cast<double>(num_supp) > 0.5) {
+//                 inversion = true;
+//             }
+//         }
+
+//         // Use DBSCAN to cluster primary alignment start, end positions
+//         DBSCAN1D dbscan(100, 5);
+//         current_group++;
+//         std::vector<int> starts;
+//         std::vector<int> ends;
+//         std::vector<bool> primary_strands;
+//         for (const std::string& qname : primary_cluster) {
+//             const GenomicRegion& region = primary_map[qname];
+//             starts.push_back(region.start);
+//             ends.push_back(region.end);
+//             primary_strands.push_back(region.strand);
+//         }
+
+//         // Get the largest cluster of primary alignment start positions
+//         dbscan.fit(starts);
+//         std::vector<int> primary_start_cluster = dbscan.getLargestCluster(starts);
+
+//         // Get the largest cluster of primary alignment end positions
+//         dbscan.fit(ends);
+//         std::vector<int> primary_end_cluster = dbscan.getLargestCluster(ends);
+
+//         // Continue if no clusters were found
+//         if (primary_start_cluster.empty() && primary_end_cluster.empty()) {
+//             continue;
+//         }
+
+//         // Get the supplementary alignment positions
+//         std::vector<int> supp_starts;
+//         std::vector<int> supp_ends;
+//         std::vector<bool> supp_strands;
+//         for (const std::string& qname : primary_cluster) {
+//             const std::vector<GenomicRegion>& regions = supp_map[qname];
+//             for (const GenomicRegion& region : regions) {
+//                 supp_starts.push_back(region.start);
+//                 supp_ends.push_back(region.end);
+//                 supp_strands.push_back(region.strand);
+//             }
+//         }
+
+//         // Get the largest cluster of supplementary alignment start positions
+//         dbscan.fit(supp_starts);
+//         std::vector<int> supp_start_cluster = dbscan.getLargestCluster(supp_starts);
+
+//         // Get the largest cluster of supplementary alignment end positions
+//         dbscan.fit(supp_ends);
+//         std::vector<int> supp_end_cluster = dbscan.getLargestCluster(supp_ends);
+
+//         // Continue if no clusters were found
+//         if (supp_start_cluster.empty() && supp_end_cluster.empty()) {
+//             continue;
+//         }
+
+//         // Use the median of the largest cluster of primary and supplementary
+//         // alignment start, end positions as the final genome coordinates of the
+//         // SV
+//         int primary_pos = -1;
+//         int primary_pos2 = -1;
+//         int primary_cluster_size = 0;
+//         if (primary_start_cluster.size() > primary_end_cluster.size()) {
+//             std::sort(primary_start_cluster.begin(), primary_start_cluster.end());
+//             primary_pos = primary_start_cluster[primary_start_cluster.size() / 2];
+//             primary_cluster_size = primary_start_cluster.size();
+//         } else if (primary_end_cluster.size() > primary_start_cluster.size()) {
+//             std::sort(primary_end_cluster.begin(), primary_end_cluster.end());
+//             primary_pos = primary_end_cluster[primary_end_cluster.size() / 2];
+//             primary_cluster_size = primary_end_cluster.size();
+//         } else {
+//             // Use both positions
+//             std::sort(primary_start_cluster.begin(), primary_start_cluster.end());
+//             std::sort(primary_end_cluster.begin(), primary_end_cluster.end());
+//             primary_pos = primary_start_cluster[primary_start_cluster.size() / 2];
+//             primary_pos2 = primary_end_cluster[primary_end_cluster.size() / 2];
+//             primary_cluster_size = primary_start_cluster.size();
+//         }
+
+//         // Get the supplementary alignment positions
+//         int supp_pos = -1;
+//         int supp_pos2 = -1;
+//         int supp_cluster_size = 0;
+//         if (supp_start_cluster.size() > supp_end_cluster.size()) {
+//             std::sort(supp_start_cluster.begin(), supp_start_cluster.end());
+//             supp_pos = supp_start_cluster[supp_start_cluster.size() / 2];
+//             supp_cluster_size = supp_start_cluster.size();
+//         } else if (supp_end_cluster.size() > supp_start_cluster.size()) {
+//             std::sort(supp_end_cluster.begin(), supp_end_cluster.end());
+//             supp_pos = supp_end_cluster[supp_end_cluster.size() / 2];
+//             supp_cluster_size = supp_end_cluster.size();
+//         } else {
+//             // Use both positions. This has been shown to occur in nested SVs
+//             std::sort(supp_start_cluster.begin(), supp_start_cluster.end());
+//             std::sort(supp_end_cluster.begin(), supp_end_cluster.end());
+//             supp_pos = supp_start_cluster[supp_start_cluster.size() / 2];
+//             supp_pos2 = supp_end_cluster[supp_end_cluster.size() / 2];
+//             supp_cluster_size = supp_start_cluster.size();
+//         }
+
+//         // If two of either were found, use the larger SV candidate
+//         if (primary_pos2 != -1) {
+//             int sv_length1 = std::abs(primary_pos - supp_pos);
+//             int sv_length2 = std::abs(primary_pos2 - supp_pos);
+//             if (sv_length2 > sv_length1) {
+//                 primary_pos = primary_pos2;
+//             }
+//         }
+//         if (supp_pos2 != -1) {
+//             int sv_length1 = std::abs(primary_pos - supp_pos);
+//             int sv_length2 = std::abs(primary_pos - supp_pos2);
+//             if (sv_length2 > sv_length1) {
+//                 supp_pos = supp_pos2;
+//             }
+//         }
+
+//         if (primary_pos == -1 || supp_pos == -1) {
+//             continue;
+//         }
+
+//         // Store the SV candidate if the length is within the specified range
+//         int sv_start = std::min(primary_pos, supp_pos);
+//         int sv_end = std::max(primary_pos, supp_pos);
+//         int sv_length = sv_end - sv_start + 1;
+//         int cluster_size = std::max(primary_cluster_size, supp_cluster_size);
+        
+//         // Determine the SV type
+//         SVType sv_type = inversion ? SVType::INV : SVType::UNKNOWN;
+//         if (sv_length >= min_length && sv_length <= max_length) {
+//             SVCall sv_candidate(sv_start, sv_end, sv_type, ".", "PRIMSUPP", "./.", 0.0, 0, 0, cluster_size);
+//             addSVCall(sv_calls, sv_candidate);
+//             // printMessage(region + ": Found SV candidate " + std::to_string(sv_start) + "-" + std::to_string(sv_end) + " with length " + std::to_string(sv_length) + " for group " + std::to_string(current_group) + " with inversion status " + std::to_string(inversion));
+//         }
+//     }
+
+//     // Combine SVs with identical start and end positions, and sum the cluster
+//     // sizes
+//     std::vector<SVCall> combined_sv_calls;
+//     std::sort(sv_calls.begin(), sv_calls.end(), [](const SVCall& a, const SVCall& b) {
+//         return a.start < b.start || (a.start == b.start && a.end < b.end);
+//     });
+//     int merge_count = 0;
+//     for (size_t i = 0; i < sv_calls.size(); i++) {
+//         SVCall& sv_call = sv_calls[i];
+//         if (i > 0 && sv_call.start == sv_calls[i - 1].start && sv_call.end == sv_calls[i - 1].end) {
+//             sv_calls[i - 1].cluster_size += sv_call.cluster_size;
+//             merge_count++;
+//         } else {
+//             combined_sv_calls.push_back(sv_call);
+//         }
+//     }
+//     sv_calls = std::move(combined_sv_calls);
+
+//     // if (merge_count > 0) {
+//     //     printMessage(region + ": Merged " + std::to_string(merge_count) + " SV candidates with identical start and end positions");
+//     // }
+// }
+
+void SVCaller::findSplitSVSignatures(std::unordered_map<std::string, std::vector<SVCall>> &sv_calls, const InputData &input_data)
+{
+    // Open the BAM file
+    std::string bam_filepath = input_data.getLongReadBam();
+    samFile *fp_in = sam_open(bam_filepath.c_str(), "r");
+    if (!fp_in) {
+        printError("ERROR: failed to open " + bam_filepath);
+        return;
+    }
+
+    // Set maximum thread count
+    int thread_count = input_data.getThreadCount();
+    hts_set_threads(fp_in, thread_count);
+    printMessage("Using " + std::to_string(thread_count) + " threads for split read analysis");
+
+    // Load the header
+    bam_hdr_t *bamHdr = sam_hdr_read(fp_in);
+    if (!bamHdr) {
+        sam_close(fp_in);
+        printError("ERROR: failed to read header from " + bam_filepath);
+        return;
+    }
+
+    // Load the index
+    hts_idx_t *idx = sam_index_load(fp_in, bam_filepath.c_str());
+    if (!idx) {
+        bam_hdr_destroy(bamHdr);
+        sam_close(fp_in);
+        printError("ERROR: failed to load index for " + bam_filepath);
+        return;
+    }
+    BamFileGuard bam_guard(fp_in, idx, bamHdr);  // Guard to close the BAM file
+
+    // Alignment data structures
+    // std::unordered_map<std::string, GenomicRegion> primary_map;
+    // std::unordered_map<std::string, std::vector<GenomicRegion>> supp_map;
+    std::unordered_map<int, std::unordered_map<std::string, PrimaryAlignment>> primary_map;  // TID-> qname -> primary alignment
+    std::unordered_map<std::string, std::vector<SuppAlignment>> supp_map;  // qname -> supplementary alignment
+
     bam1_t *bam1 = bam_init1();
     if (!bam1) {
         printError("ERROR: failed to initialize BAM record");
         return;
     }
-    hts_itr_t *itr = sam_itr_querys(idx, bamHdr, region.c_str());
-    if (!itr) {
-        bam_destroy1(bam1);
-        printError("ERROR: failed to query region " + region);
-        return;
+    
+    // Set the region to the whole genome, or a user-specified chromosome
+    hts_itr_t *itr = nullptr;
+    if (input_data.isSingleChr()) {
+        std::string chr = input_data.getChromosome();
+        itr = sam_itr_querys(idx, bamHdr, chr.c_str());
+        if (!itr) {
+            bam_destroy1(bam1);
+            printError("ERROR: failed to create iterator for " + chr);
+            return;
+        }
+    } else {
+        itr = sam_itr_queryi(idx, HTS_IDX_START, 0, 0);
+        if (!itr) {
+            bam_destroy1(bam1);
+            printError("ERROR: failed to create iterator for the whole genome");
+            return;
+        }
     }
 
     uint32_t primary_count = 0;
     uint32_t supplementary_count = 0;
 
     // Main loop to process the alignments
+    printMessage("Processing alignments from " + bam_filepath);
     uint32_t num_alignments = 0;
+    std::unordered_set<int> alignment_tids;  // All unique chromosome IDs
+    std::unordered_set<std::string> supp_qnames;  // All unique query names
     while (readNextAlignment(fp_in, itr, bam1) >= 0) {
 
         // Skip secondary and unmapped alignments, duplicates, QC failures, and low mapping quality
@@ -97,252 +423,404 @@ void SVCaller::getSplitAlignments(samFile *fp_in, hts_idx_t *idx, bam_hdr_t *bam
             continue;
         }
         const std::string qname = bam_get_qname(bam1);  // Query template name
-        uint8_t mapq = bam1->core.qual;  // Mapping quality
 
         // Process primary alignments
         if (!(bam1->core.flag & BAM_FSUPPLEMENTARY)) {
             // Store chromosome (TID), start, and end positions (1-based) of the
-            // primary alignment, and the strand (true for forward, false for reverse)
-            primary_map[qname] = GenomicRegion{bam1->core.tid, bam1->core.pos + 1, bam_endpos(bam1), !(bam1->core.flag & BAM_FREVERSE), mapq, 0};
+            // primary alignment, and the strand (true for forward, false for
+            // reverse)
+            std::pair<int, int> qpos = getAlignmentReadPositions(bam1);
+
+            primary_map[bam1->core.tid][qname] = PrimaryAlignment{bam1->core.pos + 1, bam_endpos(bam1), qpos.first, qpos.second, !(bam1->core.flag & BAM_FREVERSE), 0};
+            // primary_map[qname] = GenomicRegion{bam1->core.tid, bam1->core.pos + 1, bam_endpos(bam1), qpos.first, qpos.second, !(bam1->core.flag & BAM_FREVERSE), 0};
+            // primary_map[qname] = GenomicRegion{bam1->core.tid, bam1->core.pos + 1, bam_endpos(bam1), !(bam1->core.flag & BAM_FREVERSE), 0};
+            alignment_tids.insert(bam1->core.tid);
             primary_count++;
 
         // Process supplementary alignments
         } else if (bam1->core.flag & BAM_FSUPPLEMENTARY) {
             // Store chromosome (TID), start, and end positions (1-based) of the
-            // supplementary alignment, and the strand (true for forward, false for reverse)
-            supp_map[qname].push_back(GenomicRegion{bam1->core.tid, bam1->core.pos + 1, bam_endpos(bam1), !(bam1->core.flag & BAM_FREVERSE), mapq, 0});
+            // supplementary alignment, and the strand (true for forward, false
+            // for reverse)
+            std::pair<int, int> qpos = getAlignmentReadPositions(bam1);
+            supp_map[qname].push_back(SuppAlignment{bam1->core.tid, bam1->core.pos + 1, bam_endpos(bam1), qpos.first, qpos.second, !(bam1->core.flag & BAM_FREVERSE), 0});
+            // supp_map[qname].push_back(GenomicRegion{bam1->core.tid, bam1->core.pos + 1, bam_endpos(bam1), !(bam1->core.flag & BAM_FREVERSE), 0});
+            alignment_tids.insert(bam1->core.tid);
+            supp_qnames.insert(qname);
             supplementary_count++;
         }
         num_alignments++;
+
+        if (num_alignments % 1000000 == 0) {
+            printMessage("Processed " + std::to_string(num_alignments) + " alignments");
+        }
     }
 
     // Remove primary alignments without supplementary alignments
-    std::vector<std::string> to_remove;
-    for (const auto& entry : primary_map) {
-        const std::string& qname = entry.first;
-        if (supp_map.find(qname) == supp_map.end()) {
-            to_remove.push_back(qname);
+    std::unordered_map<int, std::unordered_set<std::string>> to_remove;
+    for (auto& chr_primary : primary_map) {
+        // Get the qnames for this chromosome
+        std::unordered_set<std::string> qnames;
+        for (const auto& entry : chr_primary.second) {
+            if (supp_qnames.find(entry.first) == supp_qnames.end()) {
+                to_remove[chr_primary.first].insert(entry.first);
+            }
         }
     }
-    for (const std::string& qname : to_remove) {
-        primary_map.erase(qname);
-    }
 
-    // Clean up the iterator and alignment
-    hts_itr_destroy(itr);
-    bam_destroy1(bam1);
-    printMessage(region + ": Found " + std::to_string(primary_map.size()) + " primary and " + std::to_string(supplementary_count) + " supplementary alignments");
-
-    // Identify overlapping primary alignments and then cluster their primary
-    // start, end vs. supplementary alignment start, end positions, keeping the
-    // median of the largest cluster for the primary and supplementary positions
-    // as the final genome coordinates of the SV
-    // IntervalNode* root = nullptr;
-    std::unique_ptr<IntervalNode> root = nullptr;
-    for (const auto& entry : primary_map) {
-        const std::string& qname = entry.first;
-        const GenomicRegion& region = entry.second;
-        // root = insert(root, region, qname);
-        insert(root, region, qname);
-    }
-    std::vector<std::vector<std::string>> primary_clusters;
-    std::set<std::string> processed;
-
-    for (const auto& entry : primary_map) {
-        const std::string& qname = entry.first;
-        if (processed.find(qname) != processed.end()) {
-            continue;  // Skip already processed primary alignments
-        }
-        const GenomicRegion& region = entry.second;
-        std::vector<std::string> overlap_group;
-        findOverlaps(root, region, overlap_group);
-        for (const std::string& qname : overlap_group) {
-            processed.insert(qname);
-        }
-        if (overlap_group.size() > 1) {
-            primary_clusters.push_back(overlap_group);
+    int total_removed = 0;
+    for (auto& chr_primary : primary_map) {
+        // Remove the qnames from the primary map
+        total_removed += to_remove[chr_primary.first].size();
+        for (const auto& qname : to_remove[chr_primary.first]) {
+            chr_primary.second.erase(qname);
         }
     }
-    printMessage(region + ": Found " + std::to_string(primary_clusters.size()) + " groups of overlapping primary alignments");
+    printMessage("Removed " + std::to_string(total_removed) + " primary alignments without supplementary alignments");
 
-    // For each primary alignment cluster the supplementary alignment start and
-    // end positions, keeping the median of the largest cluster
-    // std::vector<SVCall> sv_candidates;
-    int current_group = 0;
-    int min_length = 2000;
-    int max_length = 1000000;
-    for (const auto& primary_group : primary_clusters) {
-        // Determine if the primary alignments are mostly on opposite strands to
-        // the corresponding supplementary alignments (potential inversions)
-        bool inversion = false;
-        for (const std::string& qname : primary_group) {
-            const std::vector<GenomicRegion>& regions = supp_map[qname];
-            int num_supp = (int) regions.size();
-            int num_opposite_strand = 0;
-            for (const GenomicRegion& region : regions) {
-                if (region.strand != primary_map[qname].strand) {
-                    num_opposite_strand++;
+    // std::vector<std::string> to_remove;
+    // for (const auto& entry : primary_map) {
+    //     const std::string& qname = entry.first;
+    //     if (supp_map.find(qname) == supp_map.end()) {
+    //         to_remove.push_back(qname);
+    //     }
+    // }
+    // for (const std::string& qname : to_remove) {
+    //     primary_map.erase(qname);
+    // }
+
+
+    for (const auto& chr_primary : primary_map) {
+        int primary_tid = chr_primary.first;
+        std::string chr_name = bamHdr->target_name[primary_tid];
+        printMessage("Processing chromosome " + chr_name + " with " + std::to_string(chr_primary.second.size()) + " primary alignments");
+
+        std::vector<SVCall> chr_sv_calls;
+
+        // std::unordered_map<int, std::unordered_map<std::string, PrimaryAlignment>> primary_map;  // TID-> qname -> primary alignment
+        // const std::unordered_map<std::string, std::vector<PrimaryAlignment>>&
+        // chr_primary_map = chr_primary.second;
+        const std::unordered_map<std::string, PrimaryAlignment>& chr_primary_map = chr_primary.second;
+
+        // Identify overlapping primary alignments and then cluster their primary
+        // start, end vs. supplementary alignment start, end positions, keeping the
+        // median of the largest cluster for the primary and supplementary positions
+        // as the final genome coordinates of the SV
+        // IntervalNode* root = nullptr;
+        std::unique_ptr<IntervalNode> root = nullptr;
+        for (const auto& entry : chr_primary_map) {
+            const std::string& qname = entry.first;
+            const PrimaryAlignment& region = entry.second;
+            insert(root, region, qname);
+        }
+
+        std::vector<std::vector<std::string>> primary_clusters;
+        std::set<std::string> processed;
+        for (const auto& entry : chr_primary_map) {
+            const std::string& qname = entry.first;
+            if (processed.find(qname) != processed.end()) {
+                continue;  // Skip already processed primary alignments
+            }
+            const PrimaryAlignment& primary_aln = entry.second;
+            std::vector<std::string> overlap_group;
+            findOverlaps(root, primary_aln, overlap_group);
+            for (const std::string& qname : overlap_group) {
+                processed.insert(qname);
+            }
+            if (overlap_group.size() > 1) {
+                primary_clusters.push_back(overlap_group);
+            }
+        }
+        printMessage(chr_name + ": Found " + std::to_string(primary_clusters.size()) + " groups of overlapping primary alignments");
+
+        // For each primary alignment cluster the supplementary alignment start and
+        // end positions, keeping the median of the largest cluster
+        int current_group = 0;
+        int min_length = 2000;
+        int max_length = 1000000;
+        for (const auto& primary_cluster : primary_clusters) {
+            // Determine if the primary alignments are mostly on opposite strands to
+            // the corresponding supplementary alignments (potential inversions)
+            bool inversion = false;
+            int num_primary = (int) primary_cluster.size();
+            int num_supp_opposite_strand = 0;
+            for (const std::string& qname : primary_cluster) {
+                const std::vector<SuppAlignment>& supp_alns = supp_map[qname];
+                bool primary_strand = chr_primary_map.at(qname).strand;
+                bool has_opposite_strand = false;
+                for (const SuppAlignment& supp_aln : supp_alns) {
+                    // Analyze if on the same chromosome
+                    if (supp_aln.tid == primary_tid && supp_aln.strand != primary_strand) {
+                        has_opposite_strand = true;
+                    }
+                }
+                if (has_opposite_strand) {
+                    num_supp_opposite_strand++;
                 }
             }
-            if (static_cast<double>(num_opposite_strand) / static_cast<double>(num_supp) > 0.5) {
+            if (static_cast<double>(num_supp_opposite_strand) / static_cast<double>(num_primary) > 0.5) {
                 inversion = true;
             }
+
+            // Use DBSCAN to cluster primary alignment start, end positions
+            DBSCAN1D dbscan(100, 5);
+            current_group++;
+            std::vector<int> starts;
+            std::vector<int> ends;
+            std::vector<bool> primary_strands;
+            for (const std::string& qname : primary_cluster) {
+                const PrimaryAlignment& primary_aln = chr_primary_map.at(qname);
+                starts.push_back(primary_aln.start);
+                ends.push_back(primary_aln.end);
+                primary_strands.push_back(primary_aln.strand);
+            }
+
+            // Get the largest cluster of primary alignment start positions
+            dbscan.fit(starts);
+            std::vector<int> primary_start_cluster = dbscan.getLargestCluster(starts);
+
+            // Get the largest cluster of primary alignment end positions
+            dbscan.fit(ends);
+            std::vector<int> primary_end_cluster = dbscan.getLargestCluster(ends);
+
+            // Continue if no clusters were found
+            if (primary_start_cluster.empty() && primary_end_cluster.empty()) {
+                continue;
+            }
+
+            // Get the supplementary alignment positions, and also the distances
+            // between the primary and supplementary alignments on the read
+            std::vector<int> supp_starts;
+            std::vector<int> supp_ends;
+            std::vector<bool> supp_strands;
+            std::vector<int> split_distances;
+            for (const std::string& qname : primary_cluster) {
+                const PrimaryAlignment& primary_aln = chr_primary_map.at(qname);
+                const std::vector<SuppAlignment>& supp_alns = supp_map.at(qname);
+                for (const SuppAlignment& supp_aln : supp_alns) {
+                    if (supp_aln.tid == primary_tid) {
+                        // Same chromosome
+                        int distance = 0;
+                        supp_starts.push_back(supp_aln.start);
+                        supp_ends.push_back(supp_aln.end);
+                        supp_strands.push_back(supp_aln.strand);
+
+                        // Calculate the distance between the primary and supplementary
+                        // alignments on the read if on the same chromosome and same
+                        // strand
+                        if (supp_aln.strand == primary_aln.strand) {
+                            // Same strand
+                            // Calculate distance (negative if overlapping)
+                            if (primary_aln.query_start <= supp_aln.query_start) {
+                                distance = supp_aln.query_start - primary_aln.query_end;
+                            } else {
+                                distance = primary_aln.query_start - supp_aln.query_end;
+                            }
+                            split_distances.push_back(distance);
+                        } else {
+                            // TODO: INVERSIONS                       
+                        }
+                    } else {
+                        // TODO: TRANSLOCATIONS
+                    }
+                }
+            }
+
+            // Get the largest cluster of supplementary alignment start positions
+            dbscan.fit(supp_starts);
+            std::vector<int> supp_start_cluster = dbscan.getLargestCluster(supp_starts);
+
+            // Get the largest cluster of supplementary alignment end positions
+            dbscan.fit(supp_ends);
+            std::vector<int> supp_end_cluster = dbscan.getLargestCluster(supp_ends);
+
+            // Get the largest cluster of split distances
+            dbscan.fit(split_distances);
+            std::vector<int> split_distance_cluster = dbscan.getLargestCluster(split_distances);
+            // printMessage("Found " + std::to_string(split_distance_cluster.size()) + " split distances (cluster size)");
+
+            // Continue if no clusters were found
+            // if (supp_start_cluster.empty() && supp_end_cluster.empty()) {
+            if (supp_start_cluster.empty() && supp_end_cluster.empty() && split_distance_cluster.empty()) {
+                continue;
+            }
+
+            // Use the median of the largest cluster of primary and supplementary
+            // alignment start, end positions as the final genome coordinates of the
+            // SV
+            int primary_pos = -1;
+            int primary_pos2 = -1;
+            int primary_cluster_size = 0;
+            if (primary_start_cluster.size() > primary_end_cluster.size()) {
+                std::sort(primary_start_cluster.begin(), primary_start_cluster.end());
+                primary_pos = primary_start_cluster[primary_start_cluster.size() / 2];
+                primary_cluster_size = primary_start_cluster.size();
+            } else if (primary_end_cluster.size() > primary_start_cluster.size()) {
+                std::sort(primary_end_cluster.begin(), primary_end_cluster.end());
+                primary_pos = primary_end_cluster[primary_end_cluster.size() / 2];
+                primary_cluster_size = primary_end_cluster.size();
+            } else {
+                // Use both positions
+                std::sort(primary_start_cluster.begin(), primary_start_cluster.end());
+                std::sort(primary_end_cluster.begin(), primary_end_cluster.end());
+                primary_pos = primary_start_cluster[primary_start_cluster.size() / 2];
+                primary_pos2 = primary_end_cluster[primary_end_cluster.size() / 2];
+                primary_cluster_size = primary_start_cluster.size();
+            }
+
+            // -------------------------------
+            // SPLIT INSERTION DETECTION
+            int read_distance = 0;
+            if (!split_distance_cluster.empty()) {
+                // Use the median of the largest cluster of split distances as the
+                // insertion size
+                std::sort(split_distance_cluster.begin(), split_distance_cluster.end());
+                read_distance = split_distance_cluster[split_distance_cluster.size() / 2];
+
+                // Add an insertion SV call at the primary position
+                if (primary_pos != -1 && read_distance > 2000) {
+                    if (primary_pos2 != -1) {
+                        // If two positions were found, use the 5'most position
+                        primary_pos = std::min(primary_pos, primary_pos2);
+                    }
+                    SVCall sv_candidate(primary_pos, primary_pos + (read_distance-1), SVType::INS, "<INS>", "SPLITINS", "./.", 0.0, 0, 0, primary_cluster_size);
+                    addSVCall(chr_sv_calls, sv_candidate);
+                    printMessage(chr_name + ": Found split insertion candidate " + std::to_string(primary_pos) + "-" + std::to_string(primary_pos + (read_distance-1)) + " with size " + std::to_string(read_distance) + " for group " + std::to_string(current_group));
+                    // continue;
+                }
+            }
+
+            // TODO: After this classify deletions if negative (keep the rest
+            // the same)
+
+            // --------------------------------
+
+            // Get the supplementary alignment positions
+            int supp_pos = -1;
+            int supp_pos2 = -1;
+            int supp_cluster_size = 0;
+            int supp_best_start = -1;
+            int supp_best_end = -1;
+            if (!supp_start_cluster.empty() && !supp_end_cluster.empty()) {
+                std::sort(supp_start_cluster.begin(), supp_start_cluster.end());
+                int supp_best_start = supp_start_cluster[supp_start_cluster.size() / 2];
+                std::sort(supp_end_cluster.begin(), supp_end_cluster.end());
+                int supp_best_end = supp_end_cluster[supp_end_cluster.size() / 2];
+                if (supp_start_cluster.size() > supp_end_cluster.size()) {
+                    // std::sort(supp_start_cluster.begin(), supp_start_cluster.end());
+                    // supp_pos = supp_start_cluster[supp_start_cluster.size() / 2];
+                    supp_pos = supp_best_start;
+                    supp_cluster_size = supp_start_cluster.size();
+                } else if (supp_end_cluster.size() > supp_start_cluster.size()) {
+                    // std::sort(supp_end_cluster.begin(), supp_end_cluster.end());
+                    // supp_pos = supp_end_cluster[supp_end_cluster.size() / 2];
+                    supp_pos = supp_best_end;
+                    supp_cluster_size = supp_end_cluster.size();
+                } else {
+                    // Use both positions. This has been shown to occur in nested SVs
+                    // std::sort(supp_start_cluster.begin(), supp_start_cluster.end());
+                    // std::sort(supp_end_cluster.begin(), supp_end_cluster.end());
+                    // supp_pos = supp_start_cluster[supp_start_cluster.size() / 2];
+                    // supp_pos2 = supp_end_cluster[supp_end_cluster.size() / 2];
+                    supp_pos = supp_best_start;
+                    supp_pos2 = supp_best_end;
+                    supp_cluster_size = supp_start_cluster.size();
+                }
+
+                // Store the inversion as the supplementary start and end positions
+                if (inversion && std::abs(supp_best_start - supp_best_end) >= 50) {
+                    SVCall sv_candidate(std::min(supp_best_start, supp_best_end), std::max(supp_best_start, supp_best_end), SVType::INV, "<INV>", "SUPPINV", "./.", 0.0, 0, 0, supp_cluster_size);
+                    addSVCall(chr_sv_calls, sv_candidate);
+                    printMessage(chr_name + ": Found inversion candidate " + std::to_string(supp_best_start) + "-" + std::to_string(supp_best_end) + " for group " + std::to_string(current_group));
+                }
+            }
+
+            // If two of either were found, use the larger SV candidate
+            if (primary_pos2 != -1) {
+                int sv_length1 = std::abs(primary_pos - supp_pos);
+                int sv_length2 = std::abs(primary_pos2 - supp_pos);
+                if (sv_length2 > sv_length1) {
+                    primary_pos = primary_pos2;
+                }
+            }
+            if (supp_pos2 != -1) {
+                int sv_length1 = std::abs(primary_pos - supp_pos);
+                int sv_length2 = std::abs(primary_pos - supp_pos2);
+                if (sv_length2 > sv_length1) {
+                    supp_pos = supp_pos2;
+                }
+            }
+
+            if (primary_pos == -1 || supp_pos == -1) {
+                continue;
+            }
+
+            // Store the SV candidate if the length is within the specified range
+            int sv_start = std::min(primary_pos, supp_pos);
+            int sv_end = std::max(primary_pos, supp_pos);
+            int sv_length = sv_end - sv_start + 1;
+            int cluster_size = std::max(primary_cluster_size, supp_cluster_size);
+
+            // If the read distance is < 30bp while the SV is > 2kb, then this is a
+            // potential deletion
+            if (std::abs(read_distance) < 30 && sv_length > 2000 && sv_length <= 1000000) {
+                printMessage(chr_name + ": Found potential deletion candidate " + std::to_string(sv_start) + "-" + std::to_string(sv_end) + " with length " + std::to_string(sv_length) + " for group " + std::to_string(current_group));
+                // printMessage("Found potential deletion candidate " + std::to_string(sv_start) + "-" + std::to_string(sv_end) + " with length " + std::to_string(sv_length) + " for group " + std::to_string(current_group));
+                // continue;
+                SVCall sv_candidate(sv_start, sv_end, SVType::DEL, ".", "SPLITDEL", "./.", 0.0, 0, 0, cluster_size);
+                addSVCall(chr_sv_calls, sv_candidate);
+            }
+
+            // Add a dummy SV call for CNV detection
+            else if (sv_length >= min_length && sv_length <= max_length) {
+                SVCall sv_candidate(sv_start, sv_end, SVType::UNKNOWN, ".", "PRIMSUPP", "./.", 0.0, 0, 0, cluster_size);
+                addSVCall(chr_sv_calls, sv_candidate);
+            }
+            
+            // Determine the SV type
+            // SVType sv_type = inversion ? SVType::INV : SVType::UNKNOWN;
+            // if (sv_length >= min_length && sv_length <= max_length) {
+            //     SVCall sv_candidate(sv_start, sv_end, sv_type, ".", "PRIMSUPP", "./.", 0.0, 0, 0, cluster_size);
+            //     addSVCall(chr_sv_calls, sv_candidate);
+            //     // printMessage(region + ": Found SV candidate " + std::to_string(sv_start) + "-" + std::to_string(sv_end) + " with length " + std::to_string(sv_length) + " for group " + std::to_string(current_group) + " with inversion status " + std::to_string(inversion));
+            // }
         }
-
-        // Use DBSCAN to cluster primary alignment start, end positions
-        DBSCAN1D dbscan(100, 5);
-        current_group++;
-        std::vector<int> starts;
-        std::vector<int> ends;
-        std::vector<bool> primary_strands;
-        for (const std::string& qname : primary_group) {
-            const GenomicRegion& region = primary_map[qname];
-            starts.push_back(region.start);
-            ends.push_back(region.end);
-            primary_strands.push_back(region.strand);
-        }
-
-        // Get the largest cluster of primary alignment start positions
-        dbscan.fit(starts);
-        std::vector<int> primary_start_cluster = dbscan.getLargestCluster(starts);
-
-        // Get the largest cluster of primary alignment end positions
-        dbscan.fit(ends);
-        std::vector<int> primary_end_cluster = dbscan.getLargestCluster(ends);
-
-        // Continue if no clusters were found
-        if (primary_start_cluster.empty() && primary_end_cluster.empty()) {
-            continue;
-        }
-
-        // Get the supplementary alignment positions
-        std::vector<int> supp_starts;
-        std::vector<int> supp_ends;
-        std::vector<bool> supp_strands;
-        for (const std::string& qname : primary_group) {
-            const std::vector<GenomicRegion>& regions = supp_map[qname];
-            for (const GenomicRegion& region : regions) {
-                supp_starts.push_back(region.start);
-                supp_ends.push_back(region.end);
-                supp_strands.push_back(region.strand);
+        // Combine SVs with identical start and end positions, and sum the cluster
+        // sizes
+        printMessage("Combining SVs with identical start and end positions");
+        std::vector<SVCall> combined_sv_calls;
+        std::sort(chr_sv_calls.begin(), chr_sv_calls.end(), [](const SVCall& a, const SVCall& b) {
+            return a.start < b.start || (a.start == b.start && a.end < b.end);
+        });
+        int merge_count = 0;
+        for (size_t i = 0; i < chr_sv_calls.size(); i++) {
+            SVCall& sv_call = chr_sv_calls[i];
+            // SVCall& sv_call = sv_calls[i];
+            if (i > 0 && sv_call.start == chr_sv_calls[i - 1].start && sv_call.end == chr_sv_calls[i - 1].end) {
+                chr_sv_calls[i - 1].cluster_size += sv_call.cluster_size;
+                merge_count++;
+            } else {
+                combined_sv_calls.push_back(sv_call);
             }
         }
 
-        // Get the largest cluster of supplementary alignment start positions
-        dbscan.fit(supp_starts);
-        std::vector<int> supp_start_cluster = dbscan.getLargestCluster(supp_starts);
+        // Add the combined SV calls to the main vector
+        sv_calls[chr_name] = std::move(combined_sv_calls);
 
-        // Get the largest cluster of supplementary alignment end positions
-        dbscan.fit(supp_ends);
-        std::vector<int> supp_end_cluster = dbscan.getLargestCluster(supp_ends);
-
-        // Continue if no clusters were found
-        if (supp_start_cluster.empty() && supp_end_cluster.empty()) {
-            continue;
-        }
-
-        // Use the median of the largest cluster of primary and supplementary
-        // alignment start, end positions as the final genome coordinates of the
-        // SV
-        int primary_pos = -1;
-        int primary_pos2 = -1;
-        int primary_cluster_size = 0;
-        if (primary_start_cluster.size() > primary_end_cluster.size()) {
-            std::sort(primary_start_cluster.begin(), primary_start_cluster.end());
-            primary_pos = primary_start_cluster[primary_start_cluster.size() / 2];
-            primary_cluster_size = primary_start_cluster.size();
-        } else if (primary_end_cluster.size() > primary_start_cluster.size()) {
-            std::sort(primary_end_cluster.begin(), primary_end_cluster.end());
-            primary_pos = primary_end_cluster[primary_end_cluster.size() / 2];
-            primary_cluster_size = primary_end_cluster.size();
-        } else {
-            // Use both positions
-            std::sort(primary_start_cluster.begin(), primary_start_cluster.end());
-            std::sort(primary_end_cluster.begin(), primary_end_cluster.end());
-            primary_pos = primary_start_cluster[primary_start_cluster.size() / 2];
-            primary_pos2 = primary_end_cluster[primary_end_cluster.size() / 2];
-            primary_cluster_size = primary_start_cluster.size();
-        }
-
-        // Get the supplementary alignment positions
-        int supp_pos = -1;
-        int supp_pos2 = -1;
-        int supp_cluster_size = 0;
-        if (supp_start_cluster.size() > supp_end_cluster.size()) {
-            std::sort(supp_start_cluster.begin(), supp_start_cluster.end());
-            supp_pos = supp_start_cluster[supp_start_cluster.size() / 2];
-            supp_cluster_size = supp_start_cluster.size();
-        } else if (supp_end_cluster.size() > supp_start_cluster.size()) {
-            std::sort(supp_end_cluster.begin(), supp_end_cluster.end());
-            supp_pos = supp_end_cluster[supp_end_cluster.size() / 2];
-            supp_cluster_size = supp_end_cluster.size();
-        } else {
-            // Use both positions. This has been shown to occur in nested SVs
-            std::sort(supp_start_cluster.begin(), supp_start_cluster.end());
-            std::sort(supp_end_cluster.begin(), supp_end_cluster.end());
-            supp_pos = supp_start_cluster[supp_start_cluster.size() / 2];
-            supp_pos2 = supp_end_cluster[supp_end_cluster.size() / 2];
-            supp_cluster_size = supp_start_cluster.size();
-        }
-
-        // If two of either were found, use the larger SV candidate
-        if (primary_pos2 != -1) {
-            int sv_length1 = std::abs(primary_pos - supp_pos);
-            int sv_length2 = std::abs(primary_pos2 - supp_pos);
-            if (sv_length2 > sv_length1) {
-                primary_pos = primary_pos2;
-            }
-        }
-        if (supp_pos2 != -1) {
-            int sv_length1 = std::abs(primary_pos - supp_pos);
-            int sv_length2 = std::abs(primary_pos - supp_pos2);
-            if (sv_length2 > sv_length1) {
-                supp_pos = supp_pos2;
-            }
-        }
-
-        if (primary_pos == -1 || supp_pos == -1) {
-            continue;
-        }
-
-        // Store the SV candidate if the length is within the specified range
-        int sv_start = std::min(primary_pos, supp_pos);
-        int sv_end = std::max(primary_pos, supp_pos);
-        int sv_length = sv_end - sv_start + 1;
-        int cluster_size = std::max(primary_cluster_size, supp_cluster_size);
-        SVType sv_type = inversion ? SVType::INV : SVType::UNKNOWN;
-        if (sv_length >= min_length && sv_length <= max_length) {
-            SVCall sv_candidate(sv_start, sv_end, sv_type, ".", "PRIMSUPP", "./.", 0.0, 0, 0, cluster_size);
-            addSVCall(sv_calls, sv_candidate);
-            // printMessage(region + ": Found SV candidate " + std::to_string(sv_start) + "-" + std::to_string(sv_end) + " with length " + std::to_string(sv_length) + " for group " + std::to_string(current_group) + " with inversion status " + std::to_string(inversion));
+        // Print the number of merged SV calls
+        printMessage(chr_name + ": Found " + std::to_string(sv_calls[chr_name].size()) + " SV candidates");
+        
+        if (merge_count > 0) {
+            printMessage(chr_name + ": Merged " + std::to_string(merge_count) + " SV candidates with identical start and end positions");
         }
     }
-
-    // Combine SVs with identical start and end positions, and sum the cluster
-    // sizes
-    std::vector<SVCall> combined_sv_calls;
-    std::sort(sv_calls.begin(), sv_calls.end(), [](const SVCall& a, const SVCall& b) {
-        return a.start < b.start || (a.start == b.start && a.end < b.end);
-    });
-    int merge_count = 0;
-    for (size_t i = 0; i < sv_calls.size(); i++) {
-        SVCall& sv_call = sv_calls[i];
-        if (i > 0 && sv_call.start == sv_calls[i - 1].start && sv_call.end == sv_calls[i - 1].end) {
-            sv_calls[i - 1].cluster_size += sv_call.cluster_size;
-            merge_count++;
-        } else {
-            combined_sv_calls.push_back(sv_call);
-        }
-    }
-    sv_calls = std::move(combined_sv_calls);
 
     // if (merge_count > 0) {
     //     printMessage(region + ": Merged " + std::to_string(merge_count) + " SV candidates with identical start and end positions");
     // }
 }
 
-
-void SVCaller::detectCIGARSVs(samFile* fp_in, hts_idx_t* idx, bam_hdr_t* bamHdr, const std::string& region, std::vector<SVCall>& sv_calls, const std::vector<uint32_t>& pos_depth_map, const ReferenceGenome& ref_genome)
+void SVCaller::findCIGARSVs(samFile* fp_in, hts_idx_t* idx, bam_hdr_t* bamHdr, const std::string& region, std::vector<SVCall>& sv_calls, const std::vector<uint32_t>& pos_depth_map, const ReferenceGenome& ref_genome)
 {
     // Create a read and iterator for the region
     bam1_t *bam1 = bam_init1();
@@ -367,7 +845,7 @@ void SVCaller::detectCIGARSVs(samFile* fp_in, hts_idx_t* idx, bam_hdr_t* bamHdr,
 
         // Process the alignment
         bool primary = !(bam1->core.flag & BAM_FSUPPLEMENTARY);
-        this->detectSVsFromCIGAR(bamHdr, bam1, sv_calls, primary, pos_depth_map, ref_genome);
+        this->processCIGARRecord(bamHdr, bam1, sv_calls, primary, pos_depth_map, ref_genome);
     }
 
     // Clean up the iterator and alignment
@@ -404,7 +882,181 @@ double SVCaller::calculateMismatchRate(const MismatchData& mismatch_data)
     return mismatch_rate;
 }
 
-void SVCaller::detectSVsFromCIGAR(bam_hdr_t* header, bam1_t* alignment, std::vector<SVCall>& sv_calls, bool is_primary, const std::vector<uint32_t>& pos_depth_map, const ReferenceGenome& ref_genome)
+void SVCaller::findSplitReadSVs(std::unordered_map<std::string, std::vector<SVCall>> &sv_calls, const ReferenceGenome &ref_genome, const InputData& input_data)
+{
+    // Open the BAM file
+    std::string bam_filepath = input_data.getLongReadBam();
+    samFile *fp_in = sam_open(bam_filepath.c_str(), "r");
+    if (!fp_in) {
+        printError("ERROR: failed to open " + bam_filepath);
+        return;
+    }
+
+    // Set maximum thread count
+    int thread_count = input_data.getThreadCount();
+    hts_set_threads(fp_in, thread_count);
+    printMessage("Using " + std::to_string(thread_count) + " threads for split read analysis");
+
+    // Load the header
+    bam_hdr_t *bamHdr = sam_hdr_read(fp_in);
+    if (!bamHdr) {
+        sam_close(fp_in);
+        printError("ERROR: failed to read header from " + bam_filepath);
+        return;
+    }
+
+    // Load the index
+    hts_idx_t *idx = sam_index_load(fp_in, bam_filepath.c_str());
+    if (!idx) {
+        bam_hdr_destroy(bamHdr);
+        sam_close(fp_in);
+        printError("ERROR: failed to load index for " + bam_filepath);
+        return;
+    }
+    BamFileGuard bam_guard(fp_in, idx, bamHdr);  // Guard to close the BAM file
+
+    // Create a whole-genome iterator
+    hts_itr_t *itr = sam_itr_queryi(idx, HTS_IDX_START, 0, 0);
+    if (!itr) {
+        printError("ERROR: failed to query the whole genome");
+        return;
+    }
+
+    // Process the alignments
+    std::unordered_map<std::string, SplitSignature> primary_map;
+    std::unordered_map<std::string, std::vector<SplitSignature>> supp_map;
+    bam1_t *bam1 = bam_init1();
+    if (!bam1) {
+        printError("ERROR: failed to initialize BAM record");
+        return;
+    }
+    uint32_t primary_count = 0;
+    uint32_t supplementary_count = 0;
+    uint32_t num_alignments = 0;
+    printMessage("Processing split read alignment records...");
+    while (readNextAlignment(fp_in, itr, bam1) >= 0) {
+
+        // Skip secondary and unmapped alignments, duplicates, QC failures, and low mapping quality
+        if (bam1->core.flag & BAM_FSECONDARY || bam1->core.flag & BAM_FUNMAP || bam1->core.flag & BAM_FDUP || bam1->core.flag & BAM_FQCFAIL || bam1->core.qual < this->min_mapq) {
+            continue;
+        }
+        const std::string qname = bam_get_qname(bam1);  // Query template name
+
+        // Process primary alignments
+        if (!(bam1->core.flag & BAM_FSUPPLEMENTARY)) {
+
+            // Get the start and end positions in the read sequence
+            uint32_t query_start = 0;
+            uint32_t query_end = 0;
+            uint32_t* cigar = bam_get_cigar(bam1);
+            int cigar_len = bam1->core.n_cigar;
+            for (int i = 0; i < cigar_len; i++) {
+                int op_len = bam_cigar_oplen(cigar[i]);
+                int op = bam_cigar_op(cigar[i]);
+
+                if (i == 0 && op == BAM_CSOFT_CLIP) {
+                    query_start = op_len;
+                }
+                
+                // https://github.com/samtools/htslib/blob/develop/htslib/sam.h:
+                // bam_cigar_type(o) (BAM_CIGAR_TYPE>>((o)<<1)&3) // bit 1: consume query; bit 2: consume reference
+                if (bam_cigar_type(op) & 1) {
+                    query_end += op_len;
+                }
+            }
+
+            // Store the SV signature
+            primary_map[qname] = SplitSignature{bam1->core.tid, bam1->core.pos + 1, bam_endpos(bam1), !(bam1->core.flag & BAM_FREVERSE), query_start, query_end};
+            primary_count++;
+
+        // Process supplementary alignments
+        } else if (bam1->core.flag & BAM_FSUPPLEMENTARY) {
+            // Get the start and end positions in the read sequence
+            uint32_t query_start = 0;
+            uint32_t query_end = 0;
+            uint32_t* cigar = bam_get_cigar(bam1);
+            int cigar_len = bam1->core.n_cigar;
+            for (int i = 0; i < cigar_len; i++) {
+                int op_len = bam_cigar_oplen(cigar[i]);
+                int op = bam_cigar_op(cigar[i]);
+
+                if (i == 0 && op == BAM_CSOFT_CLIP) {
+                    query_start = op_len;
+                }
+                
+                // https://github.com/samtools/htslib/blob/develop/htslib/sam.h:
+                // bam_cigar_type(o) (BAM_CIGAR_TYPE>>((o)<<1)&3) // bit 1: consume query; bit 2: consume reference
+                if (bam_cigar_type(op) & 1) {
+                    query_end += op_len;
+                }
+            }
+
+            // Store the SV signature
+            supp_map[qname].push_back(SplitSignature{bam1->core.tid, bam1->core.pos + 1, bam_endpos(bam1), !(bam1->core.flag & BAM_FREVERSE), query_start, query_end});
+            supplementary_count++;
+        }
+        num_alignments++;
+
+        if (num_alignments % 100000 == 0) {
+            printMessage("Processed " + std::to_string(num_alignments) + " split read alignment records");
+        }
+    }
+
+    // Remove primary alignments without supplementary alignments
+    std::vector<std::string> to_remove;
+    for (const auto& entry : primary_map) {
+        const std::string& qname = entry.first;
+        if (supp_map.find(qname) == supp_map.end()) {
+            to_remove.push_back(qname);
+        }
+    }
+    for (const std::string& qname : to_remove) {
+        primary_map.erase(qname);
+    }
+
+    // Clean up the iterator and alignment
+    hts_itr_destroy(itr);
+    bam_destroy1(bam1);
+    printMessage("Found " + std::to_string(primary_map.size()) + " primary and " + std::to_string(supplementary_count) + " supplementary alignments");
+
+    // Find insertions by comparing the primary vs. supplementary alignment
+    // distances in the read vs. reference genome on the same chromosome
+    int ins_count = 0;
+    std::vector<SVCall> sv_candidates;
+    for (const auto& entry : primary_map) {
+        const std::string& qname = entry.first;
+        const SplitSignature& primary = entry.second;
+        const std::vector<SplitSignature>& supp_alns = supp_map[qname];
+
+        // TODO: Cluster positions for improved performance
+
+        for (const SplitSignature& supp : supp_alns) {
+            if (primary.tid == supp.tid) {
+                int ref_dist = std::abs(primary.start - supp.start);
+                int query_dist = std::abs(primary.query_start - supp.query_start);
+
+                // If the reads are within 100 bp of each other, and the
+                // reference distance is greater than 2kb, then it is likely an
+                // insertion
+                if (query_dist <= 100 && ref_dist >= 2000) {
+                    int sv_start = std::min(primary.start, supp.start);
+                    int sv_end = std::max(primary.start, supp.start);
+                    int sv_length = sv_end - sv_start + 1;
+                    int cluster_size = 1;
+                    printMessage("Found insertion candidate " + std::to_string(sv_start) + "-" + std::to_string(sv_end) + " with length " + std::to_string(sv_length));
+                    SVCall sv_candidate(sv_start, sv_end, SVType::INS, "<INS>", "SPLITINS", "./.", 0.0, 0, 0, cluster_size);
+                    std::string chr = bamHdr->target_name[primary.tid];
+                    sv_calls[chr].push_back(sv_candidate);
+                    ins_count++;
+                }
+            }
+        }
+    }
+
+    printMessage("Found " + std::to_string(ins_count) + " insertions");
+}
+
+void SVCaller::processCIGARRecord(bam_hdr_t *header, bam1_t *alignment, std::vector<SVCall> &sv_calls, bool is_primary, const std::vector<uint32_t> &pos_depth_map, const ReferenceGenome &ref_genome)
 {
     std::string chr = header->target_name[alignment->core.tid];  // Chromosome name
     uint32_t pos = (uint32_t)alignment->core.pos;  // Leftmost position of the alignment in the reference genome (0-based)
@@ -513,11 +1165,31 @@ void SVCaller::detectSVsFromCIGAR(bam_hdr_t* header, bam1_t* alignment, std::vec
     }
 }
 
+std::pair<int, int> SVCaller::getAlignmentReadPositions(bam1_t *alignment)
+{
+    int query_start = 0;
+    int query_end = 0;
+    uint32_t* cigar = bam_get_cigar(alignment);
+    int cigar_len = alignment->core.n_cigar;
+    for (int i = 0; i < cigar_len; i++) {
+        int op_len = bam_cigar_oplen(cigar[i]);
+        int op = bam_cigar_op(cigar[i]);
+
+        if (i == 0 && op == BAM_CSOFT_CLIP) {
+            query_start = op_len;
+        }
+        
+        // https://github.com/samtools/htslib/blob/develop/htslib/sam.h:
+        // bam_cigar_type(o) (BAM_CIGAR_TYPE>>((o)<<1)&3) // bit 1: consume query; bit 2: consume reference
+        if (bam_cigar_type(op) & 1) {
+            query_end += op_len;
+        }
+    }
+    return std::make_pair(query_start, query_end);
+}
+
 void SVCaller::processChromosome(const std::string& chr, const CHMM& hmm, std::vector<SVCall>& chr_sv_calls, const InputData& input_data, const ReferenceGenome& ref_genome, const std::vector<uint32_t>& chr_pos_depth_map, double mean_chr_cov, std::vector<SVCall>& split_sv_calls)
 {
-    double dbscan_epsilon = input_data.getDBSCAN_Epsilon();
-    int dbscan_min_pts = input_data.getDBSCAN_MinPts();
-
     // Open the BAM file
     std::string bam_filepath = input_data.getLongReadBam();
     samFile *fp_in = sam_open(bam_filepath.c_str(), "r");
@@ -545,40 +1217,31 @@ void SVCaller::processChromosome(const std::string& chr, const CHMM& hmm, std::v
     }
     BamFileGuard bam_guard(fp_in, idx, bamHdr);  // Guard to close the BAM file
 
-    // Set the region to process
-    std::string region = chr;
-    if (input_data.isRegionSet()) {
-
-        // Use one chunk for the specified region
-        std::pair<int32_t, int32_t> region_data = input_data.getRegion();
-        int region_start = region_data.first;
-        int region_end = region_data.second;
-        region = chr + ":" + std::to_string(region_start) + "-" + std::to_string(region_end);
-    }
-
-    // Estimate DBSCAN minimum points
+    // Get DBSCAN parameters
+    double dbscan_epsilon = input_data.getDBSCAN_Epsilon();
+    int dbscan_min_pts = 5;
     double dbscan_min_pts_pct = input_data.getDBSCAN_MinPtsPct();
     if (dbscan_min_pts_pct > 0.0) {
         dbscan_min_pts = (int)std::ceil(mean_chr_cov * dbscan_min_pts_pct);
         printMessage(chr + ": Mean chr. cov.: " + std::to_string(mean_chr_cov) + " (DBSCAN min. pts.= " + std::to_string(dbscan_min_pts) + ", min. pts. pct.= " + std::to_string(dbscan_min_pts_pct) + ")");
-    }
-
-
-    // -----------------------------------------------------------------------
-    // Detect SVs from the CIGAR strings
-    printMessage(chr + ": CIGAR SVs...");
-    this->detectCIGARSVs(fp_in, idx, bamHdr, region, chr_sv_calls, chr_pos_depth_map, ref_genome);
-
-    printMessage(chr + ": Merging CIGAR...");
-    mergeSVs(chr_sv_calls, dbscan_epsilon, dbscan_min_pts);
-
-    int region_sv_count = getSVCount(chr_sv_calls);
-    printMessage("Total SVs detected from CIGAR string: " + std::to_string(region_sv_count));
+    } 
 
     // -----------------------------------------------------------------------
-    // Detect SVs from the split reads
-    printMessage(chr + ": Split read SVs...");
-    this->getSplitAlignments(fp_in, idx, bamHdr, region, split_sv_calls);
+    // // Detect SVs from the CIGAR strings
+    // printMessage(chr + ": CIGAR SVs...");
+    // this->findCIGARSVs(fp_in, idx, bamHdr, chr, chr_sv_calls, chr_pos_depth_map, ref_genome);
+
+    // printMessage(chr + ": Merging CIGAR...");
+    // mergeSVs(chr_sv_calls, dbscan_epsilon, dbscan_min_pts);
+
+    // int region_sv_count = getSVCount(chr_sv_calls);
+    // printMessage("Total SVs detected from CIGAR string: " + std::to_string(region_sv_count));
+
+    // -----------------------------------------------------------------------
+
+    // // Detect SVs from the split reads
+    // printMessage(chr + ": Split read SVs...");
+    // this->findSplitCNVBreakpoints(fp_in, idx, bamHdr, chr, split_sv_calls);
 }
 
 void SVCaller::run(const InputData& input_data)
@@ -643,77 +1306,95 @@ void SVCaller::run(const InputData& input_data)
 
     // Use multi-threading across chromosomes. If a single chromosome is
     // specified, use a single main thread (multi-threading is used for file I/O)
-    int thread_count = 1;
-    if (!input_data.isSingleChr()) {
-        thread_count = input_data.getThreadCount();
-        std::cout << "Using " << thread_count << " threads for chr processing..." << std::endl;
-    }
-    ThreadPool pool(thread_count);
+    // int thread_count = 1;
+    // if (!input_data.isSingleChr()) {
+    //     thread_count = input_data.getThreadCount();
+    //     std::cout << "Using " << thread_count << " threads for chr processing..." << std::endl;
+    // }
+    // ThreadPool pool(thread_count);
     std::unordered_map<std::string, std::vector<SVCall>> whole_genome_sv_calls;
     std::unordered_map<std::string, std::vector<SVCall>> whole_genome_split_sv_calls;
-    auto process_chr = [&](const std::string& chr) {
-        try {
-            std::vector<SVCall> sv_calls;
-            std::vector<SVCall> split_sv_calls;
-            InputData chr_input_data = input_data;  // Use a thread-local copy
-            this->processChromosome(chr, hmm, sv_calls, chr_input_data, ref_genome, chr_pos_depth_map[chr], chr_mean_cov_map[chr], split_sv_calls);
-            {
-                std::shared_lock<std::shared_mutex> lock(this->shared_mutex);
-                whole_genome_sv_calls[chr] = std::move(sv_calls);
-                whole_genome_split_sv_calls[chr] = std::move(split_sv_calls);
-            }
-            // printMessage("Completed chromosome " + chr);
-        } catch (const std::exception& e) {
-            printError("Error processing chromosome " + chr + ": " + e.what());
-        } catch (...) {
-            printError("Unknown error processing chromosome " + chr);
-        }
-    };
+    // auto process_chr = [&](const std::string& chr) {
+    //     try {
+    //         std::vector<SVCall> sv_calls;
+    //         std::vector<SVCall> split_sv_calls;
+    //         InputData chr_input_data = input_data;  // Use a thread-local copy
+    //         this->processChromosome(chr, hmm, sv_calls, chr_input_data, ref_genome, chr_pos_depth_map[chr], chr_mean_cov_map[chr], split_sv_calls);
+    //         {
+    //             std::shared_lock<std::shared_mutex> lock(this->shared_mutex);
+    //             whole_genome_sv_calls[chr] = std::move(sv_calls);
+    //             whole_genome_split_sv_calls[chr] = std::move(split_sv_calls);
+    //         }
+    //         // printMessage("Completed chromosome " + chr);
+    //     } catch (const std::exception& e) {
+    //         printError("Error processing chromosome " + chr + ": " + e.what());
+    //     } catch (...) {
+    //         printError("Unknown error processing chromosome " + chr);
+    //     }
+    // };
 
-    // Submit tasks to the thread pool and track futures
-    std::vector<std::future<void>> futures;
-    for (const auto& chr : chromosomes) {
-        futures.emplace_back(pool.enqueue([&, chr] {
-            // printMessage("Processing chromosome " + chr);
-            process_chr(chr);
-        }));
-    }
+    // // Submit tasks to the thread pool and track futures
+    // std::vector<std::future<void>> futures;
+    // for (const auto& chr : chromosomes) {
+    //     futures.emplace_back(pool.enqueue([&, chr] {
+    //         // printMessage("Processing chromosome " + chr);
+    //         process_chr(chr);
+    //     }));
+    // }
 
-    // Wait for all tasks to complete
-    int current_chr = 0;
-    int total_chr_count = chromosomes.size();
-    for (auto& future : futures) {
-        try {
-            current_chr++;
-            future.get();
-        } catch (const std::exception& e) {
-            printError("Error processing chromosome task: " + std::string(e.what()));
-        } catch (...) {
-            printError("Unknown error processing chromosome task.");
-        }
-    }
-    printMessage("All tasks have finished.");
+    // // Wait for all tasks to complete
+    // int current_chr = 0;
+    // int total_chr_count = chromosomes.size();
+    // for (auto& future : futures) {
+    //     try {
+    //         current_chr++;
+    //         future.get();
+    //     } catch (const std::exception& e) {
+    //         printError("Error processing chromosome task: " + std::string(e.what()));
+    //     } catch (...) {
+    //         printError("Unknown error processing chromosome task.");
+    //     }
+    // }
+    // printMessage("All tasks have finished.");
 
     // -------------------------------------------------------
     // Run copy number variant predictions on the SVs detected from the
     // CIGAR string, using a minimum CNV length threshold
-    current_chr = 0;
-    printMessage("Running copy number predictions on CIGAR SVs...");
-    for (auto& entry : whole_genome_sv_calls) {
-        current_chr++;
-        const std::string& chr = entry.first;
-        std::vector<SVCall>& sv_calls = entry.second;
-        if (sv_calls.size() > 0) {
-            // printMessage("Running copy number predictions on " + chr +
-            // "...");
-            printMessage("(" + std::to_string(current_chr) + "/" + std::to_string(total_chr_count) + ") Running copy number predictions on " + chr + "...");
-            cnv_caller.runCIGARCopyNumberPrediction(chr, sv_calls, hmm, chr_mean_cov_map[chr], chr_pos_depth_map[chr], input_data);
-        }
-    }
+    // current_chr = 0;
+    // printMessage("Running copy number predictions on CIGAR SVs...");
+    // for (auto& entry : whole_genome_sv_calls) {
+    //     current_chr++;
+    //     const std::string& chr = entry.first;
+    //     std::vector<SVCall>& sv_calls = entry.second;
+    //     if (sv_calls.size() > 0) {
+    //         // printMessage("Running copy number predictions on " + chr +
+    //         // "...");
+    //         printMessage("(" + std::to_string(current_chr) + "/" + std::to_string(total_chr_count) + ") Running copy number predictions on " + chr + "...");
+    //         cnv_caller.runCIGARCopyNumberPrediction(chr, sv_calls, hmm, chr_mean_cov_map[chr], chr_pos_depth_map[chr], input_data);
+    //     }
+    // }
     // -------------------------------------------------------
 
+    // printMessage("Running copy number predictions on split-read SVs...");
+    // current_chr = 0;
+    // for (auto& entry : whole_genome_split_sv_calls) {
+    //     const std::string& chr = entry.first;
+    //     std::vector<SVCall>& sv_calls = entry.second;
+
+    //     if (sv_calls.size() > 0) {
+    //         current_chr++;
+    //         printMessage("(" + std::to_string(current_chr) + "/" + std::to_string(total_chr_count) + ") Running copy number predictions on " + chr + " with " + std::to_string(sv_calls.size()) + " SV candidates...");
+    //         this->runSplitReadCopyNumberPredictions(chr, sv_calls, cnv_caller, hmm, chr_mean_cov_map[chr], chr_pos_depth_map[chr], input_data);
+    //     }
+    // }
+
+    // Identify split-SV signatures
+    printMessage("Identifying split-SV signatures...");
+    this->findSplitSVSignatures(whole_genome_split_sv_calls, input_data);
+
     printMessage("Running copy number predictions on split-read SVs...");
-    current_chr = 0;
+    int current_chr = 0;
+    int total_chr_count = whole_genome_split_sv_calls.size();
     for (auto& entry : whole_genome_split_sv_calls) {
         const std::string& chr = entry.first;
         std::vector<SVCall>& sv_calls = entry.second;
@@ -725,11 +1406,18 @@ void SVCaller::run(const InputData& input_data)
         }
     }
 
+    // Detect inversions, insertions, and translocations from the split read
+    // alignments (no copy number predictions)
+    // printMessage("Detecting inversions, insertions, and translocations from split read alignments...");
+    // std::unordered_map<std::string, std::vector<SVCall>> neutral_sv_calls;
+    // this->findSplitReadSVs(neutral_sv_calls, ref_genome, input_data);
+    
     printMessage("Unifying SVs...");
     for (auto& entry : whole_genome_split_sv_calls) {
         const std::string& chr = entry.first;
         std::vector<SVCall>& sv_calls = entry.second;
         whole_genome_sv_calls[chr].insert(whole_genome_sv_calls[chr].end(), sv_calls.begin(), sv_calls.end());
+        // whole_genome_sv_calls[chr].insert(whole_genome_sv_calls[chr].end(), neutral_sv_calls[chr].begin(), neutral_sv_calls[chr].end());
     }
 
     // Print the total number of SVs detected for each chromosome
@@ -756,54 +1444,48 @@ void SVCaller::runSplitReadCopyNumberPredictions(const std::string& chr, std::ve
     for (const auto& sv_candidate : split_sv_calls) {
         printMessage("Processing SV candidate " + std::to_string(sv_candidate.start) + "-" + std::to_string(sv_candidate.end) + " " + getSVTypeString(sv_candidate.sv_type) + "...");
 
-        bool is_inversion = sv_candidate.sv_type == SVType::INV;
+        // bool is_inversion = sv_candidate.sv_type == SVType::INV;
 
         std::tuple<double, SVType, std::string, bool> result = cnv_caller.runCopyNumberPrediction(chr, hmm, sv_candidate.start, sv_candidate.end, mean_chr_cov, pos_depth_map, input_data);
         double supp_lh = std::get<0>(result);
         SVType supp_type = std::get<1>(result);
         std::string genotype = std::get<2>(result);
-        if (supp_type != SVType::UNKNOWN) {
-            if (is_inversion) {
-            	// Add an additional inversion separately
-		        int read_depth = this->calculateReadDepth(pos_depth_map, sv_candidate.start, sv_candidate.end);
-		        std::string alt_allele = "<INV>";
-		        SVCall sv_call(sv_candidate.start, sv_candidate.end, SVType::INV, alt_allele, "SPLIT", genotype, supp_lh, read_depth, 1, sv_candidate.cluster_size);
-                processed_calls.push_back(sv_call);
-                /*
-                if (supp_type == SVType::DEL) {
-                    supp_type = SVType::INV_DEL;
-                } else if (supp_type == SVType::DUP) {
-                    supp_type = SVType::INV_DUP;
-                } else if (supp_type == SVType::NEUTRAL) {
-                    supp_type = SVType::INV;
-                }
-                */
-            }
+        if (supp_type != SVType::UNKNOWN && supp_type != SVType::NEUTRAL) {
+            // if (is_inversion) {
+            // 	// Add an additional inversion separately
+		    //     int read_depth = this->calculateReadDepth(pos_depth_map, sv_candidate.start, sv_candidate.end);
+		    //     std::string alt_allele = "<INV>";
+		    //     SVCall sv_call(sv_candidate.start, sv_candidate.end, SVType::INV, alt_allele, "SPLIT", genotype, supp_lh, read_depth, 1, sv_candidate.cluster_size);
+            //     processed_calls.push_back(sv_call);
+            // }
             
-            if (supp_type != SVType::NEUTRAL) {
-                int read_depth = this->calculateReadDepth(pos_depth_map, sv_candidate.start, sv_candidate.end);
-                std::string alt_allele = "<" + getSVTypeString(supp_type) + ">";
-                SVCall sv_call(sv_candidate.start, sv_candidate.end, supp_type, alt_allele, "SPLIT", genotype, supp_lh, read_depth, 1, sv_candidate.cluster_size);
-                // printMessage("[SPLIT] Adding SV call: " + std::to_string(sv_call.start) + "-" + std::to_string(sv_call.end) + " " + getSVTypeString(sv_call.sv_type) + ", len=" + std::to_string(sv_call.end - sv_call.start) + ", type=" + getSVTypeString(sv_call.sv_type));
-                // addSVCall(split_sv_calls, sv_call);
-                processed_calls.push_back(sv_call);
-            }
-        } else if (supp_type == SVType::UNKNOWN && sv_candidate.sv_type == SVType::INV) {
-            // Inversion with no CNV prediction
             int read_depth = this->calculateReadDepth(pos_depth_map, sv_candidate.start, sv_candidate.end);
-            std::string alt_allele = "<INV>";
-            SVCall sv_call(sv_candidate.start, sv_candidate.end, SVType::INV, alt_allele, "SPLIT", genotype, supp_lh, read_depth, 1, sv_candidate.cluster_size);
+            std::string alt_allele = "<" + getSVTypeString(supp_type) + ">";
+            SVCall sv_call(sv_candidate.start, sv_candidate.end, supp_type, alt_allele, "SPLIT", genotype, supp_lh, read_depth, 1, sv_candidate.cluster_size);
             // printMessage("[SPLIT] Adding SV call: " + std::to_string(sv_call.start) + "-" + std::to_string(sv_call.end) + " " + getSVTypeString(sv_call.sv_type) + ", len=" + std::to_string(sv_call.end - sv_call.start) + ", type=" + getSVTypeString(sv_call.sv_type));
             // addSVCall(split_sv_calls, sv_call);
             processed_calls.push_back(sv_call);
         }
+
+        // } else if (sv_candidate.sv_type == SVType::INV) {
+        //     // SV with no copy number prediction, but is a potential inversion or insertion
+        //     int read_depth = this->calculateReadDepth(pos_depth_map, sv_candidate.start, sv_candidate.end);
+        //     // std::string alt_allele = "<INV>";
+        //     std::string alt_allele = "<" + getSVTypeString(sv_candidate.sv_type) + ">";
+        //     SVCall sv_call(sv_candidate.start, sv_candidate.end, sv_candidate.sv_type, alt_allele, "SPLIT", genotype, supp_lh, read_depth, 1, sv_candidate.cluster_size);
+        //     printMessage("[TEST-SPLIT] Adding SV call: " + std::to_string(sv_call.start) + "-" + std::to_string(sv_call.end) + " " + getSVTypeString(sv_call.sv_type) + ", len=" + std::to_string(sv_call.end - sv_call.start) + ", type=" + getSVTypeString(sv_call.sv_type));
+        //     processed_calls.push_back(sv_call);
+        // }
         // if (current_sv % 1000 == 0) {
         //     printMessage("Processed " + std::to_string(current_sv) + " of " + std::to_string(total_svs) + " SV candidates");
         // }
     }
 
+    // Insert the copy number predictions back into the split SV calls
+    printMessage("Inserting CNV calls...");
+    split_sv_calls.insert(split_sv_calls.end(), processed_calls.begin(), processed_calls.end());
     // Replace with the processed calls
-    split_sv_calls = std::move(processed_calls);
+    // split_sv_calls = std::move(processed_calls);
 }
 
 void SVCaller::saveToVCF(const std::unordered_map<std::string, std::vector<SVCall>>& sv_calls, const std::string& output_dir, const ReferenceGenome& ref_genome) const
@@ -1043,9 +1725,4 @@ int SVCaller::calculateReadDepth(const std::vector<uint32_t>& pos_depth_map, uin
     // }
     // printMessage("Read depth for SV at " + std::to_string(start) + "-" + std::to_string(end) + " with length " + std::to_string(end-start) + ": " + std::to_string(read_depth));
     return read_depth;
-}
-
-bool SVCaller::regionOverlaps(const GenomicRegion &a, const GenomicRegion &b)
-{
-    return a.tid == b.tid && a.start <= b.end && b.start <= a.end;
 }

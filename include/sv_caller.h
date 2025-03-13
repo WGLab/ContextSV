@@ -21,51 +21,70 @@ struct GenomicRegion {
     int tid;
     hts_pos_t start;
     hts_pos_t end;
+    int query_start;
+    int query_end;
     bool strand;
-    uint8_t qual;
     int cluster_size;  // Number of alignments used for this region
+};
+
+struct PrimaryAlignment {
+    hts_pos_t start;
+    hts_pos_t end;
+    int query_start;
+    int query_end;
+    bool strand;
+    int cluster_size;  // Number of alignments used for this region
+};
+
+struct SuppAlignment {
+    int tid;
+    hts_pos_t start;
+    hts_pos_t end;
+    int query_start;
+    int query_end;
+    bool strand;
+    int cluster_size;  // Number of alignments used for this region
+};
+
+struct SplitSignature {
+    int tid;
+    hts_pos_t start;
+    hts_pos_t end;
+    bool strand;
+    hts_pos_t query_start;
+    hts_pos_t query_end;
 };
 
 // Interval Tree Node
 struct IntervalNode {
-    GenomicRegion region;
+    PrimaryAlignment region;
     std::string qname;
     hts_pos_t max_end;  // To optimize queries
-    // IntervalNode* left;
-    // IntervalNode* right;
     std::unique_ptr<IntervalNode> left;
     std::unique_ptr<IntervalNode> right;
 
-    IntervalNode(GenomicRegion r, std::string name)
+    IntervalNode(PrimaryAlignment r, std::string name)
         : region(r), qname(name), max_end(r.end), left(nullptr), right(nullptr) {}
 };
 
-// IntervalNode* insert(IntervalNode* root, GenomicRegion region, std::string
-// qname) {
-void insert(std::unique_ptr<IntervalNode>& root, GenomicRegion region, std::string qname) {
+void insert(std::unique_ptr<IntervalNode>& root, const PrimaryAlignment& region, std::string qname) {
     if (!root) {
-        // return new IntervalNode(region, qname);
         root = std::make_unique<IntervalNode>(region, qname);
         return;
     }
 
     if (region.start < root->region.start)
     {
-        // root->left = insert(root->left, region, qname);
         insert(root->left, region, qname);
     } else {
-        // root->right = insert(root->right, region, qname);
         insert(root->right, region, qname);
     }
 
     // Update max_end
     root->max_end = std::max(root->max_end, region.end);
-    // return root;
 }
 
-// void findOverlaps(IntervalNode* root, GenomicRegion query,
-// std::vector<std::string>& result) {
-void findOverlaps(const std::unique_ptr<IntervalNode>& root, GenomicRegion query, std::vector<std::string>& result) {
+void findOverlaps(const std::unique_ptr<IntervalNode>& root, const PrimaryAlignment& query, std::vector<std::string>& result) {
     if (!root) return;
 
     // If overlapping, add to result
@@ -93,18 +112,23 @@ class SVCaller {
 
         std::vector<std::string> getChromosomes(const std::string& bam_filepath);
 
-        void getSplitAlignments(samFile* fp_in, hts_idx_t* idx, bam_hdr_t* bamHdr, const std::string& region, std::vector<SVCall>& sv_calls);
+        // void findSplitCNVBreakpoints(samFile* fp_in, hts_idx_t* idx, bam_hdr_t* bamHdr, const std::string& region, std::vector<SVCall>& sv_calls);
 
-        // Detect SVs from the CIGAR string of a read alignment, and return the
-        // mismatch rate, and the start and end positions of the query sequence
-        void detectSVsFromCIGAR(bam_hdr_t* header, bam1_t* alignment, std::vector<SVCall>& sv_calls, bool is_primary, const std::vector<uint32_t>& pos_depth_map, const ReferenceGenome& ref_genome);
+        void findSplitSVSignatures(std::unordered_map<std::string, std::vector<SVCall>>& sv_calls, const InputData& input_data);
+
+        void findSplitReadSVs(std::unordered_map<std::string, std::vector<SVCall>>& sv_calls, const ReferenceGenome& ref_genome, const InputData& input_data);
+
+        // Process a single CIGAR record and find candidate SVs
+        void processCIGARRecord(bam_hdr_t* header, bam1_t* alignment, std::vector<SVCall>& sv_calls, bool is_primary, const std::vector<uint32_t>& pos_depth_map, const ReferenceGenome& ref_genome);
+
+        std::pair<int, int> getAlignmentReadPositions(bam1_t* alignment);
 
         void processChromosome(const std::string& chr, const CHMM& hmm, std::vector<SVCall>& combined_sv_calls, const InputData& input_data, const ReferenceGenome& ref_genome, const std::vector<uint32_t>& chr_pos_depth_map, double mean_chr_cov, std::vector<SVCall>& split_sv_calls);
 
         // Detect SVs at a region from long read alignments. This is used for
         // whole genome analysis running in parallel.
         // RegionData detectSVsFromRegion(std::string region);
-        void detectCIGARSVs(samFile* fp_in, hts_idx_t* idx, bam_hdr_t* bamHdr, const std::string& region, std::vector<SVCall>& sv_calls, const std::vector<uint32_t>& pos_depth_map, const ReferenceGenome& ref_genome);
+        void findCIGARSVs(samFile* fp_in, hts_idx_t* idx, bam_hdr_t* bamHdr, const std::string& region, std::vector<SVCall>& sv_calls, const std::vector<uint32_t>& pos_depth_map, const ReferenceGenome& ref_genome);
  
         // Read the next alignment from the BAM file in a thread-safe manner
         int readNextAlignment(samFile *fp_in, hts_itr_t *itr, bam1_t *bam1);
@@ -123,8 +147,6 @@ class SVCaller {
 
         // Calculate the read depth (INFO/DP) for a region
         int calculateReadDepth(const std::vector<uint32_t>& pos_depth_map, uint32_t start, uint32_t end);
-
-        bool regionOverlaps(const GenomicRegion& a, const GenomicRegion& b);
 
     public:
         // Constructor with no arguments
