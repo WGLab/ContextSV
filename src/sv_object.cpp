@@ -221,6 +221,35 @@ void mergeSVs(std::vector<SVCall>& sv_calls, double epsilon, int min_pts)
     printMessage("Merged " + std::to_string(initial_size) + " SV calls into " + std::to_string(updated_size) + " SV calls");
 }
 
+void mergeDuplicateSVs(std::vector<SVCall> &sv_calls)
+{
+    int initial_size = sv_calls.size();
+    std::vector<SVCall> combined_sv_calls;
+    std::sort(sv_calls.begin(), sv_calls.end(), [](const SVCall& a, const SVCall& b) {
+        return a.start < b.start;
+    });
+    for (size_t i = 0; i < sv_calls.size(); i++) {
+        SVCall& sv_call = sv_calls[i];
+        if (i > 0 && sv_call.start == sv_calls[i - 1].start) {
+            // Keep the larger cluster size for the same start position
+            if (sv_call.cluster_size > sv_calls[i - 1].cluster_size) {
+                combined_sv_calls.back() = sv_call;
+            }
+
+            // Combine cluster sizes
+            combined_sv_calls.back().cluster_size += sv_call.cluster_size;
+        } else {
+            // Add the SV call to the combined list
+            combined_sv_calls.push_back(sv_call);
+        }
+    }
+    int merge_count = initial_size - combined_sv_calls.size();
+    sv_calls = std::move(combined_sv_calls); // Replace with filtered list
+    if (merge_count > 0) {
+        printMessage("Merged " + std::to_string(merge_count) + " SV candidates with identical start and end positions");
+    }
+}
+
 void mergeSVSubsets(std::vector<SVCall> &sv_calls)
 {
     // Sort the SV calls by start position

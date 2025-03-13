@@ -501,7 +501,7 @@ void CNVCaller::calculateMeanChromosomeCoverage(const std::vector<std::string>& 
         // Clean up the iterator
         hts_itr_destroy(bam_iter);
 
-        printMessage("Finished reading BAM file, calculating mean chromosome coverage...");
+        // printMessage("Finished reading BAM file, calculating mean chromosome coverage...");
 
         // // Calculate the mean chromosome coverage for positions with non-zero depth
         // uint64_t cum_depth = 0;
@@ -539,13 +539,13 @@ void CNVCaller::calculateMeanChromosomeCoverage(const std::vector<std::string>& 
             [](uint32_t depth) { return depth > 0; }
         );
 
-        printMessage("Number of positions with non-zero depth: " + std::to_string(pos_count));
-        printMessage("Total depth: " + std::to_string(cum_depth));
+        // printMessage("Number of positions with non-zero depth: " + std::to_string(pos_count));
+        // printMessage("Total depth: " + std::to_string(cum_depth));
 
         double mean_chr_cov = (pos_count > 0) ? static_cast<double>(cum_depth) / static_cast<double>(pos_count) : 0.0;
         chr_mean_cov_map[chr] = mean_chr_cov;
 
-        printMessage("(" + std::to_string(current_chr) + "/" + std::to_string(total_chr_count) + ") Mean chromosome coverage for " + chr + ": " + std::to_string(mean_chr_cov));
+        // printMessage("(" + std::to_string(current_chr) + "/" + std::to_string(total_chr_count) + ") Mean chromosome coverage for " + chr + ": " + std::to_string(mean_chr_cov));
     }
 
     // Clean up
@@ -802,7 +802,7 @@ void CNVCaller::readSNPAlleleFrequencies(std::string chr, uint32_t start_pos, ui
     // Continue if no SNP was found in the region
     if (!snp_found)
     {
-        printMessage("No SNP found in region: " + chr + ":" + std::to_string(start_pos) + "-" + std::to_string(end_pos));
+        // printMessage("No SNP found in region: " + chr + ":" + std::to_string(start_pos) + "-" + std::to_string(end_pos));
         bcf_sr_destroy(snp_reader);
         bcf_sr_destroy(pfb_reader);
         return;

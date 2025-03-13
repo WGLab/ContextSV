@@ -531,7 +531,7 @@ void SVCaller::findSplitSVSignatures(std::unordered_map<std::string, std::vector
                 primary_clusters.push_back(overlap_group);
             }
         }
-        printMessage(chr_name + ": Found " + std::to_string(primary_clusters.size()) + " groups of overlapping primary alignments");
+        // printMessage(chr_name + ": Found " + std::to_string(primary_clusters.size()) + " groups of overlapping primary alignments");
 
         // For each primary alignment cluster the supplementary alignment start and
         // end positions, keeping the median of the largest cluster
@@ -685,7 +685,7 @@ void SVCaller::findSplitSVSignatures(std::unordered_map<std::string, std::vector
                     }
                     SVCall sv_candidate(primary_pos, primary_pos + (read_distance-1), SVType::INS, "<INS>", "SPLITINS", "./.", 0.0, 0, 0, primary_cluster_size);
                     addSVCall(chr_sv_calls, sv_candidate);
-                    printMessage(chr_name + ": Found split insertion candidate " + std::to_string(primary_pos) + "-" + std::to_string(primary_pos + (read_distance-1)) + " with size " + std::to_string(read_distance) + " for group " + std::to_string(current_group));
+                    // printMessage(chr_name + ": Found split insertion candidate " + std::to_string(primary_pos) + "-" + std::to_string(primary_pos + (read_distance-1)) + " with size " + std::to_string(read_distance) + " for group " + std::to_string(current_group));
                     // continue;
                 }
             }
@@ -731,7 +731,7 @@ void SVCaller::findSplitSVSignatures(std::unordered_map<std::string, std::vector
                 if (inversion && std::abs(supp_best_start - supp_best_end) >= 50) {
                     SVCall sv_candidate(std::min(supp_best_start, supp_best_end), std::max(supp_best_start, supp_best_end), SVType::INV, "<INV>", "SUPPINV", "./.", 0.0, 0, 0, supp_cluster_size);
                     addSVCall(chr_sv_calls, sv_candidate);
-                    printMessage(chr_name + ": Found inversion candidate " + std::to_string(supp_best_start) + "-" + std::to_string(supp_best_end) + " for group " + std::to_string(current_group));
+                    // printMessage(chr_name + ": Found inversion candidate " + std::to_string(supp_best_start) + "-" + std::to_string(supp_best_end) + " for group " + std::to_string(current_group));
                 }
             }
 
@@ -764,9 +764,7 @@ void SVCaller::findSplitSVSignatures(std::unordered_map<std::string, std::vector
             // If the read distance is < 30bp while the SV is > 2kb, then this is a
             // potential deletion
             if (std::abs(read_distance) < 30 && sv_length > 2000 && sv_length <= 1000000) {
-                printMessage(chr_name + ": Found potential deletion candidate " + std::to_string(sv_start) + "-" + std::to_string(sv_end) + " with length " + std::to_string(sv_length) + " for group " + std::to_string(current_group));
-                // printMessage("Found potential deletion candidate " + std::to_string(sv_start) + "-" + std::to_string(sv_end) + " with length " + std::to_string(sv_length) + " for group " + std::to_string(current_group));
-                // continue;
+                // printMessage(chr_name + ": Found potential deletion candidate " + std::to_string(sv_start) + "-" + std::to_string(sv_end) + " with length " + std::to_string(sv_length) + " for group " + std::to_string(current_group));
                 SVCall sv_candidate(sv_start, sv_end, SVType::DEL, ".", "SPLITDEL", "./.", 0.0, 0, 0, cluster_size);
                 addSVCall(chr_sv_calls, sv_candidate);
             }
@@ -785,34 +783,47 @@ void SVCaller::findSplitSVSignatures(std::unordered_map<std::string, std::vector
             //     // printMessage(region + ": Found SV candidate " + std::to_string(sv_start) + "-" + std::to_string(sv_end) + " with length " + std::to_string(sv_length) + " for group " + std::to_string(current_group) + " with inversion status " + std::to_string(inversion));
             // }
         }
+
         // Combine SVs with identical start and end positions, and sum the cluster
         // sizes
-        printMessage("Combining SVs with identical start and end positions");
-        std::vector<SVCall> combined_sv_calls;
+        printMessage("Combining SVs with identical start positions");
         std::sort(chr_sv_calls.begin(), chr_sv_calls.end(), [](const SVCall& a, const SVCall& b) {
             return a.start < b.start || (a.start == b.start && a.end < b.end);
         });
-        int merge_count = 0;
-        for (size_t i = 0; i < chr_sv_calls.size(); i++) {
-            SVCall& sv_call = chr_sv_calls[i];
-            // SVCall& sv_call = sv_calls[i];
-            if (i > 0 && sv_call.start == chr_sv_calls[i - 1].start && sv_call.end == chr_sv_calls[i - 1].end) {
-                chr_sv_calls[i - 1].cluster_size += sv_call.cluster_size;
-                merge_count++;
-            } else {
-                combined_sv_calls.push_back(sv_call);
-            }
-        }
+        
+        // Merge duplicate SV calls with identical start positions
+        mergeDuplicateSVs(chr_sv_calls);
+
+        // int initial_size = chr_sv_calls.size();
+        // std::vector<SVCall> combined_sv_calls;
+        // for (size_t i = 0; i < chr_sv_calls.size(); i++) {
+        //     SVCall& sv_call = chr_sv_calls[i];
+        //     if (i > 0 && sv_call.start == chr_sv_calls[i - 1].start) {
+        //         // Keep the largest cluster size for the same start position
+        //         if (sv_call.cluster_size > chr_sv_calls[i - 1].cluster_size) {
+        //             combined_sv_calls.back() = sv_call;
+        //         }
+
+        //         // Combine cluster sizes
+        //         combined_sv_calls.back().cluster_size += sv_call.cluster_size;
+        //     } else {
+        //         // Add the SV call to the combined list
+        //         combined_sv_calls.push_back(sv_call);
+        //     }
+        // }
+        // int merge_count = initial_size - combined_sv_calls.size();
+        // printMessage("Merged " + std::to_string(merge_count) + " SV candidates with identical start positions");
 
         // Add the combined SV calls to the main vector
-        sv_calls[chr_name] = std::move(combined_sv_calls);
+        // sv_calls[chr_name] = std::move(combined_sv_calls);
+        sv_calls[chr_name] = std::move(chr_sv_calls);
 
         // Print the number of merged SV calls
         printMessage(chr_name + ": Found " + std::to_string(sv_calls[chr_name].size()) + " SV candidates");
         
-        if (merge_count > 0) {
-            printMessage(chr_name + ": Merged " + std::to_string(merge_count) + " SV candidates with identical start and end positions");
-        }
+        // if (merge_count > 0) {
+        //     printMessage(chr_name + ": Merged " + std::to_string(merge_count) + " SV candidates with identical start and end positions");
+        // }
     }
 
     // if (merge_count > 0) {
@@ -1154,6 +1165,10 @@ void SVCaller::processCIGARRecord(bam_hdr_t *header, bam1_t *alignment, std::vec
 
         // Update the reference position
         // https://samtools.github.io/hts-specs/SAMv1.pdf
+        // if (bam_cigar_type(op) & 2) {
+        //     // bit 2: consume reference
+        //     ref_pos += op_len;
+        // }
         if (op == BAM_CMATCH || op == BAM_CDEL || op == BAM_CREF_SKIP || op == BAM_CEQUAL || op == BAM_CDIFF) {
             pos += op_len;
         }
@@ -1167,7 +1182,7 @@ void SVCaller::processCIGARRecord(bam_hdr_t *header, bam1_t *alignment, std::vec
 
 std::pair<int, int> SVCaller::getAlignmentReadPositions(bam1_t *alignment)
 {
-    int query_start = 0;
+    int query_start = -1;
     int query_end = 0;
     uint32_t* cigar = bam_get_cigar(alignment);
     int cigar_len = alignment->core.n_cigar;
@@ -1175,16 +1190,26 @@ std::pair<int, int> SVCaller::getAlignmentReadPositions(bam1_t *alignment)
         int op_len = bam_cigar_oplen(cigar[i]);
         int op = bam_cigar_op(cigar[i]);
 
-        if (i == 0 && op == BAM_CSOFT_CLIP) {
-            query_start = op_len;
+        // if (i == 0 && op == BAM_CSOFT_CLIP) {
+        //     query_start = op_len;
+        // }
+        // Set the query start position to the first non-soft clip operation
+        if (query_start == -1 && (op == BAM_CMATCH || op == BAM_CINS || op == BAM_CEQUAL || op == BAM_CDIFF)) {
+            query_start = query_end;  // First valid query position
         }
         
         // https://github.com/samtools/htslib/blob/develop/htslib/sam.h:
         // bam_cigar_type(o) (BAM_CIGAR_TYPE>>((o)<<1)&3) // bit 1: consume query; bit 2: consume reference
-        if (bam_cigar_type(op) & 1) {
+        if (op == BAM_CMATCH || op == BAM_CINS || op == BAM_CSOFT_CLIP || op == BAM_CEQUAL || op == BAM_CDIFF) {
             query_end += op_len;
         }
     }
+
+    if (query_start == -1) {
+        // If no valid query start position was found, set it to 0
+        query_start = 0;
+    }
+
     return std::make_pair(query_start, query_end);
 }
 
@@ -1227,21 +1252,15 @@ void SVCaller::processChromosome(const std::string& chr, const CHMM& hmm, std::v
     } 
 
     // -----------------------------------------------------------------------
-    // // Detect SVs from the CIGAR strings
-    // printMessage(chr + ": CIGAR SVs...");
-    // this->findCIGARSVs(fp_in, idx, bamHdr, chr, chr_sv_calls, chr_pos_depth_map, ref_genome);
+    // Detect SVs from the CIGAR strings
+    printMessage(chr + ": CIGAR SVs...");
+    this->findCIGARSVs(fp_in, idx, bamHdr, chr, chr_sv_calls, chr_pos_depth_map, ref_genome);
 
-    // printMessage(chr + ": Merging CIGAR...");
-    // mergeSVs(chr_sv_calls, dbscan_epsilon, dbscan_min_pts);
+    printMessage(chr + ": Merging CIGAR...");
+    mergeSVs(chr_sv_calls, dbscan_epsilon, dbscan_min_pts);
 
-    // int region_sv_count = getSVCount(chr_sv_calls);
-    // printMessage("Total SVs detected from CIGAR string: " + std::to_string(region_sv_count));
-
-    // -----------------------------------------------------------------------
-
-    // // Detect SVs from the split reads
-    // printMessage(chr + ": Split read SVs...");
-    // this->findSplitCNVBreakpoints(fp_in, idx, bamHdr, chr, split_sv_calls);
+    int region_sv_count = getSVCount(chr_sv_calls);
+    printMessage(chr + ": Found " + std::to_string(region_sv_count) + " SV candidates in the CIGAR string");
 }
 
 void SVCaller::run(const InputData& input_data)
@@ -1250,7 +1269,6 @@ void SVCaller::run(const InputData& input_data)
     printMessage("Loading the reference genome...");
     const std::string ref_filepath = input_data.getRefGenome();
     std::shared_mutex ref_mutex;  // Dummy mutex (remove later)
-    // ReferenceGenome ref_genome(this->shared_mutex);
     ReferenceGenome ref_genome(ref_mutex);
     ref_genome.setFilepath(ref_filepath);
 
@@ -1260,7 +1278,6 @@ void SVCaller::run(const InputData& input_data)
         // Get the chromosome from the user input argument
         chromosomes.push_back(input_data.getChromosome());
     } else {
-        // chromosomes = ref_genome.getChromosomes();
         // Get the chromosomes from the input BAM file
         chromosomes = this->getChromosomes(input_data.getLongReadBam());
     }
@@ -1306,95 +1323,80 @@ void SVCaller::run(const InputData& input_data)
 
     // Use multi-threading across chromosomes. If a single chromosome is
     // specified, use a single main thread (multi-threading is used for file I/O)
-    // int thread_count = 1;
-    // if (!input_data.isSingleChr()) {
-    //     thread_count = input_data.getThreadCount();
-    //     std::cout << "Using " << thread_count << " threads for chr processing..." << std::endl;
-    // }
-    // ThreadPool pool(thread_count);
+    int thread_count = 1;
+    if (!input_data.isSingleChr()) {
+        thread_count = input_data.getThreadCount();
+        std::cout << "Using " << thread_count << " threads for chr processing..." << std::endl;
+    }
+    ThreadPool pool(thread_count);
     std::unordered_map<std::string, std::vector<SVCall>> whole_genome_sv_calls;
-    std::unordered_map<std::string, std::vector<SVCall>> whole_genome_split_sv_calls;
-    // auto process_chr = [&](const std::string& chr) {
-    //     try {
-    //         std::vector<SVCall> sv_calls;
-    //         std::vector<SVCall> split_sv_calls;
-    //         InputData chr_input_data = input_data;  // Use a thread-local copy
-    //         this->processChromosome(chr, hmm, sv_calls, chr_input_data, ref_genome, chr_pos_depth_map[chr], chr_mean_cov_map[chr], split_sv_calls);
-    //         {
-    //             std::shared_lock<std::shared_mutex> lock(this->shared_mutex);
-    //             whole_genome_sv_calls[chr] = std::move(sv_calls);
-    //             whole_genome_split_sv_calls[chr] = std::move(split_sv_calls);
-    //         }
-    //         // printMessage("Completed chromosome " + chr);
-    //     } catch (const std::exception& e) {
-    //         printError("Error processing chromosome " + chr + ": " + e.what());
-    //     } catch (...) {
-    //         printError("Unknown error processing chromosome " + chr);
-    //     }
-    // };
+    auto process_chr = [&](const std::string& chr) {
+        try {
+            std::vector<SVCall> sv_calls;
+            std::vector<SVCall> split_sv_calls;
+            InputData chr_input_data = input_data;  // Use a thread-local copy
+            this->processChromosome(chr, hmm, sv_calls, chr_input_data, ref_genome, chr_pos_depth_map[chr], chr_mean_cov_map[chr], split_sv_calls);
+            {
+                std::shared_lock<std::shared_mutex> lock(this->shared_mutex);
+                whole_genome_sv_calls[chr] = std::move(sv_calls);
+            }
+            // printMessage("Completed chromosome " + chr);
+        } catch (const std::exception& e) {
+            printError("Error processing chromosome " + chr + ": " + e.what());
+        } catch (...) {
+            printError("Unknown error processing chromosome " + chr);
+        }
+    };
 
-    // // Submit tasks to the thread pool and track futures
-    // std::vector<std::future<void>> futures;
-    // for (const auto& chr : chromosomes) {
-    //     futures.emplace_back(pool.enqueue([&, chr] {
-    //         // printMessage("Processing chromosome " + chr);
-    //         process_chr(chr);
-    //     }));
-    // }
+    // Submit tasks to the thread pool and track futures
+    std::vector<std::future<void>> futures;
+    for (const auto& chr : chromosomes) {
+        futures.emplace_back(pool.enqueue([&, chr] {
+            // printMessage("Processing chromosome " + chr);
+            process_chr(chr);
+        }));
+    }
 
     // // Wait for all tasks to complete
-    // int current_chr = 0;
-    // int total_chr_count = chromosomes.size();
-    // for (auto& future : futures) {
-    //     try {
-    //         current_chr++;
-    //         future.get();
-    //     } catch (const std::exception& e) {
-    //         printError("Error processing chromosome task: " + std::string(e.what()));
-    //     } catch (...) {
-    //         printError("Unknown error processing chromosome task.");
-    //     }
-    // }
-    // printMessage("All tasks have finished.");
+    int current_chr = 0;
+    int total_chr_count = chromosomes.size();
+    for (auto& future : futures) {
+        try {
+            current_chr++;
+            future.get();
+        } catch (const std::exception& e) {
+            printError("Error processing chromosome task: " + std::string(e.what()));
+        } catch (...) {
+            printError("Unknown error processing chromosome task.");
+        }
+    }
+    printMessage("All tasks have finished.");
 
     // -------------------------------------------------------
     // Run copy number variant predictions on the SVs detected from the
     // CIGAR string, using a minimum CNV length threshold
-    // current_chr = 0;
-    // printMessage("Running copy number predictions on CIGAR SVs...");
-    // for (auto& entry : whole_genome_sv_calls) {
-    //     current_chr++;
-    //     const std::string& chr = entry.first;
-    //     std::vector<SVCall>& sv_calls = entry.second;
-    //     if (sv_calls.size() > 0) {
-    //         // printMessage("Running copy number predictions on " + chr +
-    //         // "...");
-    //         printMessage("(" + std::to_string(current_chr) + "/" + std::to_string(total_chr_count) + ") Running copy number predictions on " + chr + "...");
-    //         cnv_caller.runCIGARCopyNumberPrediction(chr, sv_calls, hmm, chr_mean_cov_map[chr], chr_pos_depth_map[chr], input_data);
-    //     }
-    // }
+    current_chr = 0;
+    printMessage("Running copy number predictions on CIGAR SVs...");
+    for (auto& entry : whole_genome_sv_calls) {
+        current_chr++;
+        const std::string& chr = entry.first;
+        std::vector<SVCall>& sv_calls = entry.second;
+        if (sv_calls.size() > 0) {
+            // printMessage("Running copy number predictions on " + chr +
+            // "...");
+            printMessage("(" + std::to_string(current_chr) + "/" + std::to_string(total_chr_count) + ") Running copy number predictions on " + chr + "...");
+            cnv_caller.runCIGARCopyNumberPrediction(chr, sv_calls, hmm, chr_mean_cov_map[chr], chr_pos_depth_map[chr], input_data);
+        }
+    }
     // -------------------------------------------------------
-
-    // printMessage("Running copy number predictions on split-read SVs...");
-    // current_chr = 0;
-    // for (auto& entry : whole_genome_split_sv_calls) {
-    //     const std::string& chr = entry.first;
-    //     std::vector<SVCall>& sv_calls = entry.second;
-
-    //     if (sv_calls.size() > 0) {
-    //         current_chr++;
-    //         printMessage("(" + std::to_string(current_chr) + "/" + std::to_string(total_chr_count) + ") Running copy number predictions on " + chr + " with " + std::to_string(sv_calls.size()) + " SV candidates...");
-    //         this->runSplitReadCopyNumberPredictions(chr, sv_calls, cnv_caller, hmm, chr_mean_cov_map[chr], chr_pos_depth_map[chr], input_data);
-    //     }
-    // }
 
     // Identify split-SV signatures
     printMessage("Identifying split-SV signatures...");
+    std::unordered_map<std::string, std::vector<SVCall>> whole_genome_split_sv_calls;
     this->findSplitSVSignatures(whole_genome_split_sv_calls, input_data);
 
     printMessage("Running copy number predictions on split-read SVs...");
-    int current_chr = 0;
-    int total_chr_count = whole_genome_split_sv_calls.size();
+    current_chr = 0;
     for (auto& entry : whole_genome_split_sv_calls) {
         const std::string& chr = entry.first;
         std::vector<SVCall>& sv_calls = entry.second;
@@ -1405,19 +1407,12 @@ void SVCaller::run(const InputData& input_data)
             this->runSplitReadCopyNumberPredictions(chr, sv_calls, cnv_caller, hmm, chr_mean_cov_map[chr], chr_pos_depth_map[chr], input_data);
         }
     }
-
-    // Detect inversions, insertions, and translocations from the split read
-    // alignments (no copy number predictions)
-    // printMessage("Detecting inversions, insertions, and translocations from split read alignments...");
-    // std::unordered_map<std::string, std::vector<SVCall>> neutral_sv_calls;
-    // this->findSplitReadSVs(neutral_sv_calls, ref_genome, input_data);
     
     printMessage("Unifying SVs...");
     for (auto& entry : whole_genome_split_sv_calls) {
         const std::string& chr = entry.first;
         std::vector<SVCall>& sv_calls = entry.second;
         whole_genome_sv_calls[chr].insert(whole_genome_sv_calls[chr].end(), sv_calls.begin(), sv_calls.end());
-        // whole_genome_sv_calls[chr].insert(whole_genome_sv_calls[chr].end(), neutral_sv_calls[chr].begin(), neutral_sv_calls[chr].end());
     }
 
     // Print the total number of SVs detected for each chromosome
@@ -1442,7 +1437,7 @@ void SVCaller::runSplitReadCopyNumberPredictions(const std::string& chr, std::ve
     // Run copy number predictions on the SVs detected from the split reads
     std::vector<SVCall> processed_calls;
     for (const auto& sv_candidate : split_sv_calls) {
-        printMessage("Processing SV candidate " + std::to_string(sv_candidate.start) + "-" + std::to_string(sv_candidate.end) + " " + getSVTypeString(sv_candidate.sv_type) + "...");
+        // printMessage("Processing SV candidate " + std::to_string(sv_candidate.start) + "-" + std::to_string(sv_candidate.end) + " " + getSVTypeString(sv_candidate.sv_type) + "...");
 
         // bool is_inversion = sv_candidate.sv_type == SVType::INV;
 
@@ -1486,6 +1481,43 @@ void SVCaller::runSplitReadCopyNumberPredictions(const std::string& chr, std::ve
     split_sv_calls.insert(split_sv_calls.end(), processed_calls.begin(), processed_calls.end());
     // Replace with the processed calls
     // split_sv_calls = std::move(processed_calls);
+
+    mergeDuplicateSVs(split_sv_calls);
+
+    // Combine SVs with identical start positions, keeping the largest cluster size
+    // printMessage("[2] Combining SVs with identical start and end positions...");
+    // std::vector<SVCall> combined_calls;
+    // std::sort(split_sv_calls.begin(), split_sv_calls.end(), [](const SVCall& a, const SVCall& b) {
+    //     return (a.start < b.start) || (a.start == b.start && a.end < b.end);
+    // });
+    // int initial_size = split_sv_calls.size();
+    // for (size_t i = 0; i < split_sv_calls.size(); ++i) {
+    //     const SVCall& current_call = split_sv_calls[i];
+    //     printMessage("Current start: " + std::to_string(current_call.start) + ", previous start: " + (i > 0 ? std::to_string(split_sv_calls[i-1].start) : "N/A"));
+    //     if (i > 0 && current_call.start == split_sv_calls[i-1].start) {
+    //         printMessage("Found identical start position: " + std::to_string(current_call.start) + " with end: " + std::to_string(current_call.end));
+    //         // Keep the largest cluster size
+    //         if (current_call.cluster_size > split_sv_calls[i-1].cluster_size) {
+    //             combined_calls.back() = current_call;
+    //             printMessage("Replacing previous call with larger cluster size: " + std::to_string(current_call.cluster_size) + " > " + std::to_string(split_sv_calls[i-1].cluster_size));
+    //         }
+
+    //         // Merge the cluster sizes
+    //         combined_calls.back().cluster_size += current_call.cluster_size;
+    //         printMessage("Merged cluster size: " + std::to_string(combined_calls.back().cluster_size) + " (previous: " + std::to_string(split_sv_calls[i-1].cluster_size) + ")");
+    //     } else {
+    //         // Add the current call to the combined calls
+    //         combined_calls.push_back(current_call);
+    //     }
+    // }
+
+
+    // printMessage("Merged " + std::to_string(merge_count) + " SVs with identical start and end positions");
+    // // Replace the split SV calls with the combined calls
+    // printMessage("[TEST] Total SVs before merging: " + std::to_string(split_sv_calls.size()));
+    // split_sv_calls.clear();
+    // split_sv_calls.insert(split_sv_calls.end(), combined_calls.begin(), combined_calls.end());
+    // printMessage("[TEST] Total SVs after merging: " + std::to_string(split_sv_calls.size()));
 }
 
 void SVCaller::saveToVCF(const std::unordered_map<std::string, std::vector<SVCall>>& sv_calls, const std::string& output_dir, const ReferenceGenome& ref_genome) const
@@ -1562,6 +1594,7 @@ void SVCaller::saveToVCF(const std::unordered_map<std::string, std::vector<SVCal
     vcf_stream << header_line << std::endl;
     std::cout << "Saving SV calls to " << output_vcf << std::endl;
     int total_count = 0;
+    int unclassified_svs = 0;
     for (const auto& pair : sv_calls) {
         std::string chr = pair.first;
         const std::vector<SVCall>& sv_calls = pair.second;
@@ -1583,7 +1616,9 @@ void SVCaller::saveToVCF(const std::unordered_map<std::string, std::vector<SVCal
 
             // If the SV type is unknown, print a warning and skip
             if (sv_type == SVType::UNKNOWN || sv_type == SVType::NEUTRAL) {
-                std::cerr << "Warning: Unknown SV type for SV at " << chr << ":" << start << "-" << end << std::endl;
+                // std::cerr << "Warning: Unknown SV type for SV at " << chr <<
+                // ":" << start << "-" << end << std::endl;
+                unclassified_svs += 1;
                 continue;
             } else {
                 total_count += 1;
@@ -1701,6 +1736,9 @@ void SVCaller::saveToVCF(const std::unordered_map<std::string, std::vector<SVCal
 
     // Print the number of SV calls skipped
     std::cout << "Finished writing VCF file. Total records: " << total_count << std::endl;
+    if (unclassified_svs > 0) {
+        std::cout << "Total unclassified SVs: " << unclassified_svs << std::endl;
+    }
 }
 
 int SVCaller::calculateReadDepth(const std::vector<uint32_t>& pos_depth_map, uint32_t start, uint32_t end)

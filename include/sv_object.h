@@ -39,6 +39,9 @@ void addSVCall(std::vector<SVCall>& sv_calls, SVCall& sv_call);
 
 void mergeSVs(std::vector<SVCall>& sv_calls);
 
+// Merge SVs with identical start positions, and sum the cluster sizes
+void mergeDuplicateSVs(std::vector<SVCall>& sv_calls);
+
 void mergeSVSubsets(std::vector<SVCall>& sv_calls);
 
 void filterSVsWithLowSupport(std::vector<SVCall> &sv_calls, int min_depth);
