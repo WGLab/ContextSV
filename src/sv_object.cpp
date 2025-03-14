@@ -225,9 +225,7 @@ void mergeDuplicateSVs(std::vector<SVCall> &sv_calls)
 {
     int initial_size = sv_calls.size();
     std::vector<SVCall> combined_sv_calls;
-    // std::sort(sv_calls.begin(), sv_calls.end(), [](const SVCall& a, const SVCall& b) {
-    //     return a.start < b.start;
-    // });
+
     // Sort first by start position, then by SV type
     std::sort(sv_calls.begin(), sv_calls.end(), [](const SVCall& a, const SVCall& b) {
         return std::tie(a.start, a.sv_type) < std::tie(b.start, b.sv_type);
@@ -247,21 +245,7 @@ void mergeDuplicateSVs(std::vector<SVCall> &sv_calls)
             else if (sv_call.hmm_likelihood == sv_calls[i - 1].hmm_likelihood && sv_call.cluster_size > sv_calls[i - 1].cluster_size) {
                 combined_sv_calls.back() = sv_call;
             }
-            // // Keep the larger cluster size for the same start position
-            // if (sv_call.cluster_size > sv_calls[i - 1].cluster_size) {
-            //     combined_sv_calls.back() = sv_call;
-            // }
-
-            // // If cluster sizes are equal, keep the one with non-zero likelihood
-            // // The HMM prediction is more reliable than the split read prediction
-            // else if (sv_call.cluster_size == sv_calls[i - 1].cluster_size && sv_call.hmm_likelihood != 0.0 && sv_calls[i - 1].hmm_likelihood == 0.0) {
-            //     combined_sv_calls.back() = sv_call;
-            // }
-
-            // // Combine cluster sizes
-            // combined_sv_calls.back().cluster_size += sv_call.cluster_size;
         } else {
-            // Add the SV call to the combined list
             combined_sv_calls.push_back(sv_call);
         }
     }
@@ -270,53 +254,4 @@ void mergeDuplicateSVs(std::vector<SVCall> &sv_calls)
     if (merge_count > 0) {
         printMessage("Merged " + std::to_string(merge_count) + " SV candidates with identical start and end positions");
     }
-}
-
-void mergeSVSubsets(std::vector<SVCall> &sv_calls)
-{
-    // Sort the SV calls by start position
-    int initial_size = sv_calls.size();
-    std::sort(sv_calls.begin(), sv_calls.end(), [](const SVCall& a, const SVCall& b) {
-        return a.start < b.start;
-    });
-
-    // Remove SVs that are subsets of other SVs
-    std::vector<SVCall> filtered_sv_calls;
-    // Since the input SV calls are sorted by start position, we can iterate
-    // through them in order and only keep the SVs that are not subsets of
-    // others
-    for (const auto& sv_call : sv_calls) {
-        // Check if the current SV call is a subset of any previously added
-        // SV call
-        bool is_subset = false;
-        for (const auto& filtered_sv_call : filtered_sv_calls) {
-            if (sv_call.start >= filtered_sv_call.start && sv_call.end <= filtered_sv_call.end) {
-                is_subset = true;
-                break;
-            }
-        }
-        // If it's not a subset, add it to the filtered list
-        if (!is_subset) {
-            filtered_sv_calls.push_back(sv_call);
-        }
-    }
-    sv_calls = std::move(filtered_sv_calls); // Replace with filtered list
-    int updated_size = sv_calls.size();
-    printMessage("Filtered SV calls to remove subsets, from " + std::to_string(initial_size) + " to " + std::to_string(updated_size));
-}
-
-void filterSVsWithLowSupport(std::vector<SVCall> &sv_calls, int min_support)
-{
-    // Filter SV calls with low read support or low cluster size
-    sv_calls.erase(std::remove_if(sv_calls.begin(), sv_calls.end(), [min_support](const SVCall& sv_call) {
-        return sv_call.support < min_support && sv_call.cluster_size < min_support;
-    }), sv_calls.end());
-}
-
-void filterSVsWithLowSupport(std::vector<SVCall> &sv_calls, int min_support, const std::string &data_type)
-{
-    // Filter SV calls with low read depth only for the specified data type, keeping the rest
-    sv_calls.erase(std::remove_if(sv_calls.begin(), sv_calls.end(), [min_support, data_type](const SVCall& sv_call) {
-        return sv_call.support < min_support && sv_call.data_type == data_type;
-    }), sv_calls.end());
 }

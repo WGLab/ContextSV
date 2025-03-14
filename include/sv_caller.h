@@ -112,44 +112,28 @@ class SVCaller {
 
         std::vector<std::string> getChromosomes(const std::string& bam_filepath);
 
-        // void findSplitCNVBreakpoints(samFile* fp_in, hts_idx_t* idx, bam_hdr_t* bamHdr, const std::string& region, std::vector<SVCall>& sv_calls);
-
         void findSplitSVSignatures(std::unordered_map<std::string, std::vector<SVCall>>& sv_calls, const InputData& input_data);
-
-        void findSplitReadSVs(std::unordered_map<std::string, std::vector<SVCall>>& sv_calls, const ReferenceGenome& ref_genome, const InputData& input_data);
 
         // Process a single CIGAR record and find candidate SVs
         void processCIGARRecord(bam_hdr_t* header, bam1_t* alignment, std::vector<SVCall>& sv_calls, bool is_primary, const std::vector<uint32_t>& pos_depth_map, const ReferenceGenome& ref_genome);
 
         std::pair<int, int> getAlignmentReadPositions(bam1_t* alignment);
 
-        void processChromosome(const std::string& chr, const CHMM& hmm, std::vector<SVCall>& combined_sv_calls, const InputData& input_data, const ReferenceGenome& ref_genome, const std::vector<uint32_t>& chr_pos_depth_map, double mean_chr_cov, std::vector<SVCall>& split_sv_calls);
+        void processChromosome(const std::string& chr, std::vector<SVCall>& combined_sv_calls, const InputData& input_data, const ReferenceGenome& ref_genome, const std::vector<uint32_t>& chr_pos_depth_map, double mean_chr_cov);
 
-        // Detect SVs at a region from long read alignments. This is used for
-        // whole genome analysis running in parallel.
-        // RegionData detectSVsFromRegion(std::string region);
         void findCIGARSVs(samFile* fp_in, hts_idx_t* idx, bam_hdr_t* bamHdr, const std::string& region, std::vector<SVCall>& sv_calls, const std::vector<uint32_t>& pos_depth_map, const ReferenceGenome& ref_genome);
  
         // Read the next alignment from the BAM file in a thread-safe manner
         int readNextAlignment(samFile *fp_in, hts_itr_t *itr, bam1_t *bam1);
 
-        // Detect SVs from split alignments
-        // void detectSVsFromSplitReads(const std::string& region, samFile* fp_in, hts_idx_t* idx, bam_hdr_t* bamHdr, std::vector<SVCall>& split_sv_calls, const CNVCaller& cnv_caller, const CHMM& hmm, double mean_chr_cov, const std::vector<uint32_t>& pos_depth_map, const InputData& input_data);
-
-        // Calculate the mismatch rate given a map of query positions to
-        // match/mismatch (1/0) values within a specified range of the query
-        // sequence
-        double calculateMismatchRate(const MismatchData& mismatch_data);
-
         void runSplitReadCopyNumberPredictions(const std::string& chr, std::vector<SVCall>& split_sv_calls, const CNVCaller &cnv_caller, const CHMM &hmm, double mean_chr_cov, const std::vector<uint32_t> &pos_depth_map, const InputData &input_data);
 
         void saveToVCF(const std::unordered_map<std::string, std::vector<SVCall>> &sv_calls, const std::string &output_dir, const ReferenceGenome &ref_genome) const;
 
-        // Calculate the read depth (INFO/DP) for a region
-        int calculateReadDepth(const std::vector<uint32_t>& pos_depth_map, uint32_t start, uint32_t end);
+        // Query the read depth (INFO/DP) at a position
+        int getReadDepth(const std::vector<uint32_t>& pos_depth_map, uint32_t start);
 
     public:
-        // Constructor with no arguments
         SVCaller() = default;
 
         // Detect SVs and predict SV type from long read alignments and CNV calls

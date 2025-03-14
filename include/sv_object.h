@@ -12,11 +12,9 @@
 
 using namespace sv_types;
 
-// Struct to represent a structural variant call
 struct SVCall {
     uint32_t start;
     uint32_t end;
-    // std::string sv_type = "NA";
     SVType sv_type = SVType::UNKNOWN;
     std::string alt_allele = ".";
     std::string data_type = "NA";
@@ -26,32 +24,22 @@ struct SVCall {
     int support = 0;  // Number of supporting reads
     int cluster_size = 0;  // Number of SV calls in the cluster
 
-    // Comparison operator for std::set
     bool operator<(const SVCall& other) const;
 
-    // Constructor with parameters for all fields
     SVCall(uint32_t start, uint32_t end, SVType sv_type, const std::string& alt_allele, std::string data_type, std::string genotype, double hmm_likelihood, int read_depth, int support, int cluster_size) :
         start(start), end(end), sv_type(sv_type), alt_allele(alt_allele), data_type(data_type), genotype(genotype), hmm_likelihood(hmm_likelihood), read_depth(read_depth), support(support), cluster_size(cluster_size) {}
 };
 
-// void addSVCall(std::vector<SVCall>& sv_calls, uint32_t start, uint32_t end, SVType sv_type, const std::string& alt_allele, std::string data_type, std::string genotype, double hmm_likelihood, int read_depth);
 void addSVCall(std::vector<SVCall>& sv_calls, SVCall& sv_call);
-
-void mergeSVs(std::vector<SVCall>& sv_calls);
 
 // Merge SVs with identical start positions, and sum the cluster sizes
 void mergeDuplicateSVs(std::vector<SVCall>& sv_calls);
-
-void mergeSVSubsets(std::vector<SVCall>& sv_calls);
-
-void filterSVsWithLowSupport(std::vector<SVCall> &sv_calls, int min_depth);
-
-void filterSVsWithLowSupport(std::vector<SVCall> &sv_calls, int min_depth, const std::string& data_type);
 
 uint32_t getSVCount(const std::vector<SVCall>& sv_calls);
 
 void concatenateSVCalls(std::vector<SVCall>& sv_calls, const std::vector<SVCall>& sv_calls_update);
 
+// Merge SVs using DBSCAN clustering
 void mergeSVs(std::vector<SVCall> &sv_calls, double epsilon, int min_pts);
 
 #endif // SV_OBJECT_H
