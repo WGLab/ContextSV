@@ -690,9 +690,6 @@ void SVCaller::findSplitSVSignatures(std::unordered_map<std::string, std::vector
                 }
             }
 
-            // TODO: After this classify deletions if negative (keep the rest
-            // the same)
-
             // --------------------------------
 
             // Get the supplementary alignment positions
@@ -701,33 +698,34 @@ void SVCaller::findSplitSVSignatures(std::unordered_map<std::string, std::vector
             int supp_cluster_size = 0;
             int supp_best_start = -1;
             int supp_best_end = -1;
-            if (!supp_start_cluster.empty() && !supp_end_cluster.empty()) {
+            if (!supp_start_cluster.empty()) {
                 std::sort(supp_start_cluster.begin(), supp_start_cluster.end());
-                int supp_best_start = supp_start_cluster[supp_start_cluster.size() / 2];
+                supp_best_start = supp_start_cluster[supp_start_cluster.size() / 2];
+            }
+            if (!supp_end_cluster.empty()) {
                 std::sort(supp_end_cluster.begin(), supp_end_cluster.end());
-                int supp_best_end = supp_end_cluster[supp_end_cluster.size() / 2];
-                if (supp_start_cluster.size() > supp_end_cluster.size()) {
-                    // std::sort(supp_start_cluster.begin(), supp_start_cluster.end());
-                    // supp_pos = supp_start_cluster[supp_start_cluster.size() / 2];
-                    supp_pos = supp_best_start;
-                    supp_cluster_size = supp_start_cluster.size();
-                } else if (supp_end_cluster.size() > supp_start_cluster.size()) {
-                    // std::sort(supp_end_cluster.begin(), supp_end_cluster.end());
-                    // supp_pos = supp_end_cluster[supp_end_cluster.size() / 2];
-                    supp_pos = supp_best_end;
-                    supp_cluster_size = supp_end_cluster.size();
-                } else {
-                    // Use both positions. This has been shown to occur in nested SVs
-                    // std::sort(supp_start_cluster.begin(), supp_start_cluster.end());
-                    // std::sort(supp_end_cluster.begin(), supp_end_cluster.end());
-                    // supp_pos = supp_start_cluster[supp_start_cluster.size() / 2];
-                    // supp_pos2 = supp_end_cluster[supp_end_cluster.size() / 2];
-                    supp_pos = supp_best_start;
-                    supp_pos2 = supp_best_end;
-                    supp_cluster_size = supp_start_cluster.size();
-                }
+                supp_best_end = supp_end_cluster[supp_end_cluster.size() / 2];
+            }
 
-                // Store the inversion as the supplementary start and end positions
+            if (supp_start_cluster.size() > supp_end_cluster.size()) {
+                // std::sort(supp_start_cluster.begin(), supp_start_cluster.end());
+                // supp_pos = supp_start_cluster[supp_start_cluster.size() / 2];
+                supp_pos = supp_best_start;
+                supp_cluster_size = supp_start_cluster.size();
+            } else if (supp_end_cluster.size() > supp_start_cluster.size()) {
+                // std::sort(supp_end_cluster.begin(), supp_end_cluster.end());
+                // supp_pos = supp_end_cluster[supp_end_cluster.size() / 2];
+                supp_pos = supp_best_end;
+                supp_cluster_size = supp_end_cluster.size();
+            } else if (supp_best_end == -1 && supp_best_start == -1) {
+                // Use both positions. This has been shown to occur in some nested SVs
+                supp_pos = supp_best_start;
+                supp_pos2 = supp_best_end;
+                supp_cluster_size = supp_start_cluster.size();
+            }
+
+            // Store the inversion as the supplementary start and end positions
+            if (supp_best_start != -1 && supp_best_end != -1) {
                 if (inversion && std::abs(supp_best_start - supp_best_end) >= 50) {
                     SVCall sv_candidate(std::min(supp_best_start, supp_best_end), std::max(supp_best_start, supp_best_end), SVType::INV, "<INV>", "SUPPINV", "./.", 0.0, 0, 0, supp_cluster_size);
                     addSVCall(chr_sv_calls, sv_candidate);
@@ -764,14 +762,22 @@ void SVCaller::findSplitSVSignatures(std::unordered_map<std::string, std::vector
             // If the read distance is < 30bp while the SV is > 2kb, then this is a
             // potential deletion
             if (std::abs(read_distance) < 30 && sv_length > 2000 && sv_length <= 1000000) {
-                // printMessage(chr_name + ": Found potential deletion candidate " + std::to_string(sv_start) + "-" + std::to_string(sv_end) + " with length " + std::to_string(sv_length) + " for group " + std::to_string(current_group));
                 SVCall sv_candidate(sv_start, sv_end, SVType::DEL, ".", "SPLITDEL", "./.", 0.0, 0, 0, cluster_size);
                 addSVCall(chr_sv_calls, sv_candidate);
+
+                // Add an inversion call if necessary
+                if (inversion) {
+                    SVCall sv_candidate(sv_start, sv_end, SVType::INV, "<INV>", "INVDEL", "./.", 0.0, 0, 0, cluster_size);
+                    addSVCall(chr_sv_calls, sv_candidate);
+                }
             }
 
             // Add a dummy SV call for CNV detection
             else if (sv_length >= min_length && sv_length <= max_length) {
-                SVCall sv_candidate(sv_start, sv_end, SVType::UNKNOWN, ".", "PRIMSUPP", "./.", 0.0, 0, 0, cluster_size);
+                SVType sv_type = inversion ? SVType::INV : SVType::UNKNOWN;
+                std::string alt = (sv_type == SVType::INV) ? "<INV>" : ".";
+                SVCall sv_candidate(sv_start, sv_end, sv_type, alt, "PRIMSUPP", "./.", 0.0, 0, 0, cluster_size);
+                // SVCall sv_candidate(sv_start, sv_end, SVType::UNKNOWN, ".", "PRIMSUPP", "./.", 0.0, 0, 0, cluster_size);
                 addSVCall(chr_sv_calls, sv_candidate);
             }
             
@@ -793,37 +799,15 @@ void SVCaller::findSplitSVSignatures(std::unordered_map<std::string, std::vector
         
         // Merge duplicate SV calls with identical start positions
         mergeDuplicateSVs(chr_sv_calls);
-
-        // int initial_size = chr_sv_calls.size();
-        // std::vector<SVCall> combined_sv_calls;
-        // for (size_t i = 0; i < chr_sv_calls.size(); i++) {
-        //     SVCall& sv_call = chr_sv_calls[i];
-        //     if (i > 0 && sv_call.start == chr_sv_calls[i - 1].start) {
-        //         // Keep the largest cluster size for the same start position
-        //         if (sv_call.cluster_size > chr_sv_calls[i - 1].cluster_size) {
-        //             combined_sv_calls.back() = sv_call;
-        //         }
-
-        //         // Combine cluster sizes
-        //         combined_sv_calls.back().cluster_size += sv_call.cluster_size;
-        //     } else {
-        //         // Add the SV call to the combined list
-        //         combined_sv_calls.push_back(sv_call);
-        //     }
-        // }
-        // int merge_count = initial_size - combined_sv_calls.size();
-        // printMessage("Merged " + std::to_string(merge_count) + " SV candidates with identical start positions");
-
-        // Add the combined SV calls to the main vector
-        // sv_calls[chr_name] = std::move(combined_sv_calls);
         sv_calls[chr_name] = std::move(chr_sv_calls);
 
         // Print the number of merged SV calls
         printMessage(chr_name + ": Found " + std::to_string(sv_calls[chr_name].size()) + " SV candidates");
-        
-        // if (merge_count > 0) {
-        //     printMessage(chr_name + ": Merged " + std::to_string(merge_count) + " SV candidates with identical start and end positions");
-        // }
+
+        // Print all SV calls
+        for (const SVCall& sv_call : sv_calls[chr_name]) {
+            printMessage("SV: " + std::to_string(sv_call.start) + "-" + std::to_string(sv_call.end) + " " + getSVTypeString(sv_call.sv_type) + ", length: " + std::to_string(sv_call.end - sv_call.start + 1) + ", cluster size: " + std::to_string(sv_call.cluster_size) + ", group: " + std::to_string(current_group));
+        }
     }
 
     // if (merge_count > 0) {
@@ -1320,6 +1304,9 @@ void SVCaller::run(const InputData& input_data)
         printMessage("Removing chromosome " + chr + " with no reads...");
         chromosomes.erase(std::remove(chromosomes.begin(), chromosomes.end(), chr), chromosomes.end());
     }
+    std::unordered_map<std::string, std::vector<SVCall>> whole_genome_sv_calls;
+    int current_chr = 0;
+    int total_chr_count = chromosomes.size();
 
     // Use multi-threading across chromosomes. If a single chromosome is
     // specified, use a single main thread (multi-threading is used for file I/O)
@@ -1329,7 +1316,6 @@ void SVCaller::run(const InputData& input_data)
         std::cout << "Using " << thread_count << " threads for chr processing..." << std::endl;
     }
     ThreadPool pool(thread_count);
-    std::unordered_map<std::string, std::vector<SVCall>> whole_genome_sv_calls;
     auto process_chr = [&](const std::string& chr) {
         try {
             std::vector<SVCall> sv_calls;
@@ -1358,8 +1344,6 @@ void SVCaller::run(const InputData& input_data)
     }
 
     // // Wait for all tasks to complete
-    int current_chr = 0;
-    int total_chr_count = chromosomes.size();
     for (auto& future : futures) {
         try {
             current_chr++;
@@ -1479,45 +1463,21 @@ void SVCaller::runSplitReadCopyNumberPredictions(const std::string& chr, std::ve
     // Insert the copy number predictions back into the split SV calls
     printMessage("Inserting CNV calls...");
     split_sv_calls.insert(split_sv_calls.end(), processed_calls.begin(), processed_calls.end());
-    // Replace with the processed calls
-    // split_sv_calls = std::move(processed_calls);
-
     mergeDuplicateSVs(split_sv_calls);
 
-    // Combine SVs with identical start positions, keeping the largest cluster size
-    // printMessage("[2] Combining SVs with identical start and end positions...");
-    // std::vector<SVCall> combined_calls;
-    // std::sort(split_sv_calls.begin(), split_sv_calls.end(), [](const SVCall& a, const SVCall& b) {
-    //     return (a.start < b.start) || (a.start == b.start && a.end < b.end);
-    // });
-    // int initial_size = split_sv_calls.size();
-    // for (size_t i = 0; i < split_sv_calls.size(); ++i) {
-    //     const SVCall& current_call = split_sv_calls[i];
-    //     printMessage("Current start: " + std::to_string(current_call.start) + ", previous start: " + (i > 0 ? std::to_string(split_sv_calls[i-1].start) : "N/A"));
-    //     if (i > 0 && current_call.start == split_sv_calls[i-1].start) {
-    //         printMessage("Found identical start position: " + std::to_string(current_call.start) + " with end: " + std::to_string(current_call.end));
-    //         // Keep the largest cluster size
-    //         if (current_call.cluster_size > split_sv_calls[i-1].cluster_size) {
-    //             combined_calls.back() = current_call;
-    //             printMessage("Replacing previous call with larger cluster size: " + std::to_string(current_call.cluster_size) + " > " + std::to_string(split_sv_calls[i-1].cluster_size));
-    //         }
-
-    //         // Merge the cluster sizes
-    //         combined_calls.back().cluster_size += current_call.cluster_size;
-    //         printMessage("Merged cluster size: " + std::to_string(combined_calls.back().cluster_size) + " (previous: " + std::to_string(split_sv_calls[i-1].cluster_size) + ")");
+    // Remove any deletions with no HMM predictions (HMM likelihood is zero)
+    // int failed_del_count = 0;
+    // for (auto it = split_sv_calls.begin(); it != split_sv_calls.end();) {
+    //     if (it->hmm_likelihood == 0.0 && it->sv_type == SVType::DEL) {
+    //         it = split_sv_calls.erase(it);
+    //         failed_del_count++;
     //     } else {
-    //         // Add the current call to the combined calls
-    //         combined_calls.push_back(current_call);
+    //         ++it;
     //     }
     // }
-
-
-    // printMessage("Merged " + std::to_string(merge_count) + " SVs with identical start and end positions");
-    // // Replace the split SV calls with the combined calls
-    // printMessage("[TEST] Total SVs before merging: " + std::to_string(split_sv_calls.size()));
-    // split_sv_calls.clear();
-    // split_sv_calls.insert(split_sv_calls.end(), combined_calls.begin(), combined_calls.end());
-    // printMessage("[TEST] Total SVs after merging: " + std::to_string(split_sv_calls.size()));
+    // if (failed_del_count > 0) {
+    //     printMessage("Removed " + std::to_string(failed_del_count) + " failed deletion candidates with no HMM predictions");
+    // }
 }
 
 void SVCaller::saveToVCF(const std::unordered_map<std::string, std::vector<SVCall>>& sv_calls, const std::string& output_dir, const ReferenceGenome& ref_genome) const

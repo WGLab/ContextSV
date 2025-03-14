@@ -225,19 +225,41 @@ void mergeDuplicateSVs(std::vector<SVCall> &sv_calls)
 {
     int initial_size = sv_calls.size();
     std::vector<SVCall> combined_sv_calls;
+    // std::sort(sv_calls.begin(), sv_calls.end(), [](const SVCall& a, const SVCall& b) {
+    //     return a.start < b.start;
+    // });
+    // Sort first by start position, then by SV type
     std::sort(sv_calls.begin(), sv_calls.end(), [](const SVCall& a, const SVCall& b) {
-        return a.start < b.start;
+        return std::tie(a.start, a.sv_type) < std::tie(b.start, b.sv_type);
     });
     for (size_t i = 0; i < sv_calls.size(); i++) {
         SVCall& sv_call = sv_calls[i];
-        if (i > 0 && sv_call.start == sv_calls[i - 1].start) {
-            // Keep the larger cluster size for the same start position
-            if (sv_call.cluster_size > sv_calls[i - 1].cluster_size) {
+        if (i > 0 && sv_call.start == sv_calls[i - 1].start && sv_call.sv_type == sv_calls[i - 1].sv_type) {
+            // Keep the SV call with a non-zero likelihood
+            // The HMM prediction is more reliable than the split read prediction
+            if (sv_call.hmm_likelihood != 0.0 && sv_calls[i - 1].hmm_likelihood == 0.0) {
                 combined_sv_calls.back() = sv_call;
             }
 
-            // Combine cluster sizes
-            combined_sv_calls.back().cluster_size += sv_call.cluster_size;
+            // If the likelihoods are equal, keep the one with the larger cluster size
+            // This is to ensure that the SV call with more supporting reads is
+            // kept
+            else if (sv_call.hmm_likelihood == sv_calls[i - 1].hmm_likelihood && sv_call.cluster_size > sv_calls[i - 1].cluster_size) {
+                combined_sv_calls.back() = sv_call;
+            }
+            // // Keep the larger cluster size for the same start position
+            // if (sv_call.cluster_size > sv_calls[i - 1].cluster_size) {
+            //     combined_sv_calls.back() = sv_call;
+            // }
+
+            // // If cluster sizes are equal, keep the one with non-zero likelihood
+            // // The HMM prediction is more reliable than the split read prediction
+            // else if (sv_call.cluster_size == sv_calls[i - 1].cluster_size && sv_call.hmm_likelihood != 0.0 && sv_calls[i - 1].hmm_likelihood == 0.0) {
+            //     combined_sv_calls.back() = sv_call;
+            // }
+
+            // // Combine cluster sizes
+            // combined_sv_calls.back().cluster_size += sv_call.cluster_size;
         } else {
             // Add the SV call to the combined list
             combined_sv_calls.push_back(sv_call);
