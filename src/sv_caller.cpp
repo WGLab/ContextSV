@@ -872,23 +872,26 @@ void SVCaller::run(const InputData& input_data)
 void SVCaller::runSplitReadCopyNumberPredictions(const std::string& chr, std::vector<SVCall>& split_sv_calls, const CNVCaller& cnv_caller, const CHMM& hmm, double mean_chr_cov, const std::vector<uint32_t>& pos_depth_map, const InputData& input_data)
 {
     std::vector<SVCall> processed_calls;
-    for (const auto& sv_candidate : split_sv_calls) {
+    for (auto& sv_candidate : split_sv_calls) {
         std::tuple<double, SVType, std::string, bool> result = cnv_caller.runCopyNumberPrediction(chr, hmm, sv_candidate.start, sv_candidate.end, mean_chr_cov, pos_depth_map, input_data);
         double supp_lh = std::get<0>(result);
         SVType supp_type = std::get<1>(result);
         std::string genotype = std::get<2>(result);
-        if (supp_type != SVType::UNKNOWN && supp_type != SVType::NEUTRAL) {
-            int read_depth = this->getReadDepth(pos_depth_map, sv_candidate.start);
-            std::string alt_allele = "<" + getSVTypeString(supp_type) + ">";
-            SVCall sv_call(sv_candidate.start, sv_candidate.end, supp_type, alt_allele, "SPLIT", genotype, supp_lh, read_depth, 1, sv_candidate.cluster_size);
-            processed_calls.push_back(sv_call);
+
+        // For inversions with copy-neutral support, update the HMM likelihood
+        if (supp_type == SVType::NEUTRAL && sv_candidate.sv_type == SVType::INV) {
+            sv_candidate.hmm_likelihood = supp_lh;
+        }
+
+        // Update the SV type if the support is not neutral or unknown
+        else if (supp_type != SVType::UNKNOWN && supp_type != SVType::NEUTRAL) {
+            sv_candidate.sv_type = supp_type;
+            sv_candidate.alt_allele = "<" + getSVTypeString(supp_type) + ">";
+            sv_candidate.data_type += "+HMM";  // Update the data type to include HMM
+            sv_candidate.genotype = genotype;
+            sv_candidate.hmm_likelihood = supp_lh;
         }
     }
-
-    // Insert the copy number predictions back into the split SV calls
-    printMessage("Inserting CNV calls...");
-    split_sv_calls.insert(split_sv_calls.end(), processed_calls.begin(), processed_calls.end());
-    mergeDuplicateSVs(split_sv_calls);
 }
 
 void SVCaller::saveToVCF(const std::unordered_map<std::string, std::vector<SVCall>>& sv_calls, const std::string& output_dir, const ReferenceGenome& ref_genome) const
@@ -997,9 +1000,11 @@ void SVCaller::saveToVCF(const std::unordered_map<std::string, std::vector<SVCal
             // SVTYPE2)
             SVType sv_type2 = SVType::UNKNOWN;
             if (sv_type == SVType::INV_DEL) {
+                printError("Warning: Inversion and deletion detected at " + chr + ":" + std::to_string(start) + "-" + std::to_string(end));
                 sv_type = SVType::DEL;
                 sv_type2 = SVType::INV;
             } else if (sv_type == SVType::INV_DUP) {
+                printError("Warning: Inversion and duplication detected at " + chr + ":" + std::to_string(start) + "-" + std::to_string(end));
                 sv_type = SVType::DUP;
                 sv_type2 = SVType::INV;
             }
@@ -1034,10 +1039,11 @@ void SVCaller::saveToVCF(const std::unordered_map<std::string, std::vector<SVCal
                         // Insert the reference allele before the insertion
                         alt_allele.insert(0, ref_allele);
                     }
+                    end = start;  // Update the end position to the same base
+
                 } else {
                     ref_allele = "N";  // Convention for INV and DUP
                 }
-                end = start;  // Update the end position to the same base
             }
 
             // Fix ambiguous bases in the reference allele
