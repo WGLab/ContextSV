@@ -57,21 +57,30 @@ class CNVCaller {
         // Each of the 6 state predictions corresponds to a copy number state
         // (0=No predicted state)
         // 0: Unknown (No predicted state)
-        // 1: 0/0 (Two copy loss: homozygous deletion, GT: 0/0)
-        // 2: 1/0 (One copy loss: heterozygous deletion, GT: 0/1)
-        // 3: 1/1 (Normal diploid: no copy number change, GT: 1/1)
-        // 4: 1/1 (Copy neutral LOH: no copy number change, GT: 1/1)
+        // 1: 1/1 (Two copy loss: homozygous deletion, GT: 1/1 for homozygous variant)
+        // 2: 0/1 (One copy loss: heterozygous deletion, GT: 0/1)
+        // 3: 0/0 (Normal diploid: no copy number change, GT: 0/0 for homozygous reference)
+        // 4: 1/1 (Copy neutral LOH: no copy number change, GT: 1/1 for homozygous variant)
         // 5: 2/1 (One copy gain: heterozygous duplication, GT: 1/2->0/1)
         // 6: 2/2 (Two copy gain: homozygous duplication, GT: 2/2->1/1)
-        std ::map<int, std::string> cnv_genotype_map = {
+        std::map<int, std::string> cnv_genotype_map = {
             {0, "./."},
-            {1, "0/0"},
+            {1, "1/1"},
             {2, "0/1"},
-            {3, "1/1"},
+            {3, "0/0"},
             {4, "1/1"},
             {5, "0/1"},
             {6, "1/1"}
         };
+        // std ::map<int, std::string> cnv_genotype_map = {
+        //     {0, "./."},
+        //     {1, "0/0"},
+        //     {2, "0/1"},
+        //     {3, "1/1"},
+        //     {4, "1/1"},
+        //     {5, "0/1"},
+        //     {6, "1/1"}
+        // };
 
         void updateSNPData(SNPData& snp_data, uint32_t pos, double pfb, double baf, double log2_cov, bool is_snp);
 
