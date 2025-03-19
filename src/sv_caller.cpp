@@ -727,6 +727,12 @@ void SVCaller::run(const InputData& input_data)
     std::cout << "Reading HMM from file: " << hmm_filepath << std::endl;
     const CHMM& hmm = ReadCHMM(hmm_filepath.c_str());
 
+    // Set up the JSON output file for CNV data
+    const std::string& json_fp = input_data.getCNVOutputFile();
+    if (input_data.getSaveCNVData()) {
+        openJSON(json_fp);
+    }
+
     // Calculate the mean chromosome coverage and generate the position depth
     // maps for each chromosome (I/O is multi-threaded, which is more efficient
     // than per-chromosome multi-threading in this case)
@@ -844,7 +850,10 @@ void SVCaller::run(const InputData& input_data)
             this->runSplitReadCopyNumberPredictions(chr, sv_calls, cnv_caller, hmm, chr_mean_cov_map[chr], chr_pos_depth_map[chr], input_data);
         }
     }
-    
+    if (input_data.getSaveCNVData()) {
+        closeJSON(json_fp);
+    }
+
     printMessage("Unifying SVs...");
     for (auto& entry : whole_genome_split_sv_calls) {
         const std::string& chr = entry.first;

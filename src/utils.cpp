@@ -125,3 +125,21 @@ bool fileExists(const std::string &filepath)
     std::ifstream file(filepath);
     return file.is_open();
 }
+
+void openJSON(const std::string &filepath)
+{
+    // Add the initial [ and close
+    std::ofstream
+        json_file(filepath);
+    json_file << "[\n";
+    json_file.close();
+}
+
+void closeJSON(const std::string &filepath)
+{
+    // Add the final ] and close
+    std::ofstream
+        json_file(filepath, std::ios::app);
+    json_file << "]";
+    json_file.close();
+}
