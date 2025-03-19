@@ -238,9 +238,18 @@ std::tuple<double, SVType, std::string, bool> CNVCaller::runCopyNumberPrediction
     bool copy_number_change = (predicted_cnv_type != SVType::UNKNOWN && predicted_cnv_type != SVType::NEUTRAL);
     if (input_data.getSaveCNVData() && copy_number_change && (end_pos - start_pos) > 50000)
     {
+        // Set B-allele and population frequency values to 0 for non-SNPs
+        for (size_t i = 0; i < snp_data.pos.size(); i++)
+        {
+            if (!snp_data.is_snp[i])
+            {
+                snp_data.baf[i] = 0.0;
+                snp_data.pfb[i] = 0.0;
+            }
+        }
+
+        // Save the SNP data to JSON
         std::string cnv_type_str = getSVTypeString(predicted_cnv_type);
-        // const std::string output_dir = input_data.getOutputDir();
-        // std::string json_filepath = output_dir + "/CNVCalls.json";
         std::string json_filepath = input_data.getCNVOutputFile();
         printMessage("Saving SV copy number predictions to " + json_filepath + "...");
 
@@ -856,6 +865,7 @@ void CNVCaller::saveSVCopyNumberToJSON(SNPData &before_sv, SNPData &after_sv, SN
     json_file << "  \"end\": " << end << ",\n";
     json_file << "  \"sv_type\": \"" << sv_type << "\",\n";
     json_file << "  \"likelihood\": " << likelihood << ",\n";
+    json_file << "  \"size\": " << (end - start + 1) << ",\n";
     json_file << "  \"before_sv\": {\n";
     json_file << "    \"positions\": [";
         for (size_t i = 0; i < before_sv.pos.size(); ++i)
@@ -962,6 +972,14 @@ void CNVCaller::saveSVCopyNumberToJSON(SNPData &before_sv, SNPData &after_sv, SN
         {
             json_file << snp_data.state_sequence[i];
             if (i < snp_data.state_sequence.size() - 1)
+                json_file << ", ";
+        }
+        json_file << "],\n";
+    json_file << "    \"is_snp\": [";
+        for (size_t i = 0; i < snp_data.is_snp.size(); ++i)
+        {
+            json_file << snp_data.is_snp[i];
+            if (i < snp_data.is_snp.size() - 1)
                 json_file << ", ";
         }
         json_file << "]\n";

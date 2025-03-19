@@ -1,4 +1,5 @@
-import plotly.graph_objs as go
+import plotly
+from plotly.subplots import make_subplots
 import json
 import argparse
 
@@ -11,68 +12,206 @@ args = parser.parse_args()
 with open(args.json_file) as f:
     sv_data = json.load(f)
 
+# State marker colors
+# https://community.plotly.com/t/plotly-colours-list/11730/6
+state_colors_dict = {
+    '1': 'red',
+    '2': 'darkred',
+    '3': 'darkgreen',
+    '4': 'green',
+    '5': 'darkblue',
+    '6': 'blue',
+}
+
+sv_type_dict = {
+    'DEL': 'Deletion',
+    'DUP': 'Duplication',
+    'INV': 'Inversion'
+}
+
 # Loop through each SV (assuming your JSON contains multiple SVs)
 for sv in sv_data:
-    print(type(sv))
 
     # Extract data for plotting
     positions_before = sv['before_sv']['positions']
     b_allele_freq_before = sv['before_sv']['b_allele_freq']
     positions_after = sv['after_sv']['positions']
     b_allele_freq_after = sv['after_sv']['b_allele_freq']
+
+    # Create a subplot for the CNV plot and the BAF plot.
+    fig = make_subplots(
+        rows=2,
+        cols=1,
+        shared_xaxes=True,
+        vertical_spacing=0.05,
+        subplot_titles=(r"SNP Log<sub>2</sub> Ratio", "SNP B-Allele Frequency")
+        )
+
+    # Get the chromosome, start, end, and sv_type from the SV data
+    chromosome = sv['chromosome']
+    start = sv['start']
+    end = sv['end']
+    sv_type = sv['sv_type']
+    likelihood = sv['likelihood']
+    sv_length = sv['size']
+
+    # Plot the data for 'before_sv', 'sv', and 'after_sv'
+    for section in ["before_sv", "sv", "after_sv"]:
+        positions = sv[section]['positions']
+        b_allele_freq = sv[section]['b_allele_freq']
+        population_freq = sv[section]['population_freq']
+        log2_ratio = sv[section]['log2_ratio']
+
+        if section == "sv":
+            is_snp = sv[section]['is_snp']
+            states = sv[section]['states']
+            state_colors = [state_colors_dict[str(state)] for state in states]
+            marker_symbols = ['circle' if is_snp_val else 'circle-open' for is_snp_val in is_snp]
+
+            # Set the hover text
+            hover_text = []
+            for i, position in enumerate(positions):
+                # Add hover text for each point
+                hover_text.append(
+                    f"Position: {position}<br>"
+                    f"State: {states[i]}<br>"
+                    f"Log2 Ratio: {log2_ratio[i]}<br>"
+                    f"SNP: {is_snp[i]}<br>"
+                    f"BAF: {b_allele_freq[i]}<br>"
+                    f"Population Frequency: {population_freq[i]}<br>"
+                )
+        else:
+            state_colors = ['black'] * len(positions)
+            marker_symbols = ['circle-open'] * len(positions)
+            hover_text = []
+            for i, position in enumerate(positions):
+                # Add hover text for each point
+                hover_text.append(
+                    f"Position: {position}<br>"
+                    f"Log2 Ratio: {log2_ratio[i]}<br>"
+                    f"BAF: {b_allele_freq[i]}<br>"
+                    f"Population Frequency: {population_freq[i]}<br>"
+                )
+
+        # Create the log2 trace
+        log2_trace = plotly.graph_objs.Scatter(
+            x=positions,
+            y=log2_ratio,
+            mode='markers+lines',
+            name=r'Log<sub>2</sub> Ratio',
+            text=hover_text,
+            hoverinfo='text',
+            marker=dict(
+                color=state_colors,
+                size=10,
+                symbol=marker_symbols,
+            ),
+            line=dict(
+                color='black',
+                width=0
+            ),
+            showlegend=False
+        )
+
+        # Create the BAF trace
+        baf_trace = plotly.graph_objs.Scatter(
+            x=positions,
+            y=b_allele_freq,
+            mode='markers+lines',
+            name='B-Allele Frequency',
+            text=hover_text,
+            hoverinfo='text',
+            marker=dict(
+                color=state_colors,
+                size=10,
+                symbol=marker_symbols,
+            ),
+            line=dict(
+                color='black',
+                width=0
+            ),
+            showlegend=False
+        )
+
+        if section == "sv":
+            # Create a shaded rectangle for the CNV, layering it below the CNV
+            # trace and labeling it with the CNV type.
+            fig.add_vrect(
+                x0 = start,
+                x1 = end,
+                fillcolor = "Black",
+                layer = "below",
+                line_width = 0,
+                opacity = 0.1,
+                annotation_text = '',
+                annotation_position = "top left",
+                annotation_font_size = 20,
+                annotation_font_color = "black"
+            )
+
+            # Add vertical lines at the start and end positions of the CNV.
+            fig.add_vline(
+                x = start,
+                line_width = 2,
+                line_color = "black",
+                layer = "below"
+            )
+
+            fig.add_vline(
+                x = end,
+                line_width = 2,
+                line_color = "black",
+                layer = "below"
+            )
+
+        # Add traces to the figure
+        fig.append_trace(log2_trace, row=1, col=1)
+        fig.append_trace(baf_trace, row=2, col=1)
     
-    # Generate hover text (optional, can be customized)
-    hover_text_before = [f"Position: {pos}, BAF: {baf}" for pos, baf in zip(positions_before, b_allele_freq_before)]
-    hover_text_after = [f"Position: {pos}, BAF: {baf}" for pos, baf in zip(positions_after, b_allele_freq_after)]
-    
-    # Plotting data for 'before_sv' and 'after_sv'
-    baf_trace_before = go.Scatter(
-        x=positions_before,
-        y=b_allele_freq_before,
-        mode="markers+lines",
-        name="B-Allele Frequency (Before SV)",
-        text=hover_text_before,
-        marker=dict(
-            color='blue',
-            size=10
-        ),
-        line=dict(
-            color="black",
-            width=0
-        ),
-        showlegend=False
+    # Set the x-axis title.
+    fig.update_xaxes(
+        title_text = "Chromosome Position",
+        row = 2,
+        col = 1
     )
 
-    baf_trace_after = go.Scatter(
-        x=positions_after,
-        y=b_allele_freq_after,
-        mode="markers+lines",
-        name="B-Allele Frequency (After SV)",
-        text=hover_text_after,
-        marker=dict(
-            color='red',
-            size=10
-        ),
-        line=dict(
-            color="black",
-            width=0
-        ),
-        showlegend=False
+    # Set the y-axis titles.
+    fig.update_yaxes(
+        title_text = r"Log<sub>2</sub> Ratio",
+        row = 1,
+        col = 1
     )
-    
-    # Create layout for the plot
-    layout = go.Layout(
-        title=f"SV Plot: {sv['chromosome']} {sv['start']}-{sv['end']} ({sv['sv_type']})",
-        xaxis=dict(title="Position"),
-        yaxis=dict(title="B-Allele Frequency"),
-        hovermode='closest'
+
+    fig.update_yaxes(
+        title_text = "B-Allele Frequency",
+        row = 2,
+        col = 1
     )
-    
-    # Create figure with data and layout
-    fig = go.Figure(data=[baf_trace_before, baf_trace_after], layout=layout)
-    
+
+    # Set the Y-axis range for the log2 ratio plot.
+    fig.update_yaxes(
+        range = [-2.0, 2.0],
+        row = 1,
+        col = 1
+    )
+
+    # Set the Y-axis range for the BAF plot.
+    fig.update_yaxes(
+        range = [-0.2, 1.2],
+        row = 2,
+        col = 1
+    )
+
+    # Set the title of the plot.
+    fig.update_layout(
+        title_text = f"{sv_type_dict[sv_type]} at {chromosome}:{start}-{end} ({sv_length} bp) (LLH={likelihood})",
+        title_x = 0.5,
+        showlegend = False,
+    )
+    #     height = 800,
+    #     width = 800
+    # )
     # Save the plot to an HTML file (use a unique filename per SV)
-    file_name = f"output/SV_{sv['chromosome']}_{sv['start']}_{sv['end']}.html"
+    file_name = f"output/SV_{chromosome}_{start}_{end}.html"
     fig.write_html(file_name)
-
     print(f"Plot saved as {file_name}")
