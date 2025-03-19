@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <string>
 #include <iostream>
+#include <fstream>
 /// @endcond
 
 
@@ -15,10 +16,7 @@ std::mutex print_mtx;
 // Print a progress bar
 void printProgress(int progress, int total)
 {
-    // Get the percentage
     float percent = (float)progress / (float)total * 100.0;
-
-    // Get the number of hashes
     int num_hashes = (int)(percent / 2.0);
 
     // Print the progress bar
@@ -120,4 +118,10 @@ void printMemoryUsage(const std::string& functionName) {
     double mem_usage_gb = (double)usage.ru_maxrss / 1024.0 / 1024.0;
     std::cout << functionName << " memory usage: "
               << std::fixed << std::setprecision(2) << mem_usage_gb << " GB" << std::endl;
+}
+
+bool fileExists(const std::string &filepath)
+{
+    std::ifstream file(filepath);
+    return file.is_open();
 }

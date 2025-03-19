@@ -57,8 +57,7 @@ void CNVCaller::querySNPRegion(std::string chr, uint32_t start_pos, uint32_t end
     std::vector<uint32_t> snp_pos;
     std::vector<double> snp_baf;
     std::vector<double> snp_pfb;
-    std::vector<bool> is_snp;
-    this->readSNPAlleleFrequencies(chr, start_pos, end_pos, snp_pos, snp_baf, snp_pfb, is_snp, input_data);
+    this->readSNPAlleleFrequencies(chr, start_pos, end_pos, snp_pos, snp_baf, snp_pfb, input_data);
 
     // Get the log2 ratio for <sample_size> evenly spaced positions in the
     // region
@@ -97,6 +96,11 @@ void CNVCaller::querySNPRegion(std::string chr, uint32_t start_pos, uint32_t end
         double log2_cov = 0.0;
         if (pos_count > 0)
         {
+            if (cov_sum == 0)
+            {
+                // Use a small value to avoid division by zero
+                cov_sum = 1e-9;
+            }
             log2_cov = log2((cov_sum / (double) pos_count) / mean_chr_cov);
         }
 
@@ -156,11 +160,24 @@ std::tuple<double, SVType, std::string, bool> CNVCaller::runCopyNumberPrediction
     // Only extend the region if "save CNV data" is enabled
     uint32_t snp_start_pos = start_pos;
     uint32_t snp_end_pos = end_pos;
+    SNPData before_sv;
+    SNPData after_sv;
     if (input_data.getSaveCNVData())
     {
         uint32_t sv_half_length = (end_pos - start_pos) / 2.0;
-        snp_start_pos = start_pos > sv_half_length ? start_pos - sv_half_length : 1;
-        snp_end_pos = end_pos + sv_half_length;
+        if (start_pos > 1)
+        {
+            uint32_t before_sv_start = std::max((uint32_t) 1, start_pos - sv_half_length);
+            uint32_t before_sv_end = start_pos - 1;
+            querySNPRegion(chr, before_sv_start, before_sv_end, pos_depth_map, mean_chr_cov, before_sv, input_data);
+        }
+        uint32_t chr_last_index = pos_depth_map.size() - 1;
+        if (end_pos < chr_last_index)
+        {
+            uint32_t after_sv_start = end_pos + 1;
+            uint32_t after_sv_end = std::min(chr_last_index, end_pos + sv_half_length);
+            querySNPRegion(chr, after_sv_start, after_sv_end, pos_depth_map, mean_chr_cov, after_sv, input_data);
+        }
     }
 
     // Query the SNP region for the SV candidate
@@ -217,16 +234,17 @@ std::tuple<double, SVType, std::string, bool> CNVCaller::runCopyNumberPrediction
     }
     snp_data.state_sequence = std::move(state_sequence);  // Move the state sequence to the SNP data
 
-    // Save the SV calls as a TSV file if enabled
+    // Save the SV calls if enabled
     bool copy_number_change = (predicted_cnv_type != SVType::UNKNOWN && predicted_cnv_type != SVType::NEUTRAL);
-    // if (save_cnv_data && copy_number_change && (end_pos - start_pos) > 10000)
-    if (input_data.getSaveCNVData() && copy_number_change && (end_pos - start_pos) > 10000)
+    if (input_data.getSaveCNVData() && copy_number_change && (end_pos - start_pos) > 50000)
     {
         std::string cnv_type_str = getSVTypeString(predicted_cnv_type);
-        const std::string output_dir = input_data.getOutputDir();
-        std::string sv_filename = output_dir + "/" + cnv_type_str + "_" + chr + "_" + std::to_string((int) start_pos) + "-" + std::to_string((int) end_pos) + "_SPLITALN.tsv";
-        printMessage("Saving SV split-alignment copy number predictions to " + sv_filename + "...");
-        this->saveSVCopyNumberToTSV(snp_data, sv_filename, chr, start_pos, end_pos, cnv_type_str, likelihood);
+        // const std::string output_dir = input_data.getOutputDir();
+        // std::string json_filepath = output_dir + "/CNVCalls.json";
+        std::string json_filepath = input_data.getCNVOutputFile();
+        printMessage("Saving SV copy number predictions to " + json_filepath + "...");
+
+        this->saveSVCopyNumberToJSON(before_sv, after_sv, snp_data, chr, start_pos, end_pos, cnv_type_str, likelihood, json_filepath);
     }
     
     return std::make_tuple(likelihood, predicted_cnv_type, genotype, true);
@@ -479,7 +497,7 @@ void CNVCaller::calculateMeanChromosomeCoverage(const std::vector<std::string>& 
     }
 }
 
-void CNVCaller::readSNPAlleleFrequencies(std::string chr, uint32_t start_pos, uint32_t end_pos, std::vector<uint32_t>& snp_pos, std::vector<double>& snp_baf, std::vector<double>& snp_pfb, std::vector<bool>& is_snp, const InputData& input_data) const
+void CNVCaller::readSNPAlleleFrequencies(std::string chr, uint32_t start_pos, uint32_t end_pos, std::vector<uint32_t>& snp_pos, std::vector<double>& snp_baf, std::vector<double>& snp_pfb, const InputData& input_data) const
 {
     // Lock during reading
     std::shared_lock<std::shared_mutex> lock(this->shared_mutex);
@@ -593,7 +611,8 @@ void CNVCaller::readSNPAlleleFrequencies(std::string chr, uint32_t start_pos, ui
 
     // Read the SNP data ----------------------------------------------
     // Set the region
-    if (bcf_sr_set_regions(snp_reader, chr.c_str(), 0) < 0)
+    std::string region_str = chr + ":" + std::to_string(start_pos) + "-" + std::to_string(end_pos);
+    if (bcf_sr_set_regions(snp_reader, region_str.c_str(), 0) < 0)  //chr.c_str(), 0) < 0)
     {
         printError("ERROR: Could not set region for SNP reader: " + chr);
         bcf_sr_destroy(snp_reader);
@@ -820,6 +839,136 @@ void CNVCaller::saveSVCopyNumberToTSV(SNPData& snp_data, std::string filepath, s
 
     // Close the file
     tsv_file.close();
+}
+
+void CNVCaller::saveSVCopyNumberToJSON(SNPData &before_sv, SNPData &after_sv, SNPData &snp_data, std::string chr, uint32_t start, uint32_t end, std::string sv_type, double likelihood, const std::string& filepath) const
+{
+    // Append the SV information to the JSON file
+    std::ofstream json_file(filepath, std::ios::app);
+    if (!json_file.is_open())
+    {
+        std::cerr << "ERROR: Could not open JSON file for writing: " << filepath << std::endl;
+        exit(1);
+    }
+    json_file << "{\n";
+    json_file << "  \"chromosome\": \"" << chr << "\",\n";
+    json_file << "  \"start\": " << start << ",\n";
+    json_file << "  \"end\": " << end << ",\n";
+    json_file << "  \"sv_type\": \"" << sv_type << "\",\n";
+    json_file << "  \"likelihood\": " << likelihood << ",\n";
+    json_file << "  \"before_sv\": {\n";
+    json_file << "    \"positions\": [";
+        for (size_t i = 0; i < before_sv.pos.size(); ++i)
+        {
+            json_file << before_sv.pos[i];
+            if (i < before_sv.pos.size() - 1)
+                json_file << ", ";
+        }
+        json_file << "],\n";
+    json_file << "    \"b_allele_freq\": [";
+        for (size_t i = 0; i < before_sv.baf.size(); ++i)
+        {
+            json_file << before_sv.baf[i];
+            if (i < before_sv.baf.size() - 1)
+                json_file << ", ";
+        }
+        json_file << "],\n";
+    json_file << "    \"population_freq\": [";
+        for (size_t i = 0; i < before_sv.pfb.size(); ++i)
+        {
+            json_file << before_sv.pfb[i];
+            if (i < before_sv.pfb.size() - 1)
+                json_file << ", ";
+        }
+        json_file << "],\n";
+    json_file << "    \"log2_ratio\": [";
+        for (size_t i = 0; i < before_sv.log2_cov.size(); ++i)
+        {
+            json_file << before_sv.log2_cov[i];
+            if (i < before_sv.log2_cov.size() - 1)
+                json_file << ", ";
+        }
+        json_file << "]\n";
+    json_file << "  },\n";
+    json_file << "  \"after_sv\": {\n";
+    json_file << "    \"positions\": [";
+        for (size_t i = 0; i < after_sv.pos.size(); ++i)
+        {
+            json_file << after_sv.pos[i];
+            if (i < after_sv.pos.size() - 1)
+                json_file << ", ";
+        }
+        json_file << "],\n";
+    json_file << "    \"b_allele_freq\": [";
+        for (size_t i = 0; i < after_sv.baf.size(); ++i)
+        {
+            json_file << after_sv.baf[i];
+            if (i < after_sv.baf.size() - 1)
+                json_file << ", ";
+        }
+        json_file << "],\n";
+    json_file << "    \"population_freq\": [";
+        for (size_t i = 0; i < after_sv.pfb.size(); ++i)
+        {
+            json_file << after_sv.pfb[i];
+            if (i < after_sv.pfb.size() - 1)
+                json_file << ", ";
+        }
+        json_file << "],\n";
+    json_file << "    \"log2_ratio\": [";
+        for (size_t i = 0; i < after_sv.log2_cov.size(); ++i)
+        {
+            json_file << after_sv.log2_cov[i];
+            if (i < after_sv.log2_cov.size() - 1)
+                json_file << ", ";
+        }
+        json_file << "]\n";
+    json_file << "  },\n";
+    json_file << "  \"sv\": {\n";
+    json_file << "    \"positions\": [";
+        for (size_t i = 0; i < snp_data.pos.size(); ++i)
+        {
+            json_file << snp_data.pos[i];
+            if (i < snp_data.pos.size() - 1)
+                json_file << ", ";
+        }
+        json_file << "],\n";
+    json_file << "    \"b_allele_freq\": [";
+        for (size_t i = 0; i < snp_data.baf.size(); ++i)
+        {
+            json_file << snp_data.baf[i];
+            if (i < snp_data.baf.size() - 1)
+                json_file << ", ";
+        }
+        json_file << "],\n";
+    json_file << "    \"population_freq\": [";
+        for (size_t i = 0; i < snp_data.pfb.size(); ++i)
+        {
+            json_file << snp_data.pfb[i];
+            if (i < snp_data.pfb.size() - 1)
+                json_file << ", ";
+        }
+        json_file << "],\n";
+    json_file << "    \"log2_ratio\": [";
+        for (size_t i = 0; i < snp_data.log2_cov.size(); ++i)
+        {
+            json_file << snp_data.log2_cov[i];
+            if (i < snp_data.log2_cov.size() - 1)
+                json_file << ", ";
+        }
+        json_file << "],\n";
+    json_file << "    \"states\": [";
+        for (size_t i = 0; i < snp_data.state_sequence.size(); ++i)
+        {
+            json_file << snp_data.state_sequence[i];
+            if (i < snp_data.state_sequence.size() - 1)
+                json_file << ", ";
+        }
+        json_file << "]\n";
+    json_file << "  }\n";
+    json_file << "}\n";
+    json_file.close();
+    printMessage("Saved copy number predictions for " + chr + ":" + std::to_string(start) + "-" + std::to_string(end) + " to " + filepath);
 }
 
 void CNVCaller::updateSNPData(SNPData& snp_data, uint32_t pos, double pfb, double baf, double log2_cov, bool is_snp)

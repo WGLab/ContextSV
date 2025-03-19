@@ -59,4 +59,6 @@ std::string removeChrPrefix(std::string chr);
 
 void printMemoryUsage(const std::string &functionName);
 
+bool fileExists(const std::string &filepath);
+
 #endif // UTILS_H

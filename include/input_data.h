@@ -100,6 +100,9 @@ class InputData {
         // (+/- 1/2 SV length), save a TSV file, and generate HTML reports.
         void saveCNVData(bool save_cnv_data);
         bool getSaveCNVData() const;
+
+        void setCNVOutputFile(std::string filepath);
+        std::string getCNVOutputFile() const;
         
     private:
         std::string short_read_bam;
@@ -124,6 +127,7 @@ class InputData {
         bool verbose;  // True if verbose output is enabled
         bool save_cnv_data;  // True if SNP CNV regions should be extended around SV breakpoints, and saved to a TSV file (Large performance hit)
         bool single_chr;
+        std::string cnv_output_file;
 };
 
 #endif // INPUT_DATA_H

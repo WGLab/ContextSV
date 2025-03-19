@@ -373,7 +373,7 @@ void SVCaller::findSplitSVSignatures(std::unordered_map<std::string, std::vector
                         // If two positions were found, use the 5'most position
                         primary_pos = std::min(primary_pos, primary_pos2);
                     }
-                    SVCall sv_candidate(primary_pos, primary_pos + (read_distance-1), SVType::INS, "<INS>", "SPLITINS", "./.", 0.0, 0, 0, primary_cluster_size);
+                    SVCall sv_candidate(primary_pos, primary_pos + (read_distance-1), SVType::INS, "<INS>", "SPLITDIST1", "./.", 0.0, 0, 0, primary_cluster_size);
                     addSVCall(chr_sv_calls, sv_candidate);
                 }
             }
@@ -445,12 +445,12 @@ void SVCaller::findSplitSVSignatures(std::unordered_map<std::string, std::vector
             // If the read distance is < 30bp while the SV is > 2kb, then this is a
             // potential deletion
             if (std::abs(read_distance) < 30 && sv_length > 2000 && sv_length <= 1000000) {
-                SVCall sv_candidate(sv_start, sv_end, SVType::DEL, ".", "SPLITDEL", "./.", 0.0, 0, 0, cluster_size);
+                SVCall sv_candidate(sv_start, sv_end, SVType::DEL, ".", "SPLITDIST2", "./.", 0.0, 0, 0, cluster_size);
                 addSVCall(chr_sv_calls, sv_candidate);
 
                 // Add an inversion call if necessary
                 if (inversion) {
-                    SVCall sv_candidate(sv_start, sv_end, SVType::INV, "<INV>", "INVDEL", "./.", 0.0, 0, 0, cluster_size);
+                    SVCall sv_candidate(sv_start, sv_end, SVType::INV, "<INV>", "SPLITINV", "./.", 0.0, 0, 0, cluster_size);
                     addSVCall(chr_sv_calls, sv_candidate);
                 }
             }
@@ -459,7 +459,7 @@ void SVCaller::findSplitSVSignatures(std::unordered_map<std::string, std::vector
             else if (sv_length >= min_length && sv_length <= max_length) {
                 SVType sv_type = inversion ? SVType::INV : SVType::UNKNOWN;
                 std::string alt = (sv_type == SVType::INV) ? "<INV>" : ".";
-                SVCall sv_candidate(sv_start, sv_end, sv_type, alt, "PRIMSUPP", "./.", 0.0, 0, 0, cluster_size);
+                SVCall sv_candidate(sv_start, sv_end, sv_type, alt, "SPLIT", "./.", 0.0, 0, 0, cluster_size);
                 addSVCall(chr_sv_calls, sv_candidate);
             }
         }

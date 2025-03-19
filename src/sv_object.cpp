@@ -18,10 +18,6 @@ bool SVCall::operator<(const SVCall & other) const
 
 void addSVCall(std::vector<SVCall>& sv_calls, SVCall& sv_call)
 {
-    // if (sv_call.sv_type == SVType::UNKNOWN || sv_call.sv_type == SVType::NEUTRAL) {
-    //     return;
-    // }
-
     // Check if the SV call is valid
     if (sv_call.start > sv_call.end) {
         printError("ERROR: Invalid SV call at position " + std::to_string(sv_call.start) + "-" + std::to_string(sv_call.end));
@@ -232,7 +228,9 @@ void mergeDuplicateSVs(std::vector<SVCall> &sv_calls)
     });
     for (size_t i = 0; i < sv_calls.size(); i++) {
         SVCall& sv_call = sv_calls[i];
-        if (i > 0 && sv_call.start == sv_calls[i - 1].start && sv_call.sv_type == sv_calls[i - 1].sv_type) {
+        // For SVs at the same start position with the same SV type, keep the one
+        // with the highest likelihood
+        if (i > 0 && sv_call.start == sv_calls[i - 1].start && ((sv_call.sv_type == sv_calls[i - 1].sv_type) || sv_call.sv_type == SVType::UNKNOWN || sv_calls[i - 1].sv_type == SVType::UNKNOWN)) {
             // Keep the SV call with a non-zero likelihood
             // The HMM prediction is more reliable than the split read prediction
             if (sv_call.hmm_likelihood != 0.0 && sv_calls[i - 1].hmm_likelihood == 0.0) {

@@ -35,6 +35,7 @@ InputData::InputData()
     this->verbose = false;
     this->save_cnv_data = false;
     this->single_chr = false;
+    this->cnv_output_file = "";
 }
 
 std::string InputData::getShortReadBam() const
@@ -402,4 +403,14 @@ void InputData::saveCNVData(bool save_cnv_data)
 bool InputData::getSaveCNVData() const
 {
     return this->save_cnv_data;
+}
+
+void InputData::setCNVOutputFile(std::string filepath)
+{
+    this->cnv_output_file = filepath;
+}
+
+std::string InputData::getCNVOutputFile() const
+{
+    return this->cnv_output_file;
 }

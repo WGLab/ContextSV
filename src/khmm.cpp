@@ -55,15 +55,8 @@ std::pair<std::vector<int>, double> testVit_CHMM(CHMM hmm, int T, std::vector<do
 	return state_sequence;
 }
 
-// double b1iot(int state, double *mean, double *sd, double uf, double o)
 double b1iot(int state, std::vector<double> mean, std::vector<double> sd, double uf, double o)
 {
-	// if (o < mean[1])
-	// {
-	// 	o = mean[1];
-	// }
-	// double p = uf + ((1 - uf) * pdf_normal(o, mean[state], sd[state]));
-
 	// Get the values (0-based indexing)
 	if (o < mean[0])
 	{
@@ -74,22 +67,8 @@ double b1iot(int state, std::vector<double> mean, std::vector<double> sd, double
 	return log(p);
 }
 
-// double b2iot(int state, double *mean, double *sd, double uf, double pfb, double b)
 double b2iot(int state, const std::vector<double> mean, const std::vector<double> sd, double uf, double pfb, double b)
 {
-	// double p = 0;
-	// double mean0 = mean[1];  // mean[1] = 0
-	// double mean25 = mean[2];  // mean[2] = 0.25
-	// double mean33 = mean[3];  // mean[3] = 0.33
-	// double mean50 = mean[4];  // mean[4] = 0.5
-	// double mean50_state1 = mean[5];  // mean[5] = 0.5
-	// double sd0 = sd[1];  // sd[1] = 0
-	// double sd25 = sd[2];  // sd[2] = 0.25
-	// double sd33 = sd[3];  // sd[3] = 0.33
-	// double sd50 = sd[4];  // sd[4] = 0.5
-	// double sd50_state1 = sd[5];  // sd[5] = 0.5
-	// p = uf;  // UF = previous alpha (transition probability)
-
 	// Get the values (0-based indexing)
 	double p = 0;
 	double mean0 = mean[0];  // mean[0] = 0
@@ -275,7 +254,6 @@ std::pair<std::vector<int>, double> ViterbiLogNP_CHMM(CHMM hmm, int T, std::vect
 	{
 		for (j = 1; j <= hmm.N; j++)
 		{
-			// A1[i][j] = hmm.A[i][j];
 			// Update for 0-based indexing
 			A1[i][j] = hmm.A[i-1][j-1];
 		}
@@ -333,11 +311,7 @@ std::pair<std::vector<int>, double> ViterbiLogNP_CHMM(CHMM hmm, int T, std::vect
 
 	/* 1. Initialization  */
 	for (i = 1; i <= hmm.N; i++)
-	{
-		// delta[1][i] = hmm.pi[i] + biot[i][1];  // Initialize the delta matrix
-		// (log probability) to the initial state distribution + the emission
-		// probability
-		
+	{	
 		// Update to 0-based indexing
 		delta[1][i] = hmm.pi[i-1] + biot[i][1];  // Initialize the delta matrix
 		psi[1][i] = 0;  // Initialize the psi matrix (state sequence) to 0 (no state)
@@ -396,20 +370,8 @@ std::pair<std::vector<int>, double> ViterbiLogNP_CHMM(CHMM hmm, int T, std::vect
 		q[t] = psi[t + 1][q[t + 1]];
 	}
 
-	// // Print t, the state, delta, biot, and psi
-	// for (t = 1; t <= T; t++)
-	// {
-	// 	std::cout << "Time " << t << " with state " << q[t] << ":" << std::endl;
-	// 	for (i = 1; i <= hmm.N; i++)
-	// 	{
-	// 		std::cout << "State " << i << ": delta = " << delta[t][i] << ", biot = " << biot[i][t] << ", psi = " << psi[t][i] << ", LRR = " << O1[t-1] << ", BAF = " << O2[t-1] << std::endl;
-	// 	}
-	// 	std::cout << std::endl;
-	// }
-
 	for (i = 1; i <= hmm.N; i++)
 	{ /*recover the HMM model as original*/
-		// hmm.pi[i] = exp(hmm.pi[i]);
 		// Update to 0-based indexing
 		hmm.pi[i-1] = exp(hmm.pi[i-1]);
 	}

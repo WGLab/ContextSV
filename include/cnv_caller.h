@@ -46,10 +46,6 @@ struct SNPData {
 // CNVCaller: Detect CNVs and return the state sequence by SNP position
 class CNVCaller {
     private:
-        //mutable std::mutex snp_file_mtx;  // SNP file mutex
-        //mutable std::mutex pfb_file_mtx;  // Population frequency file mutex
-        //mutable std::mutex bam_file_mtx;  // BAM file mutex
-        // std::mutex& shared_mutex;
         std::shared_mutex& shared_mutex;
 
         // Define a map of CNV genotypes by HMM predicted state.
@@ -72,15 +68,6 @@ class CNVCaller {
             {5, "0/1"},
             {6, "1/1"}
         };
-        // std ::map<int, std::string> cnv_genotype_map = {
-        //     {0, "./."},
-        //     {1, "0/0"},
-        //     {2, "0/1"},
-        //     {3, "1/1"},
-        //     {4, "1/1"},
-        //     {5, "0/1"},
-        //     {6, "1/1"}
-        // };
 
         void updateSNPData(SNPData& snp_data, uint32_t pos, double pfb, double baf, double log2_cov, bool is_snp);
 
@@ -102,15 +89,14 @@ class CNVCaller {
         // Run copy number prediction for SVs meeting the minimum length threshold obtained from CIGAR strings
         void runCIGARCopyNumberPrediction(std::string chr, std::vector<SVCall>& sv_candidates, const CHMM& hmm, double mean_chr_cov, const std::vector<uint32_t>& pos_depth_map, const InputData& input_data) const;
 
-        // double calculateMeanChromosomeCoverage(std::string chr, std::vector<uint32_t>& chr_pos_depth_map, const std::string& bam_filepath, int thread_count) const;
         void calculateMeanChromosomeCoverage(const std::vector<std::string>& chromosomes, std::unordered_map<std::string, std::vector<uint32_t>>& chr_pos_depth_map, std::unordered_map<std::string, double>& chr_mean_cov_map, const std::string& bam_filepath, int thread_count) const;
 
-        // void calculateRegionLog2Ratio(uint32_t start_pos, uint32_t end_pos, int sample_size, const std::vector<uint32_t>& pos_depth_map, double mean_chr_cov, std::vector<double>& pos_log2) const;
-
-        void readSNPAlleleFrequencies(std::string chr, uint32_t start_pos, uint32_t end_pos, std::vector<uint32_t>& snp_pos, std::vector<double>& snp_baf, std::vector<double>& snp_pfb, std::vector<bool>& is_snp, const InputData& input_data) const;
+        void readSNPAlleleFrequencies(std::string chr, uint32_t start_pos, uint32_t end_pos, std::vector<uint32_t>& snp_pos, std::vector<double>& snp_baf, std::vector<double>& snp_pfb, const InputData& input_data) const;
 
         // Save a TSV with B-allele frequencies, log2 ratios, and copy number predictions
         void saveSVCopyNumberToTSV(SNPData& snp_data, std::string filepath, std::string chr, uint32_t start, uint32_t end, std::string sv_type, double likelihood) const;
+
+        void saveSVCopyNumberToJSON(SNPData& before_sv, SNPData& after_sv, SNPData& snp_data, std::string chr, uint32_t start, uint32_t end, std::string sv_type, double likelihood, const std::string& filepath) const;
 };
 
 #endif // CNV_CALLER_H

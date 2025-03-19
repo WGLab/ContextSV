@@ -72,6 +72,19 @@ void runContextSV(const std::unordered_map<std::string, std::string>& args)
         input_data.setDBSCAN_MinPtsPct(std::stod(args.at("min-pts-pct")));
     }
 
+    // Set up the CNV JSON file if enabled
+    if (input_data.getSaveCNVData()) {
+        const std::string output_dir = input_data.getOutputDir();
+        std::string json_filepath = output_dir + "/CNVCalls.json";
+        int json_file_count = 1;
+        while (fileExists(json_filepath)) {
+            json_filepath = output_dir + "/CNVCalls_" + std::to_string(json_file_count) + ".json";
+            json_file_count++;
+        }
+        input_data.setCNVOutputFile(json_filepath);
+        std::cout << "Saving CNV data to: " << json_filepath << std::endl;
+    }
+    
     // Run ContextSV
     run(input_data);
 }
