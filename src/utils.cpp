@@ -7,6 +7,7 @@
 #include <string>
 #include <iostream>
 #include <fstream>
+#include <filesystem>
 /// @endcond
 
 
@@ -126,20 +127,17 @@ bool fileExists(const std::string &filepath)
     return file.is_open();
 }
 
-void openJSON(const std::string &filepath)
+bool isFileEmpty(const std::string &filepath)
 {
-    // Add the initial [ and close
-    std::ofstream
-        json_file(filepath);
-    json_file << "[\n";
-    json_file.close();
+    return std::filesystem::file_size(filepath) == 0;
 }
 
 void closeJSON(const std::string &filepath)
 {
-    // Add the final ] and close
     std::ofstream
         json_file(filepath, std::ios::app);
-    json_file << "]";
+
+    json_file << "}\n";  // Close the last JSON object
+    json_file << "]";  // Close the JSON array
     json_file.close();
 }

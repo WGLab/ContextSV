@@ -859,6 +859,17 @@ void CNVCaller::saveSVCopyNumberToJSON(SNPData &before_sv, SNPData &after_sv, SN
         std::cerr << "ERROR: Could not open JSON file for writing: " << filepath << std::endl;
         exit(1);
     }
+
+    // If not the first record, write the closing bracket
+    // Check if file is empty
+    if (isFileEmpty(filepath))
+    {
+        json_file << "[\n";
+    } else {
+        // Close the previous JSON object
+        json_file << "},\n";
+    }
+
     json_file << "{\n";
     json_file << "  \"chromosome\": \"" << chr << "\",\n";
     json_file << "  \"start\": " << start << ",\n";
@@ -984,7 +995,7 @@ void CNVCaller::saveSVCopyNumberToJSON(SNPData &before_sv, SNPData &after_sv, SN
         }
         json_file << "]\n";
     json_file << "  }\n";
-    json_file << "}\n";
+    // json_file << "},\n";
     json_file.close();
     printMessage("Saved copy number predictions for " + chr + ":" + std::to_string(start) + "-" + std::to_string(end) + " to " + filepath);
 }

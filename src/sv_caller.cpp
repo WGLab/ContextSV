@@ -729,9 +729,9 @@ void SVCaller::run(const InputData& input_data)
 
     // Set up the JSON output file for CNV data
     const std::string& json_fp = input_data.getCNVOutputFile();
-    if (input_data.getSaveCNVData()) {
-        openJSON(json_fp);
-    }
+    // if (input_data.getSaveCNVData()) {
+    //     openJSON(json_fp);
+    // }
 
     // Calculate the mean chromosome coverage and generate the position depth
     // maps for each chromosome (I/O is multi-threaded, which is more efficient

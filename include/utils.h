@@ -61,7 +61,7 @@ void printMemoryUsage(const std::string &functionName);
 
 bool fileExists(const std::string &filepath);
 
-void openJSON(const std::string & filepath);
+bool isFileEmpty(const std::string &filepath);
 
 void closeJSON(const std::string & filepath);
 
