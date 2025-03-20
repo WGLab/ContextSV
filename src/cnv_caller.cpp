@@ -247,6 +247,22 @@ std::tuple<double, SVType, std::string, bool> CNVCaller::runCopyNumberPrediction
                 snp_data.pfb[i] = 0.0;
             }
         }
+        for (size_t i = 0; i < before_sv.pos.size(); i++)
+        {
+            if (!before_sv.is_snp[i])
+            {
+                before_sv.baf[i] = 0.0;
+                before_sv.pfb[i] = 0.0;
+            }
+        }
+        for (size_t i = 0; i < after_sv.pos.size(); i++)
+        {
+            if (!after_sv.is_snp[i])
+            {
+                after_sv.baf[i] = 0.0;
+                after_sv.pfb[i] = 0.0;
+            }
+        }
 
         // Save the SNP data to JSON
         std::string cnv_type_str = getSVTypeString(predicted_cnv_type);
@@ -909,6 +925,14 @@ void CNVCaller::saveSVCopyNumberToJSON(SNPData &before_sv, SNPData &after_sv, SN
             if (i < before_sv.log2_cov.size() - 1)
                 json_file << ", ";
         }
+        json_file << "],\n";
+    json_file << "    \"is_snp\": [";
+        for (size_t i = 0; i < snp_data.is_snp.size(); ++i)
+        {
+            json_file << snp_data.is_snp[i];
+            if (i < snp_data.is_snp.size() - 1)
+                json_file << ", ";
+        }
         json_file << "]\n";
     json_file << "  },\n";
     json_file << "  \"after_sv\": {\n";
@@ -941,6 +965,14 @@ void CNVCaller::saveSVCopyNumberToJSON(SNPData &before_sv, SNPData &after_sv, SN
         {
             json_file << after_sv.log2_cov[i];
             if (i < after_sv.log2_cov.size() - 1)
+                json_file << ", ";
+        }
+        json_file << "],\n";
+    json_file << "    \"is_snp\": [";
+        for (size_t i = 0; i < snp_data.is_snp.size(); ++i)
+        {
+            json_file << snp_data.is_snp[i];
+            if (i < snp_data.is_snp.size() - 1)
                 json_file << ", ";
         }
         json_file << "]\n";

@@ -81,8 +81,10 @@ for sv in sv_data:
                     f"Population Frequency: {population_freq[i]}<br>"
                 )
         else:
+            is_snp = sv[section]['is_snp']
             state_colors = ['black'] * len(positions)
-            marker_symbols = ['circle-open'] * len(positions)
+            # marker_symbols = ['circle-open'] * len(positions)
+            marker_symbols = ['circle' if is_snp_val else 'circle-open' for is_snp_val in is_snp]
             hover_text = []
             for i, position in enumerate(positions):
                 # Add hover text for each point
