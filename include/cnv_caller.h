@@ -91,7 +91,7 @@ class CNVCaller {
 
         void calculateMeanChromosomeCoverage(const std::vector<std::string>& chromosomes, std::unordered_map<std::string, std::vector<uint32_t>>& chr_pos_depth_map, std::unordered_map<std::string, double>& chr_mean_cov_map, const std::string& bam_filepath, int thread_count) const;
 
-        void readSNPAlleleFrequencies(std::string chr, uint32_t start_pos, uint32_t end_pos, std::vector<uint32_t>& snp_pos, std::vector<double>& snp_baf, std::vector<double>& snp_pfb, const InputData& input_data) const;
+        void readSNPAlleleFrequencies(std::string chr, uint32_t start_pos, uint32_t end_pos, std::vector<uint32_t>& snp_pos, std::unordered_map<uint32_t, double>& snp_baf, std::unordered_map<uint32_t, double>& snp_pfb, const InputData& input_data) const;
 
         // Save a TSV with B-allele frequencies, log2 ratios, and copy number predictions
         void saveSVCopyNumberToTSV(SNPData& snp_data, std::string filepath, std::string chr, uint32_t start, uint32_t end, std::string sv_type, double likelihood) const;

@@ -55,24 +55,23 @@ void CNVCaller::querySNPRegion(std::string chr, uint32_t start_pos, uint32_t end
     // Initialize the SNP data with default values and sample size length
     int sample_size = input_data.getSampleSize();
     std::vector<uint32_t> snp_pos;
-    std::vector<double> snp_baf;
-    std::vector<double> snp_pfb;
-    this->readSNPAlleleFrequencies(chr, start_pos, end_pos, snp_pos, snp_baf, snp_pfb, input_data);
+    std::unordered_map<uint32_t, double> snp_baf_map;
+    std::unordered_map<uint32_t, double> snp_pfb_map;
+    this->readSNPAlleleFrequencies(chr, start_pos, end_pos, snp_pos, snp_baf_map, snp_pfb_map, input_data);
 
     // Get the log2 ratio for <sample_size> evenly spaced positions in the
     // region
     sample_size = std::max((int) snp_pos.size(), sample_size);
-    std::vector<uint32_t> snp_pos_hmm;
-    std::vector<double> snp_baf_hmm;
-    std::vector<double> snp_pfb_hmm;
-    std::vector<double> snp_log2_hmm;
-    std::vector<bool> is_snp_hmm;
 
     // Loop through evenly spaced positions in the region and get the log2 ratio
     double pos_step = (double) (end_pos - start_pos + 1) / (double) sample_size;
     std::unordered_set<uint32_t> snp_pos_set(snp_pos.begin(), snp_pos.end());
+    std::unordered_map<std::string, double> window_log2_map;
     for (int i = 0; i < sample_size; i++)
     {
+        uint32_t window_start = (uint32_t) (start_pos + i * pos_step);
+        uint32_t window_end = (uint32_t) (start_pos + (i + 1) * pos_step);
+
         // Calculate the mean depth for the window
         double cov_sum = 0.0;
         int pos_count = 0;
@@ -83,15 +82,11 @@ void CNVCaller::querySNPRegion(std::string chr, uint32_t start_pos, uint32_t end
             {
                 break;
             }
-            try
-            {
-                cov_sum += pos_depth_map.at(pos);
+            if (pos < pos_depth_map.size()) {
+                cov_sum += pos_depth_map[pos];
                 pos_count++;
             }
-            catch (const std::out_of_range& e)
-            {
-                // Ignore out of range errors
-            }
+
         }
         double log2_cov = 0.0;
         if (pos_count > 0)
@@ -104,34 +99,47 @@ void CNVCaller::querySNPRegion(std::string chr, uint32_t start_pos, uint32_t end
             log2_cov = log2((cov_sum / (double) pos_count) / mean_chr_cov);
         }
 
-        // Loop through positions and get the log2 ratio
-        bool snp_found_in_sample = false;
-        for (int j = 0; j < pos_step; j++)
-        {
-            uint32_t pos = (uint32_t) (start_pos + i * pos_step + j);
-            if (pos > end_pos)
-            {
-                break;
-            }
+        // Store the log2 ratio for the window
+        std::string window_key = std::to_string(window_start) + "-" + std::to_string(window_end);
+        window_log2_map[window_key] = log2_cov;
+    }
 
-            // Check if the position is a SNP
-            if (snp_pos_set.find(pos) != snp_pos_set.end())
+    // Create new vectors for the SNP data
+    std::vector<uint32_t> snp_pos_hmm;
+    std::vector<double> snp_baf_hmm;
+    std::vector<double> snp_pfb_hmm;
+    std::vector<double> snp_log2_hmm;
+    std::vector<bool> is_snp_hmm;
+
+    // Loop through the window ranges and append all SNPs in the range, using
+    // the log2 ratio for the window
+    for (const auto& window : window_log2_map)
+    {
+        uint32_t window_start = std::stoi(window.first.substr(0, window.first.find('-')));
+        uint32_t window_end = std::stoi(window.first.substr(window.first.find('-') + 1));
+        double log2_cov = window.second;
+
+        // Loop through the SNP positions and add them to the SNP data
+        bool snp_found = false;
+        for (uint32_t pos : snp_pos)
+        {
+            if (pos >= window_start && pos <= window_end)
             {
-                // Update the SNP data
                 snp_pos_hmm.push_back(pos);
-                snp_baf_hmm.push_back(snp_baf[i]);
-                snp_pfb_hmm.push_back(snp_pfb[i]);
+                snp_baf_hmm.push_back(snp_baf_map[pos]);
+                snp_pfb_hmm.push_back(snp_pfb_map[pos]);
                 snp_log2_hmm.push_back(log2_cov);
                 is_snp_hmm.push_back(true);
-                snp_found_in_sample = true;
+                snp_found = true;
             }
         }
-
-        // If no SNP was found in the sample, then use the center position
-        if (!snp_found_in_sample)
+        if (!snp_found)
         {
-            uint32_t pos = (uint32_t) (start_pos + (i * pos_step) + (pos_step / 2.0));
-            snp_pos_hmm.push_back(pos);
+            // If no SNPs were found in the window, add a dummy SNP with the
+            // log2 ratio for the window, using the window center as the SNP
+            // position
+            uint32_t window_center = (window_start + window_end) / 2;
+            snp_pos_hmm.push_back(window_center);
             snp_baf_hmm.push_back(-1.0);
             snp_pfb_hmm.push_back(0.5);
             snp_log2_hmm.push_back(log2_cov);
@@ -522,7 +530,7 @@ void CNVCaller::calculateMeanChromosomeCoverage(const std::vector<std::string>& 
     }
 }
 
-void CNVCaller::readSNPAlleleFrequencies(std::string chr, uint32_t start_pos, uint32_t end_pos, std::vector<uint32_t>& snp_pos, std::vector<double>& snp_baf, std::vector<double>& snp_pfb, const InputData& input_data) const
+void CNVCaller::readSNPAlleleFrequencies(std::string chr, uint32_t start_pos, uint32_t end_pos, std::vector<uint32_t>& snp_pos, std::unordered_map<uint32_t, double>& snp_baf, std::unordered_map<uint32_t, double>& snp_pfb, const InputData& input_data) const
 {
     // Lock during reading
     std::shared_lock<std::shared_mutex> lock(this->shared_mutex);
@@ -700,8 +708,8 @@ void CNVCaller::readSNPAlleleFrequencies(std::string chr, uint32_t start_pos, ui
 
             // Add the SNP position and BAF information
             snp_pos.push_back(pos);
-            snp_baf.push_back(baf);
-            snp_pfb.push_back(0.5);
+            snp_baf[pos] = baf;
+            printMessage("SNP found: " + chr + ":" + std::to_string(pos) + " BAF: " + std::to_string(baf));
             snp_found = true;
         }
     }
@@ -724,11 +732,6 @@ void CNVCaller::readSNPAlleleFrequencies(std::string chr, uint32_t start_pos, ui
     uint32_t min_snp_pos = *std::min_element(snp_pos.begin(), snp_pos.end());
     uint32_t max_snp_pos = *std::max_element(snp_pos.begin(), snp_pos.end());
     std::unordered_set<uint32_t> snp_pos_set(snp_pos.begin(), snp_pos.end());
-    std::unordered_map<uint32_t, double> snp_index_map;
-    for (size_t i = 0; i < snp_pos.size(); i++)
-    {
-        snp_index_map[snp_pos[i]] = i;
-    }
     if (use_pfb)
     {
         // Set the region for the population allele frequency reader
@@ -757,9 +760,6 @@ void CNVCaller::readSNPAlleleFrequencies(std::string chr, uint32_t start_pos, ui
                 continue;  // Skip if the SNP position is not in the set
             }
 
-            // Get the SNP position index
-            size_t i = snp_index_map[pfb_pos];
-
             // Get the population frequency for the SNP
             int pfb_status = bcf_get_info_float(pfb_reader->readers[0].header, pfb_record, AF_key.c_str(), &pfb_f, &count);
             if (pfb_status < 0 || count == 0)
@@ -773,7 +773,9 @@ void CNVCaller::readSNPAlleleFrequencies(std::string chr, uint32_t start_pos, ui
             {
                 continue;
             }
-            snp_pfb[i] = pfb;
+            // snp_pfb[i] = pfb;
+            snp_pfb[pfb_pos] = pfb;
+            printMessage("Population frequency found: " + chr + ":" + std::to_string(pfb_pos) + " PFB: " + std::to_string(pfb));
             break;
         }
         free(pfb_f);
@@ -927,10 +929,10 @@ void CNVCaller::saveSVCopyNumberToJSON(SNPData &before_sv, SNPData &after_sv, SN
         }
         json_file << "],\n";
     json_file << "    \"is_snp\": [";
-        for (size_t i = 0; i < snp_data.is_snp.size(); ++i)
+        for (size_t i = 0; i < before_sv.is_snp.size(); ++i)
         {
-            json_file << snp_data.is_snp[i];
-            if (i < snp_data.is_snp.size() - 1)
+            json_file << before_sv.is_snp[i];
+            if (i < before_sv.is_snp.size() - 1)
                 json_file << ", ";
         }
         json_file << "]\n";
@@ -969,10 +971,10 @@ void CNVCaller::saveSVCopyNumberToJSON(SNPData &before_sv, SNPData &after_sv, SN
         }
         json_file << "],\n";
     json_file << "    \"is_snp\": [";
-        for (size_t i = 0; i < snp_data.is_snp.size(); ++i)
+        for (size_t i = 0; i < after_sv.is_snp.size(); ++i)
         {
-            json_file << snp_data.is_snp[i];
-            if (i < snp_data.is_snp.size() - 1)
+            json_file << after_sv.is_snp[i];
+            if (i < after_sv.is_snp.size() - 1)
                 json_file << ", ";
         }
         json_file << "]\n";
