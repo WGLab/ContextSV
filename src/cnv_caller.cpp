@@ -709,7 +709,6 @@ void CNVCaller::readSNPAlleleFrequencies(std::string chr, uint32_t start_pos, ui
             // Add the SNP position and BAF information
             snp_pos.push_back(pos);
             snp_baf[pos] = baf;
-            printMessage("SNP found: " + chr + ":" + std::to_string(pos) + " BAF: " + std::to_string(baf));
             snp_found = true;
         }
     }
@@ -773,9 +772,7 @@ void CNVCaller::readSNPAlleleFrequencies(std::string chr, uint32_t start_pos, ui
             {
                 continue;
             }
-            // snp_pfb[i] = pfb;
             snp_pfb[pfb_pos] = pfb;
-            printMessage("Population frequency found: " + chr + ":" + std::to_string(pfb_pos) + " PFB: " + std::to_string(pfb));
             break;
         }
         free(pfb_f);
