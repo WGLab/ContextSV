@@ -769,65 +769,65 @@ void SVCaller::run(const InputData& input_data)
 
     // Use multi-threading across chromosomes. If a single chromosome is
     // specified, use a single main thread (multi-threading is used for file I/O)
-    // int thread_count = 1;
-    // if (!input_data.isSingleChr()) {
-    //     thread_count = input_data.getThreadCount();
-    //     std::cout << "Using " << thread_count << " threads for chr processing..." << std::endl;
-    // }
-    // ThreadPool pool(thread_count);
-    // auto process_chr = [&](const std::string& chr) {
-    //     try {
-    //         std::vector<SVCall> sv_calls;
-    //         std::vector<SVCall> split_sv_calls;
-    //         InputData chr_input_data = input_data;  // Use a thread-local copy
-    //         this->processChromosome(chr, sv_calls, chr_input_data, ref_genome, chr_pos_depth_map[chr], chr_mean_cov_map[chr]);
-    //         {
-    //             std::shared_lock<std::shared_mutex> lock(this->shared_mutex);
-    //             whole_genome_sv_calls[chr] = std::move(sv_calls);
-    //         }
-    //     } catch (const std::exception& e) {
-    //         printError("Error processing chromosome " + chr + ": " + e.what());
-    //     } catch (...) {
-    //         printError("Unknown error processing chromosome " + chr);
-    //     }
-    // };
+    int thread_count = 1;
+    if (!input_data.isSingleChr()) {
+        thread_count = input_data.getThreadCount();
+        std::cout << "Using " << thread_count << " threads for chr processing..." << std::endl;
+    }
+    ThreadPool pool(thread_count);
+    auto process_chr = [&](const std::string& chr) {
+        try {
+            std::vector<SVCall> sv_calls;
+            std::vector<SVCall> split_sv_calls;
+            InputData chr_input_data = input_data;  // Use a thread-local copy
+            this->processChromosome(chr, sv_calls, chr_input_data, ref_genome, chr_pos_depth_map[chr], chr_mean_cov_map[chr]);
+            {
+                std::shared_lock<std::shared_mutex> lock(this->shared_mutex);
+                whole_genome_sv_calls[chr] = std::move(sv_calls);
+            }
+        } catch (const std::exception& e) {
+            printError("Error processing chromosome " + chr + ": " + e.what());
+        } catch (...) {
+            printError("Unknown error processing chromosome " + chr);
+        }
+    };
 
-    // // Submit tasks to the thread pool and track futures
-    // std::vector<std::future<void>> futures;
-    // for (const auto& chr : chromosomes) {
-    //     futures.emplace_back(pool.enqueue([&, chr] {
-    //         // printMessage("Processing chromosome " + chr);
-    //         process_chr(chr);
-    //     }));
-    // }
+    // Submit tasks to the thread pool and track futures
+    std::vector<std::future<void>> futures;
+    for (const auto& chr : chromosomes) {
+        futures.emplace_back(pool.enqueue([&, chr] {
+            // printMessage("Processing chromosome " + chr);
+            process_chr(chr);
+        }));
+    }
 
-    // // // Wait for all tasks to complete
-    // for (auto& future : futures) {
-    //     try {
-    //         current_chr++;
-    //         future.get();
-    //     } catch (const std::exception& e) {
-    //         printError("Error processing chromosome task: " + std::string(e.what()));
-    //     } catch (...) {
-    //         printError("Unknown error processing chromosome task.");
-    //     }
-    // }
-    // printMessage("All tasks have finished.");
+    // Wait for all tasks to complete
+    for (auto& future : futures) {
+        try {
+            current_chr++;
+            future.get();
+        } catch (const std::exception& e) {
+            printError("Error processing chromosome task: " + std::string(e.what()));
+        } catch (...) {
+            printError("Unknown error processing chromosome task.");
+        }
+    }
+    printMessage("All tasks have finished.");
 
     // -------------------------------------------------------
     // Run copy number variant predictions on the SVs detected from the
     // CIGAR string, using a minimum CNV length threshold
-    // current_chr = 0;
-    // printMessage("Running copy number predictions on CIGAR SVs...");
-    // for (auto& entry : whole_genome_sv_calls) {
-    //     current_chr++;
-    //     const std::string& chr = entry.first;
-    //     std::vector<SVCall>& sv_calls = entry.second;
-    //     if (sv_calls.size() > 0) {
-    //         printMessage("(" + std::to_string(current_chr) + "/" + std::to_string(total_chr_count) + ") Running copy number predictions on " + chr + "...");
-    //         cnv_caller.runCIGARCopyNumberPrediction(chr, sv_calls, hmm, chr_mean_cov_map[chr], chr_pos_depth_map[chr], input_data);
-    //     }
-    // }
+    current_chr = 0;
+    printMessage("Running copy number predictions on CIGAR SVs...");
+    for (auto& entry : whole_genome_sv_calls) {
+        current_chr++;
+        const std::string& chr = entry.first;
+        std::vector<SVCall>& sv_calls = entry.second;
+        if (sv_calls.size() > 0) {
+            printMessage("(" + std::to_string(current_chr) + "/" + std::to_string(total_chr_count) + ") Running copy number predictions on " + chr + "...");
+            cnv_caller.runCIGARCopyNumberPrediction(chr, sv_calls, hmm, chr_mean_cov_map[chr], chr_pos_depth_map[chr], input_data);
+        }
+    }
     // -------------------------------------------------------
 
     // Identify split-SV signatures
