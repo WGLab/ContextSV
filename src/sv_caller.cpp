@@ -537,6 +537,7 @@ void SVCaller::processCIGARRecord(bam_hdr_t *header, bam1_t *alignment, std::vec
         amb_bases_bitset.set(base);
         amb_bases_bitset.set(std::tolower(base));
     }
+
     for (int i = 0; i < cigar_len; i++) {
         int op_len = bam_cigar_oplen(cigar[i]);  // CIGAR operation length
         int op = bam_cigar_op(cigar[i]);  // CIGAR operation
@@ -598,6 +599,33 @@ void SVCaller::processCIGARRecord(bam_hdr_t *header, bam1_t *alignment, std::vec
                     alt_allele = ins_seq_str;
                 }
                 SVCall sv_call(ins_pos, ins_end, SVType::INS, alt_allele, "CIGARINS", "./.", default_lh, read_depth, 1, 0);
+                addSVCall(sv_calls, sv_call);
+            
+            // Process clipped bases as potential insertions
+            } else if (op == BAM_CSOFT_CLIP && is_primary) {
+                // Get the sequence of the insertion from the query
+                std::string ins_seq_str(op_len, ' ');
+                for (int j = 0; j < op_len; j++) {
+                    // Replace ambiguous bases with N
+                    char base = seq_nt16_str[bam_seqi(bam_get_seq(alignment), query_pos + j)];
+                    if (amb_bases_bitset.test(base)) {
+                        ins_seq_str[j] = 'N';
+                    } else {
+                        ins_seq_str[j] = base;
+                    }
+                }
+
+                // Add as an insertion
+                uint32_t ins_pos = pos + 1;
+                uint32_t ins_end = ins_pos + op_len - 1;
+                int read_depth = this->getReadDepth(pos_depth_map, ins_pos-1);
+                
+                // Determine the ALT allele format based on small vs. large insertion
+                std::string alt_allele = "<INS>";
+                if (op_len <= 50) {
+                    alt_allele = ins_seq_str;
+                }
+                SVCall sv_call(ins_pos, ins_end, SVType::INS, alt_allele, "CIGARCLIP", "./.", default_lh, read_depth, 1, 0);
                 addSVCall(sv_calls, sv_call);
 
             // Check if the CIGAR operation is a deletion
@@ -778,7 +806,6 @@ void SVCaller::run(const InputData& input_data)
     auto process_chr = [&](const std::string& chr) {
         try {
             std::vector<SVCall> sv_calls;
-            std::vector<SVCall> split_sv_calls;
             InputData chr_input_data = input_data;  // Use a thread-local copy
             this->processChromosome(chr, sv_calls, chr_input_data, ref_genome, chr_pos_depth_map[chr], chr_mean_cov_map[chr]);
             {
