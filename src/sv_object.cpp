@@ -39,7 +39,7 @@ void concatenateSVCalls(std::vector<SVCall> &target, const std::vector<SVCall>& 
     target.insert(target.end(), source.begin(), source.end());
 }
 
-void mergeSVs(std::vector<SVCall>& sv_calls, double epsilon, int min_pts)
+void mergeSVs(std::vector<SVCall>& sv_calls, double epsilon, int min_pts, bool keep_noise)
 {
     printMessage("Merging SVs with DBSCAN, eps=" + std::to_string(epsilon) + ", min_pts=" + std::to_string(min_pts));
     
@@ -78,9 +78,19 @@ void mergeSVs(std::vector<SVCall>& sv_calls, double epsilon, int min_pts)
 
         dbscan.fit(sv_type_calls);
         const std::vector<int>& clusters = dbscan.getClusters();
-        std::map<int, std::vector<SVCall>> cluster_map;
-        for (size_t i = 0; i < clusters.size(); ++i) {
-            cluster_map[clusters[i]].push_back(sv_type_calls[i]);
+        std::map<int, std::vector<SVCall>> cluster_map;  // Cluster ID to SV calls
+        // Create a map of cluster IDs to SV calls
+        if (sv_type == SVType::INS) {
+            // Add only non-CIGARCLIP SVs to the cluster map
+            for (size_t i = 0; i < clusters.size(); ++i) {
+                if (sv_type_calls[i].data_type != "CIGARCLIP") {
+                    cluster_map[clusters[i]].push_back(sv_type_calls[i]);
+                }
+            }
+        } else {
+            for (size_t i = 0; i < clusters.size(); ++i) {
+                cluster_map[clusters[i]].push_back(sv_type_calls[i]);
+            }
         }
 
         // Merge SVs in each cluster
@@ -88,7 +98,6 @@ void mergeSVs(std::vector<SVCall>& sv_calls, double epsilon, int min_pts)
         for (auto& cluster : cluster_map) {
             int cluster_id = cluster.first;
             std::vector<SVCall>& cluster_sv_calls = cluster.second;
-
 
             // [TEST] If insertions, and if any SV has length between 9400 and
             // 9500, print all SV coordinates in the cluster
@@ -121,8 +130,14 @@ void mergeSVs(std::vector<SVCall>& sv_calls, double epsilon, int min_pts)
                 }
             }
 
-            if (cluster_id < 0) {
-                // Add all noise points to the merged list if >10 kb
+            if (cluster_id < 0 && keep_noise) {
+
+                // Add all unclustered points to the merged list
+                for (const auto& sv_call : cluster_sv_calls) {
+                    SVCall noise_sv_call = sv_call;
+                    merged_sv_calls.push_back(noise_sv_call);
+                }
+
                 // for (const auto& sv_call : cluster_sv_calls) {
                 //     if ((sv_call.end - sv_call.start)+1 >= 10000) {
                 //         SVCall noise_sv_call = sv_call;
@@ -131,9 +146,14 @@ void mergeSVs(std::vector<SVCall>& sv_calls, double epsilon, int min_pts)
                 //         printMessage("[TEST] Adding noise SV " + std::to_string(sv_call.start) + "-" + std::to_string(sv_call.end) + ", length=" + std::to_string((sv_call.end - sv_call.start) + 1));
                 //     }
                 // }
-                continue;  // Skip noise and unclassified points
+                // continue;  // Skip noise and unclassified points
             } else {
             // if (true) {
+
+                // ----------------------------
+                // HMM-BASED MERGING
+                // ----------------------------
+                
                 // Check if any SV has a non-zero likelihood
                 bool has_nonzero_likelihood = false;
                 if (cluster_sv_calls.size() > 0) {
@@ -159,14 +179,27 @@ void mergeSVs(std::vector<SVCall>& sv_calls, double epsilon, int min_pts)
                     auto it = std::find_if(cluster_sv_calls.begin(), cluster_sv_calls.end(), [](const SVCall& sv_call) {
                         return sv_call.hmm_likelihood != 0.0;
                     });
+
+                    // Add SV call
                     merged_sv_call = *it;
+                    merged_sv_calls.push_back(merged_sv_call);
 
                     // [TEST]
-                    if (print_all) {
-                        printMessage("[TEST] Merging cluster " + std::to_string(cluster_id) + " with highest likelihood SV " + std::to_string(merged_sv_call.start) + "-" + std::to_string(merged_sv_call.end) + ", length=" + std::to_string((merged_sv_call.end - merged_sv_call.start) + 1));
-                    }
+                    // print_all = true;
+                    // if (print_all) {
+                    //     printMessage("[TEST] Merging cluster " + std::to_string(cluster_id) + " with highest likelihood SV " + std::to_string(merged_sv_call.start) + "-" + std::to_string(merged_sv_call.end) + ", length=" + std::to_string((merged_sv_call.end - merged_sv_call.start) + 1));
+                    //     printMessage("SV type: " + getSVTypeString(merged_sv_call.sv_type));
+                    //     printMessage("Cluster members:");
+                    //     for (const auto& sv_call : cluster_sv_calls) {
+                    //         printMessage("  " + std::to_string(sv_call.start) + "-" + std::to_string(sv_call.end) + ", length=" + std::to_string((sv_call.end - sv_call.start) + 1));
+                    //     }
+                    // }
 
-                } else {
+                // ----------------------------
+                // CIGAR-BASED MERGING
+                // ----------------------------
+
+                } else if (cluster_sv_calls.size() > 1) {  // Could be low if all CIGARCLIP
                     // Use the median length SV of the top 10% of the cluster
                     // (shorter reads are often noise)
                     std::sort(cluster_sv_calls.begin(), cluster_sv_calls.end(), [](const SVCall& a, const SVCall& b) {
@@ -181,18 +214,9 @@ void mergeSVs(std::vector<SVCall>& sv_calls, double epsilon, int min_pts)
                     size_t median_index = top_10.size() / 2;
                     merged_sv_call = top_10[median_index];
 
-                    // // Get the starting index of the top 10% of the cluster
-                    // // (Cluster is sorted by descending length)
-                    // size_t start_index = std::max(0, (int) (cluster_sv_calls.size() * 0.9));
-
-                    // // Get the top 10% of the cluster
-                    // std::vector<SVCall> top_half(cluster_sv_calls.begin() + start_index, cluster_sv_calls.end());
-
-                    // // Get the median SV for the top 50% of the cluster
-                    // size_t median_index = top_half.size() / 2;
-                    // merged_sv_call = top_half[median_index];
-                    // int median_index = cluster_sv_calls.size() / 2;
-                    // merged_sv_call = cluster_sv_calls[median_index];
+                    // Add SV call
+                    merged_sv_call.cluster_size = (int) cluster_sv_calls.size();
+                    merged_sv_calls.push_back(merged_sv_call);
 
                     // [TEST]
                     if (print_all) {
@@ -200,18 +224,26 @@ void mergeSVs(std::vector<SVCall>& sv_calls, double epsilon, int min_pts)
                     }
                 }
 
-                if (cluster_id < 0) {
-                    merged_sv_call.cluster_size = cluster_id;
-                } else {
-                    merged_sv_call.cluster_size = (int) cluster_sv_calls.size();
-                }
-                merged_sv_calls.push_back(merged_sv_call);
+                // if (cluster_id < 0) {
+                //     merged_sv_call.cluster_size = cluster_id;
+                // } else {
+                //     merged_sv_call.cluster_size = (int) cluster_sv_calls.size();
+                // }
+                // merged_sv_calls.push_back(merged_sv_call);
                 cluster_count++;
             }
         }
         printMessage("Completed DBSCAN with epsilon " + std::to_string(epsilon) + " for " + std::to_string(cluster_count) + " clusters of " + getSVTypeString(sv_type));
     }
     sv_calls = std::move(merged_sv_calls); // Replace with filtered list
+
+    // Print an error if any have CIGARCLIP data type
+    for (const auto& sv_call : sv_calls) {
+        if (sv_call.data_type == "CIGARCLIP") {
+            printError("[ERROR1] Found CIGARCLIP SV in merged SVs");
+            break;
+        }
+    }
 
     int updated_size = sv_calls.size();
     printMessage("Merged " + std::to_string(initial_size) + " SV calls into " + std::to_string(updated_size) + " SV calls");

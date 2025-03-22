@@ -8,13 +8,10 @@
 
 void DBSCAN::fit(const std::vector<SVCall>& sv_calls) {
     int clusterId = 0;
-    // clusters.assign(points.size(), -1); // -1 means unclassified
     clusters.assign(sv_calls.size(), -1); // -1 means unclassified
 
-    // for (size_t i = 0; i < points.size(); ++i) {
     for (size_t i = 0; i < sv_calls.size(); ++i) {
         if (clusters[i] == -1) { // if point is not yet classified
-            // if (expandCluster(points, i, clusterId)) {
             if (expandCluster(sv_calls, i, clusterId)) {
                 ++clusterId;
             }

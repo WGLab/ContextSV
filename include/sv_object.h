@@ -40,6 +40,6 @@ uint32_t getSVCount(const std::vector<SVCall>& sv_calls);
 void concatenateSVCalls(std::vector<SVCall>& sv_calls, const std::vector<SVCall>& sv_calls_update);
 
 // Merge SVs using DBSCAN clustering
-void mergeSVs(std::vector<SVCall> &sv_calls, double epsilon, int min_pts);
+void mergeSVs(std::vector<SVCall> &sv_calls, double epsilon, int min_pts, bool keep_noise);
 
 #endif // SV_OBJECT_H
