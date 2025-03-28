@@ -155,13 +155,13 @@ void CNVCaller::querySNPRegion(std::string chr, uint32_t start_pos, uint32_t end
     snp_data.is_snp = std::move(is_snp_hmm);
 }
 
-std::tuple<double, SVType, std::string, bool> CNVCaller::runCopyNumberPrediction(std::string chr, const CHMM& hmm, uint32_t start_pos, uint32_t end_pos, double mean_chr_cov, const std::vector<uint32_t>& pos_depth_map, const InputData& input_data) const
+std::tuple<double, SVType, Genotype, bool> CNVCaller::runCopyNumberPrediction(std::string chr, const CHMM& hmm, uint32_t start_pos, uint32_t end_pos, double mean_chr_cov, const std::vector<uint32_t>& pos_depth_map, const InputData& input_data) const
 {
     // Check that the start position is less than the end position
     if (start_pos > end_pos)
     {
         printError("ERROR: Invalid SV region for copy number prediction: " + chr + ":" + std::to_string((int)start_pos) + "-" + std::to_string((int)end_pos));
-        return std::make_tuple(0.0, SVType::UNKNOWN, "./.", false);
+        return std::make_tuple(0.0, SVType::UNKNOWN, Genotype::UNKNOWN, false);
     }
 
     // Run the Viterbi algorithm on SNPs in the SV region
@@ -197,7 +197,7 @@ std::tuple<double, SVType, std::string, bool> CNVCaller::runCopyNumberPrediction
     runViterbi(hmm, snp_data, prediction);
     if (prediction.first.size() == 0)
     {
-        return std::make_tuple(0.0, SVType::UNKNOWN, "./.", false);
+        return std::make_tuple(0.0, SVType::UNKNOWN, Genotype::UNKNOWN, false);
     }
 
     std::vector<int>& state_sequence = prediction.first;
@@ -233,12 +233,13 @@ std::tuple<double, SVType, std::string, bool> CNVCaller::runCopyNumberPrediction
     
     // Update SV type and genotype based on the majority state
     SVType predicted_cnv_type = SVType::UNKNOWN;
-    std::string genotype = "./.";
+    Genotype genotype = Genotype::UNKNOWN;
     int state_count = (int) sv_states.size();
     if ((double) max_count / (double) state_count > pct_threshold)
     {
         predicted_cnv_type = getSVTypeFromCNState(max_state);
-        genotype = cnv_genotype_map.at(max_state);
+        // genotype = cnv_genotype_map.at(max_state);
+        genotype = getGenotypeFromCNState(max_state);
     }
     snp_data.state_sequence = std::move(state_sequence);  // Move the state sequence to the SNP data
 
@@ -360,18 +361,17 @@ void CNVCaller::runCIGARCopyNumberPrediction(std::string chr, std::vector<SVCall
         {
             max_state = 0;
         }
+        Genotype genotype = getGenotypeFromCNState(max_state);
 
         // Update the SV information if it does not conflict with the current SV type
         SVType updated_sv_type = getSVTypeFromCNState(max_state);
         bool is_valid_update = isValidCopyNumberUpdate(sv_call.sv_type, updated_sv_type);
         if (is_valid_update)
         {
-            std::string genotype = cnv_genotype_map.at(max_state);
-            std::string data_type = "CIGAR+HMM";
             sv_call.sv_type = updated_sv_type;
             sv_call.hmm_likelihood = likelihood;
             sv_call.genotype = genotype;
-            sv_call.data_type = data_type;
+            sv_call.data_type = SVDataType::HMM;
         }
     }
 }
@@ -1026,7 +1026,6 @@ void CNVCaller::saveSVCopyNumberToJSON(SNPData &before_sv, SNPData &after_sv, SN
         }
         json_file << "]\n";
     json_file << "  }\n";
-    // json_file << "},\n";
     json_file.close();
     printMessage("Saved copy number predictions for " + chr + ":" + std::to_string(start) + "-" + std::to_string(end) + " to " + filepath);
 }

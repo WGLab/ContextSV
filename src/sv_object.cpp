@@ -83,7 +83,7 @@ void mergeSVs(std::vector<SVCall>& sv_calls, double epsilon, int min_pts, bool k
         if (sv_type == SVType::INS) {
             // Add only non-CIGARCLIP SVs to the cluster map
             for (size_t i = 0; i < clusters.size(); ++i) {
-                if (sv_type_calls[i].data_type != "CIGARCLIP") {
+                if (sv_type_calls[i].data_type != SVDataType::CIGARCLIP) {
                     cluster_map[clusters[i]].push_back(sv_type_calls[i]);
                 }
             }
@@ -138,17 +138,7 @@ void mergeSVs(std::vector<SVCall>& sv_calls, double epsilon, int min_pts, bool k
                     merged_sv_calls.push_back(noise_sv_call);
                 }
 
-                // for (const auto& sv_call : cluster_sv_calls) {
-                //     if ((sv_call.end - sv_call.start)+1 >= 10000) {
-                //         SVCall noise_sv_call = sv_call;
-                //         noise_sv_call.cluster_size = cluster_id;
-                //         merged_sv_calls.push_back(noise_sv_call);
-                //         printMessage("[TEST] Adding noise SV " + std::to_string(sv_call.start) + "-" + std::to_string(sv_call.end) + ", length=" + std::to_string((sv_call.end - sv_call.start) + 1));
-                //     }
-                // }
-                // continue;  // Skip noise and unclassified points
             } else {
-            // if (true) {
 
                 // ----------------------------
                 // HMM-BASED MERGING
@@ -170,9 +160,9 @@ void mergeSVs(std::vector<SVCall>& sv_calls, double epsilon, int min_pts, bool k
                 SVCall merged_sv_call = cluster_sv_calls[0];
                 if (has_nonzero_likelihood) {
                     // These are detected from split reads, choose the one with
-                    // the highest non-zero likelihood
+                    // the highest non-zero likelihood normalized by the length of the SV
                     std::sort(cluster_sv_calls.begin(), cluster_sv_calls.end(), [](const SVCall& a, const SVCall& b) {
-                        return a.hmm_likelihood > b.hmm_likelihood;
+                        return (a.hmm_likelihood / (double)(a.end - a.start + 1)) > (b.hmm_likelihood / (double)(b.end - b.start + 1));
                     });
 
                     // Obtain the highest non-zero likelihood
@@ -236,15 +226,6 @@ void mergeSVs(std::vector<SVCall>& sv_calls, double epsilon, int min_pts, bool k
         printMessage("Completed DBSCAN with epsilon " + std::to_string(epsilon) + " for " + std::to_string(cluster_count) + " clusters of " + getSVTypeString(sv_type));
     }
     sv_calls = std::move(merged_sv_calls); // Replace with filtered list
-
-    // Print an error if any have CIGARCLIP data type
-    for (const auto& sv_call : sv_calls) {
-        if (sv_call.data_type == "CIGARCLIP") {
-            printError("[ERROR1] Found CIGARCLIP SV in merged SVs");
-            break;
-        }
-    }
-
     int updated_size = sv_calls.size();
     printMessage("Merged " + std::to_string(initial_size) + " SV calls into " + std::to_string(updated_size) + " SV calls");
 }
@@ -272,7 +253,7 @@ void mergeDuplicateSVs(std::vector<SVCall> &sv_calls)
             // If the likelihoods are equal, keep the one with the larger cluster size
             // This is to ensure that the SV call with more supporting reads is
             // kept
-            else if (sv_call.hmm_likelihood == sv_calls[i - 1].hmm_likelihood && sv_call.cluster_size > sv_calls[i - 1].cluster_size) {
+            else if (sv_call.hmm_likelihood == sv_calls[i - 1].hmm_likelihood && sv_call.cluster_size >= sv_calls[i - 1].cluster_size) {
                 combined_sv_calls.back() = sv_call;
             }
         } else {

@@ -17,111 +17,157 @@
 #include <future>
 /// @endcond
 
-struct GenomicRegion {
-    int tid;
-    hts_pos_t start;
-    hts_pos_t end;
-    int query_start;
-    int query_end;
-    bool strand;
-    int cluster_size;  // Number of alignments used for this region
-};
+// struct GenomicRegion {
+//     int tid;
+//     hts_pos_t start;
+//     hts_pos_t end;
+//     int query_start;
+//     int query_end;
+//     bool strand;
+//     int cluster_size;  // Number of alignments used for this region
+// };
 
-struct PrimaryAlignment {
-    hts_pos_t start;
-    hts_pos_t end;
-    int query_start;
-    int query_end;
-    bool strand;
-    int cluster_size;  // Number of alignments used for this region
-};
+// struct PrimaryAlignment {
+//     hts_pos_t start;
+//     hts_pos_t end;
+//     int query_start;
+//     int query_end;
+//     bool strand;
+//     int cluster_size;  // Number of alignments used for this region
+// };
 
-struct SuppAlignment {
-    int tid;
-    hts_pos_t start;
-    hts_pos_t end;
-    int query_start;
-    int query_end;
-    bool strand;
-    int cluster_size;  // Number of alignments used for this region
-};
+// struct SuppAlignment {
+//     int tid;
+//     hts_pos_t start;
+//     hts_pos_t end;
+//     int query_start;
+//     int query_end;
+//     bool strand;
+//     int cluster_size;  // Number of alignments used for this region
+// };
 
-struct SplitSignature {
-    int tid;
-    hts_pos_t start;
-    hts_pos_t end;
-    bool strand;
-    hts_pos_t query_start;
-    hts_pos_t query_end;
-};
+// struct SplitSignature {
+//     int tid;
+//     hts_pos_t start;
+//     hts_pos_t end;
+//     bool strand;
+//     hts_pos_t query_start;
+//     hts_pos_t query_end;
+// };
 
-// Interval Tree Node
-struct IntervalNode {
-    PrimaryAlignment region;
-    std::string qname;
-    hts_pos_t max_end;  // To optimize queries
-    std::unique_ptr<IntervalNode> left;
-    std::unique_ptr<IntervalNode> right;
+// // Interval Tree Node
+// struct IntervalNode {
+//     PrimaryAlignment region;
+//     std::string qname;
+//     hts_pos_t max_end;  // To optimize queries
+//     std::unique_ptr<IntervalNode> left;
+//     std::unique_ptr<IntervalNode> right;
 
-    IntervalNode(PrimaryAlignment r, std::string name)
-        : region(r), qname(name), max_end(r.end), left(nullptr), right(nullptr) {}
-};
+//     IntervalNode(PrimaryAlignment r, std::string name)
+//         : region(r), qname(name), max_end(r.end), left(nullptr), right(nullptr) {}
+// };
 
-void insert(std::unique_ptr<IntervalNode>& root, const PrimaryAlignment& region, std::string qname) {
-    if (!root) {
-        root = std::make_unique<IntervalNode>(region, qname);
-        return;
-    }
+// void insert(std::unique_ptr<IntervalNode>& root, const PrimaryAlignment& region, std::string qname) {
+//     if (!root) {
+//         root = std::make_unique<IntervalNode>(region, qname);
+//         return;
+//     }
 
-    if (region.start < root->region.start)
-    {
-        insert(root->left, region, qname);
-    } else {
-        insert(root->right, region, qname);
-    }
+//     if (region.start < root->region.start)
+//     {
+//         insert(root->left, region, qname);
+//     } else {
+//         insert(root->right, region, qname);
+//     }
 
-    // Update max_end
-    root->max_end = std::max(root->max_end, region.end);
-}
+//     // Update max_end
+//     root->max_end = std::max(root->max_end, region.end);
+// }
 
-void findOverlaps(const std::unique_ptr<IntervalNode>& root, const PrimaryAlignment& query, std::vector<std::string>& result) {
-    if (!root) return;
+// void findOverlaps(const std::unique_ptr<IntervalNode>& root, const PrimaryAlignment& query, std::vector<std::string>& result) {
+//     if (!root) return;
 
-    // If overlapping, add to result
-    if (query.start <= root->region.end && query.end >= root->region.start)
-        result.push_back(root->qname);
+//     // If overlapping, add to result
+//     if (query.start <= root->region.end && query.end >= root->region.start)
+//         result.push_back(root->qname);
 
-    // If left subtree may have overlaps, search left
-    if (root->left && root->left->max_end >= query.start)
-        findOverlaps(root->left, query, result);
+//     // If left subtree may have overlaps, search left
+//     if (root->left && root->left->max_end >= query.start)
+//         findOverlaps(root->left, query, result);
 
-    // Always check the right subtree
-    findOverlaps(root->right, query, result);
-}
-
-struct MismatchData {
-    uint32_t query_start;
-    uint32_t query_end;
-    std::vector<int> match_map;
-};
+//     // Always check the right subtree
+//     findOverlaps(root->right, query, result);
+// }
 
 class SVCaller {
     private:
+        struct GenomicRegion {
+            int tid;
+            hts_pos_t start;
+            hts_pos_t end;
+            int query_start;
+            int query_end;
+            bool strand;
+            int cluster_size;  // Number of alignments used for this region
+        };
+
+        struct PrimaryAlignment {
+            hts_pos_t start;
+            hts_pos_t end;
+            int query_start;
+            int query_end;
+            bool strand;
+            int cluster_size;  // Number of alignments used for this region
+        };
+
+        struct SuppAlignment {
+            int tid;
+            hts_pos_t start;
+            hts_pos_t end;
+            int query_start;
+            int query_end;
+            bool strand;
+            int cluster_size;  // Number of alignments used for this region
+        };
+
+        struct SplitSignature {
+            int tid;
+            hts_pos_t start;
+            hts_pos_t end;
+            bool strand;
+            hts_pos_t query_start;
+            hts_pos_t query_end;
+        };
+
+        // Interval Tree Node
+        struct IntervalNode {
+            PrimaryAlignment region;
+            std::string qname;
+            hts_pos_t max_end;  // To optimize queries
+            std::unique_ptr<IntervalNode> left;
+            std::unique_ptr<IntervalNode> right;
+
+            IntervalNode(PrimaryAlignment r, std::string name)
+                : region(r), qname(name), max_end(r.end), left(nullptr), right(nullptr) {}
+        };
+
         int min_mapq = 20;          // Minimum mapping quality to be considered
         mutable std::shared_mutex shared_mutex;  // Shared mutex for thread safety
 
         std::vector<std::string> getChromosomes(const std::string& bam_filepath);
 
-        void findSplitSVSignatures(std::unordered_map<std::string, std::vector<SVCall>>& sv_calls, const InputData& input_data);
+        void findSplitSVSignatures(std::unordered_map<std::string, std::vector<SVCall>>& sv_calls, const InputData& input_data, const std::unordered_map<std::string, std::vector<uint32_t>>& chr_pos_depth_map, const ReferenceGenome& ref_genome);
 
         // Process a single CIGAR record and find candidate SVs
-        void processCIGARRecord(bam_hdr_t* header, bam1_t* alignment, std::vector<SVCall>& sv_calls, bool is_primary, const std::vector<uint32_t>& pos_depth_map, const ReferenceGenome& ref_genome);
+        void processCIGARRecord(bam_hdr_t* header, bam1_t* alignment, std::vector<SVCall>& sv_calls, const std::vector<uint32_t>& pos_depth_map, const ReferenceGenome& ref_genome, std::unordered_map<std::string, double>& read_mismatch_rates);
 
         std::pair<int, int> getAlignmentReadPositions(bam1_t* alignment);
 
-        void processChromosome(const std::string& chr, std::vector<SVCall>& combined_sv_calls, const InputData& input_data, const ReferenceGenome& ref_genome, const std::vector<uint32_t>& chr_pos_depth_map, double mean_chr_cov);
+        void processChromosome(const std::string& chr, std::vector<SVCall>& combined_sv_calls, const InputData& input_data, const ReferenceGenome& ref_genome, const std::vector<uint32_t>& chr_pos_depth_map, double mean_chr_cov, std::unordered_map<std::string, double>& read_mismatch_rates);
 
-        void findCIGARSVs(samFile* fp_in, hts_idx_t* idx, bam_hdr_t* bamHdr, const std::string& region, std::vector<SVCall>& sv_calls, const std::vector<uint32_t>& pos_depth_map, const ReferenceGenome& ref_genome);
+        void findCIGARSVs(samFile* fp_in, hts_idx_t* idx, bam_hdr_t* bamHdr, const std::string& region, std::vector<SVCall>& sv_calls, const std::vector<uint32_t>& pos_depth_map, const ReferenceGenome& ref_genome, std::unordered_map<std::string, double>& read_mismatch_rates);
+
+        double getReadMismatchRate(bam1_t * alignment, const std::string& chr, const ReferenceGenome & ref_genome);
  
         // Read the next alignment from the BAM file in a thread-safe manner
         int readNextAlignment(samFile *fp_in, hts_itr_t *itr, bam1_t *bam1);
@@ -138,6 +184,11 @@ class SVCaller {
 
         // Detect SVs and predict SV type from long read alignments and CNV calls
         void run(const InputData& input_data);
+
+        // Interval tree
+        void findOverlaps(const std::unique_ptr<IntervalNode>& root, const PrimaryAlignment& query, std::vector<std::string>& result);
+
+        void insert(std::unique_ptr<IntervalNode>& root, const PrimaryAlignment& region, std::string qname);
 };
 
 #endif // SV_CALLER_H

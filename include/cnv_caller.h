@@ -48,27 +48,6 @@ class CNVCaller {
     private:
         std::shared_mutex& shared_mutex;
 
-        // Define a map of CNV genotypes by HMM predicted state.
-        // We only use the first 3 genotypes (0/0, 0/1, 1/1) for the VCF output.
-        // Each of the 6 state predictions corresponds to a copy number state
-        // (0=No predicted state)
-        // 0: Unknown (No predicted state)
-        // 1: 1/1 (Two copy loss: homozygous deletion, GT: 1/1 for homozygous variant)
-        // 2: 0/1 (One copy loss: heterozygous deletion, GT: 0/1)
-        // 3: 0/0 (Normal diploid: no copy number change, GT: 0/0 for homozygous reference)
-        // 4: 1/1 (Copy neutral LOH: no copy number change, GT: 1/1 for homozygous variant)
-        // 5: 2/1 (One copy gain: heterozygous duplication, GT: 1/2->0/1)
-        // 6: 2/2 (Two copy gain: homozygous duplication, GT: 2/2->1/1)
-        std::map<int, std::string> cnv_genotype_map = {
-            {0, "./."},
-            {1, "1/1"},
-            {2, "0/1"},
-            {3, "0/0"},
-            {4, "1/1"},
-            {5, "0/1"},
-            {6, "1/1"}
-        };
-
         void updateSNPData(SNPData& snp_data, uint32_t pos, double pfb, double baf, double log2_cov, bool is_snp);
 
         void runViterbi(const CHMM& hmm, SNPData& snp_data, std::pair<std::vector<int>, double>& prediction) const;
@@ -82,9 +61,35 @@ class CNVCaller {
     public:
 	    CNVCaller(std::shared_mutex& shared_mutex) : shared_mutex(shared_mutex) {}
 
+        // Define a map of CNV genotypes by HMM predicted state.
+        // We only use the first 3 genotypes (0/0, 0/1, 1/1) for the VCF output.
+        // Each of the 6 state predictions corresponds to a copy number state
+        // (0=No predicted state)
+        // 0: Unknown (No predicted state)
+        // 1: 1/1 (Two copy loss: homozygous deletion, GT: 1/1 for homozygous variant)
+        // 2: 0/1 (One copy loss: heterozygous deletion, GT: 0/1)
+        // 3: 0/0 (Normal diploid: no copy number change, GT: 0/0 for homozygous reference)
+        // 4: 1/1 (Copy neutral LOH: no copy number change, GT: 1/1 for homozygous variant)
+        // 5: 2/1 (One copy gain: heterozygous duplication, GT: 1/2->0/1)
+        // 6: 2/2 (Two copy gain: homozygous duplication, GT: 2/2->1/1)
+        const std::unordered_map<int, Genotype> StateGenotypeMap = {
+            {0, Genotype::UNKNOWN},
+            {1, Genotype::HOMOZYGOUS_ALT},
+            {2, Genotype::HETEROZYGOUS},
+            {3, Genotype::HOMOZYGOUS_REF},
+            {4, Genotype::HOMOZYGOUS_ALT},
+            {5, Genotype::HETEROZYGOUS},
+            {6, Genotype::HOMOZYGOUS_ALT}
+        };
+
+        // Function to get the genotype string from the state
+        inline Genotype getGenotypeFromCNState(int cn_state) const {
+            return StateGenotypeMap.at(cn_state);
+        }
+
         // Run copy number prediction for a single SV candidate, returning the
         // likelihood, predicted CNV type, genotype, and whether SNPs were found
-        std::tuple<double, SVType, std::string, bool> runCopyNumberPrediction(std::string chr, const CHMM& hmm, uint32_t start_pos, uint32_t end_pos, double mean_chr_cov, const std::vector<uint32_t>& pos_depth_map, const InputData& input_data) const;
+        std::tuple<double, SVType, Genotype, bool> runCopyNumberPrediction(std::string chr, const CHMM& hmm, uint32_t start_pos, uint32_t end_pos, double mean_chr_cov, const std::vector<uint32_t>& pos_depth_map, const InputData& input_data) const;
 
         // Run copy number prediction for SVs meeting the minimum length threshold obtained from CIGAR strings
         void runCIGARCopyNumberPrediction(std::string chr, std::vector<SVCall>& sv_candidates, const CHMM& hmm, double mean_chr_cov, const std::vector<uint32_t>& pos_depth_map, const InputData& input_data) const;

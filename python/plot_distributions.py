@@ -89,8 +89,6 @@ def generate_sv_size_plot(input_vcf, output_png, plot_title="SV Caller"):
 
         # If the plot title is GIAB, then we need to convert INS to DUP if
         # INFO/SVTYPE is INS and INFO/REPTYPE is DUP
-        # if plot_title == "GIAB" and sv_type == "INS":
-        # Check if GIAB is a substring of the plot title
         if "GIAB" in plot_title and sv_type == "INS":
             if 'REPTYPE=DUP' in record['INFO']:
                 sv_type = "DUP"
@@ -110,7 +108,6 @@ def generate_sv_size_plot(input_vcf, output_png, plot_title="SV Caller"):
 
     # Create a dictionary of SV types and their corresponding colors.
     # From: https://davidmathlogic.com/colorblind/
-    # sv_colors = {'DEL': '#D81B60', 'DUP': '#1E88E5', 'INV': '#FFC107', 'INS': '#004D40'}
     # WONG colors
     sv_colors = {'DEL': '#E69F00', 'DUP': '#56B4E9', 'INV': '#009E73', 'INS': '#F0E442', 'INVDUP': '#D55E00', 'COMPLEX': '#CC79A7'}
 
@@ -163,16 +160,16 @@ def generate_sv_size_plot(input_vcf, output_png, plot_title="SV Caller"):
         # Use a log scale for the y-axis
         axes[i].set_yscale('log')
 
-        # # In the same axis, plot a known duplication if within the range of the plot
-        if sv_type == 'DUP':
-            print("TEST: Found DUP")
-            cnv_size = 776237 / size_scale
-            x_min, x_max = axes[i].get_xlim()
-            if cnv_size > x_min and cnv_size < x_max:
-                axes[i].axvline(x=cnv_size, color='black', linestyle='--')
-            else:
-                # Print the values
-                print(f'CNV size: {cnv_size}, x_min: {x_min}, x_max: {x_max}')
+        # In the same axis, plot a known duplication if within the range of the plot
+        # if sv_type == 'DUP':
+        #     print("TEST: Found DUP")
+        #     cnv_size = 776237 / size_scale
+        #     x_min, x_max = axes[i].get_xlim()
+        #     if cnv_size > x_min and cnv_size < x_max:
+        #         axes[i].axvline(x=cnv_size, color='black', linestyle='--')
+        #     else:
+        #         # Print the values
+        #         print(f'CNV size: {cnv_size}, x_min: {x_min}, x_max: {x_max}')
 
         # Refresh the plot
         plt.draw()
@@ -216,9 +213,9 @@ def generate_sv_size_plot(input_vcf, output_png, plot_title="SV Caller"):
     fig.update_layout(legend=dict(
         orientation='v',
         yanchor='top',
-        y=0.75,
+        y=0.9,
         xanchor='right',
-        x=0.75,
+        x=0.9,
     ))
     # # Move the legend to the bottom right outside the plot
     # fig.update_layout(legend=dict(

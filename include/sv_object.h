@@ -7,27 +7,30 @@
 #include <set>
 #include <stdexcept>
 #include <unordered_map>
+#include <string_view>
 
 #include "sv_types.h"
 
 using namespace sv_types;
 
 struct SVCall {
-    uint32_t start;
-    uint32_t end;
+    uint32_t start = 0;
+    uint32_t end = 0;
     SVType sv_type = SVType::UNKNOWN;
     std::string alt_allele = ".";
-    std::string data_type = "NA";
-    std::string genotype = "./.";
+    SVDataType data_type = SVDataType::UNKNOWN;
+    Genotype genotype = Genotype::UNKNOWN;
     double hmm_likelihood = 0.0;
     int read_depth = 0;  // Breakpoint depth
-    int support = 0;  // Number of supporting reads
+    double mismatch_rate = 0.0;  // Highest mismatch rate in reads used for the SV call
     int cluster_size = 0;  // Number of SV calls in the cluster
 
     bool operator<(const SVCall& other) const;
 
-    SVCall(uint32_t start, uint32_t end, SVType sv_type, const std::string& alt_allele, std::string data_type, std::string genotype, double hmm_likelihood, int read_depth, int support, int cluster_size) :
-        start(start), end(end), sv_type(sv_type), alt_allele(alt_allele), data_type(data_type), genotype(genotype), hmm_likelihood(hmm_likelihood), read_depth(read_depth), support(support), cluster_size(cluster_size) {}
+    SVCall() = default;
+
+    SVCall(uint32_t start, uint32_t end, SVType sv_type, std::string alt_allele, SVDataType data_type, Genotype genotype, double hmm_likelihood, int read_depth, double mismatch_rate, int cluster_size) :
+        start(start), end(end), sv_type(sv_type), alt_allele(alt_allele), data_type(data_type), genotype(genotype), hmm_likelihood(hmm_likelihood), read_depth(read_depth), mismatch_rate(mismatch_rate), cluster_size(cluster_size) {}
 };
 
 void addSVCall(std::vector<SVCall>& sv_calls, SVCall& sv_call);

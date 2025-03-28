@@ -39,6 +39,60 @@ namespace sv_types {
         {SVType::COMPLEX, "COMPLEX"}
     };
 
+    // Mapping of SV types to symbols
+    const std::unordered_map<SVType, std::string> SVTypeSymbol = {
+        {SVType::UNKNOWN, "."},
+        {SVType::DEL, "<DEL>"},
+        {SVType::DUP, "<DUP>"},
+        {SVType::INV, "<INV>"},
+        {SVType::INS, "<INS>"},
+        {SVType::BND, "<BND>"},
+    };
+
+    // Define constants for genotypes
+    enum class Genotype {
+        HOMOZYGOUS_REF = 0,
+        HETEROZYGOUS = 1,
+        HOMOZYGOUS_ALT = 2,
+        UNKNOWN = 3
+    };
+
+    // Mapping of genotypes to strings
+    const std::unordered_map<Genotype, std::string> GenotypeString = {
+        {Genotype::HOMOZYGOUS_REF, "0/0"},
+        {Genotype::HETEROZYGOUS, "0/1"},
+        {Genotype::HOMOZYGOUS_ALT, "1/1"},
+        {Genotype::UNKNOWN, "./."}
+    };
+
+    // Define constants for SV data types (evidence types)
+    enum class SVDataType {
+        CIGARINS = 0,
+        CIGARDEL = 1,
+        CIGARCLIP = 2,
+        SPLIT = 3,
+        SPLITDIST1 = 4,
+        SPLITDIST2 = 5,
+        SPLITINV = 6,
+        SUPPINV = 7,
+        HMM = 8,
+        UNKNOWN = 9
+    };
+
+    // Mapping of SV data types to strings
+    const std::unordered_map<SVDataType, std::string> SVDataTypeString = {
+        {SVDataType::CIGARINS, "CIGARINS"},
+        {SVDataType::CIGARDEL, "CIGARDEL"},
+        {SVDataType::CIGARCLIP, "CIGARCLIP"},
+        {SVDataType::SPLIT, "SPLIT"},
+        {SVDataType::SPLITDIST1, "SPLITDIST1"},
+        {SVDataType::SPLITDIST2, "SPLITDIST2"},
+        {SVDataType::SPLITINV, "SPLITINV"},
+        {SVDataType::SUPPINV, "SUPPINV"},
+        {SVDataType::HMM, "HMM"},
+        {SVDataType::UNKNOWN, "UNKNOWN"}
+    };
+
     // Mapping of 6 copy number states to SV types
     const std::unordered_map<int, SVType> CNVTypeMap = {
         {0, SVType::UNKNOWN},
@@ -58,6 +112,21 @@ namespace sv_types {
     // Function to get the SV type from the CNV state
     inline SVType getSVTypeFromCNState(int cn_state) {
         return CNVTypeMap.at(cn_state);
+    }
+
+    // Function to get the genotype string
+    inline std::string getGenotypeString(Genotype genotype) {
+        return GenotypeString.at(genotype);
+    }
+
+    // Function to get the SV data type string
+    inline std::string getSVDataTypeString(SVDataType data_type) {
+        return SVDataTypeString.at(data_type);
+    }
+
+    // Function to get the SV type symbol
+    inline std::string getSVTypeSymbol(SVType sv_type) {
+        return SVTypeSymbol.at(sv_type);
     }
 
     // Function to check if an SV type is a valid update from copy number predictions
