@@ -213,13 +213,6 @@ void mergeSVs(std::vector<SVCall>& sv_calls, double epsilon, int min_pts, bool k
                         printMessage("[TEST] Merging cluster " + std::to_string(cluster_id) + " with median SV " + std::to_string(merged_sv_call.start) + "-" + std::to_string(merged_sv_call.end) + ", length=" + std::to_string((merged_sv_call.end - merged_sv_call.start) + 1));
                     }
                 }
-
-                // if (cluster_id < 0) {
-                //     merged_sv_call.cluster_size = cluster_id;
-                // } else {
-                //     merged_sv_call.cluster_size = (int) cluster_sv_calls.size();
-                // }
-                // merged_sv_calls.push_back(merged_sv_call);
                 cluster_count++;
             }
         }

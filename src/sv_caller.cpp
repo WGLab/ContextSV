@@ -383,7 +383,6 @@ void SVCaller::findSplitSVSignatures(std::unordered_map<std::string, std::vector
                         primary_pos = std::min(primary_pos, primary_pos2);
                     }
                     int read_depth = this->getReadDepth(chr_pos_depth_map.at(chr_name), primary_pos);
-                    // SVCall sv_candidate(primary_pos, primary_pos + (read_distance-1), SVType::INS, "<INS>", "SPLITDIST1", "./.", 0.0, read_depth, min_mismatch_rate, primary_cluster_size);
                     SVCall sv_candidate(primary_pos, primary_pos + (read_distance-1), SVType::INS, getSVTypeSymbol(SVType::INS), SVDataType::SPLITDIST1, Genotype::UNKNOWN, 0.0, read_depth, min_mismatch_rate, primary_cluster_size);
                     
                     // Print if end position = 162908547
@@ -711,6 +710,13 @@ void SVCaller::processCIGARRecord(bam_hdr_t *header, bam1_t *alignment, std::vec
             
             // Process clipped bases as potential insertions
             } else if (op == BAM_CSOFT_CLIP) {
+                // Soft-clipped bases are considered as potential insertions
+                // Skip if the position exceeds the reference genome length
+                if (pos + 1 >= pos_depth_map.size()) {
+                    // printMessage("Skipping soft-clipped insertion at position " + std::to_string(pos + 1) + " as it exceeds the reference genome length");
+                    continue;
+                }
+
                 // Get the sequence of the insertion from the query
                 std::string ins_seq_str(op_len, ' ');
                 for (int j = 0; j < op_len; j++) {
@@ -722,12 +728,12 @@ void SVCaller::processCIGARRecord(bam_hdr_t *header, bam1_t *alignment, std::vec
                         ins_seq_str[j] = base;
                     }
                 }
-
+                
                 // Add as an insertion
                 uint32_t ins_pos = pos + 1;
                 uint32_t ins_end = ins_pos + op_len - 1;
                 int read_depth = this->getReadDepth(pos_depth_map, ins_pos);
-                
+
                 // Determine the ALT allele format based on small vs. large insertion
                 std::string alt_allele = "<INS>";
                 if (op_len <= 50) {
@@ -1283,14 +1289,7 @@ void SVCaller::saveToVCF(const std::unordered_map<std::string, std::vector<SVCal
             int read_depth = sv_call.read_depth;
             std::string ref_allele = ".";
             double mismatch_rate = sv_call.mismatch_rate;
-
-            // Set PASS filter if mismatch rate is above threshold
             std::string filter = "PASS";
-            double max_mismatch_rate = 0.02;
-            if (mismatch_rate > max_mismatch_rate) {
-                filter = "LowQual";
-                filtered_svs += 1;
-            }
 
             // If the SV type is unknown, print a warning and skip
             if (sv_type == SVType::UNKNOWN || sv_type == SVType::NEUTRAL) {
@@ -1381,7 +1380,9 @@ int SVCaller::getReadDepth(const std::vector<uint32_t>& pos_depth_map, uint32_t 
     try {
         read_depth += pos_depth_map.at(start);
     } catch (const std::out_of_range& e) {
-        printError("Error: Start position " + std::to_string(start) + " not found in depth map of size " + std::to_string(pos_depth_map.size()) + ". Exception: " + e.what());
+        // Occurs with clipped reads (insertion evidence) that are outside the
+        // range of the depth map
+        printError("Warning: Read depth for position " + std::to_string(start) + " is out of range of size " + std::to_string(pos_depth_map.size()));
     }
 
     return read_depth;
