@@ -17,87 +17,6 @@
 #include <future>
 /// @endcond
 
-// struct GenomicRegion {
-//     int tid;
-//     hts_pos_t start;
-//     hts_pos_t end;
-//     int query_start;
-//     int query_end;
-//     bool strand;
-//     int cluster_size;  // Number of alignments used for this region
-// };
-
-// struct PrimaryAlignment {
-//     hts_pos_t start;
-//     hts_pos_t end;
-//     int query_start;
-//     int query_end;
-//     bool strand;
-//     int cluster_size;  // Number of alignments used for this region
-// };
-
-// struct SuppAlignment {
-//     int tid;
-//     hts_pos_t start;
-//     hts_pos_t end;
-//     int query_start;
-//     int query_end;
-//     bool strand;
-//     int cluster_size;  // Number of alignments used for this region
-// };
-
-// struct SplitSignature {
-//     int tid;
-//     hts_pos_t start;
-//     hts_pos_t end;
-//     bool strand;
-//     hts_pos_t query_start;
-//     hts_pos_t query_end;
-// };
-
-// // Interval Tree Node
-// struct IntervalNode {
-//     PrimaryAlignment region;
-//     std::string qname;
-//     hts_pos_t max_end;  // To optimize queries
-//     std::unique_ptr<IntervalNode> left;
-//     std::unique_ptr<IntervalNode> right;
-
-//     IntervalNode(PrimaryAlignment r, std::string name)
-//         : region(r), qname(name), max_end(r.end), left(nullptr), right(nullptr) {}
-// };
-
-// void insert(std::unique_ptr<IntervalNode>& root, const PrimaryAlignment& region, std::string qname) {
-//     if (!root) {
-//         root = std::make_unique<IntervalNode>(region, qname);
-//         return;
-//     }
-
-//     if (region.start < root->region.start)
-//     {
-//         insert(root->left, region, qname);
-//     } else {
-//         insert(root->right, region, qname);
-//     }
-
-//     // Update max_end
-//     root->max_end = std::max(root->max_end, region.end);
-// }
-
-// void findOverlaps(const std::unique_ptr<IntervalNode>& root, const PrimaryAlignment& query, std::vector<std::string>& result) {
-//     if (!root) return;
-
-//     // If overlapping, add to result
-//     if (query.start <= root->region.end && query.end >= root->region.start)
-//         result.push_back(root->qname);
-
-//     // If left subtree may have overlaps, search left
-//     if (root->left && root->left->max_end >= query.start)
-//         findOverlaps(root->left, query, result);
-
-//     // Always check the right subtree
-//     findOverlaps(root->right, query, result);
-// }
 
 class SVCaller {
     private:
@@ -127,7 +46,7 @@ class SVCaller {
             int query_start;
             int query_end;
             bool strand;
-            int cluster_size;  // Number of alignments used for this region
+            double mismatch_rate;  // Mismatch rate for this alignment
         };
 
         struct SplitSignature {
@@ -159,13 +78,13 @@ class SVCaller {
         void findSplitSVSignatures(std::unordered_map<std::string, std::vector<SVCall>>& sv_calls, const InputData& input_data, const std::unordered_map<std::string, std::vector<uint32_t>>& chr_pos_depth_map, const ReferenceGenome& ref_genome);
 
         // Process a single CIGAR record and find candidate SVs
-        void processCIGARRecord(bam_hdr_t* header, bam1_t* alignment, std::vector<SVCall>& sv_calls, const std::vector<uint32_t>& pos_depth_map, const ReferenceGenome& ref_genome, std::unordered_map<std::string, double>& read_mismatch_rates);
+        void processCIGARRecord(bam_hdr_t* header, bam1_t* alignment, std::vector<SVCall>& sv_calls, const std::vector<uint32_t>& pos_depth_map);
 
         std::pair<int, int> getAlignmentReadPositions(bam1_t* alignment);
 
-        void processChromosome(const std::string& chr, std::vector<SVCall>& combined_sv_calls, const InputData& input_data, const ReferenceGenome& ref_genome, const std::vector<uint32_t>& chr_pos_depth_map, double mean_chr_cov, std::unordered_map<std::string, double>& read_mismatch_rates);
+        void processChromosome(const std::string& chr, std::vector<SVCall>& combined_sv_calls, const InputData& input_data, const std::vector<uint32_t>& chr_pos_depth_map, double mean_chr_cov);
 
-        void findCIGARSVs(samFile* fp_in, hts_idx_t* idx, bam_hdr_t* bamHdr, const std::string& region, std::vector<SVCall>& sv_calls, const std::vector<uint32_t>& pos_depth_map, const ReferenceGenome& ref_genome, std::unordered_map<std::string, double>& read_mismatch_rates);
+        void findCIGARSVs(samFile* fp_in, hts_idx_t* idx, bam_hdr_t* bamHdr, const std::string& region, std::vector<SVCall>& sv_calls, const std::vector<uint32_t>& pos_depth_map);
 
         double getReadMismatchRate(bam1_t * alignment, const std::string& chr, const ReferenceGenome & ref_genome);
  
@@ -174,10 +93,10 @@ class SVCaller {
 
         void runSplitReadCopyNumberPredictions(const std::string& chr, std::vector<SVCall>& split_sv_calls, const CNVCaller &cnv_caller, const CHMM &hmm, double mean_chr_cov, const std::vector<uint32_t> &pos_depth_map, const InputData &input_data);
 
-        void saveToVCF(const std::unordered_map<std::string, std::vector<SVCall>> &sv_calls, const std::string &output_dir, const ReferenceGenome &ref_genome) const;
+        void saveToVCF(const std::unordered_map<std::string, std::vector<SVCall>> &sv_calls, const std::string &output_dir, const ReferenceGenome &ref_genome, const std::unordered_map<std::string, std::vector<uint32_t>>& chr_pos_depth_map) const;
 
         // Query the read depth (INFO/DP) at a position
-        int getReadDepth(const std::vector<uint32_t>& pos_depth_map, uint32_t start);
+        int getReadDepth(const std::vector<uint32_t>& pos_depth_map, uint32_t start) const;
 
     public:
         SVCaller() = default;
