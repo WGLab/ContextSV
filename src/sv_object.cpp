@@ -20,7 +20,7 @@ void addSVCall(std::vector<SVCall>& sv_calls, SVCall& sv_call)
 {
     // Check if the SV call is valid
     if (sv_call.start > sv_call.end) {
-        printError("ERROR: Invalid SV call at position " + std::to_string(sv_call.start) + "-" + std::to_string(sv_call.end));
+        printError("ERROR: Invalid SV call at position " + std::to_string(sv_call.start) + "-" + std::to_string(sv_call.end) + " from data type " + getSVDataTypeString(sv_call.data_type));
         return;
     }
 

@@ -46,7 +46,6 @@ class SVCaller {
             int query_start;
             int query_end;
             bool strand;
-            double mismatch_rate;  // Mismatch rate for this alignment
         };
 
         struct SplitSignature {
@@ -75,7 +74,7 @@ class SVCaller {
 
         std::vector<std::string> getChromosomes(const std::string& bam_filepath);
 
-        void findSplitSVSignatures(std::unordered_map<std::string, std::vector<SVCall>>& sv_calls, const InputData& input_data, const std::unordered_map<std::string, std::vector<uint32_t>>& chr_pos_depth_map, const ReferenceGenome& ref_genome);
+        void findSplitSVSignatures(std::unordered_map<std::string, std::vector<SVCall>>& sv_calls, const InputData& input_data);
 
         // Process a single CIGAR record and find candidate SVs
         void processCIGARRecord(bam_hdr_t* header, bam1_t* alignment, std::vector<SVCall>& sv_calls, const std::vector<uint32_t>& pos_depth_map);
@@ -85,8 +84,6 @@ class SVCaller {
         void processChromosome(const std::string& chr, std::vector<SVCall>& combined_sv_calls, const InputData& input_data, const std::vector<uint32_t>& chr_pos_depth_map, double mean_chr_cov);
 
         void findCIGARSVs(samFile* fp_in, hts_idx_t* idx, bam_hdr_t* bamHdr, const std::string& region, std::vector<SVCall>& sv_calls, const std::vector<uint32_t>& pos_depth_map);
-
-        double getReadMismatchRate(bam1_t * alignment, const std::string& chr, const ReferenceGenome & ref_genome);
  
         // Read the next alignment from the BAM file in a thread-safe manner
         int readNextAlignment(samFile *fp_in, hts_itr_t *itr, bam1_t *bam1);
