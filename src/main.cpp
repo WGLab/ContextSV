@@ -4,6 +4,11 @@
 /// @cond DOXYGEN_IGNORE
 #include <iostream>
 #include <string>
+
+// For signal handling
+#include <signal.h>
+#include <execinfo.h>
+
 // #include <optional>
 /// @endcond
 
@@ -12,8 +17,32 @@
 #include "utils.h"
 
 
+void printStackTrace(int sig)
+{
+    void *array[10];
+    size_t size;
+
+    // get void*'s for all entries on the stack
+    size = backtrace(array, 10);
+
+    // print out all the frames to stderr
+    fprintf(stderr, "Error: signal %d:\n", sig);
+    backtrace_symbols_fd(array, size, STDERR_FILENO);
+    exit(1);
+}
+
+
 void runContextSV(const std::unordered_map<std::string, std::string>& args)
 {
+    // Set up signal handling
+    signal(SIGSEGV, printStackTrace);
+    signal(SIGABRT, printStackTrace);
+    signal(SIGINT, printStackTrace);
+    signal(SIGTERM, printStackTrace);
+    signal(SIGILL, printStackTrace);
+    signal(SIGFPE, printStackTrace);
+    signal(SIGBUS, printStackTrace);
+
     // Placeholder for setting up input data and running ContextSV
     std::cout << "ContextSV version " << VERSION << std::endl;
     std::cout << "Input parameters:" << std::endl;

@@ -168,5 +168,13 @@ std::vector<std::string> ReferenceGenome::getChromosomes() const
 
 uint32_t ReferenceGenome::getChromosomeLength(std::string chr) const
 {
-    return this->chr_to_length.at(chr);
+    try
+    {
+        return this->chr_to_length.at(chr);
+    }
+    catch (const std::out_of_range& e)
+    {
+        printError("Chromosome " + chr + " not found in reference genome");
+        return 0;
+    }
 }

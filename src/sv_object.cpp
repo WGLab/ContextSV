@@ -57,15 +57,8 @@ void mergeSVs(std::vector<SVCall>& sv_calls, double epsilon, int min_pts, bool k
         SVType::INV,
         SVType::INS,
         SVType::BND,
-        SVType::INV_DUP,
-        SVType::INV_DEL,
     })
     {
-        // [TEST] Skip if not insertions
-        // if (sv_type != SVType::INS) {
-        //     continue;
-        // }
-
         // Create a vector of SV calls for the current SV type and size interval
         std::vector<SVCall> sv_type_calls;
         std::copy_if(sv_calls.begin(), sv_calls.end(), std::back_inserter(sv_type_calls), [sv_type](const SVCall& sv_call) {
@@ -73,13 +66,19 @@ void mergeSVs(std::vector<SVCall>& sv_calls, double epsilon, int min_pts, bool k
         });
 
         if (sv_type_calls.size() < 2) {
+            // Add all unclustered points to the merged list
+            for (const auto& sv_call : sv_type_calls) {
+                SVCall noise_sv_call = sv_call;
+                merged_sv_calls.push_back(noise_sv_call);
+            }
             continue;
         }
 
         dbscan.fit(sv_type_calls);
+
+        // Create a map of cluster IDs to SV calls
         const std::vector<int>& clusters = dbscan.getClusters();
         std::map<int, std::vector<SVCall>> cluster_map;  // Cluster ID to SV calls
-        // Create a map of cluster IDs to SV calls
         if (sv_type == SVType::INS) {
             // Add only non-CIGARCLIP SVs to the cluster map
             for (size_t i = 0; i < clusters.size(); ++i) {
@@ -99,37 +98,12 @@ void mergeSVs(std::vector<SVCall>& sv_calls, double epsilon, int min_pts, bool k
             int cluster_id = cluster.first;
             std::vector<SVCall>& cluster_sv_calls = cluster.second;
 
-            // [TEST] If insertions, and if any SV has length between 9400 and
-            // 9500, print all SV coordinates in the cluster
-            bool print_all = false;
-            // if (sv_type == SVType::INS) {
-            //     for (const auto& sv_call : cluster_sv_calls) {
-            //         // printMessage("[TEST] SV call " + std::to_string(sv_call.start) + "-" + std::to_string(sv_call.end) + ", length=" + std::to_string((sv_call.end - sv_call.start) + 1));
-            //         // if (sv_call.end - sv_call.start >= 9400 && sv_call.end -
-            //         // sv_call.start <= 9500) {
-            //         // if (sv_call.end - sv_call.start >= 15100 && sv_call.end -
-            //         // sv_call.start <= 15200) {
-            //         // if (sv_call.end - sv_call.start >= 11200 && sv_call.end -
-            //         // sv_call.start <= 11300) {
-            //         // if (sv_call.end - sv_call.start >= 16800 && sv_call.end -
-            //         // sv_call.start <= 17000) {
-            //         // if (sv_call.end - sv_call.start >= 11300 && sv_call.end -
-            //         // sv_call.start <= 11400) {
-            //         // if (sv_call.end - sv_call.start >= 13100 && sv_call.end -
-            //         // sv_call.start <= 13200) {
-            //         if (sv_call.end - sv_call.start >= 28200 && sv_call.end - sv_call.start <= 28300) {
-            //             print_all = true;
-            //             break;
-            //         }
-            //     }
-            // }
-            if (print_all) {
-                printMessage("[TEST] Cluster " + std::to_string(cluster_id) + " has " + std::to_string(cluster_sv_calls.size()) + " SVs:");
-                for (const auto& sv_call : cluster_sv_calls) {
-                    printMessage("  " + std::to_string(sv_call.start) + "-" + std::to_string(sv_call.end) + ", length=" + std::to_string((sv_call.end - sv_call.start) + 1));
-                }
+            // Continue if fewer than 2 SV calls in the cluster (due to CIGARCLIP filter)
+            if (cluster_sv_calls.size() < 2) {
+                continue;
             }
 
+            // Add unmerged SV calls
             if (cluster_id < 0 && keep_noise) {
 
                 // Add all unclustered points to the merged list
@@ -138,6 +112,7 @@ void mergeSVs(std::vector<SVCall>& sv_calls, double epsilon, int min_pts, bool k
                     merged_sv_calls.push_back(noise_sv_call);
                 }
 
+            // Merge clustered SV calls
             } else {
 
                 // ----------------------------
@@ -174,22 +149,13 @@ void mergeSVs(std::vector<SVCall>& sv_calls, double epsilon, int min_pts, bool k
                     merged_sv_call = *it;
                     merged_sv_calls.push_back(merged_sv_call);
 
-                    // [TEST]
-                    // print_all = true;
-                    // if (print_all) {
-                    //     printMessage("[TEST] Merging cluster " + std::to_string(cluster_id) + " with highest likelihood SV " + std::to_string(merged_sv_call.start) + "-" + std::to_string(merged_sv_call.end) + ", length=" + std::to_string((merged_sv_call.end - merged_sv_call.start) + 1));
-                    //     printMessage("SV type: " + getSVTypeString(merged_sv_call.sv_type));
-                    //     printMessage("Cluster members:");
-                    //     for (const auto& sv_call : cluster_sv_calls) {
-                    //         printMessage("  " + std::to_string(sv_call.start) + "-" + std::to_string(sv_call.end) + ", length=" + std::to_string((sv_call.end - sv_call.start) + 1));
-                    //     }
-                    // }
-
                 // ----------------------------
                 // CIGAR-BASED MERGING
                 // ----------------------------
 
-                } else if (cluster_sv_calls.size() > 1) {  // Could be low if all CIGARCLIP
+                // } else if (cluster_sv_calls.size() > 1) {  // Could be low if
+                // all CIGARCLIP
+                } else {
                     // Use the median length SV of the top 10% of the cluster
                     // (shorter reads are often noise)
                     std::sort(cluster_sv_calls.begin(), cluster_sv_calls.end(), [](const SVCall& a, const SVCall& b) {
@@ -207,11 +173,6 @@ void mergeSVs(std::vector<SVCall>& sv_calls, double epsilon, int min_pts, bool k
                     // Add SV call
                     merged_sv_call.cluster_size = (int) cluster_sv_calls.size();
                     merged_sv_calls.push_back(merged_sv_call);
-
-                    // [TEST]
-                    if (print_all) {
-                        printMessage("[TEST] Merging cluster " + std::to_string(cluster_id) + " with median SV " + std::to_string(merged_sv_call.start) + "-" + std::to_string(merged_sv_call.end) + ", length=" + std::to_string((merged_sv_call.end - merged_sv_call.start) + 1));
-                    }
                 }
                 cluster_count++;
             }

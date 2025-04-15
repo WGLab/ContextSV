@@ -8,6 +8,7 @@
 #include "input_data.h"
 #include "sv_types.h"
 #include "sv_object.h"
+#include "utils.h"
 
 /// @cond
 #include <string>
@@ -84,7 +85,13 @@ class CNVCaller {
 
         // Function to get the genotype string from the state
         inline Genotype getGenotypeFromCNState(int cn_state) const {
-            return StateGenotypeMap.at(cn_state);
+            // return StateGenotypeMap.at(cn_state);
+            try {
+                return StateGenotypeMap.at(cn_state);
+            } catch (const std::out_of_range& e) {
+                printError("ERROR: Invalid CN state: " + std::to_string(cn_state));
+                return Genotype::UNKNOWN;
+            }
         }
 
         // Run copy number prediction for a single SV candidate, returning the

@@ -57,15 +57,24 @@ void CNVCaller::querySNPRegion(std::string chr, uint32_t start_pos, uint32_t end
     std::vector<uint32_t> snp_pos;
     std::unordered_map<uint32_t, double> snp_baf_map;
     std::unordered_map<uint32_t, double> snp_pfb_map;
+    printMessage("Reading SNP data for copy number prediction: " + chr + ":" + std::to_string((int)start_pos) + "-" + std::to_string((int)end_pos));
     this->readSNPAlleleFrequencies(chr, start_pos, end_pos, snp_pos, snp_baf_map, snp_pfb_map, input_data);
 
     // Get the log2 ratio for <sample_size> evenly spaced positions in the
     // region
     sample_size = std::max((int) snp_pos.size(), sample_size);
 
+    // Print an error if the end position is less than or equal to the start
+    // position
+    if (start_pos > end_pos)
+    {
+        printError("ERROR: Invalid SNP region for copy number prediction: " + chr + ":" + std::to_string((int)start_pos) + "-" + std::to_string((int)end_pos));
+        return;
+    }
+
     // Loop through evenly spaced positions in the region and get the log2 ratio
-    double pos_step = (double) (end_pos - start_pos + 1) / (double) sample_size;
-    std::unordered_set<uint32_t> snp_pos_set(snp_pos.begin(), snp_pos.end());
+    double pos_step = static_cast<double>(end_pos - start_pos + 1) / static_cast<double>(sample_size);
+    // double pos_step = (double) (end_pos - start_pos + 1) / (double) sample_size;
     std::unordered_map<std::string, double> window_log2_map;
     for (int i = 0; i < sample_size; i++)
     {
@@ -166,31 +175,30 @@ std::tuple<double, SVType, Genotype, bool, int> CNVCaller::runCopyNumberPredicti
 
     // Run the Viterbi algorithm on SNPs in the SV region
     // Only extend the region if "save CNV data" is enabled
-    uint32_t snp_start_pos = start_pos;
-    uint32_t snp_end_pos = end_pos;
     SNPData before_sv;
     SNPData after_sv;
     if (input_data.getSaveCNVData())
     {
-        uint32_t sv_half_length = (end_pos - start_pos) / 2.0;
-        if (start_pos > 1)
+        int sv_half_length = (static_cast<int>(end_pos) - static_cast<int>(start_pos)) / 2;
+        int before_sv_start = std::max(1, static_cast<int>(start_pos) - sv_half_length);
+        int before_sv_end = std::max(1, static_cast<int>(start_pos) - 1);
+        if (before_sv_start < before_sv_end)
         {
-            uint32_t before_sv_start = std::max((uint32_t) 1, start_pos - sv_half_length);
-            uint32_t before_sv_end = start_pos - 1;
             querySNPRegion(chr, before_sv_start, before_sv_end, pos_depth_map, mean_chr_cov, before_sv, input_data);
         }
-        uint32_t chr_last_index = pos_depth_map.size() - 1;
-        if (end_pos < chr_last_index)
+
+        int chr_last_index = static_cast<int>(pos_depth_map.size()) - 1;
+        int after_sv_start = std::min(chr_last_index, static_cast<int>(end_pos) + 1);
+        int after_sv_end = std::min(chr_last_index, static_cast<int>(end_pos) + sv_half_length);
+        if (after_sv_start < after_sv_end)
         {
-            uint32_t after_sv_start = end_pos + 1;
-            uint32_t after_sv_end = std::min(chr_last_index, end_pos + sv_half_length);
             querySNPRegion(chr, after_sv_start, after_sv_end, pos_depth_map, mean_chr_cov, after_sv, input_data);
         }
     }
 
     // Query the SNP region for the SV candidate
     SNPData snp_data;
-    querySNPRegion(chr, snp_start_pos, snp_end_pos, pos_depth_map, mean_chr_cov, snp_data, input_data);
+    querySNPRegion(chr, start_pos, end_pos, pos_depth_map, mean_chr_cov, snp_data, input_data);
 
     // Run the Viterbi algorithm
     std::pair<std::vector<int>, double> prediction;
@@ -316,6 +324,7 @@ void CNVCaller::runCIGARCopyNumberPrediction(std::string chr, std::vector<SVCall
 
         // Only extend the region if "save CNV data" is enabled
         SNPData snp_data;
+        printMessage("Querying SNP region for copy number prediction: " + chr + ":" + std::to_string((int)start_pos) + "-" + std::to_string((int)end_pos));
         this->querySNPRegion(chr, start_pos, end_pos, pos_depth_map, mean_chr_cov, snp_data, input_data);
 
         // Run the Viterbi algorithm
@@ -324,6 +333,7 @@ void CNVCaller::runCIGARCopyNumberPrediction(std::string chr, std::vector<SVCall
         	continue;
         }
         
+        printMessage("Running Viterbi algorithm for copy number prediction: " + chr + ":" + std::to_string((int)start_pos) + "-" + std::to_string((int)end_pos));
         std::pair<std::vector<int>, double> prediction;
         runViterbi(hmm, snp_data, prediction);
         std::vector<int>& state_sequence = prediction.first;
@@ -364,6 +374,11 @@ void CNVCaller::runCIGARCopyNumberPrediction(std::string chr, std::vector<SVCall
 
         // Update the SV information if it does not conflict with the current SV type
         SVType updated_sv_type = getSVTypeFromCNState(max_state);
+
+        // For LOH predictions, or predictions with the same type,
+        // update predicted information without changing the SV type
+        printMessage("Updating SV call for " + chr + ":" + std::to_string((int)start_pos) + "-" + std::to_string((int)end_pos) + " with predicted CNV type: " + getSVTypeString(updated_sv_type));
+        updated_sv_type = (updated_sv_type == SVType::LOH) ? sv_call.sv_type : updated_sv_type;
         bool is_valid_update = isValidCopyNumberUpdate(sv_call.sv_type, updated_sv_type);
         if (is_valid_update)
         {
@@ -584,7 +599,7 @@ void CNVCaller::readSNPAlleleFrequencies(std::string chr, uint32_t start_pos, ui
     pfb_file.close();
 
     bcf_srs_t *pfb_reader = bcf_sr_init();
-    std::string chr_gnomad;
+    std::string chr_gnomad = chr;
     std::string AF_key;
     if (use_pfb)
     {
@@ -598,7 +613,7 @@ void CNVCaller::readSNPAlleleFrequencies(std::string chr, uint32_t start_pos, ui
 
         // Check if the filepath uses the 'chr' prefix notations based on the
         // chromosome name (*.chr1.vcf.gz vs *.1.vcf.gz)
-        chr_gnomad = chr;  // gnomAD data may or may not have the 'chr' prefix
+        // chr_gnomad = chr;  // gnomAD data may or may not have the 'chr' prefix
         std::string chr_prefix = "chr";
         if (pfb_filepath.find(chr_prefix) == std::string::npos)
         {

@@ -895,7 +895,7 @@ void SVCaller::run(const InputData& input_data)
     }
 
     // [TEST] Use only the last 6 chromosomes
-    // chromosomes = {"chr6", "chr7", "chr8", "chr9", "chr10", "chr11"};
+    //chromosomes = {"chr1", "chrX"};
     
     // Read the HMM from the file
     std::string hmm_filepath = input_data.getHMMFilepath();
@@ -920,7 +920,8 @@ void SVCaller::run(const InputData& input_data)
         uint32_t chr_len = ref_genome.getChromosomeLength(chr);
         if (chr_len == 0) {
             printError("Chromosome " + chr + " not found in reference genome");
-            continue;
+            return;
+            // continue;
         }
         chr_pos_depth_map[chr] = std::vector<uint32_t>(chr_len+1, 0);  // 1-based index
         chr_mean_cov_map[chr] = 0.0;
@@ -954,6 +955,7 @@ void SVCaller::run(const InputData& input_data)
         auto process_chr = [&](const std::string& chr) {
             try {
                 std::vector<SVCall> sv_calls;
+                sv_calls.reserve(1000);
                 InputData chr_input_data = input_data;  // Use a thread-local copy
                 this->processChromosome(chr, sv_calls, chr_input_data, chr_pos_depth_map[chr], chr_mean_cov_map[chr]);
                 {
@@ -1104,17 +1106,22 @@ void SVCaller::runSplitReadCopyNumberPredictions(const std::string& chr, std::ve
         Genotype genotype = std::get<2>(result);
         int cn_state = std::get<3>(result);
 
-        // For inversions with copy-neutral support, update the HMM likelihood
-        if (supp_type == SVType::NEUTRAL && sv_candidate.sv_type == SVType::INV) {
-            sv_candidate.hmm_likelihood = supp_lh;
-            sv_candidate.genotype = genotype;
-            sv_candidate.cn_state = cn_state;
-        }
+        // // For inversions with copy-neutral support, update the HMM likelihood
+        // if (supp_type == SVType::NEUTRAL && sv_candidate.sv_type == SVType::INV) {
+        //     sv_candidate.hmm_likelihood = supp_lh;
+        //     sv_candidate.genotype = genotype;
+        //     sv_candidate.cn_state = cn_state;
+        // }
 
-        // Update the SV type if the support is not neutral or unknown
-        else if (supp_type != SVType::UNKNOWN && supp_type != SVType::NEUTRAL) {
-            // Update information if the SV call is unknown
-            if (sv_candidate.sv_type == SVType::UNKNOWN) {
+        // // Update the SV type if the state is not neutral or unknown
+        // else if (supp_type != SVType::UNKNOWN && supp_type !=
+        // SVType::NEUTRAL) {
+        
+        // Update the SV type if the predicted type is not unknown
+        if (supp_type != SVType::UNKNOWN) {
+            // Update all information if the current SV call is not known and
+            // there is a predicted CNV type
+            if (sv_candidate.sv_type == SVType::UNKNOWN && (supp_type == SVType::DEL || supp_type == SVType::DUP)) {
                 sv_candidate.sv_type = supp_type;
                 sv_candidate.alt_allele = getSVTypeSymbol(supp_type);  // Update the ALT allele format
                 sv_candidate.data_type = SVDataType::HMM;
@@ -1122,8 +1129,15 @@ void SVCaller::runSplitReadCopyNumberPredictions(const std::string& chr, std::ve
                 sv_candidate.genotype = genotype;
                 sv_candidate.cn_state = cn_state;
 
+            // For predictions with the same type, or LOH predictions, update the
+            // prediction information
+            } else if (sv_candidate.sv_type != SVType::UNKNOWN && (supp_type == sv_candidate.sv_type || supp_type == SVType::LOH)) {
+                sv_candidate.hmm_likelihood = supp_lh;
+                sv_candidate.genotype = genotype;
+                sv_candidate.cn_state = cn_state;
+
             // Add an additional SV call if the type is different
-            } else if (sv_candidate.sv_type != supp_type) {
+            } else if (sv_candidate.sv_type != SVType::UNKNOWN && (supp_type != sv_candidate.sv_type && (supp_type == SVType::DEL || supp_type == SVType::DUP))) {
                 SVCall new_sv_call = sv_candidate;  // Copy the original SV call
                 new_sv_call.sv_type = supp_type;
                 new_sv_call.alt_allele = getSVTypeSymbol(supp_type);  // Update the ALT allele format
@@ -1131,8 +1145,6 @@ void SVCaller::runSplitReadCopyNumberPredictions(const std::string& chr, std::ve
                 new_sv_call.hmm_likelihood = supp_lh;
                 new_sv_call.genotype = genotype;
                 new_sv_call.cn_state = cn_state;
-
-                // Add the new SV call to the list
                 additional_calls.push_back(new_sv_call);
             }
         }
@@ -1192,6 +1204,7 @@ void SVCaller::saveToVCF(const std::unordered_map<std::string, std::vector<SVCal
         "##INFO=<ID=SVMETHOD,Number=1,Type=String,Description=\"Method used to call the structural variant\">",
         "##INFO=<ID=ALN,Number=1,Type=String,Description=\"Feature used to identify the structural variant\">",
         "##INFO=<ID=HMM,Number=1,Type=Float,Description=\"HMM likelihood\">",
+        "##INFO=<ID=LOH,Number=0,Type=Flag,Description=\"Site shows loss of heterozygosity\">",
         "##INFO=<ID=SUPPORT,Number=1,Type=Integer,Description=\"Number of reads supporting the variant\">",
         "##INFO=<ID=CLUSTER,Number=1,Type=Integer,Description=\"Cluster size\">",
         "##INFO=<ID=CN,Number=1,Type=Integer,Description=\"Copy number state\">",
@@ -1255,6 +1268,9 @@ void SVCaller::saveToVCF(const std::unordered_map<std::string, std::vector<SVCal
             int aln_offset = sv_call.aln_offset;
             int cn_state = sv_call.cn_state;
 
+            SVType cn_type = getSVTypeFromCNState(cn_state);
+            std::string loh = (cn_type == SVType::LOH) ? ";LOH" : "";
+
             // If the SV type is unknown, print a warning and skip
             if (sv_type == SVType::UNKNOWN || sv_type == SVType::NEUTRAL) {
                 unclassified_svs += 1; 
@@ -1266,7 +1282,7 @@ void SVCaller::saveToVCF(const std::unordered_map<std::string, std::vector<SVCal
             // Deletion
             if (sv_type == SVType::DEL) {
                 // Get the deleted sequence from the reference genome, also including the preceding base
-                uint32_t preceding_pos = (uint32_t) std::max(1, (int) start-1);  // Make sure the position is not negative
+                uint32_t preceding_pos = (uint32_t) std::max(1, static_cast<int>(start)-1);  // Make sure the position is not negative
                 ref_allele = ref_genome.query(chr, preceding_pos, end);
 
                 // Use the preceding base as the alternate allele 
@@ -1319,7 +1335,8 @@ void SVCaller::saveToVCF(const std::unordered_map<std::string, std::vector<SVCal
             // Create the VCF parameter strings
             std::string sv_type_str = getSVTypeString(sv_type);
             // std::string info_str = "END=" + std::to_string(end) + ";SVTYPE=" + sv_type_str + ";SVLEN=" + std::to_string(sv_length) + ";SVMETHOD=" + sv_method + ";ALN=" + data_type_str + ";HMM=" + std::to_string(hmm_likelihood) + ";SUPPORT=" + std::to_string(read_depth) + ";CLUSTER=" + std::to_string(cluster_size) + ";MISMATCH=" + std::to_string(mismatch_rate);
-            std::string info_str = "END=" + std::to_string(end) + ";SVTYPE=" + sv_type_str + ";SVLEN=" + std::to_string(sv_length) + ";SVMETHOD=" + sv_method + ";ALN=" + data_type_str + ";HMM=" + std::to_string(hmm_likelihood) + ";SUPPORT=" + std::to_string(read_depth) + ";CLUSTER=" + std::to_string(cluster_size) + ";ALNOFFSET=" + std::to_string(aln_offset) + ";CN=" + std::to_string(cn_state);
+            // std::string info_str = "END=" + std::to_string(end) + ";SVTYPE=" + sv_type_str + ";SVLEN=" + std::to_string(sv_length) + ";SVMETHOD=" + sv_method + ";ALN=" + data_type_str + ";HMM=" + std::to_string(hmm_likelihood) + ";SUPPORT=" + std::to_string(read_depth) + ";CLUSTER=" + std::to_string(cluster_size) + ";ALNOFFSET=" + std::to_string(aln_offset) + ";CN=" + std::to_string(cn_state);
+            std::string info_str = "END=" + std::to_string(end) + ";SVTYPE=" + sv_type_str + ";SVLEN=" + std::to_string(sv_length) + ";SVMETHOD=" + sv_method + ";ALN=" + data_type_str + ";HMM=" + std::to_string(hmm_likelihood) + ";SUPPORT=" + std::to_string(read_depth) + ";CLUSTER=" + std::to_string(cluster_size) + ";ALNOFFSET=" + std::to_string(aln_offset) + ";CN=" + std::to_string(cn_state) + loh;
             std::string format_str = "GT:DP";
             std::string sample_str = genotype + ":" + std::to_string(read_depth);
             std::vector<std::string> samples = {sample_str};

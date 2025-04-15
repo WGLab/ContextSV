@@ -20,9 +20,7 @@ namespace sv_types {
         INS = 3,
         BND = 4,
         NEUTRAL = 5,  // Neutral copy number with unknown type
-        INV_DUP = 6,  // Inverted duplication
-        INV_DEL = 7,  // Inverted deletion
-        COMPLEX = 8  // Complex SV
+        LOH = 6  // Loss of heterozygosity
     };
 
     // Mapping of SV types to strings
@@ -34,9 +32,7 @@ namespace sv_types {
         {SVType::INS, "INS"},
         {SVType::BND, "BND"},
         {SVType::NEUTRAL, "NEUTRAL"},
-        {SVType::INV_DUP, "INVDUP"},
-        {SVType::INV_DEL, "INVDEL"},
-        {SVType::COMPLEX, "COMPLEX"}
+        {SVType::LOH, "LOH"}
     };
 
     // Mapping of SV types to symbols
@@ -99,7 +95,7 @@ namespace sv_types {
         {1, SVType::DEL},
         {2, SVType::DEL},
         {3, SVType::NEUTRAL},
-        {4, SVType::NEUTRAL},
+        {4, SVType::LOH},
         {5, SVType::DUP},
         {6, SVType::DUP}
     };
