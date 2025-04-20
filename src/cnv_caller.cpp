@@ -57,7 +57,7 @@ void CNVCaller::querySNPRegion(std::string chr, uint32_t start_pos, uint32_t end
     std::vector<uint32_t> snp_pos;
     std::unordered_map<uint32_t, double> snp_baf_map;
     std::unordered_map<uint32_t, double> snp_pfb_map;
-    printMessage("Reading SNP data for copy number prediction: " + chr + ":" + std::to_string((int)start_pos) + "-" + std::to_string((int)end_pos));
+    // printMessage("Reading SNP data for copy number prediction: " + chr + ":" + std::to_string((int)start_pos) + "-" + std::to_string((int)end_pos));
     this->readSNPAlleleFrequencies(chr, start_pos, end_pos, snp_pos, snp_baf_map, snp_pfb_map, input_data);
 
     // Get the log2 ratio for <sample_size> evenly spaced positions in the
@@ -164,13 +164,13 @@ void CNVCaller::querySNPRegion(std::string chr, uint32_t start_pos, uint32_t end
     snp_data.is_snp = std::move(is_snp_hmm);
 }
 
-std::tuple<double, SVType, Genotype, bool, int> CNVCaller::runCopyNumberPrediction(std::string chr, const CHMM& hmm, uint32_t start_pos, uint32_t end_pos, double mean_chr_cov, const std::vector<uint32_t>& pos_depth_map, const InputData& input_data) const
+std::tuple<double, SVType, Genotype, int> CNVCaller::runCopyNumberPrediction(std::string chr, const CHMM& hmm, uint32_t start_pos, uint32_t end_pos, double mean_chr_cov, const std::vector<uint32_t>& pos_depth_map, const InputData& input_data) const
 {
     // Check that the start position is less than the end position
     if (start_pos > end_pos)
     {
         printError("ERROR: Invalid SV region for copy number prediction: " + chr + ":" + std::to_string((int)start_pos) + "-" + std::to_string((int)end_pos));
-        return std::make_tuple(0.0, SVType::UNKNOWN, Genotype::UNKNOWN, false, 0);
+        return std::make_tuple(0.0, SVType::UNKNOWN, Genotype::UNKNOWN, 0);
     }
 
     // Run the Viterbi algorithm on SNPs in the SV region
@@ -205,50 +205,113 @@ std::tuple<double, SVType, Genotype, bool, int> CNVCaller::runCopyNumberPredicti
     runViterbi(hmm, snp_data, prediction);
     if (prediction.first.size() == 0)
     {
-        return std::make_tuple(0.0, SVType::UNKNOWN, Genotype::UNKNOWN, false, 0);
+        return std::make_tuple(0.0, SVType::UNKNOWN, Genotype::UNKNOWN, 0);
     }
 
     std::vector<int>& state_sequence = prediction.first;
     double likelihood = prediction.second;
 
-    // Get all the states in the SV region
-    std::vector<int> sv_states;
-    for (size_t i = 0; i < state_sequence.size(); i++)
+    // Check whether the start position begins with 225835
+    bool debug = false;
+    // std::string start_pos_str = std::to_string(start_pos);
+    // if (start_pos_str.find("225835") != std::string::npos)
+    // {
+    //     printMessage("Found 225835 in the start position: " + start_pos_str);
+    //     debug = true;
+    // }
+
+    // Print all states if debug is enabled
+    if (debug)
     {
-        if (snp_data.pos[i] >= start_pos && snp_data.pos[i] <= end_pos)
+        printMessage("State sequence length: " + std::to_string(state_sequence.size()));
+        printMessage("State sequence: ");
+        for (size_t i = 0; i < state_sequence.size(); i++)
         {
-            sv_states.push_back(state_sequence[i]);
+            printMessage(std::to_string(state_sequence[i]) + " ");
         }
+        printMessage("");
     }
 
-    // Determine if there is a majority state within the SV region and if it
-    // is greater than 75%
-    double pct_threshold = 0.75;
+    // Get all the states in the SV region
+    // std::vector<int> sv_states;
+    // for (size_t i = 0; i < state_sequence.size(); i++)
+    // {
+    //     if (snp_data.pos[i] >= start_pos && snp_data.pos[i] <= end_pos)
+    //     {
+    //         sv_states.push_back(state_sequence[i]);
+    //     }
+    // }
+
+    // Print all states in the SV region if debug is enabled
+    if (debug)
+    {
+        printMessage("SV state length: " + std::to_string(state_sequence.size()));
+        printMessage("SV states: ");
+        for (size_t i = 0; i < state_sequence.size(); i++)
+        {
+            printMessage(std::to_string(state_sequence[i]) + " ");
+        }
+        printMessage("");
+    }
+
+    // Determine if there is a majority state within the SV region
+    // double pct_threshold = 0.75;
     int max_state = 0;
     int max_count = 0;
+    int non_normal_count = 0;
 
-    // Combine counts for states 1 and 2, states 3 and 4, and states 5 and 6
-    for (int i = 0; i < 6; i += 2)
+    std::vector<int> state_counts(6, 0);
+    for (int state : state_sequence)
     {
-        // Combine counts for states 1 and 2, states 3 and 4, and states 5 and 6
-        int state_count = std::count(sv_states.begin(), sv_states.end(), i+1) + std::count(sv_states.begin(), sv_states.end(), i+2);
-        if (state_count > max_count)
+        // Skip state 3 (normal state)
+        if (state != 3)
         {
-            max_state = i+1;  // Set the state to the first state in the pair (sequence remains intact)
-            max_count = state_count;
+            state_counts[state - 1]++;
+            non_normal_count++;
         }
+        // state_counts[state - 1]++;
+    }
+
+    // Determine the maximum state and count
+    int max_state_index = std::distance(state_counts.begin(), std::max_element(state_counts.begin(), state_counts.end()));
+    max_state = max_state_index + 1;
+    max_count = state_counts[max_state_index];
+      
+    // Find the state with the maximum count
+    // for (int i = 0; i < 6; i += 2)
+    // {
+    //     // Combine counts for states 1 and 2, states 3 and 4, and states 5 and 6
+    //     int state_count = std::count(sv_states.begin(), sv_states.end(), i+1) + std::count(sv_states.begin(), sv_states.end(), i+2);
+    //     if (state_count > max_count)
+    //     {
+    //         max_state = i+1;  // Set the state to the first state in the pair (sequence remains intact)
+    //         max_count = state_count;
+    //     }
+    // }
+
+    int state_count = static_cast<int>(state_sequence.size());
+    if (debug)
+    {
+        printMessage("Max state: " + std::to_string(max_state));
+        printMessage("Max count: " + std::to_string(max_count));
+        printMessage("Max count percentage: " + std::to_string((double) max_count / (double) state_count));
+        printMessage("Non-normal count: " + std::to_string(non_normal_count));
+        printMessage("Non-normal count percentage: " + std::to_string((double) max_count / (double) non_normal_count));
+        printMessage("Predicted CNV type: " + getSVTypeString(getSVTypeFromCNState(max_state)));
     }
     
     // Update SV type and genotype based on the majority state
+    // SVType predicted_cnv_type = getSVTypeFromCNState(max_state);
+    // Genotype genotype = getGenotypeFromCNState(max_state);
     SVType predicted_cnv_type = SVType::UNKNOWN;
     Genotype genotype = Genotype::UNKNOWN;
-    int state_count = (int) sv_states.size();
-    if ((double) max_count / (double) state_count > pct_threshold)
+    // int state_count = (int) sv_states.size();
+    if (max_count > 0 && ((double) max_count / (double) non_normal_count) > 0.5)
     {
         predicted_cnv_type = getSVTypeFromCNState(max_state);
         genotype = getGenotypeFromCNState(max_state);
+        snp_data.state_sequence = std::move(state_sequence);  // Move the state sequence to the SNP data
     }
-    snp_data.state_sequence = std::move(state_sequence);  // Move the state sequence to the SNP data
 
     // Save the SV calls if enabled
     bool copy_number_change = (predicted_cnv_type != SVType::UNKNOWN && predicted_cnv_type != SVType::NEUTRAL);
@@ -288,7 +351,7 @@ std::tuple<double, SVType, Genotype, bool, int> CNVCaller::runCopyNumberPredicti
         this->saveSVCopyNumberToJSON(before_sv, after_sv, snp_data, chr, start_pos, end_pos, cnv_type_str, likelihood, json_filepath);
     }
     
-    return std::make_tuple(likelihood, predicted_cnv_type, genotype, true, max_state);
+    return std::make_tuple(likelihood, predicted_cnv_type, genotype, max_state);
 }
 
 

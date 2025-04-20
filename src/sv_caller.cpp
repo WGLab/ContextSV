@@ -893,9 +893,6 @@ void SVCaller::run(const InputData& input_data)
         // Get the chromosomes from the input BAM file
         chromosomes = this->getChromosomes(input_data.getLongReadBam());
     }
-
-    // [TEST] Use only the last 6 chromosomes
-    //chromosomes = {"chr1", "chrX"};
     
     // Read the HMM from the file
     std::string hmm_filepath = input_data.getHMMFilepath();
@@ -1100,22 +1097,13 @@ void SVCaller::runSplitReadCopyNumberPredictions(const std::string& chr, std::ve
 {
     std::vector<SVCall> additional_calls;
     for (auto& sv_candidate : split_sv_calls) {
-        std::tuple<double, SVType, Genotype, bool, int> result = cnv_caller.runCopyNumberPrediction(chr, hmm, sv_candidate.start, sv_candidate.end, mean_chr_cov, pos_depth_map, input_data);
+        std::tuple<double, SVType, Genotype, int> result = cnv_caller.runCopyNumberPrediction(chr, hmm, sv_candidate.start, sv_candidate.end, mean_chr_cov, pos_depth_map, input_data);
         double supp_lh = std::get<0>(result);
         SVType supp_type = std::get<1>(result);
         Genotype genotype = std::get<2>(result);
         int cn_state = std::get<3>(result);
 
-        // // For inversions with copy-neutral support, update the HMM likelihood
-        // if (supp_type == SVType::NEUTRAL && sv_candidate.sv_type == SVType::INV) {
-        //     sv_candidate.hmm_likelihood = supp_lh;
-        //     sv_candidate.genotype = genotype;
-        //     sv_candidate.cn_state = cn_state;
-        // }
-
-        // // Update the SV type if the state is not neutral or unknown
-        // else if (supp_type != SVType::UNKNOWN && supp_type !=
-        // SVType::NEUTRAL) {
+        // printMessage("Running copy number prediction on " + chr + ":" + std::to_string(sv_candidate.start) + "-" + std::to_string(sv_candidate.end) + " with HMM likelihood " + std::to_string(supp_lh) + " and type " + getSVTypeString(supp_type) + " and data type " + getSVDataTypeString(sv_candidate.data_type));
         
         // Update the SV type if the predicted type is not unknown
         if (supp_type != SVType::UNKNOWN) {

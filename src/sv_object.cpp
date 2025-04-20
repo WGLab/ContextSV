@@ -18,6 +18,9 @@ bool SVCall::operator<(const SVCall & other) const
 
 void addSVCall(std::vector<SVCall>& sv_calls, SVCall& sv_call)
 {
+    // Print the SV call
+    // printMessage("Adding SV call at " + std::to_string(sv_call.start) + "-" + std::to_string(sv_call.end) + " with length " + std::to_string(sv_call.end - sv_call.start + 1) + " and cluster size " + std::to_string(sv_call.cluster_size) + " from data type " + getSVDataTypeString(sv_call.data_type) + " and type " + getSVTypeString(sv_call.sv_type));
+
     // Check if the SV call is valid
     if (sv_call.start > sv_call.end) {
         printError("ERROR: Invalid SV call at position " + std::to_string(sv_call.start) + "-" + std::to_string(sv_call.end) + " from data type " + getSVDataTypeString(sv_call.data_type));
