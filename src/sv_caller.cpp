@@ -350,8 +350,6 @@ void SVCaller::findSplitSVSignatures(std::unordered_map<std::string, std::vector
             // Use the median of the largest cluster of primary and supplementary
             // alignment start, end positions as the final genome coordinates of the
             // SV
-            // int primary_pos = -1;
-            // int primary_pos2 = -1;
             std::vector<int> primary_positions;
             int primary_cluster_size = 0;
             if (!primary_start_cluster.empty()) {
@@ -365,28 +363,6 @@ void SVCaller::findSplitSVSignatures(std::unordered_map<std::string, std::vector
                 primary_positions.push_back(primary_end_cluster[primary_end_cluster.size() / 2]);
                 primary_cluster_size = std::max(primary_cluster_size, (int) primary_end_cluster.size());
             }
-            // if (primary_start_cluster.size() > primary_end_cluster.size()) {
-            //     std::sort(primary_start_cluster.begin(), primary_start_cluster.end());
-            //     // primary_pos =
-            //     // primary_start_cluster[primary_start_cluster.size() / 2];
-            //     primary_positions.push_back(primary_start_cluster[primary_start_cluster.size() / 2]);
-            //     primary_cluster_size = primary_start_cluster.size();
-            // } else if (primary_end_cluster.size() > primary_start_cluster.size()) {
-            //     std::sort(primary_end_cluster.begin(), primary_end_cluster.end());
-            //     // primary_pos = primary_end_cluster[primary_end_cluster.size()
-            //     // / 2];
-            //     primary_positions.push_back(primary_end_cluster[primary_end_cluster.size() / 2]);
-            //     primary_cluster_size = primary_end_cluster.size();
-            // } else {
-            //     // Use both positions
-            //     std::sort(primary_start_cluster.begin(), primary_start_cluster.end());
-            //     std::sort(primary_end_cluster.begin(), primary_end_cluster.end());
-            //     // primary_pos = primary_start_cluster[primary_start_cluster.size() / 2];
-            //     // primary_pos2 = primary_end_cluster[primary_end_cluster.size()
-            //     // / 2];
-            //     primary_positions.push_back(primary_start_cluster[primary_start_cluster.size() / 2]);
-            //     primary_cluster_size = primary_start_cluster.size();
-            // }
 
             // -------------------------------
             // SPLIT INSERTION CALLS
@@ -402,96 +378,29 @@ void SVCaller::findSplitSVSignatures(std::unordered_map<std::string, std::vector
                 ref_distance = ref_distance_cluster[ref_distance_cluster.size() / 2];
 
                 // Add an insertion SV call at the primary position
-                // Using a minimum read distance of 2000bp since most insertions
-                // < 2kb can be identified more accurately using CIGAR-based
-                // methods
-                // if (primary_pos != -1 && read_distance > 2000) {
-                // if (primary_pos != -1) {
-                //     if (primary_pos2 != -1) {
-                //         // If two positions were found, use the 5'most position
-                //         primary_pos = std::min(primary_pos, primary_pos2);
-                //     }
                 if (!primary_positions.empty()) {
                     int aln_offset = static_cast<int>(ref_distance - read_distance);
                     if (read_distance > ref_distance  && read_distance >= min_length && read_distance <= max_length) {
                         // Add an insertion SV call at the primary positions
                         SVType sv_type = SVType::INS;
-                        // SVCall sv_candidate(primary_pos, primary_pos + (read_distance-1), sv_type, getSVTypeSymbol(sv_type), SVDataType::SPLITDIST1, Genotype::UNKNOWN, 0.0, 0, aln_offset, primary_cluster_size);
-                        // addSVCall(chr_sv_calls, sv_candidate);
                         for (int primary_pos : primary_positions) {
                             SVCall sv_candidate(primary_pos, primary_pos + (read_distance-1), sv_type, getSVTypeSymbol(sv_type), SVDataType::SPLITDIST1, Genotype::UNKNOWN, 0.0, 0, aln_offset, primary_cluster_size);
                             addSVCall(chr_sv_calls, sv_candidate);
                         }
                     } else if (ref_distance > read_distance && ref_distance >= min_length && ref_distance <= max_length) {
+                        // Add a deletion SV call at the primary positions
                         for (int primary_pos : primary_positions) {
                             SVType sv_type = SVType::DEL;
                             SVCall sv_candidate(primary_pos, primary_pos + (ref_distance-1), sv_type, getSVTypeSymbol(sv_type), SVDataType::SPLITDIST1, Genotype::UNKNOWN, 0.0, 0, aln_offset, primary_cluster_size);
                             addSVCall(chr_sv_calls, sv_candidate);
                         }
-                        // Add a deletion SV call at the primary position
-                        // SVType sv_type = SVType::DEL;
-                        // SVCall sv_candidate(primary_pos, primary_pos + (ref_distance-1), sv_type, getSVTypeSymbol(sv_type), SVDataType::SPLITDIST1, Genotype::UNKNOWN, 0.0, 0, aln_offset, primary_cluster_size);
                     }
                 }
-
-                    // if (ref_distance >= 50 && ref_distance < read_distance) {
-                    //     // Add an insertion SV call at the primary position
-                    //     SVType sv_type = SVType::INS;
-                    //     int aln_offset = static_cast<int>(ref_distance - read_distance);
-                    //     SVCall sv_candidate(primary_pos, primary_pos + (read_distance-1), sv_type, getSVTypeSymbol(sv_type), SVDataType::SPLITDIST1, Genotype::UNKNOWN, 0.0, 0, aln_offset, primary_cluster_size);
-                    //     addSVCall(chr_sv_calls, sv_candidate);
-                    // }
-                    // SVType sv_type = SVType::INS;
-                    // int aln_offset = static_cast<int>(read_distance - ref_distance);
-                    // SVCall sv_candidate(primary_pos, primary_pos + (read_distance-1), sv_type, getSVTypeSymbol(sv_type), SVDataType::SPLITDIST1, Genotype::UNKNOWN, 0.0, 0, aln_offset, primary_cluster_size);
-                    // addSVCall(chr_sv_calls, sv_candidate);
             }
 
-            // if (!ref_distance_cluster.empty()) {
-            //     // Use the median of the largest cluster of split distances as the
-            //     // insertion size
-            //     std::sort(ref_distance_cluster.begin(), ref_distance_cluster.end());
-            //     size_t median_index = ref_distance_cluster.size() / 2;
-            //     ref_distance = ref_distance_cluster[median_index];
-            //     read_distance = read_distance_cluster[median_index];
-
-            //     // Add a deletion SV call at the primary position
-            //     if (primary_pos != -1 && ref_distance >= 50 && ref_distance > read_distance) {
-            //         if (primary_pos2 != -1) {
-            //             // If two positions were found, use the 5'most position
-            //             primary_pos = std::min(primary_pos, primary_pos2);
-            //         }
-            //         SVType sv_type = SVType::DEL;
-            //         int aln_offset = static_cast<int>(ref_distance - read_distance);
-            //         SVCall sv_candidate(primary_pos, primary_pos + (ref_distance-1), sv_type, getSVTypeSymbol(sv_type), SVDataType::SPLITDIST2, Genotype::UNKNOWN, 0.0, 0, aln_offset, primary_cluster_size);
-            //         addSVCall(chr_sv_calls, sv_candidate);
-
-            //         // Add an inversion if necessary (inverted deletion)
-            //         if (inversion) {
-            //             SVCall sv_candidate(primary_pos, primary_pos + (ref_distance-1), SVType::INV, getSVTypeSymbol(SVType::INV), SVDataType::SPLITDIST2, Genotype::UNKNOWN, 0.0, 0, aln_offset, primary_cluster_size);
-            //             addSVCall(chr_sv_calls, sv_candidate);
-            //         }
-            //     }
-            // }
-
-            // --------------------------------
-
             // Get the supplementary alignment positions
-            // int supp_pos = -1;
-            // int supp_pos2 = -1;
             std::vector<int> supp_positions;
             int supp_cluster_size = 0;
-            // int supp_best_start = -1;
-            // int supp_best_end = -1;
-            // if (!supp_start_cluster.empty()) {
-            //     std::sort(supp_start_cluster.begin(), supp_start_cluster.end());
-            //     supp_best_start = supp_start_cluster[supp_start_cluster.size() / 2];
-            // }
-            // if (!supp_end_cluster.empty()) {
-            //     std::sort(supp_end_cluster.begin(), supp_end_cluster.end());
-            //     supp_best_end = supp_end_cluster[supp_end_cluster.size() / 2];
-            // }
-
             if (!supp_start_cluster.empty()) {
                 std::sort(supp_start_cluster.begin(), supp_start_cluster.end());
                 supp_positions.push_back(supp_start_cluster[supp_start_cluster.size() / 2]);
@@ -503,32 +412,6 @@ void SVCaller::findSplitSVSignatures(std::unordered_map<std::string, std::vector
                 supp_cluster_size = std::max(supp_cluster_size, (int) supp_end_cluster.size());
             }
 
-            // if (supp_start_cluster.size() > supp_end_cluster.size()) {
-            //     // supp_pos = supp_best_start;
-            //     std::sort(supp_start_cluster.begin(), supp_start_cluster.end());
-            //     supp_positions.push_back(supp_start_cluster[supp_start_cluster.size() / 2]);
-            //     // supp_positions.push_back(supp_best_start);
-            //     supp_cluster_size = supp_start_cluster.size();
-            // } else if (supp_end_cluster.size() > supp_start_cluster.size()) {
-            //     // supp_pos = supp_best_end;
-            //     // supp_positions.push_back(supp_best_end);
-            //     std::sort(supp_end_cluster.begin(), supp_end_cluster.end());
-            //     supp_positions.push_back(supp_end_cluster[supp_end_cluster.size() / 2]);
-            //     supp_cluster_size = supp_end_cluster.size();
-            // } else if (supp_start_cluster.size() == supp_end_cluster.size() && !supp_start_cluster.empty() && !supp_end_cluster.empty()) {
-            //     // Use both positions. This has been shown to occur in some nested SVs
-            //     // supp_pos = supp_best_start;
-            //     // supp_pos2 = supp_best_end;
-            //     std::sort(supp_start_cluster.begin(), supp_start_cluster.end());
-            //     std::sort(supp_end_cluster.begin(), supp_end_cluster.end());
-            //     supp_positions.push_back(supp_start_cluster[supp_start_cluster.size() / 2]);
-            //     supp_positions.push_back(supp_end_cluster[supp_end_cluster.size() / 2]);
-            //     supp_cluster_size = supp_start_cluster.size();
-            //     // supp_positions.push_back(supp_best_start);
-            //     // supp_positions.push_back(supp_best_end);
-            //     supp_cluster_size = supp_start_cluster.size();
-            // }
-
             // Store the inversion as the supplementary start and end positions
             if (inversion && supp_positions.size() > 1) {
                 std::sort(supp_positions.begin(), supp_positions.end());
@@ -539,70 +422,9 @@ void SVCaller::findSplitSVSignatures(std::unordered_map<std::string, std::vector
                     SVCall sv_candidate(supp_start, supp_end, SVType::INV, getSVTypeSymbol(SVType::INV), SVDataType::SUPPINV, Genotype::UNKNOWN, 0.0, 0, 0, supp_cluster_size);
                     addSVCall(chr_sv_calls, sv_candidate);
                 }
-                // int sv_length = std::abs(supp_best_start - supp_best_end);
-                // if (inversion && sv_length >= min_length && sv_length <= max_length) {
-                //     // SVCall sv_candidate(std::min(supp_best_start, supp_best_end), std::max(supp_best_start, supp_best_end), SVType::INV, getSVTypeSymbol(SVType::INV), SVDataType::SUPPINV, Genotype::UNKNOWN, 0.0, 0, 0, supp_cluster_size);
-                //     // addSVCall(chr_sv_calls, sv_candidate);
-                // }
             }
 
-            // If two of either were found, use the larger SV candidate
-            // if (primary_pos2 != -1) {
-            //     int sv_length1 = std::abs(primary_pos - supp_pos);
-            //     int sv_length2 = std::abs(primary_pos2 - supp_pos);
-            //     if (sv_length2 > sv_length1) {
-            //         primary_pos = primary_pos2;
-            //     }
-            // }
-            // if (supp_pos2 != -1) {
-            //     int sv_length1 = std::abs(primary_pos - supp_pos);
-            //     int sv_length2 = std::abs(primary_pos - supp_pos2);
-            //     if (sv_length2 > sv_length1) {
-            //         supp_pos = supp_pos2;
-            //     }
-            // }
-
-            // if (primary_pos == -1 || supp_pos == -1) {
-            //     continue;
-            // }
-
-            // Store the SV candidate if the length is within the specified range
-            // int sv_start = std::min(primary_pos, supp_pos);
-            // int sv_end = std::max(primary_pos, supp_pos);
-            // int sv_length = sv_end - sv_start + 1;
-            // int cluster_size = std::max(primary_cluster_size, supp_cluster_size);
-
-            // If the read distance is < 30bp while the SV is > 2kb, then this is a
-            // potential deletion
-            // if (std::abs(read_distance) < 30 && sv_length > 2000 && sv_length <= 1000000) {
-
-            //     // Add an inversion call if necessary
-            //     if (inversion) {
-            //         for (int primary_pos : primary_positions) {
-            //             for (int supp_pos : supp_positions) {
-            //                 SVCall sv_candidate(std::min(primary_pos, supp_pos), std::max(primary_pos, supp_pos), SVType::INV, getSVTypeSymbol(SVType::INV), SVDataType::SPLITINV, Genotype::UNKNOWN, 0.0, 0, 0, cluster_size);
-            //                 addSVCall(chr_sv_calls, sv_candidate);
-            //             }
-            //         }
-            //         // SVCall sv_candidate(sv_start, sv_end, SVType::INV, getSVTypeSymbol(SVType::INV), SVDataType::SPLITINV, Genotype::UNKNOWN, 0.0, 0, 0, cluster_size);
-            //         // addSVCall(chr_sv_calls, sv_candidate);
-            //     } else {
-            //         for (int primary_pos : primary_positions) {
-            //             for (int supp_pos : supp_positions) {
-            //                 uint32_t sv_start = std::min(primary_pos, supp_pos);
-            //                 uint32_t sv_end = std::max(primary_pos, supp_pos);
-            //                 if (sv_end - sv_start + 1 >= 50) {
-            //                     SVCall sv_candidate(std::min(primary_pos, supp_pos), std::max(primary_pos, supp_pos), SVType::DEL, getSVTypeSymbol(SVType::DEL), SVDataType::SPLITINV, Genotype::UNKNOWN, 0.0, 0, 0, cluster_size);
-            //                     addSVCall(chr_sv_calls, sv_candidate);
-            //             }
-            //         }
-            //         // SVCall sv_candidate(sv_start, sv_end, SVType::DEL, getSVTypeSymbol(SVType::DEL), SVDataType::SPLITDIST2, Genotype::UNKNOWN, 0.0, 0, 0, cluster_size);
-            //         // addSVCall(chr_sv_calls, sv_candidate);
-            //     }
-            // }
-
             // Add a dummy SV call for CNV detection
-            // if (sv_length >= min_length && sv_length <= max_length) {
             int cluster_size = std::max(primary_cluster_size, supp_cluster_size);
             SVType sv_type = inversion ? SVType::INV : SVType::UNKNOWN;
             std::string alt = (sv_type == SVType::INV) ? "<INV>" : ".";
@@ -618,9 +440,6 @@ void SVCaller::findSplitSVSignatures(std::unordered_map<std::string, std::vector
                     }
                 }
             }
-            // SVCall sv_candidate(sv_start, sv_end, sv_type, alt, SVDataType::SPLIT, Genotype::UNKNOWN, 0.0, 0, 0, cluster_size);
-            // addSVCall(chr_sv_calls, sv_candidate);
-            // }
         }
 
         // Combine SVs with identical start and end positions, and sum the cluster
@@ -632,12 +451,6 @@ void SVCaller::findSplitSVSignatures(std::unordered_map<std::string, std::vector
         
         // Merge duplicate SV calls with identical start positions
         mergeDuplicateSVs(chr_sv_calls);
-
-        // printMessage("Merged SVs:");
-        // for (const auto& sv : chr_sv_calls) {
-        //     printMessage(" - " + getSVTypeSymbol(sv.sv_type) + " at " + chr_name + ":" + std::to_string(sv.start) + "-" + std::to_string(sv.end) + " with length " + std::to_string(sv.end - sv.start + 1) + " and cluster size " + std::to_string(sv.cluster_size));
-        // }
-
         sv_calls[chr_name] = std::move(chr_sv_calls);
 
         // Print the number of merged SV calls
@@ -875,6 +688,7 @@ void SVCaller::processChromosome(const std::string& chr, std::vector<SVCall>& ch
 void SVCaller::run(const InputData& input_data)
 {
     bool cigar_svs = true;
+    bool cigar_cn = true;
     bool split_svs = true;
 
     // Set up the reference genome
@@ -987,18 +801,20 @@ void SVCaller::run(const InputData& input_data)
         }
         printMessage("All tasks have finished.");
 
-        // -------------------------------------------------------
-        // Run copy number variant predictions on the SVs detected from the
-        // CIGAR string, using a minimum CNV length threshold
-        current_chr = 0;
-        printMessage("Running copy number predictions on CIGAR SVs...");
-        for (auto& entry : whole_genome_sv_calls) {
-            current_chr++;
-            const std::string& chr = entry.first;
-            std::vector<SVCall>& sv_calls = entry.second;
-            if (sv_calls.size() > 0) {
-                printMessage("(" + std::to_string(current_chr) + "/" + std::to_string(total_chr_count) + ") Running copy number predictions on " + chr + "...");
-                cnv_caller.runCIGARCopyNumberPrediction(chr, sv_calls, hmm, chr_mean_cov_map[chr], chr_pos_depth_map[chr], input_data);
+        if (cigar_cn) {
+            // -------------------------------------------------------
+            // Run copy number variant predictions on the SVs detected from the
+            // CIGAR string, using a minimum CNV length threshold
+            current_chr = 0;
+            printMessage("Running copy number predictions on CIGAR SVs...");
+            for (auto& entry : whole_genome_sv_calls) {
+                current_chr++;
+                const std::string& chr = entry.first;
+                std::vector<SVCall>& sv_calls = entry.second;
+                if (sv_calls.size() > 0) {
+                    printMessage("(" + std::to_string(current_chr) + "/" + std::to_string(total_chr_count) + ") Running copy number predictions on " + chr + "...");
+                    cnv_caller.runCIGARCopyNumberPrediction(chr, sv_calls, hmm, chr_mean_cov_map[chr], chr_pos_depth_map[chr], input_data);
+                }
             }
         }
         // -------------------------------------------------------

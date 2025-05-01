@@ -4,6 +4,7 @@
 /// @cond DOXYGEN_IGNORE
 #include <iostream>
 #include <string>
+#include <ctime>
 
 // For signal handling
 #include <signal.h>
@@ -32,6 +33,18 @@ void printStackTrace(int sig)
 }
 
 
+void printBanner()
+{
+    std::time_t now = std::time(nullptr);
+    char date_str[100];
+    std::strftime(date_str, sizeof(date_str), "%Y-%m-%d", std::localtime(&now));
+    std::cout << "═══════════════════════════════════════════════════════════════" << std::endl;
+    std::cout << "  ContextSV - Long-read Structural Variant Caller" << std::endl;
+    std::cout << "      Version: " << VERSION << std::endl;
+    std::cout << "      Date: " << date_str << std::endl;
+    std::cout << "═══════════════════════════════════════════════════════════════" << std::endl;
+}
+
 void runContextSV(const std::unordered_map<std::string, std::string>& args)
 {
     // Set up signal handling
@@ -43,20 +56,13 @@ void runContextSV(const std::unordered_map<std::string, std::string>& args)
     signal(SIGFPE, printStackTrace);
     signal(SIGBUS, printStackTrace);
 
-    std::cout << R"(`
-    ___         _           _   _____   __
-    / __|___ _ _| |_ _____ _| |_/ __\ \ / /
-   | (__/ _ \ ' \  _/ -_) \ /  _\__ \\ V / 
-    \___\___/_||_\__\___/_\_\\__|___/ \_/  
-                                             
-    )" << std::endl;
-
     // Placeholder for setting up input data and running ContextSV
-    std::cout << "ContextSV version " << VERSION << std::endl;
-    std::cout << "Input parameters:" << std::endl;
-    for (const auto& arg : args) {
-        std::cout << arg.first << ": " << arg.second << std::endl;
-    }
+    // std::cout << "ContextSV version " << VERSION << std::endl;
+    // std::cout << "Input parameters:" << std::endl;
+    // for (const auto& arg : args) {
+    //     std::cout << arg.first << ": " << arg.second << std::endl;
+    // }
+    printBanner();
 
     // Set up input data
     InputData input_data;
