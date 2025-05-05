@@ -379,21 +379,23 @@ void SVCaller::findSplitSVSignatures(std::unordered_map<std::string, std::vector
 
                 // Add an insertion SV call at the primary position
                 if (!primary_positions.empty()) {
+                    std::sort(primary_positions.begin(), primary_positions.end());
+                    int sv_start = primary_positions[0];
                     int aln_offset = static_cast<int>(ref_distance - read_distance);
                     if (read_distance > ref_distance  && read_distance >= min_length && read_distance <= max_length) {
-                        // Add an insertion SV call at the primary positions
+                        // Add an insertion SV call at the 5'-most primary position
                         SVType sv_type = SVType::INS;
-                        for (int primary_pos : primary_positions) {
-                            SVCall sv_candidate(primary_pos, primary_pos + (read_distance-1), sv_type, getSVTypeSymbol(sv_type), SVDataType::SPLITDIST1, Genotype::UNKNOWN, 0.0, 0, aln_offset, primary_cluster_size);
-                            addSVCall(chr_sv_calls, sv_candidate);
-                        }
+                        // for (int primary_pos : primary_positions) {
+                        SVCall sv_candidate(sv_start, sv_start + (read_distance-1), sv_type, getSVTypeSymbol(sv_type), SVDataType::SPLITDIST1, Genotype::UNKNOWN, 0.0, 0, aln_offset, primary_cluster_size);
+                        addSVCall(chr_sv_calls, sv_candidate);
+                        // }
                     } else if (ref_distance > read_distance && ref_distance >= min_length && ref_distance <= max_length) {
                         // Add a deletion SV call at the primary positions
-                        for (int primary_pos : primary_positions) {
-                            SVType sv_type = SVType::DEL;
-                            SVCall sv_candidate(primary_pos, primary_pos + (ref_distance-1), sv_type, getSVTypeSymbol(sv_type), SVDataType::SPLITDIST1, Genotype::UNKNOWN, 0.0, 0, aln_offset, primary_cluster_size);
-                            addSVCall(chr_sv_calls, sv_candidate);
-                        }
+                        // for (int primary_pos : primary_positions) {
+                        SVType sv_type = SVType::DEL;
+                        SVCall sv_candidate(sv_start, sv_start + (ref_distance-1), sv_type, getSVTypeSymbol(sv_type), SVDataType::SPLITDIST1, Genotype::UNKNOWN, 0.0, 0, aln_offset, primary_cluster_size);
+                        addSVCall(chr_sv_calls, sv_candidate);
+                        // }
                     }
                 }
             }
@@ -1091,8 +1093,12 @@ void SVCaller::saveToVCF(const std::unordered_map<std::string, std::vector<SVCal
 
                 // Use the preceding base as the alternate allele 
                 if (ref_allele != "") {
+                    // The alt allele is the preceding base, and the reference
+                    // allele is the deleted sequence including the preceding base
                     alt_allele = ref_allele.at(0);
                 } else {
+                    // If the reference allele is empty, use a symbolic allele
+                    ref_allele = "N";  // Convention for DEL
                     alt_allele = "<DEL>";  // Symbolic allele
                     std::cerr << "Warning: Reference allele is empty for deletion at " << chr << ":" << start << "-" << end << std::endl;
                 }
@@ -1105,14 +1111,42 @@ void SVCaller::saveToVCF(const std::unordered_map<std::string, std::vector<SVCal
 
                 if (sv_type == SVType::INS) {
                     // Update the position to the preceding base
-                    int64_t preceding_pos = (int64_t) std::max(1, (int) start-1);  // Make sure the position is not negative
-                    ref_allele = ref_genome.query(chr, preceding_pos, preceding_pos);
-                    start = preceding_pos;
-
-                    if (alt_allele != "<INS>") {
-                        // Insert the reference allele before the insertion
-                        alt_allele.insert(0, ref_allele);
+                    if (static_cast<int>(start) > 1) {
+                        uint32_t preceding_pos = start - 1;
+                        ref_allele = ref_genome.query(chr, preceding_pos, preceding_pos);
+                        start = preceding_pos;
+                        if (ref_allele != "") {
+                            if (alt_allele != "<INS>") {
+                                // Insert the reference allele before the insertion
+                                alt_allele.insert(0, ref_allele);
+                            }
+                        } else {
+                            // If the reference allele is empty, use a symbolic allele
+                            ref_allele = "N";  // Convention for INS
+                            alt_allele = "<INS>";  // Symbolic allele
+                            std::cerr << "Warning: Reference allele is empty for insertion at " << chr << ":" << start << "-" << end << std::endl;
+                        }
+                    } else {
+                        // ref_allele = "N";  // No preceding base for the first
+                        // position
+                        // Throw an error if the insertion is at the first position
+                        std::cerr << "Error: Insertion at the first position " << chr << ":" << start << "-" << end << std::endl;
+                        continue;
                     }
+                    // int64_t preceding_pos = (int64_t) std::max(1, (int) start-1);  // Make sure the position is not negative
+                    // ref_allele = ref_genome.query(chr, preceding_pos, preceding_pos);
+                    // start = preceding_pos;
+                    // if (ref_allele != "") {
+                    //     if (alt_allele != "<INS>") {
+                    //         // Insert the reference allele before the insertion
+                    //         alt_allele.insert(0, ref_allele);
+                    //     }
+                    // } else {
+                    //     // If the reference allele is empty, use a symbolic allele
+                    //     ref_allele = "N";  // Convention for INS
+                    //     alt_allele = "<INS>";  // Symbolic allele
+                    //     std::cerr << "Warning: Reference allele is empty for insertion at " << chr << ":" << start << "-" << end << std::endl;
+                    // }
                     end = start;  // Update the end position to the same base
 
                 } else {
@@ -1135,6 +1169,12 @@ void SVCaller::saveToVCF(const std::unordered_map<std::string, std::vector<SVCal
             
             // Get read depth
             int read_depth = this->getReadDepth(chr_pos_depth_map.at(chr), start);
+
+            // If read depth equals zero, then set the filter to LowQual
+            if (read_depth == 0) {
+                filter = "LowQual";
+                filtered_svs += 1;
+            }
 
             // Create the VCF parameter strings
             std::string sv_type_str = getSVTypeString(sv_type);
