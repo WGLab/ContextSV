@@ -318,7 +318,7 @@ void CNVCaller::runCIGARCopyNumberPrediction(std::string chr, std::vector<SVCall
 
         // Only extend the region if "save CNV data" is enabled
         SNPData snp_data;
-        printMessage("Querying SNP region for copy number prediction: " + chr + ":" + std::to_string((int)start_pos) + "-" + std::to_string((int)end_pos));
+        // printMessage("Querying SNP region for copy number prediction: " + chr + ":" + std::to_string((int)start_pos) + "-" + std::to_string((int)end_pos));
         this->querySNPRegion(chr, start_pos, end_pos, pos_depth_map, mean_chr_cov, snp_data, input_data);
 
         // Run the Viterbi algorithm
@@ -327,7 +327,7 @@ void CNVCaller::runCIGARCopyNumberPrediction(std::string chr, std::vector<SVCall
         	continue;
         }
         
-        printMessage("Running Viterbi algorithm for copy number prediction: " + chr + ":" + std::to_string((int)start_pos) + "-" + std::to_string((int)end_pos));
+        // printMessage("Running Viterbi algorithm for copy number prediction: " + chr + ":" + std::to_string((int)start_pos) + "-" + std::to_string((int)end_pos));
         std::pair<std::vector<int>, double> prediction;
         runViterbi(hmm, snp_data, prediction);
         std::vector<int>& state_sequence = prediction.first;
@@ -371,7 +371,7 @@ void CNVCaller::runCIGARCopyNumberPrediction(std::string chr, std::vector<SVCall
 
         // For LOH predictions, or predictions with the same type,
         // update predicted information without changing the SV type
-        printMessage("Updating SV call for " + chr + ":" + std::to_string((int)start_pos) + "-" + std::to_string((int)end_pos) + " with predicted CNV type: " + getSVTypeString(updated_sv_type));
+        // printMessage("Updating SV call for " + chr + ":" + std::to_string((int)start_pos) + "-" + std::to_string((int)end_pos) + " with predicted CNV type: " + getSVTypeString(updated_sv_type));
         updated_sv_type = (updated_sv_type == SVType::LOH) ? sv_call.sv_type : updated_sv_type;
         bool is_valid_update = isValidCopyNumberUpdate(sv_call.sv_type, updated_sv_type);
         if (is_valid_update)
@@ -444,7 +444,7 @@ void CNVCaller::calculateMeanChromosomeCoverage(const std::vector<std::string>& 
         printError("ERROR: Could not load index for BAM file: " + bam_filepath);
         return;
     }
-    BamFileGuard bam_guard(bam_file, bam_index, bam_header);  // Guard to close the BAM file
+    // BamFileGuard bam_guard(bam_file, bam_index, bam_header);  // Guard to close the BAM file
 
     // Initialize the record
     bam1_t *bam_record = bam_init1();
@@ -472,6 +472,20 @@ void CNVCaller::calculateMeanChromosomeCoverage(const std::vector<std::string>& 
 
         printMessage("(" + std::to_string(++current_chr) + "/" + std::to_string(total_chr_count) + ") Reading BAM file for chromosome: " + chr);
         std::vector<uint32_t>& pos_depth_map = chr_pos_depth_map[chr];
+        int tid = bam_name2id(bam_header, chr.c_str());
+        if (tid < 0)
+        {
+            printError("ERROR: Could not find chromosome " + chr + " in BAM file.");
+            continue;
+        }
+        // Resize the depth map to the length of the chromosome
+        uint32_t chr_length = bam_header->target_len[tid] + 1;
+        if (pos_depth_map.size() != static_cast<size_t>(chr_length))
+        {
+            printError("ERROR: Chromosome length mismatch for " + chr + ": expected " + std::to_string(chr_length) + ", found " + std::to_string(pos_depth_map.size()) + ", resizing to " + std::to_string(chr_length));
+            // Resize the depth map to the length of the chromosome
+            pos_depth_map.resize(chr_length, 0);
+        }
         while (sam_itr_next(bam_file, bam_iter, bam_record) >= 0)
         {
             // Ignore UNMAP, SECONDARY, QCFAIL, and DUP reads
@@ -517,26 +531,58 @@ void CNVCaller::calculateMeanChromosomeCoverage(const std::vector<std::string>& 
             }
         }
         hts_itr_destroy(bam_iter);
+
+        // You can parallelize the depth map calculation here but first close the
+        // BAM file and index
+        // Bam cleanup (delete guard if using this)
+        // bam_destroy1(bam_record);
+        // bam_hdr_destroy(bam_header);
+        // sam_close(bam_file);
+        // bam_index_destroy(bam_index);
+        // bam_record = nullptr;
+        // bam_header = nullptr;
+        // bam_file = nullptr;
+        // bam_index = nullptr;
         
-        // Parallel sum of the depth map
-        uint64_t cum_depth = std::reduce(
-            std::execution::par,
-            pos_depth_map.begin(),
-            pos_depth_map.end(),
-            0ULL
-        );
+        // // Parallel sum of the depth map
+        // uint64_t cum_depth = std::reduce(
+        //     std::execution::par,
+        //     pos_depth_map.begin(),
+        //     pos_depth_map.end(),
+        //     0ULL
+        // );
 
-        // Parallel count of the non-zero depth positions
-        uint32_t pos_count = std::count_if(
-            std::execution::par,
-            pos_depth_map.begin(),
-            pos_depth_map.end(),
-            [](uint32_t depth) { return depth > 0; }
-        );
+        // // Parallel count of the non-zero depth positions
+        // uint32_t pos_count = std::count_if(
+        //     std::execution::par,
+        //     pos_depth_map.begin(),
+        //     pos_depth_map.end(),
+        //     [](uint32_t depth) { return depth > 0; }
+        // );
 
+        // Sum without parallelization
+        uint64_t cum_depth = std::accumulate(pos_depth_map.begin(), pos_depth_map.end(), 0ULL);
+        uint32_t pos_count = std::count_if(pos_depth_map.begin(), pos_depth_map.end(), [](uint32_t depth) { return depth > 0; });
+
+        // Calculate the mean coverage for the chromosome
         double mean_chr_cov = (pos_count > 0) ? static_cast<double>(cum_depth) / static_cast<double>(pos_count) : 0.0;
-        chr_mean_cov_map[chr] = mean_chr_cov;
+        printMessage("Mean coverage for chromosome " + chr + ": " + std::to_string(mean_chr_cov));
+        if (mean_chr_cov != 0.0) {
+        	chr_mean_cov_map[chr] = mean_chr_cov;
+    	}
     }
+
+    // Clean up the BAM file and index
+    printMessage("Closing BAM file " + bam_filepath);
+    bam_destroy1(bam_record);
+    hts_idx_destroy(bam_index);
+    bam_hdr_destroy(bam_header);
+    sam_close(bam_file);
+    bam_record = nullptr;
+    bam_index = nullptr;
+    bam_header = nullptr;
+    bam_file = nullptr;
+    printMessage("BAM file closed.");
 }
 
 void CNVCaller::readSNPAlleleFrequencies(std::string chr, uint32_t start_pos, uint32_t end_pos, std::vector<uint32_t>& snp_pos, std::unordered_map<uint32_t, double>& snp_baf, std::unordered_map<uint32_t, double>& snp_pfb, const InputData& input_data) const

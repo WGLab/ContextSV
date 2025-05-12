@@ -16,7 +16,6 @@
 // Constructor
 InputData::InputData()
 {
-    this->short_read_bam = "";
     this->long_read_bam = "";
     this->ref_filepath = "";
     this->snp_vcf_filepath = "";
@@ -28,7 +27,6 @@ InputData::InputData()
     this->min_cnv_length = 1000;
     this->min_reads = 5;
     this->dbscan_epsilon = 0.99;
-    this->dbscan_min_pts = 15;
     this->dbscan_min_pts_pct = 0.0;
     this->thread_count = 1;
     this->hmm_filepath = "data/wgs.hmm";
@@ -38,29 +36,24 @@ InputData::InputData()
     this->cnv_output_file = "";
 }
 
-std::string InputData::getShortReadBam() const
+void InputData::printParameters() const
 {
-    return this->short_read_bam;
-}
-
-void InputData::setShortReadBam(std::string filepath)
-{
-    this->short_read_bam = filepath;
-
-    // Check if empty string
-    if (filepath.empty())
+    std::cout << "Input parameters:" << std::endl;
+    std::cout << "Long read BAM: " << this->long_read_bam << std::endl;
+    std::cout << "Reference genome: " << this->ref_filepath << std::endl;
+    std::cout << "SNP VCF: " << this->snp_vcf_filepath << std::endl;
+    std::cout << "Output directory: " << this->output_dir << std::endl;
+    std::cout << "Sample size: " << this->sample_size << std::endl;
+    std::cout << "Minimum CNV length: " << this->min_cnv_length << std::endl;
+    std::cout << "DBSCAN epsilon: " << this->dbscan_epsilon << std::endl;
+    std::cout << "DBSCAN minimum points percentage: " << this->dbscan_min_pts_pct * 100.0f  << "%"  << std::endl;
+    if (this->region_set)
     {
-        return;
-        
-    } else {
-        // Check if the file exists
-        FILE *fp = fopen(filepath.c_str(), "r");
-        if (fp == NULL)
-        {
-            throw std::runtime_error("Short read BAM file does not exist: " + filepath);
-        } else {
-            fclose(fp);
-        }
+        std::cout << "Region set to: chr" + this->chr + ":" + std::to_string(this->start_end.first) + "-" + std::to_string(this->start_end.second) + "\n";
+    }
+    else
+    {
+        std::cout << "Running on whole genome" << std::endl;
     }
 }
 
@@ -167,16 +160,6 @@ void InputData::setDBSCAN_Epsilon(double epsilon)
 double InputData::getDBSCAN_Epsilon() const
 {
     return this->dbscan_epsilon;
-}
-
-void InputData::setDBSCAN_MinPts(int min_pts)
-{
-    this->dbscan_min_pts = min_pts;
-}
-
-int InputData::getDBSCAN_MinPts() const
-{
-    return this->dbscan_min_pts;
 }
 
 void InputData::setDBSCAN_MinPtsPct(double min_pts_pct)

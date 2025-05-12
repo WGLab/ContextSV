@@ -94,7 +94,6 @@ void SVCaller::findSplitSVSignatures(std::unordered_map<std::string, std::vector
         printError("ERROR: failed to load index for " + bam_filepath);
         return;
     }
-    BamFileGuard bam_guard(fp_in, idx, bamHdr);  // Guard to close the BAM file
 
     // Alignment data structures
     std::unordered_map<int, std::unordered_map<std::string, PrimaryAlignment>> primary_map;  // TID-> qname -> primary alignment
@@ -173,6 +172,11 @@ void SVCaller::findSplitSVSignatures(std::unordered_map<std::string, std::vector
     // Clean up the iterator and alignment
     hts_itr_destroy(itr);
     bam_destroy1(bam1);
+
+    // Clean up the BAM file and index
+    sam_close(fp_in);
+    hts_idx_destroy(idx);
+    // bam_hdr_destroy(bamHdr);
     
     // Remove primary alignments without supplementary alignments
     std::unordered_map<int, std::unordered_set<std::string>> to_remove;
@@ -310,12 +314,35 @@ void SVCaller::findSplitSVSignatures(std::unordered_map<std::string, std::vector
                         // strand
                         if (supp_aln.strand == primary_aln.strand) {
                             // Same strand
+
+                            // Check if the primary alignment is 5'-most
+                            bool primary_5p = false;
+                            if (primary_aln.start < supp_aln.start) {
+                                primary_5p = true;
+                            }
+
                             // Calculate distance between alignments on the read
                             read_distance = std::max(0, std::max(static_cast<int>(supp_aln.query_start), static_cast<int>(primary_aln.query_start)) - std::min(static_cast<int>(supp_aln.query_end), static_cast<int>(primary_aln.query_end)));
 
                             // Calculate distance between alignments on the
                             // reference
                             ref_distance = std::max(0, std::max(static_cast<int>(supp_aln.start), static_cast<int>(primary_aln.start)) - std::min(static_cast<int>(supp_aln.end), static_cast<int>(primary_aln.end)));
+                            
+                            // Throw an error if the read distance is negative
+                            if (read_distance < 0) {
+                                printError("ERROR: negative read distance between primary and supplementary alignments for " + qname);
+                            }
+                            // Throw an error if the reference distance is
+                            // negative
+                            if (ref_distance < 0) {
+                                printError("ERROR: negative reference distance between primary and supplementary alignments for " + qname);
+                            }
+
+                            // Use a negative read distance to indicate that the
+                            // primary alignment is not 5'-most
+                            if (!primary_5p) {
+                                read_distance = -read_distance;
+                            }
                             read_distances.push_back(read_distance);
                             ref_distances.push_back(ref_distance);
                         }
@@ -352,16 +379,52 @@ void SVCaller::findSplitSVSignatures(std::unordered_map<std::string, std::vector
             // SV
             std::vector<int> primary_positions;
             int primary_cluster_size = 0;
+            bool primary_start = false;
+            bool primary_end = false;
             if (!primary_start_cluster.empty()) {
                 std::sort(primary_start_cluster.begin(), primary_start_cluster.end());
                 primary_positions.push_back(primary_start_cluster[primary_start_cluster.size() / 2]);
                 primary_cluster_size = primary_start_cluster.size();
+                primary_start = true;
             }
 
             if (!primary_end_cluster.empty()) {
                 std::sort(primary_end_cluster.begin(), primary_end_cluster.end());
                 primary_positions.push_back(primary_end_cluster[primary_end_cluster.size() / 2]);
                 primary_cluster_size = std::max(primary_cluster_size, (int) primary_end_cluster.size());
+                primary_end = true;
+            }
+
+            // Get the supplementary alignment positions
+            std::vector<int> supp_positions;
+            bool supp_start = false;
+            bool supp_end = false;
+            int supp_cluster_size = 0;
+            if (!supp_start_cluster.empty()) {
+                std::sort(supp_start_cluster.begin(), supp_start_cluster.end());
+                supp_positions.push_back(supp_start_cluster[supp_start_cluster.size() / 2]);
+                supp_cluster_size = supp_start_cluster.size();
+                supp_start = true;
+            }
+            if (!supp_end_cluster.empty()) {
+                std::sort(supp_end_cluster.begin(), supp_end_cluster.end());
+                supp_positions.push_back(supp_end_cluster[supp_end_cluster.size() / 2]);
+                supp_cluster_size = std::max(supp_cluster_size, (int) supp_end_cluster.size());
+                supp_end = true;
+            }
+
+            // Store the inversion as the supplementary start and end positions
+            if (inversion && supp_positions.size() > 1) {
+                std::sort(supp_positions.begin(), supp_positions.end());
+                int supp_start = supp_positions.front();
+                int supp_end = supp_positions.back();
+                int sv_length = std::abs(supp_start - supp_end);
+
+                // Use 50bp as the minimum length for an inversion
+                if (sv_length >= 50 && sv_length <= max_length) {
+                    SVCall sv_candidate(supp_start, supp_end, SVType::INV, getSVTypeSymbol(SVType::INV), SVDataType::SUPPINV, Genotype::UNKNOWN, 0.0, 0, 0, supp_cluster_size);
+                    addSVCall(chr_sv_calls, sv_candidate);
+                }
             }
 
             // -------------------------------
@@ -373,56 +436,73 @@ void SVCaller::findSplitSVSignatures(std::unordered_map<std::string, std::vector
                 // insertion size
                 std::sort(read_distance_cluster.begin(), read_distance_cluster.end());
                 read_distance = read_distance_cluster[read_distance_cluster.size() / 2];
+                bool primary_5p_most = read_distance > 0;
+                read_distance = std::abs(read_distance);
                 
                 std::sort(ref_distance_cluster.begin(), ref_distance_cluster.end());
                 ref_distance = ref_distance_cluster[ref_distance_cluster.size() / 2];
 
                 // Add an insertion SV call at the primary position
-                if (!primary_positions.empty()) {
+
+                // bool print_debug = false;
+                bool print_debug = true;
+                
+                // int sv_start = primary_positions[0];
+                // Use the 3'-most primary position as the start position
+                int sv_start;
+                bool split_candidate_sv = false;
+                if (primary_5p_most && primary_end) {
                     std::sort(primary_positions.begin(), primary_positions.end());
-                    int sv_start = primary_positions[0];
+                    // Supplementary alignment is downstream with the
+                    // insertion sequence, starting at the 3'-most
+                    // primary position
+                    sv_start = primary_positions.back();
+
+                    // Print debug if SV start equals 223608935
+                    // if (sv_start == 223608936) {
+                    //     print_debug = true;
+                    // printMessage("DEBUG: SV start is" + std::to_string(sv_start) + " and read distance is " + std::to_string(read_distance) + " and ref distance is " + std::to_string(ref_distance) + " and primary 5p_most is " + std::to_string(primary_5p_most) + " and primary positions are " + std::to_string(primary_positions[0]) + " and " + std::to_string(primary_positions.back()) + " and number of primary positions is " + std::to_string(primary_positions.size()) + " and start bool is " + std::to_string(primary_start) + " and end bool is " + std::to_string(primary_end));
+                    // }
+                    split_candidate_sv = true;
+                } else if (!primary_5p_most && supp_end) {
+                    
+                    // Supplementary alignment is upstream with the
+                    // insertion sequence, starting at the 5'-most
+                    // primary position
+                    // sv_start = primary_positions.front();
+                    std::sort(supp_positions.begin(), supp_positions.end());
+                    sv_start = supp_positions.back();
+
+                    // Print debug if SV start equals 223608935
+                    // if (sv_start == 223608936) {
+                    //     print_debug = true;
+                    // printMessage("DEBUG: SV start is " + std::to_string(sv_start) + " and read distance is " + std::to_string(read_distance) + " and ref distance is " + std::to_string(ref_distance) + " and primary 5p_most is " + std::to_string(primary_5p_most) + " and primary positions are " + std::to_string(primary_positions[0]) + " and " + std::to_string(primary_positions.back()) + " and number of primary positions is " + std::to_string(primary_positions.size()) + " and start bool is " + std::to_string(primary_start) + " and end bool is " + std::to_string(primary_end));
+                    // }
+                    split_candidate_sv = true;
+                }
+                if (split_candidate_sv) {
                     int aln_offset = static_cast<int>(ref_distance - read_distance);
                     if (read_distance > ref_distance  && read_distance >= min_length && read_distance <= max_length) {
                         // Add an insertion SV call at the 5'-most primary position
                         SVType sv_type = SVType::INS;
-                        // for (int primary_pos : primary_positions) {
                         SVCall sv_candidate(sv_start, sv_start + (read_distance-1), sv_type, getSVTypeSymbol(sv_type), SVDataType::SPLITDIST1, Genotype::UNKNOWN, 0.0, 0, aln_offset, primary_cluster_size);
                         addSVCall(chr_sv_calls, sv_candidate);
                         // }
                     } else if (ref_distance > read_distance && ref_distance >= min_length && ref_distance <= max_length) {
                         // Add a deletion SV call at the primary positions
-                        // for (int primary_pos : primary_positions) {
                         SVType sv_type = SVType::DEL;
+
+                        // if (print_debug) {
+                        //     printMessage("DEBUG: Adding deletion SV call at " + chr_name + ":" + std::to_string(sv_start) + "-" + std::to_string(sv_start + (ref_distance-1)) + " with length " + std::to_string(ref_distance) + " and cluster size " + std::to_string(primary_cluster_size));
+                        // }
+
+                        // Add a dummy SV call before and after the start
+                        // position for HMM predictions
+                        // SVType sv_type = SVType::UNKNOWN;
                         SVCall sv_candidate(sv_start, sv_start + (ref_distance-1), sv_type, getSVTypeSymbol(sv_type), SVDataType::SPLITDIST1, Genotype::UNKNOWN, 0.0, 0, aln_offset, primary_cluster_size);
                         addSVCall(chr_sv_calls, sv_candidate);
-                        // }
+                        // SVCall sv_candidate2(sv_start + (ref_distance-1), sv_start + (ref_distance-1), sv_type, getSVTypeSymbol(sv_type), SVDataType::SPLITDIST2, Genotype::UNKNOWN, 0.0, 0, aln_offset, primary_cluster_size);
                     }
-                }
-            }
-
-            // Get the supplementary alignment positions
-            std::vector<int> supp_positions;
-            int supp_cluster_size = 0;
-            if (!supp_start_cluster.empty()) {
-                std::sort(supp_start_cluster.begin(), supp_start_cluster.end());
-                supp_positions.push_back(supp_start_cluster[supp_start_cluster.size() / 2]);
-                supp_cluster_size = supp_start_cluster.size();
-            }
-            if (!supp_end_cluster.empty()) {
-                std::sort(supp_end_cluster.begin(), supp_end_cluster.end());
-                supp_positions.push_back(supp_end_cluster[supp_end_cluster.size() / 2]);
-                supp_cluster_size = std::max(supp_cluster_size, (int) supp_end_cluster.size());
-            }
-
-            // Store the inversion as the supplementary start and end positions
-            if (inversion && supp_positions.size() > 1) {
-                std::sort(supp_positions.begin(), supp_positions.end());
-                int supp_start = supp_positions.front();
-                int supp_end = supp_positions.back();
-                int sv_length = std::abs(supp_start - supp_end);
-                if (sv_length >= min_length && sv_length <= max_length) {
-                    SVCall sv_candidate(supp_start, supp_end, SVType::INV, getSVTypeSymbol(SVType::INV), SVDataType::SUPPINV, Genotype::UNKNOWN, 0.0, 0, 0, supp_cluster_size);
-                    addSVCall(chr_sv_calls, sv_candidate);
                 }
             }
 
@@ -446,7 +526,7 @@ void SVCaller::findSplitSVSignatures(std::unordered_map<std::string, std::vector
 
         // Combine SVs with identical start and end positions, and sum the cluster
         // sizes
-        printMessage("Combining SVs with identical start positions");
+        // printMessage("Combining SVs with identical start positions");
         std::sort(chr_sv_calls.begin(), chr_sv_calls.end(), [](const SVCall& a, const SVCall& b) {
             return a.start < b.start || (a.start == b.start && a.end < b.end);
         });
@@ -458,6 +538,9 @@ void SVCaller::findSplitSVSignatures(std::unordered_map<std::string, std::vector
         // Print the number of merged SV calls
         printMessage(chr_name + ": Found " + std::to_string(sv_calls[chr_name].size()) + " SV candidates");
     }
+
+    // Clean up the BAM header
+    bam_hdr_destroy(bamHdr);
 }
 
 void SVCaller::findCIGARSVs(samFile* fp_in, hts_idx_t* idx, bam_hdr_t* bamHdr, const std::string& region, std::vector<SVCall>& sv_calls, const std::vector<uint32_t>& pos_depth_map)
@@ -546,7 +629,7 @@ void SVCaller::processCIGARRecord(bam_hdr_t *header, bam1_t *alignment, std::vec
                 if (op_len <= 50) {
                     alt_allele = ins_seq_str;
                 }
-                SVCall sv_call(ins_pos, ins_end, SVType::INS, alt_allele, SVDataType::CIGARINS, Genotype::UNKNOWN, default_lh, 0, 1, 0);
+                SVCall sv_call(ins_pos, ins_end, SVType::INS, alt_allele, SVDataType::CIGARINS, Genotype::UNKNOWN, default_lh, 0, 0, 0);
                 cigar_sv_calls.emplace_back(sv_call);
             
             // Process clipped bases as potential insertions
@@ -578,7 +661,7 @@ void SVCaller::processCIGARRecord(bam_hdr_t *header, bam1_t *alignment, std::vec
                 if (op_len <= 50) {
                     alt_allele = ins_seq_str;
                 }
-                SVCall sv_call(ins_pos, ins_end, SVType::INS, alt_allele, SVDataType::CIGARCLIP, Genotype::UNKNOWN, default_lh, 0, 0.0, 0);
+                SVCall sv_call(ins_pos, ins_end, SVType::INS, alt_allele, SVDataType::CIGARCLIP, Genotype::UNKNOWN, default_lh, 0, 0, 0);
                 cigar_sv_calls.emplace_back(sv_call);
 
             // Check if the CIGAR operation is a deletion
@@ -586,7 +669,7 @@ void SVCaller::processCIGARRecord(bam_hdr_t *header, bam1_t *alignment, std::vec
 
                 ref_pos = pos+1;
                 ref_end = ref_pos + op_len -1;
-                SVCall sv_call(ref_pos, ref_end, SVType::DEL, getSVTypeSymbol(SVType::DEL), SVDataType::CIGARDEL, Genotype::UNKNOWN, default_lh, 0, 1, 0);
+                SVCall sv_call(ref_pos, ref_end, SVType::DEL, getSVTypeSymbol(SVType::DEL), SVDataType::CIGARDEL, Genotype::UNKNOWN, default_lh, 0, 0, 0);
                 cigar_sv_calls.emplace_back(sv_call);
             }
         }
@@ -664,7 +747,7 @@ void SVCaller::processChromosome(const std::string& chr, std::vector<SVCall>& ch
         printError("ERROR: failed to load index for " + bam_filepath);
         return;
     }
-    BamFileGuard bam_guard(fp_in, idx, bamHdr);  // Guard to close the BAM file
+    // BamFileGuard bam_guard(fp_in, idx, bamHdr);  // Guard to close the BAM file
 
     // Get DBSCAN parameters
     double dbscan_epsilon = input_data.getDBSCAN_Epsilon();
@@ -680,6 +763,11 @@ void SVCaller::processChromosome(const std::string& chr, std::vector<SVCall>& ch
     printMessage(chr + ": CIGAR SVs...");
     this->findCIGARSVs(fp_in, idx, bamHdr, chr, chr_sv_calls, chr_pos_depth_map);
 
+    // Clean up the BAM file and index
+    sam_close(fp_in);
+    hts_idx_destroy(idx);
+    bam_hdr_destroy(bamHdr);
+
     printMessage(chr + ": Merging CIGAR...");
     mergeSVs(chr_sv_calls, dbscan_epsilon, dbscan_min_pts, false);
 
@@ -692,6 +780,9 @@ void SVCaller::run(const InputData& input_data)
     bool cigar_svs = true;
     bool cigar_cn = true;
     bool split_svs = true;
+
+    // Print the input data
+    input_data.printParameters();
 
     // Set up the reference genome
     printMessage("Loading the reference genome...");
@@ -742,16 +833,34 @@ void SVCaller::run(const InputData& input_data)
     cnv_caller.calculateMeanChromosomeCoverage(chromosomes, chr_pos_depth_map, chr_mean_cov_map, bam_filepath, chr_thread_count);
 
     // Remove chromosomes with no reads (mean coverage is zero)
-    std::vector<std::string> null_chr;
+    printMessage("Removing chromosomes with no reads...");
+    std::vector<std::string> valid_chr;
     for (const auto& chr : chromosomes) {
+    	if (chr_mean_cov_map.find(chr) != chr_mean_cov_map.end()) {
+    		valid_chr.push_back(chr);
+	}
+	chromosomes = valid_chr;
+    	/*
+        try {
+            if (chr_mean_cov_map.at(chr) == 0.0) {
+                printMessage("Chromosome " + chr + " has no reads");
+            }
+        } catch (const std::out_of_range& e) {
+            printError("Chromosome " + chr + " not found in mean coverage map: " + std::string(e.what()));
+        }*/
+        /*
+        // Check if the chromosome has no reads
         if (chr_mean_cov_map[chr] == 0.0) {
             null_chr.push_back(chr);
         }
+        */
     }
+	/*
+    printMessage("Removing " + std::to_string(null_chr.size()) + " chromosomes with no reads...");
     for (const auto& chr : null_chr) {
         printMessage("Removing chromosome " + chr + " with no reads...");
         chromosomes.erase(std::remove(chromosomes.begin(), chromosomes.end(), chr), chromosomes.end());
-    }
+    }*/
     std::unordered_map<std::string, std::vector<SVCall>> whole_genome_sv_calls;
     int current_chr = 0;
     int total_chr_count = chromosomes.size();
@@ -1017,6 +1126,7 @@ void SVCaller::saveToVCF(const std::unordered_map<std::string, std::vector<SVCal
         "##INFO=<ID=ALNOFFSET,Number=1,Type=Integer,Description=\"Read vs. reference alignment offset\">",
         "##FILTER=<ID=PASS,Description=\"All filters passed\">",
         "##FILTER=<ID=LowQual,Description=\"Low quality\">",
+        "##FILTER=<ID=AssemblyGap,Description=\"Assembly gap\">",
         "##FORMAT=<ID=GT,Number=1,Type=String,Description=\"Genotype\">",
         "##FORMAT=<ID=DP,Number=1,Type=Integer,Description=\"Read depth at the variant site (sum of start and end positions)\">",
     };
@@ -1053,6 +1163,7 @@ void SVCaller::saveToVCF(const std::unordered_map<std::string, std::vector<SVCal
     int total_count = 0;
     int unclassified_svs = 0;
     int filtered_svs = 0;
+    int assembly_gaps = 0;
     for (const auto& pair : sv_calls) {
         std::string chr = pair.first;
         const std::vector<SVCall>& sv_calls = pair.second;
@@ -1068,8 +1179,6 @@ void SVCaller::saveToVCF(const std::unordered_map<std::string, std::vector<SVCal
             std::string data_type_str = getSVDataTypeString(sv_call.data_type);
             double hmm_likelihood = sv_call.hmm_likelihood;
             int cluster_size = sv_call.cluster_size;
-            //int read_depth = sv_call.read_depth;
-            // double mismatch_rate = sv_call.mismatch_rate;
             std::string filter = "PASS";
             int aln_offset = sv_call.aln_offset;
             int cn_state = sv_call.cn_state;
@@ -1091,8 +1200,21 @@ void SVCaller::saveToVCF(const std::unordered_map<std::string, std::vector<SVCal
                 uint32_t preceding_pos = (uint32_t) std::max(1, static_cast<int>(start)-1);  // Make sure the position is not negative
                 ref_allele = ref_genome.query(chr, preceding_pos, end);
 
+
+
                 // Use the preceding base as the alternate allele 
                 if (ref_allele != "") {
+                    // If the sequence is >90% N, skip the SV call (assembly
+                    // gap)
+                    int allele_length_90pct = static_cast<int>(ref_allele.size() * 0.9);
+                    if (std::count(ref_allele.begin(), ref_allele.end(), 'N') > allele_length_90pct) {
+                        assembly_gaps += 1;
+                        // continue;
+
+                        // Don't skip but set the filter to assembly gap
+                        filter = "AssemblyGap";
+                    }
+
                     // The alt allele is the preceding base, and the reference
                     // allele is the deleted sequence including the preceding base
                     alt_allele = ref_allele.at(0);
@@ -1127,26 +1249,10 @@ void SVCaller::saveToVCF(const std::unordered_map<std::string, std::vector<SVCal
                             std::cerr << "Warning: Reference allele is empty for insertion at " << chr << ":" << start << "-" << end << std::endl;
                         }
                     } else {
-                        // ref_allele = "N";  // No preceding base for the first
-                        // position
                         // Throw an error if the insertion is at the first position
                         std::cerr << "Error: Insertion at the first position " << chr << ":" << start << "-" << end << std::endl;
                         continue;
                     }
-                    // int64_t preceding_pos = (int64_t) std::max(1, (int) start-1);  // Make sure the position is not negative
-                    // ref_allele = ref_genome.query(chr, preceding_pos, preceding_pos);
-                    // start = preceding_pos;
-                    // if (ref_allele != "") {
-                    //     if (alt_allele != "<INS>") {
-                    //         // Insert the reference allele before the insertion
-                    //         alt_allele.insert(0, ref_allele);
-                    //     }
-                    // } else {
-                    //     // If the reference allele is empty, use a symbolic allele
-                    //     ref_allele = "N";  // Convention for INS
-                    //     alt_allele = "<INS>";  // Symbolic allele
-                    //     std::cerr << "Warning: Reference allele is empty for insertion at " << chr << ":" << start << "-" << end << std::endl;
-                    // }
                     end = start;  // Update the end position to the same base
 
                 } else {
@@ -1171,10 +1277,11 @@ void SVCaller::saveToVCF(const std::unordered_map<std::string, std::vector<SVCal
             int read_depth = this->getReadDepth(chr_pos_depth_map.at(chr), start);
 
             // If read depth equals zero, then set the filter to LowQual
-            if (read_depth == 0) {
-                filter = "LowQual";
-                filtered_svs += 1;
-            }
+            // if (read_depth == 0) {
+            //     printError("Warning: Read depth is zero for " + chr + ":" + std::to_string(start) + "-" + std::to_string(end));
+            //     filter = "LowQual";
+            //     filtered_svs += 1;
+            // }
 
             // Create the VCF parameter strings
             std::string sv_type_str = getSVTypeString(sv_type);
@@ -1199,6 +1306,7 @@ void SVCaller::saveToVCF(const std::unordered_map<std::string, std::vector<SVCal
         std::cout << "Total unclassified SVs: " << unclassified_svs << std::endl;
     }
     printMessage("Total PASS filtered SVs: " + std::to_string(filtered_svs));
+    printMessage("Total filtered assembly gaps: " + std::to_string(assembly_gaps));
 }
 
 int SVCaller::getReadDepth(const std::vector<uint32_t>& pos_depth_map, uint32_t start) const

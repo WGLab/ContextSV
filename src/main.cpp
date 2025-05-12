@@ -56,18 +56,11 @@ void runContextSV(const std::unordered_map<std::string, std::string>& args)
     signal(SIGFPE, printStackTrace);
     signal(SIGBUS, printStackTrace);
 
-    // Placeholder for setting up input data and running ContextSV
-    // std::cout << "ContextSV version " << VERSION << std::endl;
-    // std::cout << "Input parameters:" << std::endl;
-    // for (const auto& arg : args) {
-    //     std::cout << arg.first << ": " << arg.second << std::endl;
-    // }
     printBanner();
 
     // Set up input data
     InputData input_data;
     input_data.setLongReadBam(args.at("bam-file"));
-    input_data.setShortReadBam(args.at("bam-file"));
     input_data.setRefGenome(args.at("ref-file"));
     input_data.setSNPFilepath(args.at("snps-file"));
     input_data.setOutputDir(args.at("output-dir"));
@@ -107,10 +100,6 @@ void runContextSV(const std::unordered_map<std::string, std::string>& args)
         input_data.setDBSCAN_Epsilon(std::stod(args.at("epsilon")));
     }
 
-    if (args.find("min-pts") != args.end()) {
-        input_data.setDBSCAN_MinPts(std::stoi(args.at("min-pts")));
-    }
-
     if (args.find("min-pts-pct") != args.end()) {
         input_data.setDBSCAN_MinPtsPct(std::stod(args.at("min-pts-pct")));
     }
@@ -146,7 +135,6 @@ void printUsage(const std::string& programName) {
                 << "  -n, --sample-size <size>      Sample size for HMM predictions\n"
                 << "     --min-cnv <min_length>     Minimum CNV length\n"
                 << "     --eps <epsilon>             DBSCAN epsilon\n"
-                << "     --min-pts <min_pts>         DBSCAN minimum points\n"
                 << "     --min-pts-pct <min_pts_pct> Percentage of mean chr. coverage to use for DBSCAN minimum points\n"
                 << "  -e, --eth <eth_file>          ETH file\n"
                 << "  -p, --pfb <pfb_file>          PFB file\n"
@@ -186,8 +174,6 @@ std::unordered_map<std::string, std::string> parseArguments(int argc, char* argv
             args["min-reads"] = argv[++i];
         } else if (arg == "--eps" && i + 1 < argc) {
             args["epsilon"] = argv[++i];
-        } else if (arg == "--min-pts" && i + 1 < argc) {
-            args["min-pts"] = argv[++i];
         } else if (arg == "--min-pts-pct" && i + 1 < argc) {
             args["min-pts-pct"] = argv[++i];
         } else if ((arg == "-e" || arg == "--eth") && i + 1 < argc) {

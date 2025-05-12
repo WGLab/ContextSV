@@ -23,9 +23,7 @@ class InputData {
     public:
         InputData();
 
-        std::string getShortReadBam() const;
-
-        void setShortReadBam(std::string filepath);
+        void printParameters() const;
 
         std::string getLongReadBam() const;
 
@@ -65,10 +63,6 @@ class InputData {
         void setDBSCAN_Epsilon(double epsilon);
         double getDBSCAN_Epsilon() const;
 
-        // Set the minimum number of points in a cluster for DBSCAN.
-        void setDBSCAN_MinPts(int min_pts);
-        int getDBSCAN_MinPts() const;
-
         // Set the percentage of mean chromosome coverage to use for DBSCAN
         // minimum points.
         void setDBSCAN_MinPtsPct(double min_pts_pct);
@@ -105,7 +99,6 @@ class InputData {
         std::string getCNVOutputFile() const;
         
     private:
-        std::string short_read_bam;
         std::string long_read_bam;
         std::string ref_filepath;
         std::string snp_vcf_filepath;
@@ -116,7 +109,6 @@ class InputData {
         uint32_t min_cnv_length;
         int min_reads;
         double dbscan_epsilon;
-        int dbscan_min_pts;
         double dbscan_min_pts_pct;
         std::string chr;  // Chromosome to analyze
         std::pair<int32_t, int32_t> start_end;  // Region to analyze

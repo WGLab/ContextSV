@@ -14,32 +14,32 @@
 
 
 // Guard to close the BAM file
-struct BamFileGuard {
-    samFile* fp_in;
-    hts_idx_t* idx;
-    bam_hdr_t* bamHdr;
+// struct BamFileGuard {
+//     samFile* fp_in;
+//     hts_idx_t* idx;
+//     bam_hdr_t* bamHdr;
 
-    BamFileGuard(samFile* fp_in, hts_idx_t* idx, bam_hdr_t* bamHdr)
-        : fp_in(fp_in), idx(idx), bamHdr(bamHdr) {}
+//     BamFileGuard(samFile* fp_in, hts_idx_t* idx, bam_hdr_t* bamHdr)
+//         : fp_in(fp_in), idx(idx), bamHdr(bamHdr) {}
 
-    ~BamFileGuard() {
-        if (idx) {
-            hts_idx_destroy(idx);
-            idx = nullptr;
-        }
-        if (bamHdr) {
-            bam_hdr_destroy(bamHdr);
-            bamHdr = nullptr;
-        }
-        if (fp_in) {
-            sam_close(fp_in);
-            fp_in = nullptr;
-        }
-    }
+//     ~BamFileGuard() {
+//         if (idx) {
+//             hts_idx_destroy(idx);
+//             idx = nullptr;
+//         }
+//         if (bamHdr) {
+//             bam_hdr_destroy(bamHdr);
+//             bamHdr = nullptr;
+//         }
+//         if (fp_in) {
+//             sam_close(fp_in);
+//             fp_in = nullptr;
+//         }
+//     }
 
-    BamFileGuard(const BamFileGuard&) = delete;  // Non-copyable
-    BamFileGuard& operator=(const BamFileGuard&) = delete;  // Non-assignable
-};
+//     BamFileGuard(const BamFileGuard&) = delete;  // Non-copyable
+//     BamFileGuard& operator=(const BamFileGuard&) = delete;  // Non-assignable
+// };
 
 // Print the progress of a task
 void printProgress(int progress, int total);
