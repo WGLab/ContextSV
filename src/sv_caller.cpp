@@ -514,6 +514,7 @@ void SVCaller::findSplitSVSignatures(std::unordered_map<std::string, std::vector
                         // (ref_distance-1), sv_type, getSVTypeSymbol(sv_type),
                         // SVDataType::SPLITDIST1, Genotype::UNKNOWN, 0.0, 0,
                         // aln_offset, primary_cluster_size);
+                        // printMessage("DEBUG: Adding deletion SV call at " + chr_name + ":" + std::to_string(sv_start) + "-" + std::to_string(sv_start + (ref_distance-1)) + " with length " + std::to_string(ref_distance) + " and cluster size " + std::to_string(primary_cluster_size) + " and 5p-most is " + std::to_string(primary_5p_most) + " and read distance is " + std::to_string(read_distance) + " and ref distance is " + std::to_string(ref_distance));
                         SVCall sv_candidate(sv_start, sv_start + (ref_distance-1), sv_type, getSVTypeSymbol(sv_type), aln_type, Genotype::UNKNOWN, 0.0, 0, aln_offset, primary_cluster_size);
                         addSVCall(chr_sv_calls, sv_candidate);
                     }
@@ -527,7 +528,7 @@ void SVCaller::findSplitSVSignatures(std::unordered_map<std::string, std::vector
             for (int primary_pos : primary_positions) {
                 for (int supp_pos : supp_positions) {
                     int sv_start = std::min(primary_pos, supp_pos);
-                    int sv_end = std::max(primary_pos, supp_pos);
+                    int sv_end = std::max(primary_pos, supp_pos) - 1;
                     int sv_length = sv_end - sv_start + 1;
                     if (sv_length >= min_length && sv_length <= max_length) {
                         // printMessage("Adding SV call at " + chr_name + ":" + std::to_string(sv_start) + "-" + std::to_string(sv_end) + " with length " + std::to_string(sv_length) + " and cluster size " + std::to_string(cluster_size));
@@ -550,7 +551,8 @@ void SVCaller::findSplitSVSignatures(std::unordered_map<std::string, std::vector
             return a.start < b.start || (a.start == b.start && a.end < b.end);
         });
         
-        // Merge duplicate SV calls with identical start positions
+        // Merge duplicate SV calls with identical start and end positions, and sum the
+        // cluster sizes
         mergeDuplicateSVs(chr_sv_calls);
         sv_calls[chr_name] = std::move(chr_sv_calls);
 
@@ -868,27 +870,7 @@ void SVCaller::run(const InputData& input_data)
     		valid_chr.push_back(chr);
 	}
 	chromosomes = valid_chr;
-    	/*
-        try {
-            if (chr_mean_cov_map.at(chr) == 0.0) {
-                printMessage("Chromosome " + chr + " has no reads");
-            }
-        } catch (const std::out_of_range& e) {
-            printError("Chromosome " + chr + " not found in mean coverage map: " + std::string(e.what()));
-        }*/
-        /*
-        // Check if the chromosome has no reads
-        if (chr_mean_cov_map[chr] == 0.0) {
-            null_chr.push_back(chr);
-        }
-        */
     }
-	/*
-    printMessage("Removing " + std::to_string(null_chr.size()) + " chromosomes with no reads...");
-    for (const auto& chr : null_chr) {
-        printMessage("Removing chromosome " + chr + " with no reads...");
-        chromosomes.erase(std::remove(chromosomes.begin(), chromosomes.end(), chr), chromosomes.end());
-    }*/
     std::unordered_map<std::string, std::vector<SVCall>> whole_genome_sv_calls;
     int current_chr = 0;
     int total_chr_count = chromosomes.size();
@@ -1017,6 +999,7 @@ void SVCaller::run(const InputData& input_data)
         // recall)
         // Using a more aggressive epsilon works better for the final merge
         mergeSVs(sv_calls, 0.1, 2, true);
+        // continue;
 
         // [TEST 5] Keep noise and use a DBSCAN epsilon of 0.01 (1 more FP)
         // mergeSVs(sv_calls, 0.01, 2, true);
