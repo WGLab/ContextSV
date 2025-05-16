@@ -34,6 +34,7 @@ InputData::InputData()
     this->save_cnv_data = false;
     this->single_chr = false;
     this->cnv_output_file = "";
+    this->assembly_gaps = "";
 }
 
 void InputData::printParameters() const
@@ -140,6 +141,34 @@ std::string InputData::getEthnicity() const
 void InputData::setEthnicity(std::string ethnicity)
 {
     this->ethnicity = ethnicity;
+}
+
+void InputData::setAssemblyGaps(std::string filepath)
+{
+    // Check if the file exists
+    FILE *fp = fopen(filepath.c_str(), "r");
+    if (fp == NULL)
+    {
+        std::cerr << "Assembly gaps file does not exist: " << filepath << std::endl;
+        exit(1);
+    }
+
+    // Check if the file is a BED file
+    std::string ext = filepath.substr(filepath.find_last_of(".") + 1);
+    if (ext != "bed")
+    {
+        std::cerr << "Assembly gaps file is not a BED file: " << filepath << std::endl;
+        exit(1);
+    }
+    fclose(fp);
+
+    // Set the assembly gaps file
+    this->assembly_gaps = filepath;
+}
+
+std::string InputData::getAssemblyGaps() const
+{
+    return this->assembly_gaps;
 }
 
 uint32_t InputData::getMinCNVLength() const

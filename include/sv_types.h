@@ -7,6 +7,7 @@
 #include <set>
 #include <unordered_map>
 #include <tuple>
+#include <bitset>
 /// @endcond
 
 namespace sv_types {
@@ -75,6 +76,8 @@ namespace sv_types {
         UNKNOWN = 9
     };
 
+    using SVEvidenceFlags = std::bitset<10>;  // Bitset for SV data types
+
     // Mapping of SV data types to strings
     const std::unordered_map<SVDataType, std::string> SVDataTypeString = {
         {SVDataType::CIGARINS, "CIGARINS"},
@@ -105,6 +108,20 @@ namespace sv_types {
         return SVTypeString.at(sv_type);
     }
 
+    // Function to get the SV alignment type string from the bitset
+    inline std::string getSVAlignmentTypeString(SVEvidenceFlags aln_type) {
+        std::string result;
+        for (size_t i = 0; i < SVDataTypeString.size(); ++i) {
+            if (aln_type.test(i)) {
+                result += SVDataTypeString.at(static_cast<SVDataType>(i)) + ",";
+            }
+        }
+        if (!result.empty()) {
+            result.pop_back();  // Remove the trailing comma
+        }
+        return result;
+    }
+
     // Function to get the SV type from the CNV state
     inline SVType getSVTypeFromCNState(int cn_state) {
         return CNVTypeMap.at(cn_state);
@@ -116,9 +133,9 @@ namespace sv_types {
     }
 
     // Function to get the SV data type string
-    inline std::string getSVDataTypeString(SVDataType data_type) {
-        return SVDataTypeString.at(data_type);
-    }
+    // inline std::string getSVDataTypeString(SVDataType data_type) {
+    //     return SVDataTypeString.at(data_type);
+    // }
 
     // Function to get the SV type symbol
     inline std::string getSVTypeSymbol(SVType sv_type) {

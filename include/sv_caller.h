@@ -90,7 +90,8 @@ class SVCaller {
 
         void runSplitReadCopyNumberPredictions(const std::string& chr, std::vector<SVCall>& split_sv_calls, const CNVCaller &cnv_caller, const CHMM &hmm, double mean_chr_cov, const std::vector<uint32_t> &pos_depth_map, const InputData &input_data);
 
-        void saveToVCF(const std::unordered_map<std::string, std::vector<SVCall>> &sv_calls, const std::string &output_dir, const ReferenceGenome &ref_genome, const std::unordered_map<std::string, std::vector<uint32_t>>& chr_pos_depth_map) const;
+        void saveToVCF(const std::unordered_map<std::string, std::vector<SVCall>> &sv_calls, const InputData &input_data, const ReferenceGenome &ref_genome, const std::unordered_map<std::string, std::vector<uint32_t>> &chr_pos_depth_map) const;
+        // void saveToVCF(const std::unordered_map<std::string, std::vector<SVCall>> &sv_calls, const std::string &output_dir, const ReferenceGenome &ref_genome, const std::unordered_map<std::string, std::vector<uint32_t>>& chr_pos_depth_map) const;
 
         // Query the read depth (INFO/DP) at a position
         int getReadDepth(const std::vector<uint32_t>& pos_depth_map, uint32_t start) const;

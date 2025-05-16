@@ -20,7 +20,7 @@ void addSVCall(std::vector<SVCall>& sv_calls, SVCall& sv_call)
 {
     // Check if the SV call is valid
     if (sv_call.start > sv_call.end) {
-        printError("ERROR: Invalid SV call at position " + std::to_string(sv_call.start) + "-" + std::to_string(sv_call.end) + " from data type " + getSVDataTypeString(sv_call.data_type));
+        printError("ERROR: Invalid SV call at position " + std::to_string(sv_call.start) + "-" + std::to_string(sv_call.end) + " from data type " + getSVAlignmentTypeString(sv_call.aln_type));
         return;
     }
 
@@ -82,7 +82,9 @@ void mergeSVs(std::vector<SVCall>& sv_calls, double epsilon, int min_pts, bool k
         if (sv_type == SVType::INS) {
             // Add only non-CIGARCLIP SVs to the cluster map
             for (size_t i = 0; i < clusters.size(); ++i) {
-                if (sv_type_calls[i].data_type != SVDataType::CIGARCLIP) {
+                // if (sv_type_calls[i].data_type != SVDataType::CIGARCLIP) {
+                // Use the SVEvidenceFlags to check for CIGARCLIP
+                if (!sv_type_calls[i].aln_type.test(static_cast<size_t>(SVDataType::CIGARCLIP))) {
                     cluster_map[clusters[i]].push_back(sv_type_calls[i]);
                 }
             }
@@ -175,7 +177,7 @@ void mergeSVs(std::vector<SVCall>& sv_calls, double epsilon, int min_pts, bool k
                 cluster_count++;
             }
         }
-        printMessage("Completed DBSCAN with epsilon " + std::to_string(epsilon) + " for " + std::to_string(cluster_count) + " clusters of " + getSVTypeString(sv_type));
+        printMessage("Completed DBSCAN with epsilon " + std::to_string(epsilon) + " for " + std::to_string(cluster_count) + " clusters of " + getSVTypeString(sv_type) + " SVs");
     }
     sv_calls = std::move(merged_sv_calls); // Replace with filtered list
     int updated_size = sv_calls.size();

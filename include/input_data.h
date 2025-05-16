@@ -51,6 +51,10 @@ class InputData {
         void setEthnicity(std::string ethnicity);
         std::string getEthnicity() const;
 
+        // Set the assembly gaps file.
+        void setAssemblyGaps(std::string filepath);
+        std::string getAssemblyGaps() const;
+
         // Set the sample size for HMM predictions.
         void setSampleSize(int sample_size);
         int getSampleSize() const;
@@ -116,6 +120,7 @@ class InputData {
         int thread_count;
         std::string hmm_filepath;
         std::string cnv_filepath;
+        std::string assembly_gaps;  // Assembly gaps file
         bool verbose;  // True if verbose output is enabled
         bool save_cnv_data;  // True if SNP CNV regions should be extended around SV breakpoints, and saved to a TSV file (Large performance hit)
         bool single_chr;

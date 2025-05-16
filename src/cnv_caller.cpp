@@ -377,7 +377,8 @@ void CNVCaller::runCIGARCopyNumberPrediction(std::string chr, std::vector<SVCall
         if (is_valid_update)
         {
             sv_call.sv_type = updated_sv_type;
-            sv_call.data_type = SVDataType::HMM;
+            // sv_call.data_type = SVDataType::HMM;
+            sv_call.aln_type.set(static_cast<size_t>(SVDataType::HMM));
             sv_call.hmm_likelihood = likelihood;
             sv_call.genotype = genotype;
             sv_call.cn_state = max_state;

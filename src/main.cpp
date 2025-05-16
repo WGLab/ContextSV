@@ -88,6 +88,9 @@ void runContextSV(const std::unordered_map<std::string, std::string>& args)
     if (args.find("pfb-file") != args.end()) {
         input_data.setAlleleFreqFilepaths(args.at("pfb-file"));
     }
+    if (args.find("assembly-gaps") != args.end()) {
+        input_data.setAssemblyGaps(args.at("assembly-gaps"));
+    }
     if (args.find("save-cnv") != args.end()) {
         input_data.saveCNVData(true);
     }
@@ -180,6 +183,8 @@ std::unordered_map<std::string, std::string> parseArguments(int argc, char* argv
             args["eth"] = argv[++i];
         } else if ((arg == "-p" || arg == "--pfb") && i + 1 < argc) {
             args["pfb-file"] = argv[++i];
+        } else if (arg == "--assembly-gaps" && i + 1 < argc) {
+            args["assembly-gaps"] = argv[++i];
         } else if (arg == "--save-cnv") {
             args["save-cnv"] = "true";
         } else if (arg == "--debug") {
