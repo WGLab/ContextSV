@@ -1110,6 +1110,7 @@ void SVCaller::runSplitReadCopyNumberPredictions(const std::string& chr, std::ve
             // For predictions with the same type, or LOH predictions, update the
             // prediction information
             } else if (sv_candidate.sv_type != SVType::UNKNOWN && (supp_type == sv_candidate.sv_type || supp_type == SVType::LOH)) {
+                sv_candidate.aln_type.set(static_cast<size_t>(SVDataType::HMM));
                 sv_candidate.hmm_likelihood = supp_lh;
                 sv_candidate.genotype = genotype;
                 sv_candidate.cn_state = cn_state;
@@ -1120,15 +1121,49 @@ void SVCaller::runSplitReadCopyNumberPredictions(const std::string& chr, std::ve
 
             // Add an additional SV call if the type is different
             } else if (sv_candidate.sv_type != SVType::UNKNOWN && (supp_type != sv_candidate.sv_type && (supp_type == SVType::DEL || supp_type == SVType::DUP))) {
-                SVCall new_sv_call = sv_candidate;  // Copy the original SV call
-                new_sv_call.sv_type = supp_type;
-                new_sv_call.alt_allele = getSVTypeSymbol(supp_type);  // Update the ALT allele format
-                // new_sv_call.aln_type = SVDataType::HMM;
-                new_sv_call.aln_type.set(static_cast<size_t>(SVDataType::HMM));
-                new_sv_call.hmm_likelihood = supp_lh;
-                new_sv_call.genotype = genotype;
-                new_sv_call.cn_state = cn_state;
-                additional_calls.push_back(new_sv_call);
+                // For inversions, just update the alignment type, copy number
+                // state, and HMM likelihood. Coverage changes for these may be
+                // predicted as CNVs
+                if (sv_candidate.sv_type == SVType::INV) {
+                    sv_candidate.aln_type.set(static_cast<size_t>(SVDataType::HMM));
+                    sv_candidate.hmm_likelihood = supp_lh;
+                    sv_candidate.genotype = genotype;
+                    sv_candidate.cn_state = cn_state;
+                // For insertions predicted as duplications, update all information
+                } else if (sv_candidate.sv_type == SVType::INS && supp_type == SVType::DUP) {
+                    sv_candidate.sv_type = supp_type;
+                    sv_candidate.alt_allele = getSVTypeSymbol(supp_type);  // Update the ALT allele format
+                    sv_candidate.aln_type.set(static_cast<size_t>(SVDataType::HMM));
+                    sv_candidate.hmm_likelihood = supp_lh;
+                    sv_candidate.genotype = genotype;
+                    sv_candidate.cn_state = cn_state;
+                } else {
+                    // Add a new SV call with the conflicting type
+                    SVCall new_sv_call = sv_candidate;  // Copy the original SV call
+                    new_sv_call.sv_type = supp_type;
+                    new_sv_call.alt_allele = getSVTypeSymbol(supp_type);  // Update the ALT allele format
+                    new_sv_call.aln_type.set(static_cast<size_t>(SVDataType::HMM));
+                    new_sv_call.hmm_likelihood = supp_lh;
+                    new_sv_call.genotype = genotype;
+                    new_sv_call.cn_state = cn_state;
+                    additional_calls.push_back(new_sv_call);
+                }
+                // SVCall new_sv_call = sv_candidate;  // Copy the original SV call
+                // // new_sv_call.sv_type = supp_type;
+
+                // // Update the SV type unless the current type is inversion
+                // if (sv_candidate.sv_type != SVType::INV) {
+                //     new_sv_call.sv_type = supp_type;
+                //     new_sv_call.alt_allele = getSVTypeSymbol(supp_type);  // Update the ALT allele format
+                //     new_sv_call.genotype = genotype;
+                // }
+
+                // // new_sv_call.alt_allele = getSVTypeSymbol(supp_type);  // Update the ALT allele format
+                // new_sv_call.aln_type.set(static_cast<size_t>(SVDataType::HMM));
+                // new_sv_call.hmm_likelihood = supp_lh;
+                // // new_sv_call.genotype = genotype;
+                // new_sv_call.cn_state = cn_state;
+                // additional_calls.push_back(new_sv_call);
 
                 if (print_debug) {
                     printMessage("DEBUG [3]: Adding additional SV call at " + chr + ":" + std::to_string(sv_candidate.start) + "-" + std::to_string(sv_candidate.end) + " with HMM likelihood " + std::to_string(supp_lh) + " and type " + getSVTypeString(supp_type) + " and data type " + getSVAlignmentTypeString(sv_candidate.aln_type));
