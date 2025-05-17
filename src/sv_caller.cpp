@@ -1068,6 +1068,12 @@ void SVCaller::runSplitReadCopyNumberPredictions(const std::string& chr, std::ve
 {
     std::vector<SVCall> additional_calls;
     for (auto& sv_candidate : split_sv_calls) {
+
+        // [TEST] Skip the SV start is not 62971016 or 62971017
+        // if (sv_candidate.start != 62971016 && sv_candidate.start != 62971017) {
+        //     continue;
+        // }
+
         std::tuple<double, SVType, Genotype, int> result = cnv_caller.runCopyNumberPrediction(chr, hmm, sv_candidate.start, sv_candidate.end, mean_chr_cov, pos_depth_map, input_data);
         double supp_lh = std::get<0>(result);
         SVType supp_type = std::get<1>(result);
@@ -1075,12 +1081,12 @@ void SVCaller::runSplitReadCopyNumberPredictions(const std::string& chr, std::ve
         int cn_state = std::get<3>(result);
 
         bool print_debug = false;
-        if (sv_candidate.start == 15287019) {
-        // if (true) {
-            print_debug = true;
+        // if (sv_candidate.start == 15287019) {
+        // // if (true) {
+        //     print_debug = true;
 
-            printMessage("DEBUG: Running copy number prediction on " + chr + ":" + std::to_string(sv_candidate.start) + "-" + std::to_string(sv_candidate.end) + " with HMM likelihood " + std::to_string(supp_lh) + " and type " + getSVTypeString(supp_type) + " and data type " + getSVAlignmentTypeString(sv_candidate.aln_type));
-        }
+        //     printMessage("DEBUG: Running copy number prediction on " + chr + ":" + std::to_string(sv_candidate.start) + "-" + std::to_string(sv_candidate.end) + " with HMM likelihood " + std::to_string(supp_lh) + " and type " + getSVTypeString(supp_type) + " and data type " + getSVAlignmentTypeString(sv_candidate.aln_type));
+        // }
 
         // printMessage("Running copy number prediction on " + chr + ":" + std::to_string(sv_candidate.start) + "-" + std::to_string(sv_candidate.end) + " with HMM likelihood " + std::to_string(supp_lh) + " and type " + getSVTypeString(supp_type) + " and data type " + getSVDataTypeString(sv_candidate.data_type));
         

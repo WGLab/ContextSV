@@ -58,11 +58,21 @@ std::pair<std::vector<int>, double> testVit_CHMM(CHMM hmm, int T, std::vector<do
 double b1iot(int state, std::vector<double> mean, std::vector<double> sd, double uf, double o)
 {
 	// Get the values (0-based indexing)
+
+	// Fix within the expected normalized coverage range
 	if (o < mean[0])
 	{
 		o = mean[0];
+	} else if (o > mean[5])
+	{
+		o = mean[5];
 	}
+
 	double p = uf + ((1 - uf) * pdf_normal(o, mean[state-1], sd[state-1]));
+
+	// Print the equation and the result
+	// printMessage("b1iot: state = " + std::to_string(state) + ", mean = " + std::to_string(mean[state-1]) + ", sd = " + std::to_string(sd[state-1]) + ", uf = " + std::to_string(uf) + ", o = " + std::to_string(o) + ", p = " + std::to_string(p));
+	// printMessage("Equation: b1iot = uf + ((1 - uf) * pdf_normal(o, mean[state-1], sd[state-1]))");
 
 	return log(p);
 }

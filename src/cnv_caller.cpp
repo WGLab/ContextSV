@@ -173,6 +173,13 @@ std::tuple<double, SVType, Genotype, int> CNVCaller::runCopyNumberPrediction(std
         return std::make_tuple(0.0, SVType::UNKNOWN, Genotype::UNKNOWN, 0);
     }
 
+    // bool print_debug = (start_pos == 62971016 || start_pos == 62971017);
+    bool print_debug = false;
+    if (print_debug)
+    {
+        printMessage("DEBUG: Running copy number prediction for " + chr + ":" + std::to_string((int)start_pos) + "-" + std::to_string((int)end_pos));
+    }
+
     // Run the Viterbi algorithm on SNPs in the SV region
     // Only extend the region if "save CNV data" is enabled
     SNPData before_sv;
@@ -200,6 +207,20 @@ std::tuple<double, SVType, Genotype, int> CNVCaller::runCopyNumberPrediction(std
     SNPData snp_data;
     querySNPRegion(chr, start_pos, end_pos, pos_depth_map, mean_chr_cov, snp_data, input_data);
 
+    if (print_debug)
+    {
+        printMessage("DEBUG: SNP data size: " + std::to_string(snp_data.pos.size()));
+        printMessage("DEBUG: SNP data baf size: " + std::to_string(snp_data.baf.size()));
+        printMessage("DEBUG: SNP data pfb size: " + std::to_string(snp_data.pfb.size()));
+        printMessage("DEBUG: SNP data log2_cov size: " + std::to_string(snp_data.log2_cov.size()));
+        printMessage("DEBUG: mean_chr_cov: " + std::to_string(mean_chr_cov));
+        // Print all log2_cov values
+        for (size_t i = 0; i < snp_data.log2_cov.size(); i++)
+        {
+            printMessage("DEBUG: SNP data log2_cov[" + std::to_string(i) + "]: " + std::to_string(snp_data.log2_cov[i]));
+        }
+    }
+
     // Run the Viterbi algorithm
     std::pair<std::vector<int>, double> prediction;
     runViterbi(hmm, snp_data, prediction);
@@ -219,6 +240,11 @@ std::tuple<double, SVType, Genotype, int> CNVCaller::runCopyNumberPrediction(std
     std::vector<int> state_counts(6, 0);
     for (int state : state_sequence)
     {
+        if (print_debug)
+        {
+            printMessage("DEBUG: State: " + std::to_string(state));
+        }
+
         // Skip state 3 (normal state)
         if (state != 3)
         {
@@ -245,8 +271,9 @@ std::tuple<double, SVType, Genotype, int> CNVCaller::runCopyNumberPrediction(std
     }
 
     // Save the SV calls if enabled
+    uint32_t min_length = 30000;
     bool copy_number_change = (predicted_cnv_type != SVType::UNKNOWN && predicted_cnv_type != SVType::NEUTRAL);
-    if (input_data.getSaveCNVData() && copy_number_change && (end_pos - start_pos) > 50000)
+    if (input_data.getSaveCNVData() && copy_number_change && (end_pos - start_pos) >= min_length)
     {
         // Set B-allele and population frequency values to 0 for non-SNPs
         for (size_t i = 0; i < snp_data.pos.size(); i++)
