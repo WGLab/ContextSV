@@ -965,7 +965,9 @@ void SVCaller::run(const InputData& input_data)
         int min_pts = 2;
         for (auto& entry : whole_genome_split_sv_calls) {
             std::vector<SVCall>& sv_calls = entry.second;
-            mergeSVs(sv_calls, input_data.getDBSCAN_Epsilon(), min_pts, true);
+            // mergeSVs(sv_calls, input_data.getDBSCAN_Epsilon(), min_pts,
+            // true);
+            mergeSVs(sv_calls, 0.1, min_pts, true);
         }
 
         printMessage("Unifying SVs...");
@@ -981,7 +983,7 @@ void SVCaller::run(const InputData& input_data)
     printMessage("Merging CIGAR and split read SV calls...");
     for (auto& entry : whole_genome_sv_calls) {
         std::vector<SVCall>& sv_calls = entry.second;
-        // mergeSVs(sv_calls, 0.1, 2, true);
+        mergeSVs(sv_calls, 0.1, 2, true);
     }
 
     if (input_data.getSaveCNVData()) {
