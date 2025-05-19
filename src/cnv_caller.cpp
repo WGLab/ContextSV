@@ -235,46 +235,71 @@ std::tuple<double, SVType, Genotype, int> CNVCaller::runCopyNumberPrediction(std
     // Determine if there is a majority state within the SV region
     int max_state = 0;
     int max_count = 0;
-    int non_normal_count = 0;
-
-    std::vector<int> state_counts(6, 0);
-    for (int state : state_sequence)
+    for (int i = 0; i < 6; i++)
     {
-        if (print_debug)
+        int state_count = std::count(state_sequence.begin(), state_sequence.end(), i+1);
+        if (state_count > max_count)
         {
-            printMessage("DEBUG: State: " + std::to_string(state));
-        }
-
-        // Skip state 3 (normal state)
-        if (state != 3)
-        {
-            state_counts[state - 1]++;
-            non_normal_count++;
+            max_state = i+1;
+            max_count = state_count;
         }
     }
 
+    // If there is no majority state, then set the state to unknown
+    double pct_threshold = 0.50;
+    int state_count = (int) state_sequence.size();
+    if ((double) max_count / (double) state_count < pct_threshold)
+    {
+        max_state = 0;
+    }
+    Genotype genotype = getGenotypeFromCNState(max_state);
+    SVType predicted_cnv_type = getSVTypeFromCNState(max_state);
+    // snp_data.state_sequence = std::move(state_sequence);  // Move the state sequence to the SNP data
+
+    
+    // int non_normal_count = 0;
+
+    // std::vector<int> state_counts(6, 0);
+    // for (int state : state_sequence)
+    // {
+    //     if (print_debug)
+    //     {
+    //         printMessage("DEBUG: State: " + std::to_string(state));
+    //     }
+
+    //     // Skip state 3 (normal state)
+    //     if (state != 3)
+    //     {
+    //         state_counts[state - 1]++;
+    //         non_normal_count++;
+    //     }
+    // }
+
     // Determine the maximum state and count
-    int max_state_index = std::distance(state_counts.begin(), std::max_element(state_counts.begin(), state_counts.end()));
-    max_state = max_state_index + 1;
-    max_count = state_counts[max_state_index];
+    // int max_state_index = std::distance(state_counts.begin(), std::max_element(state_counts.begin(), state_counts.end()));
+    // max_state = max_state_index + 1;
+    // max_count = state_counts[max_state_index];
 
     // Update SV type and genotype based on the majority state
     // SVType predicted_cnv_type = getSVTypeFromCNState(max_state);
     // Genotype genotype = getGenotypeFromCNState(max_state);
-    SVType predicted_cnv_type = SVType::UNKNOWN;
-    Genotype genotype = Genotype::UNKNOWN;
-    if (max_count > 0 && ((double) max_count / (double) non_normal_count) > 0.5)
-    {
-        predicted_cnv_type = getSVTypeFromCNState(max_state);
-        genotype = getGenotypeFromCNState(max_state);
-        snp_data.state_sequence = std::move(state_sequence);  // Move the state sequence to the SNP data
-    }
+    // SVType predicted_cnv_type = SVType::UNKNOWN;
+    // Genotype genotype = Genotype::UNKNOWN;
+    // if (max_count > 0 && ((double) max_count / (double) non_normal_count) > 0.5)
+    // {
+    //     predicted_cnv_type = getSVTypeFromCNState(max_state);
+    //     genotype = getGenotypeFromCNState(max_state);
+    //     snp_data.state_sequence = std::move(state_sequence);  // Move the state sequence to the SNP data
+    // }
 
     // Save the SV calls if enabled
     uint32_t min_length = 30000;
     bool copy_number_change = (predicted_cnv_type != SVType::UNKNOWN && predicted_cnv_type != SVType::NEUTRAL);
     if (input_data.getSaveCNVData() && copy_number_change && (end_pos - start_pos) >= min_length)
     {
+        // Move the state sequence to the SNP data
+        snp_data.state_sequence = std::move(state_sequence);
+
         // Set B-allele and population frequency values to 0 for non-SNPs
         for (size_t i = 0; i < snp_data.pos.size(); i++)
         {
@@ -371,7 +396,7 @@ void CNVCaller::runCIGARCopyNumberPrediction(std::string chr, std::vector<SVCall
         }
 
         // Determine if there is a majority state within the SV region and if it
-        // is greater than 75%
+        // is greater than 50%
         int max_state = 0;
         int max_count = 0;
         for (int i = 0; i < 6; i++)
@@ -385,7 +410,7 @@ void CNVCaller::runCIGARCopyNumberPrediction(std::string chr, std::vector<SVCall
         }
 
         // If there is no majority state, then set the state to unknown
-        double pct_threshold = 0.75;
+        double pct_threshold = 0.50;
         int state_count = (int) sv_states.size();
         if ((double) max_count / (double) state_count < pct_threshold)
         {

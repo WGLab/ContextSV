@@ -449,7 +449,7 @@ void SVCaller::findSplitSVSignatures(std::unordered_map<std::string, std::vector
                 // Add an insertion SV call at the primary position
 
                 // bool print_debug = false;
-                bool print_debug = true;
+                // bool print_debug = true;
                 
                 // int sv_start = primary_positions[0];
                 // Use the 3'-most primary position as the start position
@@ -1338,47 +1338,47 @@ void SVCaller::saveToVCF(const std::unordered_map<std::string, std::vector<SVCal
                 total_count += 1;
             }
 
-            // Deletion
-            if (sv_type == SVType::DEL) {
-                // Check if the deletion is in an assembly gap (0-based)
-                if (assembly_gap_file != "") {
-                    bool in_assembly_gap = false;
-                    // if (assembly_gaps.find(chr) != assembly_gaps.end()) {
-                    auto it = assembly_gaps.find(chr);
-                    if (it != assembly_gaps.end()) {
-                        // Check if the deletion overlaps with any assembly gaps
-                        for (const auto& gap : assembly_gaps[chr]) {
-                            // Determine if the deletion overlaps with the
-                            // assembly gap by greater than 50%
-                            uint32_t overlap_start = std::max(start, gap.first + 1);  // Convert to 1-based
-                            uint32_t overlap_end = std::min(end, gap.second + 1);  // Convert to 1-based
-                            if (overlap_start <= overlap_end) {
-                                // Calculate the overlap length
-                                uint32_t overlap_length = overlap_end - overlap_start + 1;
-                                // Calculate the percentage of overlap
-                                double overlap_pct = static_cast<double>(overlap_length) / static_cast<double>(sv_length);
-                                if (overlap_pct > 0.2) {
-                                    in_assembly_gap = true;
-                                    break;
-                                }
+            // Check if the SV is in an assembly gap (0-based)
+            if (assembly_gap_file != "") {
+                bool in_assembly_gap = false;
+                // if (assembly_gaps.find(chr) != assembly_gaps.end()) {
+                auto it = assembly_gaps.find(chr);
+                if (it != assembly_gaps.end()) {
+                    // Check if the deletion overlaps with any assembly gaps
+                    for (const auto& gap : assembly_gaps[chr]) {
+                        // Determine if the deletion overlaps with the
+                        // assembly gap by greater than 50%
+                        uint32_t overlap_start = std::max(start, gap.first + 1);  // Convert to 1-based
+                        uint32_t overlap_end = std::min(end, gap.second + 1);  // Convert to 1-based
+                        if (overlap_start <= overlap_end) {
+                            // Calculate the overlap length
+                            uint32_t overlap_length = overlap_end - overlap_start + 1;
+                            // Calculate the percentage of overlap
+                            double overlap_pct = static_cast<double>(overlap_length) / static_cast<double>(sv_length);
+                            if (overlap_pct > 0.2) {
+                                in_assembly_gap = true;
+                                break;
                             }
-                            // double overlap = 0.0;
-                            // uint32_t gap_start = gap.first + 1;  // Convert to 1-based
-                            // uint32_t gap_end = gap.second + 1;  // Convert to 1-based
-                            // overlap = static_cast<double>(std::min(end, gap_end) - std::max(start, gap_start) + 1) / static_cast<double>(sv_length);
-                            // if (overlap > 0.2) {
-                            //     std::cout << "Assembly gap overlap is " << overlap << " for " << chr << ":" << start << "-" << end << std::endl;
-                            //     in_assembly_gap = true;
-                            //     break;
-                            // }
                         }
-                        if (in_assembly_gap) {
-                            filter = "AssemblyGap";
-                            assembly_gap_filtered_svs += 1;
-                        }
+                        // double overlap = 0.0;
+                        // uint32_t gap_start = gap.first + 1;  // Convert to 1-based
+                        // uint32_t gap_end = gap.second + 1;  // Convert to 1-based
+                        // overlap = static_cast<double>(std::min(end, gap_end) - std::max(start, gap_start) + 1) / static_cast<double>(sv_length);
+                        // if (overlap > 0.2) {
+                        //     std::cout << "Assembly gap overlap is " << overlap << " for " << chr << ":" << start << "-" << end << std::endl;
+                        //     in_assembly_gap = true;
+                        //     break;
+                        // }
+                    }
+                    if (in_assembly_gap) {
+                        filter = "AssemblyGap";
+                        assembly_gap_filtered_svs += 1;
                     }
                 }
+            }
 
+            // Deletion
+            if (sv_type == SVType::DEL) {
                 // Get the deleted sequence from the reference genome, also including the preceding base
                 uint32_t preceding_pos = (uint32_t) std::max(1, static_cast<int>(start)-1);  // Make sure the position is not negative
                 ref_allele = ref_genome.query(chr, preceding_pos, end);
