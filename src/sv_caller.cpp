@@ -799,7 +799,8 @@ void SVCaller::processChromosome(const std::string& chr, std::vector<SVCall>& ch
     bam_hdr_destroy(bamHdr);
 
     printMessage(chr + ": Merging CIGAR...");
-    mergeSVs(chr_sv_calls, dbscan_epsilon, dbscan_min_pts, false);
+    // mergeSVs(chr_sv_calls, dbscan_epsilon, dbscan_min_pts, false);
+    mergeSVs(chr_sv_calls, 0.1, dbscan_min_pts, false);
 
     int region_sv_count = getSVCount(chr_sv_calls);
     printMessage(chr + ": Found " + std::to_string(region_sv_count) + " SV candidates in the CIGAR string");
@@ -980,32 +981,7 @@ void SVCaller::run(const InputData& input_data)
     printMessage("Merging CIGAR and split read SV calls...");
     for (auto& entry : whole_genome_sv_calls) {
         std::vector<SVCall>& sv_calls = entry.second;
-        // mergeDuplicateSVs(sv_calls);
-        // mergeSVs(sv_calls, 0.1, 2, false);
-
-        // [TEST 1] Keep noise and use the DBSCAN epsilon from the
-        // command line
-        // mergeSVs(sv_calls, input_data.getDBSCAN_Epsilon(), 2, true);
-
-        // [TEST 2] Remove noise and use the DBSCAN epsilon from the
-        // command line (= really low recall, and low precision)
-        // mergeSVs(sv_calls, input_data.getDBSCAN_Epsilon(), 2, false);
-
-        // [TEST 3] Remove noise and use a DBSCAN epsilon of 0.1 (low recall,
-        // higher precision)
-        // mergeSVs(sv_calls, 0.1, 2, false);
-
-        // [TEST 4] Keep noise and use a DBSCAN epsilon of 0.1 (slightly better
-        // recall)
-        // Using a more aggressive epsilon works better for the final merge
-        mergeSVs(sv_calls, 0.1, 2, true);
-        // continue;
-
-        // [TEST 5] Keep noise and use a DBSCAN epsilon of 0.01 (1 more FP)
-        // mergeSVs(sv_calls, 0.01, 2, true);
-
-        // [TEST 6] do nothing (reduced precision, same recall as #4)
-        // continue;
+        // mergeSVs(sv_calls, 0.1, 2, true);
     }
 
     if (input_data.getSaveCNVData()) {
@@ -1107,9 +1083,9 @@ void SVCaller::runSplitReadCopyNumberPredictions(const std::string& chr, std::ve
                     printMessage("DEBUG [1]: Updating SV call at " + chr + ":" + std::to_string(sv_candidate.start) + "-" + std::to_string(sv_candidate.end) + " with HMM likelihood " + std::to_string(supp_lh) + " and type " + getSVTypeString(supp_type) + " and data type " + getSVAlignmentTypeString(sv_candidate.aln_type));
                 }
 
-            // For predictions with the same type, or LOH predictions, update the
+            // For predictions with the same type, or LOH, neutral predictions, update the
             // prediction information
-            } else if (sv_candidate.sv_type != SVType::UNKNOWN && (supp_type == sv_candidate.sv_type || supp_type == SVType::LOH)) {
+            } else if (sv_candidate.sv_type != SVType::UNKNOWN && (supp_type == sv_candidate.sv_type || supp_type == SVType::LOH || supp_type == SVType::NEUTRAL)) {
                 sv_candidate.aln_type.set(static_cast<size_t>(SVDataType::HMM));
                 sv_candidate.hmm_likelihood = supp_lh;
                 sv_candidate.genotype = genotype;

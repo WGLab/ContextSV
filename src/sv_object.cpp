@@ -147,10 +147,14 @@ void mergeSVs(std::vector<SVCall>& sv_calls, double epsilon, int min_pts, bool k
                     //     return sv_call.hmm_likelihood != 0.0;
                     // });
 
-                    // Choose the SV with the highest cluster size of all SVs with non-zero likelihood
+                    // Choose the SV with the highest cluster size of all SVs
+                    // with non-zero likelihood (if equal, choose the larger SV)
                     std::sort(cluster_sv_calls.begin(), cluster_sv_calls.end(), [](const SVCall& a, const SVCall& b) {
-                        return a.cluster_size > b.cluster_size || (a.cluster_size == b.cluster_size && a.hmm_likelihood > b.hmm_likelihood);
+                        return a.cluster_size > b.cluster_size || (a.cluster_size == b.cluster_size && a.end - a.start > b.end - b.start);
                     });
+                    // std::sort(cluster_sv_calls.begin(), cluster_sv_calls.end(), [](const SVCall& a, const SVCall& b) {
+                    //     return a.cluster_size > b.cluster_size || (a.cluster_size == b.cluster_size && a.hmm_likelihood > b.hmm_likelihood);
+                    // });
                     auto it = std::find_if(cluster_sv_calls.begin(), cluster_sv_calls.end(), [](const SVCall& sv_call) {
                         return sv_call.hmm_likelihood != 0.0;
                     });

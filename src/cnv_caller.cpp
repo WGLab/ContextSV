@@ -173,13 +173,6 @@ std::tuple<double, SVType, Genotype, int> CNVCaller::runCopyNumberPrediction(std
         return std::make_tuple(0.0, SVType::UNKNOWN, Genotype::UNKNOWN, 0);
     }
 
-    // bool print_debug = (start_pos == 62971016 || start_pos == 62971017);
-    bool print_debug = false;
-    if (print_debug)
-    {
-        printMessage("DEBUG: Running copy number prediction for " + chr + ":" + std::to_string((int)start_pos) + "-" + std::to_string((int)end_pos));
-    }
-
     // Run the Viterbi algorithm on SNPs in the SV region
     // Only extend the region if "save CNV data" is enabled
     SNPData before_sv;
@@ -207,20 +200,6 @@ std::tuple<double, SVType, Genotype, int> CNVCaller::runCopyNumberPrediction(std
     SNPData snp_data;
     querySNPRegion(chr, start_pos, end_pos, pos_depth_map, mean_chr_cov, snp_data, input_data);
 
-    if (print_debug)
-    {
-        printMessage("DEBUG: SNP data size: " + std::to_string(snp_data.pos.size()));
-        printMessage("DEBUG: SNP data baf size: " + std::to_string(snp_data.baf.size()));
-        printMessage("DEBUG: SNP data pfb size: " + std::to_string(snp_data.pfb.size()));
-        printMessage("DEBUG: SNP data log2_cov size: " + std::to_string(snp_data.log2_cov.size()));
-        printMessage("DEBUG: mean_chr_cov: " + std::to_string(mean_chr_cov));
-        // Print all log2_cov values
-        for (size_t i = 0; i < snp_data.log2_cov.size(); i++)
-        {
-            printMessage("DEBUG: SNP data log2_cov[" + std::to_string(i) + "]: " + std::to_string(snp_data.log2_cov[i]));
-        }
-    }
-
     // Run the Viterbi algorithm
     std::pair<std::vector<int>, double> prediction;
     runViterbi(hmm, snp_data, prediction);
@@ -245,6 +224,13 @@ std::tuple<double, SVType, Genotype, int> CNVCaller::runCopyNumberPrediction(std
         }
     }
 
+    bool print_debug = false;
+    if (start_pos == 70955983) // || start_pos == 70955984)
+    {
+        print_debug = true;
+        printMessage("Max state for " + chr + ":" + std::to_string(start_pos) + "-" + std::to_string(end_pos) + " is " + std::to_string(max_state) + " with count " + std::to_string(max_count) + " of " + std::to_string(state_sequence.size()));
+    }
+
     // If there is no majority state, then set the state to unknown
     double pct_threshold = 0.50;
     int state_count = (int) state_sequence.size();
@@ -252,11 +238,20 @@ std::tuple<double, SVType, Genotype, int> CNVCaller::runCopyNumberPrediction(std
     {
         max_state = 0;
     }
+
+    if (print_debug)
+    {
+        printMessage("Pct max count: " + std::to_string((double) max_count / (double) state_count));
+    }
+
     Genotype genotype = getGenotypeFromCNState(max_state);
     SVType predicted_cnv_type = getSVTypeFromCNState(max_state);
     // snp_data.state_sequence = std::move(state_sequence);  // Move the state sequence to the SNP data
 
-    
+    if (print_debug)
+    {
+        printMessage("Predicted CNV type: " + getSVTypeString(predicted_cnv_type) + " with genotype " + getGenotypeString(genotype) + " and likelihood " + std::to_string(likelihood));
+    }
     // int non_normal_count = 0;
 
     // std::vector<int> state_counts(6, 0);
