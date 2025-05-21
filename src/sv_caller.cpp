@@ -754,6 +754,13 @@ void SVCaller::processChromosome(const std::string& chr, std::vector<SVCall>& ch
     bam_hdr_destroy(bamHdr);
 
     printMessage(chr + ": Merging CIGAR...");
+    // Save JSON if chr21
+    // if (chr == "chr21") {
+    //     std::string json_fp = input_data.getOutputDir() + "/" + chr + ".json";
+    //     mergeSVs(chr_sv_calls, dbscan_epsilon, dbscan_min_pts, true, json_fp);
+    // } else {
+    //     mergeSVs(chr_sv_calls, dbscan_epsilon, dbscan_min_pts, false);
+    // }
     mergeSVs(chr_sv_calls, dbscan_epsilon, dbscan_min_pts, false);
 
     int region_sv_count = getSVCount(chr_sv_calls);
@@ -953,8 +960,6 @@ void SVCaller::run(const InputData& input_data)
 
     // Save to VCF
     std::cout << "Saving SVs to VCF..." << std::endl;
-    // const std::string output_dir = input_data.getOutputDir();
-    // this->saveToVCF(whole_genome_sv_calls, output_dir, ref_genome, chr_pos_depth_map);
     this->saveToVCF(whole_genome_sv_calls, input_data, ref_genome, chr_pos_depth_map);
 }
 
@@ -1076,7 +1081,7 @@ void SVCaller::runSplitReadCopyNumberPredictions(const std::string& chr, std::ve
     }
 }
 
-// void SVCaller::saveToVCF(const std::unordered_map<std::string, std::vector<SVCall>>& sv_calls, const std::string& output_dir, const ReferenceGenome& ref_genome, const std::unordered_map<std::string, std::vector<uint32_t>>& chr_pos_depth_map) const
+
 void SVCaller::saveToVCF(const std::unordered_map<std::string, std::vector<SVCall>>& sv_calls, const InputData &input_data, const ReferenceGenome& ref_genome, const std::unordered_map<std::string, std::vector<uint32_t>>& chr_pos_depth_map) const
 {
     // Check if an assembly gap file was provided
