@@ -799,8 +799,9 @@ void SVCaller::processChromosome(const std::string& chr, std::vector<SVCall>& ch
     bam_hdr_destroy(bamHdr);
 
     printMessage(chr + ": Merging CIGAR...");
-    // mergeSVs(chr_sv_calls, dbscan_epsilon, dbscan_min_pts, false);
-    mergeSVs(chr_sv_calls, 0.1, dbscan_min_pts, false);
+    mergeSVs(chr_sv_calls, dbscan_epsilon, dbscan_min_pts, false);
+    // mergeSVs(chr_sv_calls, 0.1, dbscan_min_pts, false);
+    // mergeSVs(chr_sv_calls, 0.3, dbscan_min_pts, false);
 
     int region_sv_count = getSVCount(chr_sv_calls);
     printMessage(chr + ": Found " + std::to_string(region_sv_count) + " SV candidates in the CIGAR string");
@@ -962,12 +963,13 @@ void SVCaller::run(const InputData& input_data)
         }
 
         printMessage("Merging split-read SVs...");
-        int min_pts = 2;
+        // int min_pts = 2;
         for (auto& entry : whole_genome_split_sv_calls) {
             std::vector<SVCall>& sv_calls = entry.second;
             // mergeSVs(sv_calls, input_data.getDBSCAN_Epsilon(), min_pts,
             // true);
-            mergeSVs(sv_calls, 0.1, min_pts, true);
+            mergeSVs(sv_calls, 0.1, 2, true);
+            // mergeSVs(sv_calls, 0.3, min_pts, true);
         }
 
         printMessage("Unifying SVs...");
@@ -984,6 +986,7 @@ void SVCaller::run(const InputData& input_data)
     for (auto& entry : whole_genome_sv_calls) {
         std::vector<SVCall>& sv_calls = entry.second;
         mergeSVs(sv_calls, 0.1, 2, true);
+        // mergeSVs(sv_calls, 0.3, 2, true);
     }
 
     if (input_data.getSaveCNVData()) {
