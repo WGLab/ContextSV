@@ -136,17 +136,6 @@ void mergeSVs(std::vector<SVCall>& sv_calls, double epsilon, int min_pts, bool k
                 
                 SVCall merged_sv_call = cluster_sv_calls[0];
                 if (has_nonzero_likelihood) {
-                    // // These are detected from split reads, choose the one with
-                    // // the highest non-zero likelihood normalized by the length of the SV
-                    // std::sort(cluster_sv_calls.begin(), cluster_sv_calls.end(), [](const SVCall& a, const SVCall& b) {
-                    //     return (a.hmm_likelihood / (double)(a.end - a.start + 1)) > (b.hmm_likelihood / (double)(b.end - b.start + 1));
-                    // });
-
-                    // // Obtain the highest non-zero likelihood
-                    // auto it = std::find_if(cluster_sv_calls.begin(), cluster_sv_calls.end(), [](const SVCall& sv_call) {
-                    //     return sv_call.hmm_likelihood != 0.0;
-                    // });
-
                     // Choose the SV with the highest cluster size of all SVs
                     // with non-zero likelihood (if equal, choose the larger SV)
                     std::sort(cluster_sv_calls.begin(), cluster_sv_calls.end(), [](const SVCall& a, const SVCall& b) {
@@ -216,29 +205,6 @@ void mergeDuplicateSVs(std::vector<SVCall> &sv_calls)
         } else {
             combined_sv_calls.push_back(sv_call);
         }
-        // SVCall& sv_call = sv_calls[i];
-        // // For SVs at the same start position with the same SV type, keep the one
-        // // with the highest likelihood
-        // if (i > 0 && sv_call.start == sv_calls[i - 1].start && ((sv_call.sv_type == sv_calls[i - 1].sv_type) || sv_call.sv_type == SVType::UNKNOWN || sv_calls[i - 1].sv_type == SVType::UNKNOWN)) {
-        //     // Keep the SV call with a non-zero likelihood
-        //     // The HMM prediction is more reliable than the split read prediction
-        //     if (sv_call.hmm_likelihood != 0.0 && sv_calls[i - 1].hmm_likelihood == 0.0) {
-        //         // Combine the cluster sizes
-        //         sv_call.cluster_size += sv_calls[i - 1].cluster_size;
-        //         combined_sv_calls.back() = sv_call;
-        //     }
-
-        //     // If the likelihoods are equal, keep the one with the larger cluster size
-        //     // This is to ensure that the SV call with more supporting reads is
-        //     // kept
-        //     else if (sv_call.hmm_likelihood == sv_calls[i - 1].hmm_likelihood && sv_call.cluster_size >= sv_calls[i - 1].cluster_size) {
-        //         // Combine the cluster sizes
-        //         sv_call.cluster_size += sv_calls[i - 1].cluster_size;
-        //         combined_sv_calls.back() = sv_call;
-        //     }
-        // } else {
-        //     combined_sv_calls.push_back(sv_call);
-        // }
     }
     int merge_count = initial_size - combined_sv_calls.size();
     sv_calls = std::move(combined_sv_calls); // Replace with filtered list

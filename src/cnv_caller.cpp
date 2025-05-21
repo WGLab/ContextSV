@@ -74,7 +74,6 @@ void CNVCaller::querySNPRegion(std::string chr, uint32_t start_pos, uint32_t end
 
     // Loop through evenly spaced positions in the region and get the log2 ratio
     double pos_step = static_cast<double>(end_pos - start_pos + 1) / static_cast<double>(sample_size);
-    // double pos_step = (double) (end_pos - start_pos + 1) / (double) sample_size;
     std::unordered_map<std::string, double> window_log2_map;
     for (int i = 0; i < sample_size; i++)
     {
@@ -224,13 +223,6 @@ std::tuple<double, SVType, Genotype, int> CNVCaller::runCopyNumberPrediction(std
         }
     }
 
-    bool print_debug = false;
-    if (start_pos == 70955983) // || start_pos == 70955984)
-    {
-        print_debug = true;
-        printMessage("Max state for " + chr + ":" + std::to_string(start_pos) + "-" + std::to_string(end_pos) + " is " + std::to_string(max_state) + " with count " + std::to_string(max_count) + " of " + std::to_string(state_sequence.size()));
-    }
-
     // If there is no majority state, then set the state to unknown
     double pct_threshold = 0.50;
     int state_count = (int) state_sequence.size();
@@ -239,53 +231,8 @@ std::tuple<double, SVType, Genotype, int> CNVCaller::runCopyNumberPrediction(std
         max_state = 0;
     }
 
-    if (print_debug)
-    {
-        printMessage("Pct max count: " + std::to_string((double) max_count / (double) state_count));
-    }
-
     Genotype genotype = getGenotypeFromCNState(max_state);
     SVType predicted_cnv_type = getSVTypeFromCNState(max_state);
-    // snp_data.state_sequence = std::move(state_sequence);  // Move the state sequence to the SNP data
-
-    if (print_debug)
-    {
-        printMessage("Predicted CNV type: " + getSVTypeString(predicted_cnv_type) + " with genotype " + getGenotypeString(genotype) + " and likelihood " + std::to_string(likelihood));
-    }
-    // int non_normal_count = 0;
-
-    // std::vector<int> state_counts(6, 0);
-    // for (int state : state_sequence)
-    // {
-    //     if (print_debug)
-    //     {
-    //         printMessage("DEBUG: State: " + std::to_string(state));
-    //     }
-
-    //     // Skip state 3 (normal state)
-    //     if (state != 3)
-    //     {
-    //         state_counts[state - 1]++;
-    //         non_normal_count++;
-    //     }
-    // }
-
-    // Determine the maximum state and count
-    // int max_state_index = std::distance(state_counts.begin(), std::max_element(state_counts.begin(), state_counts.end()));
-    // max_state = max_state_index + 1;
-    // max_count = state_counts[max_state_index];
-
-    // Update SV type and genotype based on the majority state
-    // SVType predicted_cnv_type = getSVTypeFromCNState(max_state);
-    // Genotype genotype = getGenotypeFromCNState(max_state);
-    // SVType predicted_cnv_type = SVType::UNKNOWN;
-    // Genotype genotype = Genotype::UNKNOWN;
-    // if (max_count > 0 && ((double) max_count / (double) non_normal_count) > 0.5)
-    // {
-    //     predicted_cnv_type = getSVTypeFromCNState(max_state);
-    //     genotype = getGenotypeFromCNState(max_state);
-    //     snp_data.state_sequence = std::move(state_sequence);  // Move the state sequence to the SNP data
-    // }
 
     // Save the SV calls if enabled
     uint32_t min_length = 30000;
@@ -365,7 +312,6 @@ void CNVCaller::runCIGARCopyNumberPrediction(std::string chr, std::vector<SVCall
 
         // Only extend the region if "save CNV data" is enabled
         SNPData snp_data;
-        // printMessage("Querying SNP region for copy number prediction: " + chr + ":" + std::to_string((int)start_pos) + "-" + std::to_string((int)end_pos));
         this->querySNPRegion(chr, start_pos, end_pos, pos_depth_map, mean_chr_cov, snp_data, input_data);
 
         // Run the Viterbi algorithm
@@ -462,7 +408,6 @@ std::vector<std::string> CNVCaller::splitRegionIntoChunks(std::string chr, uint3
 void CNVCaller::calculateMeanChromosomeCoverage(const std::vector<std::string>& chromosomes, std::unordered_map<std::string, std::vector<uint32_t>>& chr_pos_depth_map, std::unordered_map<std::string, double>& chr_mean_cov_map, const std::string& bam_filepath, int thread_count) const
 {
     // Open the BAM file
-    // std::shared_lock<std::shared_mutex> lock(this->shared_mutex);  // Lock the BAM file
     printMessage("Opening BAM file: " + bam_filepath);
     samFile *bam_file = sam_open(bam_filepath.c_str(), "r");
     if (!bam_file)
@@ -531,7 +476,6 @@ void CNVCaller::calculateMeanChromosomeCoverage(const std::vector<std::string>& 
         if (pos_depth_map.size() != static_cast<size_t>(chr_length))
         {
             printError("ERROR: Chromosome length mismatch for " + chr + ": expected " + std::to_string(chr_length) + ", found " + std::to_string(pos_depth_map.size()) + ", resizing to " + std::to_string(chr_length));
-            // Resize the depth map to the length of the chromosome
             pos_depth_map.resize(chr_length, 0);
         }
         while (sam_itr_next(bam_file, bam_iter, bam_record) >= 0)
@@ -580,35 +524,6 @@ void CNVCaller::calculateMeanChromosomeCoverage(const std::vector<std::string>& 
         }
         hts_itr_destroy(bam_iter);
 
-        // You can parallelize the depth map calculation here but first close the
-        // BAM file and index
-        // Bam cleanup (delete guard if using this)
-        // bam_destroy1(bam_record);
-        // bam_hdr_destroy(bam_header);
-        // sam_close(bam_file);
-        // bam_index_destroy(bam_index);
-        // bam_record = nullptr;
-        // bam_header = nullptr;
-        // bam_file = nullptr;
-        // bam_index = nullptr;
-        
-        // // Parallel sum of the depth map
-        // uint64_t cum_depth = std::reduce(
-        //     std::execution::par,
-        //     pos_depth_map.begin(),
-        //     pos_depth_map.end(),
-        //     0ULL
-        // );
-
-        // // Parallel count of the non-zero depth positions
-        // uint32_t pos_count = std::count_if(
-        //     std::execution::par,
-        //     pos_depth_map.begin(),
-        //     pos_depth_map.end(),
-        //     [](uint32_t depth) { return depth > 0; }
-        // );
-
-        // Sum without parallelization
         uint64_t cum_depth = std::accumulate(pos_depth_map.begin(), pos_depth_map.end(), 0ULL);
         uint32_t pos_count = std::count_if(pos_depth_map.begin(), pos_depth_map.end(), [](uint32_t depth) { return depth > 0; });
 
@@ -701,7 +616,6 @@ void CNVCaller::readSNPAlleleFrequencies(std::string chr, uint32_t start_pos, ui
 
         // Check if the filepath uses the 'chr' prefix notations based on the
         // chromosome name (*.chr1.vcf.gz vs *.1.vcf.gz)
-        // chr_gnomad = chr;  // gnomAD data may or may not have the 'chr' prefix
         std::string chr_prefix = "chr";
         if (pfb_filepath.find(chr_prefix) == std::string::npos)
         {
@@ -745,7 +659,8 @@ void CNVCaller::readSNPAlleleFrequencies(std::string chr, uint32_t start_pos, ui
         bcf_sr_set_threads(pfb_reader, thread_count);
     }
 
-    // Read the SNP data ----------------------------------------------
+    // Read the SNP data
+    
     // Set the region
     std::string region_str = chr + ":" + std::to_string(start_pos) + "-" + std::to_string(end_pos);
     if (bcf_sr_set_regions(snp_reader, region_str.c_str(), 0) < 0)  //chr.c_str(), 0) < 0)
