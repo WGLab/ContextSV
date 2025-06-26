@@ -19,6 +19,11 @@ CONDA_LIB_DIR := $(CONDA_PREFIX)/lib
 # Compiler and Flags
 CXX := g++
 CXXFLAGS := -std=c++17 -g -I$(INCL_DIR) -I$(CONDA_INCL_DIR) -Wall -Wextra -pedantic
+
+ifdef DEBUG
+	CXXFLAGS += -DDEBUG
+endif
+
 LDFLAGS := -L$(LIB_DIR) -L$(CONDA_LIB_DIR) -Wl,-rpath=$(CONDA_LIB_DIR)  # Add rpath for shared libraries
 LDLIBS := -lhts  # Link with libhts.a or libhts.so
 

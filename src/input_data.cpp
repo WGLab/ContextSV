@@ -8,6 +8,7 @@
 #include <thread>
 
 #include "utils.h"
+#include "debug.h"  // For DEBUG_PRINT
 /// @endcond
 
 #define MIN_PFB 0.01  // Minimum SNP population allele frequency
@@ -39,22 +40,22 @@ InputData::InputData()
 
 void InputData::printParameters() const
 {
-    std::cout << "Input parameters:" << std::endl;
-    std::cout << "Long read BAM: " << this->long_read_bam << std::endl;
-    std::cout << "Reference genome: " << this->ref_filepath << std::endl;
-    std::cout << "SNP VCF: " << this->snp_vcf_filepath << std::endl;
-    std::cout << "Output directory: " << this->output_dir << std::endl;
-    std::cout << "Sample size: " << this->sample_size << std::endl;
-    std::cout << "Minimum CNV length: " << this->min_cnv_length << std::endl;
-    std::cout << "DBSCAN epsilon: " << this->dbscan_epsilon << std::endl;
-    std::cout << "DBSCAN minimum points percentage: " << this->dbscan_min_pts_pct * 100.0f  << "%"  << std::endl;
+    DEBUG_PRINT("Input parameters:");
+    DEBUG_PRINT("Long read BAM: " << this->long_read_bam);
+    DEBUG_PRINT("Reference genome: " << this->ref_filepath);
+    DEBUG_PRINT("SNP VCF: " << this->snp_vcf_filepath);
+    DEBUG_PRINT("Output directory: " << this->output_dir);
+    DEBUG_PRINT("Sample size: " << this->sample_size);
+    DEBUG_PRINT("Minimum CNV length: " << this->min_cnv_length);
+    DEBUG_PRINT("DBSCAN epsilon: " << this->dbscan_epsilon);
+    DEBUG_PRINT("DBSCAN minimum points percentage: " << this->dbscan_min_pts_pct * 100.0f << "%");
     if (this->region_set)
     {
-        std::cout << "Region set to: chr" + this->chr + ":" + std::to_string(this->start_end.first) + "-" + std::to_string(this->start_end.second) + "\n";
+        DEBUG_PRINT("Region set to: chr" + this->chr + ":" + std::to_string(this->start_end.first) + "-" + std::to_string(this->start_end.second));
     }
     else
     {
-        std::cout << "Running on whole genome" << std::endl;
+        DEBUG_PRINT("Running on whole genome");
     }
 }
 

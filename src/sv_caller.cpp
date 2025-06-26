@@ -30,6 +30,7 @@
 #include "fasta_query.h"
 #include "dbscan.h"
 #include "dbscan1d.h"
+#include "debug.h"
 /// @endcond
 
 # define DUP_SEQSIM_THRESHOLD 0.9  // Sequence similarity threshold for duplication detection
@@ -415,21 +416,21 @@ void SVCaller::findSplitSVSignatures(std::unordered_map<std::string, std::vector
             }
 
             // Store the inversion as the supplementary start and end positions
-            if (inversion && supp_positions.size() > 1) {
-                std::sort(supp_positions.begin(), supp_positions.end());
-                int supp_start = supp_positions.front();
-                int supp_end = supp_positions.back();
-                int sv_length = std::abs(supp_start - supp_end);
+            // if (inversion && supp_positions.size() > 1) {
+            //     std::sort(supp_positions.begin(), supp_positions.end());
+            //     int supp_start = supp_positions.front();
+            //     int supp_end = supp_positions.back();
+            //     int sv_length = std::abs(supp_start - supp_end);
 
-                // Use 50bp as the minimum length for an inversion
-                if (sv_length >= 50 && sv_length <= max_length) {
-                    SVEvidenceFlags aln_type;
-                    aln_type.set(static_cast<size_t>(SVDataType::SUPPINV));
-                    SVCall sv_candidate(supp_start, supp_end, SVType::INV, getSVTypeSymbol(SVType::INV), aln_type, Genotype::UNKNOWN, 0.0, 0, 0, supp_cluster_size);
-                    // SVCall sv_candidate(supp_start, supp_end, SVType::INV, getSVTypeSymbol(SVType::INV), SVDataType::SUPPINV, Genotype::UNKNOWN, 0.0, 0, 0, supp_cluster_size);
-                    addSVCall(chr_sv_calls, sv_candidate);
-                }
-            }
+            //     // Use 50bp as the minimum length for an inversion
+            //     if (sv_length >= 50 && sv_length <= max_length) {
+            //         SVEvidenceFlags aln_type;
+            //         aln_type.set(static_cast<size_t>(SVDataType::SUPPINV));
+            //         SVCall sv_candidate(supp_start, supp_end, SVType::INV, getSVTypeSymbol(SVType::INV), aln_type, Genotype::UNKNOWN, 0.0, 0, 0, supp_cluster_size);
+            //         // SVCall sv_candidate(supp_start, supp_end, SVType::INV, getSVTypeSymbol(SVType::INV), SVDataType::SUPPINV, Genotype::UNKNOWN, 0.0, 0, 0, supp_cluster_size);
+            //         addSVCall(chr_sv_calls, sv_candidate);
+            //     }
+            // }
 
             // -------------------------------
             // SPLIT INSERTION CALLS
@@ -772,6 +773,8 @@ void SVCaller::run(const InputData& input_data)
     bool cigar_svs = true;
     bool cigar_cn = true;
     bool split_svs = true;
+    bool merge_split_svs = true;
+    bool merge_final_svs = true;
 
     // Print the input data
     input_data.printParameters();
@@ -904,12 +907,11 @@ void SVCaller::run(const InputData& input_data)
     }
     
     if (split_svs) {
-        // Identify split-SV signatures
-        printMessage("Identifying split-SV signatures...");
+        DEBUG_PRINT("Identifying split-SV signatures...");
         std::unordered_map<std::string, std::vector<SVCall>> whole_genome_split_sv_calls;
         this->findSplitSVSignatures(whole_genome_split_sv_calls, input_data);
 
-        printMessage("Running copy number predictions on split-read SVs...");
+        DEBUG_PRINT("Running copy number predictions on split-read SVs...");
         current_chr = 0;
         for (auto& entry : whole_genome_split_sv_calls) {
             const std::string& chr = entry.first;
@@ -917,18 +919,20 @@ void SVCaller::run(const InputData& input_data)
 
             if (sv_calls.size() > 0) {
                 current_chr++;
-                printMessage("(" + std::to_string(current_chr) + "/" + std::to_string(total_chr_count) + ") Running copy number predictions on " + chr + " with " + std::to_string(sv_calls.size()) + " SV candidates...");
+                DEBUG_PRINT("(" + std::to_string(current_chr) + "/" + std::to_string(total_chr_count) + ") Running copy number predictions on " + chr + " with " + std::to_string(sv_calls.size()) + " SV candidates...");
                 this->runSplitReadCopyNumberPredictions(chr, sv_calls, cnv_caller, hmm, chr_mean_cov_map[chr], chr_pos_depth_map[chr], input_data);
             }
         }
 
-        printMessage("Merging split-read SVs...");
-        for (auto& entry : whole_genome_split_sv_calls) {
-            std::vector<SVCall>& sv_calls = entry.second;
-            mergeSVs(sv_calls, 0.1, 2, true);
+        if (merge_split_svs) {
+            DEBUG_PRINT("Merging split-read SVs...");
+            for (auto& entry : whole_genome_split_sv_calls) {
+                std::vector<SVCall>& sv_calls = entry.second;
+                mergeSVs(sv_calls, 0.1, 2, true);
+            }
         }
 
-        printMessage("Unifying SVs...");
+        DEBUG_PRINT("Unifying SVs...");
         for (auto& entry : whole_genome_split_sv_calls) {
             const std::string& chr = entry.first;
             std::vector<SVCall>& sv_calls = entry.second;
@@ -936,12 +940,14 @@ void SVCaller::run(const InputData& input_data)
         }
     }
 
-    // Merge any duplicate SV calls from the CIGAR and split-read
-    // detections (same start positions)
-    printMessage("Merging CIGAR and split read SV calls...");
-    for (auto& entry : whole_genome_sv_calls) {
-        std::vector<SVCall>& sv_calls = entry.second;
-        mergeSVs(sv_calls, 0.1, 2, true);
+    if (merge_final_svs) {
+        // Merge any duplicate SV calls from the CIGAR and split-read
+        // detections (same start positions)
+        DEBUG_PRINT("Merging CIGAR and split read SV calls...");
+        for (auto& entry : whole_genome_sv_calls) {
+            std::vector<SVCall>& sv_calls = entry.second;
+            mergeSVs(sv_calls, 0.1, 2, true);
+        }
     }
 
     if (input_data.getSaveCNVData()) {

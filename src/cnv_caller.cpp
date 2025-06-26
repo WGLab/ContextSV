@@ -171,7 +171,23 @@ std::tuple<double, SVType, Genotype, int> CNVCaller::runCopyNumberPrediction(std
         printError("ERROR: Invalid SV region for copy number prediction: " + chr + ":" + std::to_string((int)start_pos) + "-" + std::to_string((int)end_pos));
         return std::make_tuple(0.0, SVType::UNKNOWN, Genotype::UNKNOWN, 0);
     }
-
+    /*
+    // Check that there is no large number of zero-depth positions in the region
+    int zero_depth_count = 0;
+    for (uint32_t pos = start_pos; pos <= end_pos; pos++)
+    {
+        if (pos < pos_depth_map.size() && pos_depth_map[pos] == 0)
+        {
+            zero_depth_count++;
+        }
+    }
+    if (zero_depth_count > 0.1 * (end_pos - start_pos + 1))
+    {
+        printError("WARNING: Too many zero-depth positions in the SV region for copy number prediction, skipping: " + chr + ":" + std::to_string((int)start_pos) + "-" + std::to_string((int)end_pos));
+        return std::make_tuple(0.0, SVType::UNKNOWN, Genotype::UNKNOWN, 0);
+    }
+    */
+   
     // Run the Viterbi algorithm on SNPs in the SV region
     // Only extend the region if "save CNV data" is enabled
     SNPData before_sv;

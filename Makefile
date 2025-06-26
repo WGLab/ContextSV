@@ -9,6 +9,9 @@ python:
 cpp:
 	$(MAKE) -f Makefile-cpp
 
+debug:
+	$(MAKE) -f Makefile-cpp DEBUG=1
+
 clean:
 	$(MAKE) -f Makefile-python clean
 	$(MAKE) -f Makefile-cpp clean
