@@ -97,3 +97,6 @@ valgrind.log
 *.log
 *.err
 *.out
+
+# Snakemake files
+.snakemake
