@@ -1,17 +1,63 @@
-# Top-Level Makefile
+# Directories
+INCL_DIR := $(CURDIR)/include
+SRC_DIR := $(CURDIR)/src
+BUILD_DIR := $(CURDIR)/build
+LIB_DIR := $(CURDIR)/lib
 
-.PHONY: python cpp clean
+# Version header
+VERSION := $(shell git describe --tags --always)
+VERSION_HEADER := $(INCL_DIR)/version.h
+.PHONY: $(VERSION_HEADER)
+	@echo "#pragma once" > $@
+	@echo "#define VERSION \"$(VERSION)\"" >> $@
 
-# Targets for the sub-makefiles
-python:
-	$(MAKE) -f Makefile-python
+# Conda environment directories
+CONDA_PREFIX := $(shell echo $$CONDA_PREFIX)
+CONDA_INCL_DIR := $(CONDA_PREFIX)/include
+CONDA_LIB_DIR := $(CONDA_PREFIX)/lib
 
-cpp:
-	$(MAKE) -f Makefile-cpp
+# Compiler and Flags
+CXX := g++
+CXXFLAGS := -std=c++17 -g -I$(INCL_DIR) -I$(CONDA_INCL_DIR) -Wall -Wextra -pedantic
 
-debug:
-	$(MAKE) -f Makefile-cpp DEBUG=1
+# ifdef DEBUG
+# 	CXXFLAGS += -DDEBUG
+# endif
 
+LDFLAGS := -L$(LIB_DIR) -L$(CONDA_LIB_DIR) -Wl,-rpath=$(CONDA_LIB_DIR)  # Add rpath for shared libraries
+LDLIBS := -lhts  # Link with libhts.a or libhts.so
+
+# Enable thread sanitizer (TSan)
+# ifeq ($(TSAN),1)
+# TSAN_FLAGS := -fsanitize=thread -fPIE -pie -g
+# CXXFLAGS += $(TSAN_FLAGS)
+# LDFLAGS += $(TSAN_FLAGS)
+# endif
+
+# Sources and Output
+# SOURCES := $(wildcard $(SRC_DIR)/*.cpp)
+SOURCES := $(filter-out $(SRC_DIR)/swig_wrapper.cpp, $(wildcard $(SRC_DIR)/*.cpp))  # Filter out the SWIG wrapper from the sources
+OBJECTS := $(patsubst $(SRC_DIR)/%.cpp,$(BUILD_DIR)/%.o,$(SOURCES))
+TARGET := $(BUILD_DIR)/cpp_module
+
+# Default target
+all: $(TARGET)
+
+# Debug target
+debug: CXXFLAGS += -DDEBUG
+debug: all
+
+# Link the executable
+$(TARGET): $(OBJECTS)
+	@mkdir -p $(BUILD_DIR)
+	$(CXX) $(CXXFLAGS) -o $@ $^ $(LDFLAGS) $(LDLIBS)
+
+# Compile source files
+$(BUILD_DIR)/%.o: $(SRC_DIR)/%.cpp
+	@mkdir -p $(BUILD_DIR)
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+# Clean the build directory
 clean:
-	$(MAKE) -f Makefile-python clean
-	$(MAKE) -f Makefile-cpp clean
+	rm -rf $(BUILD_DIR)
+	

@@ -100,3 +100,4 @@ valgrind.log
 
 # Snakemake files
 .snakemake
+snakemake_bench/results/
