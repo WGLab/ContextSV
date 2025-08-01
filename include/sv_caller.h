@@ -22,8 +22,8 @@ class SVCaller {
     private:
         struct GenomicRegion {
             int tid;
-            hts_pos_t start;
-            hts_pos_t end;
+            int start;
+            int end;
             int query_start;
             int query_end;
             bool strand;
@@ -31,8 +31,8 @@ class SVCaller {
         };
 
         struct PrimaryAlignment {
-            hts_pos_t start;
-            hts_pos_t end;
+            int start;
+            int end;
             int query_start;
             int query_end;
             bool strand;
@@ -41,8 +41,8 @@ class SVCaller {
 
         struct SuppAlignment {
             int tid;
-            hts_pos_t start;
-            hts_pos_t end;
+            int start;
+            int end;
             int query_start;
             int query_end;
             bool strand;
@@ -50,18 +50,18 @@ class SVCaller {
 
         struct SplitSignature {
             int tid;
-            hts_pos_t start;
-            hts_pos_t end;
+            int start;
+            int end;
             bool strand;
-            hts_pos_t query_start;
-            hts_pos_t query_end;
+            int query_start;
+            int query_end;
         };
 
         // Interval Tree Node
         struct IntervalNode {
             PrimaryAlignment region;
             std::string qname;
-            hts_pos_t max_end;  // To optimize queries
+            int max_end;  // To optimize queries
             std::unique_ptr<IntervalNode> left;
             std::unique_ptr<IntervalNode> right;
 
