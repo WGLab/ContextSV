@@ -10,28 +10,26 @@
 #include <map>
 /// @endcond
 
-typedef struct {
-	int N;			/* number of states;  Q={1,2,...,N} */
-	int M; 			/* number of observation symbols; V={1,2,...,M}*/
-	double **A;		/* A[1..N][1..N]. a[i][j] is the transition prob
-			   	of going from state i at time t to state j
-			   	at time t+1 */
-	double **B;		/* B[1..N][1..M]. b[j][k] is the probability of
-			   	of observing symbol k in state j */
-	double *pi;		/* pi[1..N] pi[i] is the initial state distribution. */
-	double *B1_mean;	/* B1_mean[1..N] mean of a continuous Gaussian distribution for state 1 through N*/
-	double *B1_sd;		/*B1_sd standard deviation of B1 values, which is the same for all states*/
-	double B1_uf;		/*B1_uniform_fraction: the contribution of uniform distribution to the finite mixture model */
-	double *B2_mean;	/* B2_mean[1..4] is the average of B_allele_freq*/
-	double *B2_sd;		/* B2_sd[1..4] is the standard deviation of four B_allele_freq, B2_sd[5] is specially for state1, where B is modelled as a wide normal distribution */
-	double B2_uf;		/* B2_uniform_fraction: the fraction of uniform distribution in the finite mixture model */
-	
-	int NP_flag;		/*flag of 1 and 0 to indicate whether Non-Polymorhpic marker information is contained with HMM file*/
-	double *B3_mean;	/* B3_mean[1..N] mean of non-polymorphic probe for state 1 through N*/
-	double *B3_sd;		/* B3_sd[1..4] is the standard deviation of B3 values*/
-	double B3_uf;		/* B3_uniform_fraction: */
-	int dist;		/* new parameter to facilitate CNV calling from resequencing data (2009 April) */
-} CHMM;
+// Struct for HMM (C++ RAII style)
+struct CHMM
+{
+	int N = 0;	// Number of states
+	int M = 0; 	// Number of observation symbols
+	std::vector<std::vector<double>> A;  // Transition probability matrix
+	std::vector<std::vector<double>> B;  // Emission probability matrix
+	std::vector<double> pi;  // Initial state distribution
+	std::vector<double> B1_mean;  // Mean of a continuous Gaussian distribution for state 1 through N
+	std::vector<double> B1_sd;  // Standard deviation of B1 values, which is the same for all states
+	double B1_uf = 0.0;  // B1_uniform_fraction: the contribution of uniform distribution to the finite mixture model
+	std::vector<double> B2_mean;  // B2_mean[1..4] is the average of B_allele_freq
+	std::vector<double> B2_sd;  // B2_sd[1..4] is the standard deviation of four B_allele_freq, B2_sd[5] is specially for state1, where B is modelled as a wide normal distribution
+	double B2_uf = 0.0;  // B2_uniform_fraction: the fraction of uniform distribution in the finite mixture model
+	int NP_flag = 0;
+	std::vector<double> B3_mean;
+	std::vector<double> B3_sd;
+	double B3_uf = 0.0;
+	int dist = 0;
+};
 
 
 /************************************
@@ -39,10 +37,13 @@ typedef struct {
 ************************************/
 
 /// Read an HMM from a file
-CHMM ReadCHMM (const char *filename);
+CHMM ReadCHMM (const std::string filename);
 
-// /// Free the memory allocated for an HMM
-// void FreeCHMM(CHMM *phmm);
+// Read a matrix
+std::vector<std::vector<double>> readMatrix(std::ifstream& file, int rows, int cols);
+
+// Read a vector
+std::vector<double> readVector(std::ifstream& file, int size);
 
 /// Run the main HMM algorithm
 std::pair<std::vector<int>, double> testVit_CHMM(CHMM hmm, int T, std::vector<double>& O1, std::vector<double>& O2, std::vector<double>& pfb);

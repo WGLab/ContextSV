@@ -12,31 +12,49 @@ corresponding reference genome (FASTA), a VCF with high-quality SNPs
 Class documentation is available at <a href="https://wglab.openbioinformatics.org/ContextSV">https://wglab.openbioinformatics.org/ContextSV</a>
 </p>
 
-## Installation (Linux)
-### Using Anaconda (recommended)
-First, install [Anaconda](https://www.anaconda.com/).
-
-Next, create a new environment. This installation has been tested with Python 3.11:
-
-```
-conda create -n contextsv python=3.11
-conda activate contextsv
-```
-
-ContextSV can then be installed using the following command:
-
-```
-conda install -c bioconda -c wglab contextsv=1.0.0
-```
+## Installation
 
 ### Building from source (for testing/development)
-First install [Anaconda](https://www.anaconda.com/). Then follow the instructions below to install LongReadSum and its dependencies:
+ContextSV requires HTSLib as a dependency that can be installed using  [Anaconda](https://www.anaconda.com/). Create an environment
+containing HTSLib: 
+
+```
+conda create -n htsenv -c bioconda -c conda-forge htslib
+conda activate htsenv
+```
+
+Then follow the instructions below to build ContextSV:
 
 ```
 git clone https://github.com/WGLab/ContextSV
 cd ContextSV
-conda env create -f environment.yml
 make
+```
+
+ContextSV can then be run:
+```
+./build/contextsv --help
+
+Usage: ./build/contextsv [options]
+Options:
+  -b, --bam <bam_file>          Long-read BAM file (required)
+  -r, --ref <ref_file>          Reference genome FASTA file (required)
+  -s, --snp <vcf_file>          SNPs VCF file (required)
+  -o, --outdir <output_dir>     Output directory (required)
+  -c, --chr <chromosome>        Chromosome
+  -r, --region <region>         Region (start-end)
+  -t, --threads <thread_count>  Number of threads
+  -h, --hmm <hmm_file>          HMM file
+  -n, --sample-size <size>      Sample size for HMM predictions
+     --min-cnv <min_length>     Minimum CNV length
+     --eps <epsilon>             DBSCAN epsilon
+     --min-pts-pct <min_pts_pct> Percentage of mean chr. coverage to use for DBSCAN minimum points
+  -e, --eth <eth_file>          ETH file
+  -p, --pfb <pfb_file>          PFB file
+     --save-cnv                 Save CNV data
+     --debug                    Debug mode with verbose logging
+     --version                  Print version and exit
+  -h, --help                    Print usage and exit
 ```
 
 ## Downloading gnomAD SNP population frequencies
@@ -53,7 +71,7 @@ Download links for genome VCF files are located here (last updated April 3,
  - **gnomAD v2.1.1 (GRCh37)**: https://gnomad.broadinstitute.org/downloads#2
 
 
-### Example download
+### Script for downloading gnomAD VCFs
 ```
 download_dir="~/data/gnomad/v4.0.0/"
 
@@ -76,71 +94,6 @@ gnomAD filepath. This file will be passed in as an argument:
 ...
 X=~/data/gnomad/v4.0.0/gnomad.genomes.v4.0.sites.chrX.vcf.bgz
 Y=~/data/gnomad/v4.0.0/gnomad.genomes.v4.0.sites.chrY.vcf.bgz
-```
-
-## Calling structural variants
-### Example full script generating a merged VCF of structural variants
-```
-# Activate the environment
-conda activate contextsv
-
-# Set the input reference genome
-ref_file="~/data/GRCh38.fa"
-
-# Set the input alignment file (e.g. from minimap2)
-long_read_bam="~/data/HG002.GRCh38.bam"
-
-# Set the input SNPs file (e.g. from NanoCaller)
-snps_file="~/data/variant_calls.snps.vcf.gz"
-
-# Set the SNP population frequencies filepath
-pfb_file="~/data/gnomadv4_filepaths.txt"
-
-# Set the output directory
-output_dir=~/data/contextSV_output
-
-# Specify the number of threads (system-specific)
-thread_count=40
-
-# Run SV calling (~3-4 hours for whole-genome, 40 cores)
-python contextsv --threads $thread_count -o $output_dir -lr $long_read_bam --snps $snps_file --reference $ref_file --pfb $pfb_file
-
-# The output VCF filepath is located here:
-output_vcf=$output_dir/sv_calls.vcf
-
-# Merge SVs (~3-4 hours for whole-genome, 40 cores)
-python contextsv --merge $output_vcf
-
-# The final merged VCF filepath is located here:
-merged_vcf=$output_dir/sv_calls.merged.vcf
-```
-
-## Input arguments
-
-```
-python contextsv --help
-
-ContextSV: A tool for integrative structural variant detection.
-
-options:
-  -h, --help            show this help message and exit
-  -lr LONG_READ, --long-read LONG_READ
-                        path to the long read alignment BAM file
-  -g REFERENCE, --reference REFERENCE
-                        path to the reference genome FASTA file
-  -s SNPS, --snps SNPS  path to the SNPs VCF file
-  --pfb PFB             path to the file with SNP population frequency VCF filepaths (see docs for format)
-  -o OUTPUT, --output OUTPUT
-                        path to the output directory
-  -r REGION, --region REGION
-                        region to analyze (e.g. chr1, chr1:1000-2000). If not provided, the entire genome will be analyzed
-  -t THREADS, --threads THREADS
-                        number of threads to use
-  --hmm HMM             path to the PennCNV HMM file
-  --window-size WINDOW_SIZE
-                        window size for calculating log2 ratios for CNV predictions (default: 10 kb)
-  -d, --debug           debug mode (verbose logging)
-  -v, --version         print the version number and exit
 ```
 
 ## Revision history

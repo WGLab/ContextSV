@@ -1,9 +1,13 @@
 #include "utils.h"
 
 /// @cond
+#include <sys/resource.h>  // getrusage
+#include <iomanip>
 #include <stdio.h>
 #include <string>
 #include <iostream>
+#include <fstream>
+#include <filesystem>
 /// @endcond
 
 
@@ -13,10 +17,7 @@ std::mutex print_mtx;
 // Print a progress bar
 void printProgress(int progress, int total)
 {
-    // Get the percentage
     float percent = (float)progress / (float)total * 100.0;
-
-    // Get the number of hashes
     int num_hashes = (int)(percent / 2.0);
 
     // Print the progress bar
@@ -99,4 +100,44 @@ std::string getElapsedTime(std::chrono::high_resolution_clock::time_point start,
     int seconds = elapsed.count() - (hours * 3600) - (minutes * 60);
     std::string elapsed_time = std::to_string(hours) + ":" + std::to_string(minutes) + ":" + std::to_string(seconds);
     return elapsed_time;
+}
+
+// Function to remove the 'chr' prefix from chromosome names
+std::string removeChrPrefix(std::string chr)
+{
+    if (chr.find("chr") != std::string::npos) {
+        return chr.substr(3);
+    }
+    return chr;
+}
+
+void printMemoryUsage(const std::string& functionName) {
+    struct rusage usage;
+    getrusage(RUSAGE_SELF, &usage);
+
+    // Convert from KB to GB
+    double mem_usage_gb = (double)usage.ru_maxrss / 1024.0 / 1024.0;
+    std::cout << functionName << " memory usage: "
+              << std::fixed << std::setprecision(2) << mem_usage_gb << " GB" << std::endl;
+}
+
+bool fileExists(const std::string &filepath)
+{
+    std::ifstream file(filepath);
+    return file.is_open();
+}
+
+bool isFileEmpty(const std::string &filepath)
+{
+    return std::filesystem::file_size(filepath) == 0;
+}
+
+void closeJSON(const std::string &filepath)
+{
+    std::ofstream
+        json_file(filepath, std::ios::app);
+
+    json_file << "}\n";  // Close the last JSON object
+    json_file << "]";  // Close the JSON array
+    json_file.close();
 }

@@ -55,6 +55,7 @@ CMakeSettings.json
 
 # Output folder
 output/
+python/
 
 # Doxygen
 docs/html/
@@ -67,12 +68,15 @@ python/dbscan
 python/agglo
 linktoscripts
 tests/data
+tests/cpp_module_out
 
 # Population allele frequency filepaths
 data/gnomadv2_filepaths.txt
 data/gnomadv3_filepaths.txt
 data/gnomadv4_filepaths.txt
+data/gnomadv4_filepaths_ssd.txt
 data/gnomadv4_hg19_filepaths.txt
+data/gnomadv4_hg19_filepaths_ssd.txt
 
 # Training data
 data/sv_scoring_dataset/
@@ -84,3 +88,17 @@ data/hg19ToHg38.over.chain.gz
 # Test images
 python/dbscan_clustering*.png
 python/dist_plots
+upset_plot*.png
+
+# Temporary files
+lib/.nfs*
+valgrind.log
+
+# Log files
+*.log
+*.err
+*.out
+
+# Snakemake files
+.snakemake
+snakemake_bench/results/

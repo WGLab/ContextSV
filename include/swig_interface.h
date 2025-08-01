@@ -12,6 +12,6 @@
 #include <string>
 /// @endcond
 
-int run(InputData input_data);
+int run(const InputData& input_data);
 
 #endif // SWIG_INTERFACE_H

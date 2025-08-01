@@ -8,6 +8,7 @@
 #include <thread>
 
 #include "utils.h"
+#include "debug.h"  // For DEBUG_PRINT
 /// @endcond
 
 #define MIN_PFB 0.01  // Minimum SNP population allele frequency
@@ -16,7 +17,6 @@
 // Constructor
 InputData::InputData()
 {
-    this->short_read_bam = "";
     this->long_read_bam = "";
     this->ref_filepath = "";
     this->snp_vcf_filepath = "";
@@ -24,40 +24,42 @@ InputData::InputData()
     this->start_end = std::make_pair(0, 0);
     this->region_set = false;
     this->output_dir = "";
-    this->window_size = 2500;
-    this->min_cnv_length = 1000;
+    this->sample_size = 20;
+    this->min_cnv_length = 2000;  // Default minimum CNV length
+    this->min_reads = 5;
+    this->dbscan_epsilon = 0.1;
+    this->dbscan_min_pts_pct = 0.1;
     this->thread_count = 1;
     this->hmm_filepath = "data/wgs.hmm";
     this->verbose = false;
     this->save_cnv_data = false;
+    this->single_chr = false;
+    this->cnv_output_file = "";
+    this->assembly_gaps = "";
 }
 
-std::string InputData::getShortReadBam()
+void InputData::printParameters() const
 {
-    return this->short_read_bam;
-}
-
-void InputData::setShortReadBam(std::string filepath)
-{
-    this->short_read_bam = filepath;
-
-    // Check if empty string
-    if (filepath == "")
+    DEBUG_PRINT("Input parameters:");
+    DEBUG_PRINT("Long read BAM: " << this->long_read_bam);
+    DEBUG_PRINT("Reference genome: " << this->ref_filepath);
+    DEBUG_PRINT("SNP VCF: " << this->snp_vcf_filepath);
+    DEBUG_PRINT("Output directory: " << this->output_dir);
+    DEBUG_PRINT("Sample size: " << this->sample_size);
+    DEBUG_PRINT("Minimum CNV length: " << this->min_cnv_length);
+    DEBUG_PRINT("DBSCAN epsilon: " << this->dbscan_epsilon);
+    DEBUG_PRINT("DBSCAN minimum points percentage: " << this->dbscan_min_pts_pct * 100.0f << "%");
+    if (this->region_set)
     {
-        return;
-        
-    } else {
-        // Check if the file exists
-        FILE *fp = fopen(filepath.c_str(), "r");
-        if (fp == NULL)
-        {
-            std::cerr << "Short read BAM file does not exist: " << filepath << std::endl;
-            exit(1);
-        }
+        DEBUG_PRINT("Region set to: chr" + this->chr + ":" + std::to_string(this->start_end.first) + "-" + std::to_string(this->start_end.second));
+    }
+    else
+    {
+        DEBUG_PRINT("Running on whole genome");
     }
 }
 
-std::string InputData::getLongReadBam()
+std::string InputData::getLongReadBam() const
 {
     return this->long_read_bam;
 }
@@ -67,7 +69,7 @@ void InputData::setLongReadBam(std::string filepath)
     this->long_read_bam = filepath;
 
     // Check if empty string
-    if (filepath == "")
+    if (filepath.empty())
     {
         return;
         
@@ -76,39 +78,24 @@ void InputData::setLongReadBam(std::string filepath)
         FILE *fp = fopen(filepath.c_str(), "r");
         if (fp == NULL)
         {
-            std::cerr << "Long read BAM file does not exist: " << filepath << std::endl;
-            exit(1);
+            throw std::runtime_error("Long read BAM file does not exist: " + filepath);
+        } else {
+            fclose(fp);
         }
     }
 }
 
-void InputData::setRefGenome(std::string fasta_filepath)
+void InputData::setRefGenome(std::string filepath)
 {
-    // Set the reference genome
-    this->fasta_query.setFilepath(fasta_filepath);
+    this->ref_filepath = filepath;
 }
 
-const FASTAQuery &InputData::getRefGenome() const
+std::string InputData::getRefGenome() const
 {
-    return this->fasta_query;
+    return this->ref_filepath;
 }
 
-std::string InputData::queryRefGenome(std::string chr, int64_t pos_start, int64_t pos_end)
-{
-    return this->fasta_query.query(chr, pos_start, pos_end);
-}
-
-std::vector<std::string> InputData::getRefGenomeChromosomes()
-{
-    return this->fasta_query.getChromosomes();
-}
-
-int64_t InputData::getRefGenomeChromosomeLength(std::string chr)
-{
-    return this->fasta_query.getChromosomeLength(chr);
-}
-
-std::string InputData::getOutputDir()
+std::string InputData::getOutputDir() const
 {
     return this->output_dir;
 }
@@ -116,23 +103,28 @@ std::string InputData::getOutputDir()
 void InputData::setOutputDir(std::string dirpath)
 {
     this->output_dir = dirpath;
-
-    // Create the output directory
     std::string cmd = "mkdir -p " + output_dir;
-    system(cmd.c_str());
+    try
+    {
+        std::system(cmd.c_str());
+    } catch (const std::exception& e)
+    {
+        std::cerr << "Error creating output directory: " << e.what() << std::endl;
+        exit(1);
+    }
 }
 
-int InputData::getWindowSize()
+int InputData::getSampleSize() const
 {
-    return this->window_size;
+    return this->sample_size;
 }
 
-void InputData::setWindowSize(int window_size)
+void InputData::setSampleSize(int sample_size)
 {
-    this->window_size = window_size;
+    this->sample_size = sample_size;
 }
 
-std::string InputData::getSNPFilepath()
+std::string InputData::getSNPFilepath() const
 {
     return this->snp_vcf_filepath;
 }
@@ -142,7 +134,7 @@ void InputData::setSNPFilepath(std::string filepath)
     this->snp_vcf_filepath = filepath;
 }
 
-std::string InputData::getEthnicity()
+std::string InputData::getEthnicity() const
 {
     return this->ethnicity;
 }
@@ -152,24 +144,78 @@ void InputData::setEthnicity(std::string ethnicity)
     this->ethnicity = ethnicity;
 }
 
-int InputData::getMinCNVLength()
+void InputData::setAssemblyGaps(std::string filepath)
+{
+    // Check if the file exists
+    FILE *fp = fopen(filepath.c_str(), "r");
+    if (fp == NULL)
+    {
+        std::cerr << "Assembly gaps file does not exist: " << filepath << std::endl;
+        exit(1);
+    }
+
+    // Check if the file is a BED file
+    std::string ext = filepath.substr(filepath.find_last_of(".") + 1);
+    if (ext != "bed")
+    {
+        std::cerr << "Assembly gaps file is not a BED file: " << filepath << std::endl;
+        exit(1);
+    }
+    fclose(fp);
+
+    // Set the assembly gaps file
+    this->assembly_gaps = filepath;
+}
+
+std::string InputData::getAssemblyGaps() const
+{
+    return this->assembly_gaps;
+}
+
+uint32_t InputData::getMinCNVLength() const
 {
     return this->min_cnv_length;
 }
 
 void InputData::setMinCNVLength(int min_cnv_length)
 {
-    this->min_cnv_length = min_cnv_length;
+    this->min_cnv_length = (uint32_t) min_cnv_length;
+}
+
+void InputData::setDBSCAN_Epsilon(double epsilon)
+{
+    this->dbscan_epsilon = epsilon;
+}
+
+double InputData::getDBSCAN_Epsilon() const
+{
+    return this->dbscan_epsilon;
+}
+
+void InputData::setDBSCAN_MinPtsPct(double min_pts_pct)
+{
+    this->dbscan_min_pts_pct = min_pts_pct;
+}
+
+double InputData::getDBSCAN_MinPtsPct() const
+{
+    return this->dbscan_min_pts_pct;
 }
 
 void InputData::setChromosome(std::string chr)
 {
     this->chr = chr;
+    this->single_chr = true;
 }
 
-std::string InputData::getChromosome()
+std::string InputData::getChromosome() const
 {
     return this->chr;
+}
+
+bool InputData::isSingleChr() const
+{
+    return this->single_chr;
 }
 
 void InputData::setRegion(std::string region)
@@ -197,25 +243,24 @@ void InputData::setRegion(std::string region)
             // Set the region
             this->start_end = std::make_pair(start, end);
             this->region_set = true;
+
+            std::cout << "Region set to " << this->chr << ":" << start << "-" << end << std::endl;
         }
     }
-    std::cout << "Region set to " << this->start_end.first << "-" << this->start_end.second << std::endl;
 }
 
-std::pair<int32_t, int32_t> InputData::getRegion()
+std::pair<int32_t, int32_t> InputData::getRegion() const
 {
     return this->start_end;
 }
 
-bool InputData::isRegionSet()
+bool InputData::isRegionSet() const
 {
     return this->region_set;
 }
 
 void InputData::setAlleleFreqFilepaths(std::string filepath)
 {
-    // this->pfb_filepath = filepath;
-
     // Check if empty string
     if (filepath == "")
     {
@@ -298,14 +343,22 @@ void InputData::setAlleleFreqFilepaths(std::string filepath)
     }
 }
 
-std::string InputData::getAlleleFreqFilepath(std::string chr)
+std::string InputData::getAlleleFreqFilepath(std::string chr) const
 {
     // Remove the chr notation
     if (chr.find("chr") != std::string::npos)
     {
         chr = chr.substr(3, chr.size() - 3);
     }
-    return this->pfb_filepaths[chr];
+
+    try
+    {
+        return this->pfb_filepaths.at(chr);
+    }
+    catch (const std::out_of_range& e)
+    {
+        return "";
+    }
 }
 
 void InputData::setThreadCount(int thread_count)
@@ -313,12 +366,12 @@ void InputData::setThreadCount(int thread_count)
     this->thread_count = thread_count;
 }
 
-int InputData::getThreadCount()
+int InputData::getThreadCount() const
 {
     return this->thread_count;
 }
 
-std::string InputData::getHMMFilepath()
+std::string InputData::getHMMFilepath() const
 {
     return this->hmm_filepath;
 }
@@ -360,7 +413,17 @@ void InputData::saveCNVData(bool save_cnv_data)
     this->save_cnv_data = save_cnv_data;
 }
 
-bool InputData::getSaveCNVData()
+bool InputData::getSaveCNVData() const
 {
     return this->save_cnv_data;
+}
+
+void InputData::setCNVOutputFile(std::string filepath)
+{
+    this->cnv_output_file = filepath;
+}
+
+std::string InputData::getCNVOutputFile() const
+{
+    return this->cnv_output_file;
 }

@@ -76,7 +76,7 @@ def run(cnv_data_file, output_html):
             line = f.readline().strip()
             if '=' in line:
                 key, value = line.split("=")
-                log.info("Metadata: %s=%s", key, value)
+                # log.info("Metadata: %s=%s", key, value)
                 value = value.strip()
                 metadata[key] = value
 

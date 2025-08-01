@@ -26,11 +26,28 @@ import plotly.graph_objects as go
 
 def generate_sv_size_plot(input_vcf, output_png, plot_title="SV Caller"):
     # Read VCF file into a pandas DataFrame
-    vcf_df = pd.read_csv(input_vcf, sep='\t', comment='#', header=None, \
-                         names=['CHROM', 'POS', 'ID', 'REF', 'ALT', 'QUAL', 'FILTER', 'INFO', 'FORMAT', 'SAMPLE'], \
-                            dtype={'CHROM': str, 'POS': np.int64, 'ID': str, 'REF': str, 'ALT': str, 'QUAL': str, \
-                                   'FILTER': str, 'INFO': str, 'FORMAT': str, 'SAMPLE': str})
-
+    try:
+        vcf_df = pd.read_csv(input_vcf, sep='\t', comment='#', header=None, \
+                            names=['CHROM', 'POS', 'ID', 'REF', 'ALT', 'QUAL', 'FILTER', 'INFO', 'FORMAT', 'SAMPLE'], \
+                                dtype={'CHROM': str, 'POS': np.int64, 'ID': str, 'REF': str, 'ALT': str, 'QUAL': str, \
+                                    'FILTER': str, 'INFO': str, 'FORMAT': str, 'SAMPLE': str})
+    except Exception as e:
+        try:
+            print("[DEBUG] Caught TypeError")
+            # Truvari merged VCF format with different columns
+            vcf_df = pd.read_csv(input_vcf, sep='\t', comment='#', header=None, \
+                                names=['CHROM', 'POS', 'ID', 'REF', 'ALT', 'QUAL', 'FILTER', 'INFO', 'FORMAT', 'SAMPLE', 'SAMPLE2'], \
+                                    dtype={'CHROM': str, 'POS': np.int64, 'ID': str, 'REF': str, 'ALT': str, 'QUAL': str, \
+                                        'FILTER': str, 'INFO': str, 'FORMAT': str, 'SAMPLE': str, 'SAMPLE2': str})
+        except Exception as e:
+            print("[DEBUG] Caught Exception")
+            # Platinum pedigree VCF format with different columns
+            vcf_df = pd.read_csv(input_vcf, sep='\t', comment='#', header=None, \
+                                names=['CHROM', 'POS', 'ID', 'REF', 'ALT', 'QUAL', 'FILTER', 'INFO', 'FORMAT', 'SAMPLE', 'SAMPLE2', 'SAMPLE3', 'SAMPLE4', 'SAMPLE5', 'SAMPLE6', 'SAMPLE7'], \
+                                    dtype={'CHROM': str, 'POS': np.int64, 'ID': str, 'REF': str, 'ALT': str, 'QUAL': str, \
+                                        'FILTER': str, 'INFO': str, 'FORMAT': str, 'SAMPLE1': str, 'SAMPLE2': str, 'SAMPLE3': str, 'SAMPLE4': str, \
+                                            'SAMPLE5': str, 'SAMPLE6': str, 'SAMPLE7': str})
+            
     # Initialize dictionaries to store SV sizes for each type of SV
     sv_sizes = {}
 
@@ -61,6 +78,7 @@ def generate_sv_size_plot(input_vcf, output_png, plot_title="SV Caller"):
         # Continue if SV type is BND (no SV size)
         if sv_type == "BND":
             continue
+
         # If the SV caller is DELLY, then we use the second SV size for non-INS
         # (they don't have SVLEN) and the first SV size for INS
         sv_size = None
@@ -71,7 +89,7 @@ def generate_sv_size_plot(input_vcf, output_png, plot_title="SV Caller"):
 
         # If the plot title is GIAB, then we need to convert INS to DUP if
         # INFO/SVTYPE is INS and INFO/REPTYPE is DUP
-        if plot_title == "GIAB" and sv_type == "INS":
+        if "GIAB" in plot_title and sv_type == "INS":
             if 'REPTYPE=DUP' in record['INFO']:
                 sv_type = "DUP"
 
@@ -90,10 +108,11 @@ def generate_sv_size_plot(input_vcf, output_png, plot_title="SV Caller"):
 
     # Create a dictionary of SV types and their corresponding colors.
     # From: https://davidmathlogic.com/colorblind/
-    sv_colors = {'DEL': '#D81B60', 'DUP': '#1E88E5', 'INV': '#FFC107', 'INS': '#004D40'}
+    # WONG colors
+    sv_colors = {'DEL': '#E69F00', 'DUP': '#56B4E9', 'INV': '#009E73', 'INS': '#F0E442', 'INVDUP': '#D55E00', 'COMPLEX': '#CC79A7'}
 
     # Create a dictionary of SV types and their corresponding labels
-    sv_labels = {'DEL': 'Deletion', 'DUP': 'Duplication', 'INV': 'Inversion', 'INS': 'Insertion'}
+    sv_labels = {'DEL': 'Deletion', 'DUP': 'Duplication', 'INV': 'Inversion', 'INS': 'Insertion', 'INVDUP': 'Inverted Duplication', 'COMPLEX': 'Complex'}
 
     # Get the list of SV types and sort them in the order of the labels
     sv_types = sorted(sv_sizes.keys(), key=lambda x: sv_labels[x])
@@ -141,16 +160,16 @@ def generate_sv_size_plot(input_vcf, output_png, plot_title="SV Caller"):
         # Use a log scale for the y-axis
         axes[i].set_yscale('log')
 
-        # # In the same axis, plot a known duplication if within the range of the plot
-        if sv_type == 'DUP':
-            print("TEST: Found DUP")
-            cnv_size = 776237 / size_scale
-            x_min, x_max = axes[i].get_xlim()
-            if cnv_size > x_min and cnv_size < x_max:
-                axes[i].axvline(x=cnv_size, color='black', linestyle='--')
-            else:
-                # Print the values
-                print(f'CNV size: {cnv_size}, x_min: {x_min}, x_max: {x_max}')
+        # In the same axis, plot a known duplication if within the range of the plot
+        # if sv_type == 'DUP':
+        #     print("TEST: Found DUP")
+        #     cnv_size = 776237 / size_scale
+        #     x_min, x_max = axes[i].get_xlim()
+        #     if cnv_size > x_min and cnv_size < x_max:
+        #         axes[i].axvline(x=cnv_size, color='black', linestyle='--')
+        #     else:
+        #         # Print the values
+        #         print(f'CNV size: {cnv_size}, x_min: {x_min}, x_max: {x_max}')
 
         # Refresh the plot
         plt.draw()
@@ -194,10 +213,18 @@ def generate_sv_size_plot(input_vcf, output_png, plot_title="SV Caller"):
     fig.update_layout(legend=dict(
         orientation='v',
         yanchor='top',
-        y=0.75,
+        y=0.9,
         xanchor='right',
-        x=0.75,
+        x=0.9,
     ))
+    # # Move the legend to the bottom right outside the plot
+    # fig.update_layout(legend=dict(
+    #     orientation='v',
+    #     yanchor='top',
+    #     y=1.0,
+    #     xanchor='right',
+    #     x=1.15,
+    # ))
 
     # Set a larger font size for all text in the plot
     fig.update_layout(font=dict(size=26))

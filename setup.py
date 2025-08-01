@@ -28,7 +28,10 @@ conda_lib_dir = os.path.join(conda_prefix, "lib")
 
 # Set the project dependencies
 SRC_DIR = "src"
+# SRC_FILES = glob.glob(os.path.join(SRC_DIR, "*.cpp"))
 SRC_FILES = glob.glob(os.path.join(SRC_DIR, "*.cpp"))
+SRC_FILES = [f for f in SRC_FILES if "main.cpp" not in f]  # Ignore the main.cpp file
+
 INCLUDE_DIR = "include"
 INCLUDE_FILES = glob.glob(os.path.join(INCLUDE_DIR, "*.h"))
 
@@ -37,7 +40,7 @@ ext = Extension(
     name="_" + NAME,
     sources=SRC_FILES,
     include_dirs=[INCLUDE_DIR, conda_include_dir],
-    extra_compile_args=["-std=c++11"],
+    extra_compile_args=["-std=c++17"],
     language="c++",
     libraries=["hts"],
     library_dirs=[conda_lib_dir]

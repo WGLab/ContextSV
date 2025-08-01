@@ -5,58 +5,107 @@
 
 #include "cnv_caller.h"
 #include "input_data.h"
-#include "cnv_data.h"
-#include "sv_data.h"
+#include "sv_object.h"
+#include "fasta_query.h"
 
 #include <htslib/sam.h>
 
 /// @cond
-#include <mutex>
+// #include <mutex>
+#include <shared_mutex>
 #include <unordered_map>
 #include <future>
 /// @endcond
 
-// SV candidate alignment data (chr, start, end, sequence, query start, query
-// end, mismatch map)
-using AlignmentData   = std::tuple<std::string, int64_t, int64_t, std::string, int32_t, int32_t, std::unordered_map<int, int>>;
-using AlignmentVector = std::vector<AlignmentData>;
-
-// Query map (query name, alignment vector)
-using PrimaryMap = std::unordered_map<std::string, AlignmentData>;
-using SuppMap = std::unordered_map<std::string, AlignmentVector>;
-using RegionData = std::tuple<SVData, PrimaryMap, SuppMap>;
 
 class SVCaller {
     private:
-        int min_sv_size = 50;       // Minimum SV size to be considered
+        struct GenomicRegion {
+            int tid;
+            int start;
+            int end;
+            int query_start;
+            int query_end;
+            bool strand;
+            int cluster_size;  // Number of alignments used for this region
+        };
+
+        struct PrimaryAlignment {
+            int start;
+            int end;
+            int query_start;
+            int query_end;
+            bool strand;
+            int cluster_size;  // Number of alignments used for this region
+        };
+
+        struct SuppAlignment {
+            int tid;
+            int start;
+            int end;
+            int query_start;
+            int query_end;
+            bool strand;
+        };
+
+        struct SplitSignature {
+            int tid;
+            int start;
+            int end;
+            bool strand;
+            int query_start;
+            int query_end;
+        };
+
+        // Interval Tree Node
+        struct IntervalNode {
+            PrimaryAlignment region;
+            std::string qname;
+            int max_end;  // To optimize queries
+            std::unique_ptr<IntervalNode> left;
+            std::unique_ptr<IntervalNode> right;
+
+            IntervalNode(PrimaryAlignment r, std::string name)
+                : region(r), qname(name), max_end(r.end), left(nullptr), right(nullptr) {}
+        };
+
         int min_mapq = 20;          // Minimum mapping quality to be considered
-        InputData* input_data;
-        std::mutex sv_mtx;  // Mutex for locking the SV data
+        mutable std::shared_mutex shared_mutex;  // Shared mutex for thread safety
 
-        // Detect SVs from the CIGAR string of a read alignment, and return the
-        // mismatch rate, and the start and end positions of the query sequence
-        std::tuple<std::unordered_map<int, int>, int32_t, int32_t> detectSVsFromCIGAR(bam_hdr_t* header, bam1_t* alignment, SVData& sv_calls, bool is_primary);
+        std::vector<std::string> getChromosomes(const std::string& bam_filepath);
 
-        // Detect SVs at a region from long read alignments. This is used for
-        // whole genome analysis running in parallel.
-        RegionData detectSVsFromRegion(std::string region);
+        void findSplitSVSignatures(std::unordered_map<std::string, std::vector<SVCall>>& sv_calls, const InputData& input_data);
+
+        // Process a single CIGAR record and find candidate SVs
+        void processCIGARRecord(bam_hdr_t* header, bam1_t* alignment, std::vector<SVCall>& sv_calls, const std::vector<uint32_t>& pos_depth_map);
+
+        std::pair<int, int> getAlignmentReadPositions(bam1_t* alignment);
+
+        void processChromosome(const std::string& chr, std::vector<SVCall>& combined_sv_calls, const InputData& input_data, const std::vector<uint32_t>& chr_pos_depth_map, double mean_chr_cov);
+
+        void findCIGARSVs(samFile* fp_in, hts_idx_t* idx, bam_hdr_t* bamHdr, const std::string& region, std::vector<SVCall>& sv_calls, const std::vector<uint32_t>& pos_depth_map);
  
         // Read the next alignment from the BAM file in a thread-safe manner
         int readNextAlignment(samFile *fp_in, hts_itr_t *itr, bam1_t *bam1);
 
-        // Detect SVs from split alignments
-        void detectSVsFromSplitReads(SVData& sv_calls, PrimaryMap& primary_map, SuppMap& supp_map, CNVCaller& cnv_caller);
+        void runSplitReadCopyNumberPredictions(const std::string& chr, std::vector<SVCall>& split_sv_calls, const CNVCaller &cnv_caller, const CHMM &hmm, double mean_chr_cov, const std::vector<uint32_t> &pos_depth_map, const InputData &input_data);
 
-        // Calculate the mismatch rate given a map of query positions to
-        // match/mismatch (1/0) values within a specified range of the query
-        // sequence
-        double calculateMismatchRate(std::unordered_map<int, int>& mismatch_map, int32_t start, int32_t end);
+        void saveToVCF(const std::unordered_map<std::string, std::vector<SVCall>> &sv_calls, const InputData &input_data, const ReferenceGenome &ref_genome, const std::unordered_map<std::string, std::vector<uint32_t>> &chr_pos_depth_map) const;
+        // void saveToVCF(const std::unordered_map<std::string, std::vector<SVCall>> &sv_calls, const std::string &output_dir, const ReferenceGenome &ref_genome, const std::unordered_map<std::string, std::vector<uint32_t>>& chr_pos_depth_map) const;
+
+        // Query the read depth (INFO/DP) at a position
+        int getReadDepth(const std::vector<uint32_t>& pos_depth_map, uint32_t start) const;
 
     public:
-        SVCaller(InputData& input_data);
+        SVCaller() = default;
 
         // Detect SVs and predict SV type from long read alignments and CNV calls
-        SVData run();
+        void run(const InputData& input_data);
+
+        // Interval tree
+        void findOverlaps(const std::unique_ptr<IntervalNode>& root, const PrimaryAlignment& query, std::vector<std::string>& result);
+
+        void insert(std::unique_ptr<IntervalNode>& root, const PrimaryAlignment& region, std::string qname);
 };
 
 #endif // SV_CALLER_H

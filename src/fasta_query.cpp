@@ -12,7 +12,10 @@
 /// @endcond
 
 
-int FASTAQuery::setFilepath(std::string fasta_filepath)
+#include "utils.h"
+
+
+int ReferenceGenome::setFilepath(std::string fasta_filepath)
 {
     if (fasta_filepath == "")
     {
@@ -31,8 +34,6 @@ int FASTAQuery::setFilepath(std::string fasta_filepath)
     }
 
     // Get the chromosomes and sequences
-    std::vector<std::string> chromosomes;
-    std::unordered_map<std::string, std::string> chr_to_seq;
     std::string current_chr = "";
     std::string sequence = "";
     std::string line_str = "";
@@ -45,13 +46,13 @@ int FASTAQuery::setFilepath(std::string fasta_filepath)
             // Store the previous chromosome and sequence
             if (current_chr != "")
             {
-                chromosomes.push_back(current_chr);  // Add the chromosome to the list
-                chr_to_seq[current_chr] = sequence;  // Add the sequence to the map
+                this->chromosomes.push_back(current_chr);  // Add the chromosome to the list
+                this->chr_to_seq[current_chr] = sequence;  // Add the sequence to the map
+                this->chr_to_length[current_chr] = sequence.length();  // Add the sequence length to the map
                 sequence = "";  // Reset the sequence
             }
 
-            // Get the new chromosome
-            current_chr = line_str.substr(1);
+            current_chr = line_str.substr(1);  // Remove the '>' character
 
             // Remove the description
             size_t space_pos = current_chr.find(" ");
@@ -59,15 +60,7 @@ int FASTAQuery::setFilepath(std::string fasta_filepath)
             {
                 current_chr.erase(space_pos);
             }
-
-            // Check if the chromosome is already in the map
-            if (chr_to_seq.find(current_chr) != chr_to_seq.end())
-            {
-                std::cerr << "Duplicate chromosome " << current_chr << std::endl;
-                exit(1);
-            }
         } else {
-            // Sequence line
             sequence += line_str;
         }
     }
@@ -75,66 +68,78 @@ int FASTAQuery::setFilepath(std::string fasta_filepath)
     // Add the last chromosome at the end of the file
     if (current_chr != "")
     {
-        chromosomes.push_back(current_chr);  // Add the chromosome to the list
-        chr_to_seq[current_chr] = sequence;  // Add the sequence to the map
+        this->chromosomes.push_back(current_chr);  // Add the chromosome to the list
+        this->chr_to_seq[current_chr] = sequence;  // Add the sequence to the map
+        this->chr_to_length[current_chr] = sequence.length();  // Add the sequence length to the map
     }
 
-    // Close the file
     fasta_file.close();
-
-    // Sort the chromosomes
-    std::sort(chromosomes.begin(), chromosomes.end());
-
-    // Set the chromosomes and sequences
-    this->chromosomes = chromosomes;
-    this->chr_to_seq = chr_to_seq;
+    std::sort(this->chromosomes.begin(), this->chromosomes.end());
 
     return 0;
 }
 
-std::string FASTAQuery::getFilepath()
+std::string ReferenceGenome::getFilepath() const
 {
     return this->fasta_filepath;
 }
 
 // Function to get the reference sequence at a given position range
-std::string FASTAQuery::query(std::string chr, int64_t pos_start, int64_t pos_end)
+std::string_view ReferenceGenome::query(const std::string& chr, uint32_t pos_start, uint32_t pos_end) const
+{   
+    // Convert positions from 1-indexed (reference) to 0-indexed (string indexing)
+    pos_start--;
+    pos_end--;
+
+    // Ensure that the end position is not larger than the chromosome length
+    const std::string& sequence = this->chr_to_seq.at(chr);
+    if (pos_end >= sequence.length() || pos_start > pos_end)
+    {
+        return {};
+    }
+
+    return std::string_view(sequence).substr(pos_start, (pos_end - pos_start) + 1);
+}
+
+// Function to compare the reference sequence at a given position range
+bool ReferenceGenome::compare(const std::string& chr, uint32_t pos_start, uint32_t pos_end, const std::string& compare_seq, float match_threshold) const
 {    
     // Convert positions from 1-indexed (reference) to 0-indexed (string indexing)
     pos_start--;
     pos_end--;
 
-    // Ensure that the start position is not negative, and the end position is
-    // not larger than the chromosome length
-    if (pos_start < 0)
+    // Ensure that the end position is not larger than the chromosome length
+    const std::string& sequence = this->chr_to_seq.at(chr);
+    if (pos_end >= sequence.length() || pos_start >= pos_end)
     {
-        return "";
-    }
-    if (pos_end >= (int64_t)this->chr_to_seq[chr].length())
-    {
-        return "";
+        return {};
     }
 
-    int64_t length = pos_end - pos_start + 1;
-    
-    // Get the sequence
-    const std::string& sequence = this->chr_to_seq[chr];
-
-    // Get the substring
-    // std::string subsequence = sequence.substr(pos_start, length);
-
-    // If the subsequence is empty, return empty string
-    if (sequence.substr(pos_start, length).empty())
+    std::string_view subseq = std::string_view(sequence).substr(pos_start, pos_end - pos_start + 1);
+    if (subseq.length() != compare_seq.length())
     {
-        return "";
+        printError("ERROR: Sequence lengths do not match for comparison");
+        return false;
     }
 
-    return sequence.substr(pos_start, length);
+    // Calculate the match rate
+    size_t num_matches = 0;
+    for (size_t i = 0; i < subseq.length(); i++)
+    {
+        if (subseq[i] == compare_seq[i])
+        {
+            num_matches++;
+        }
+    }
+    float match_rate = (float)num_matches / (float)subseq.length();
+
+    return match_rate >= match_threshold;
 }
 
 // Function to get the chromosome contig lengths in VCF header format
-std::string FASTAQuery::getContigHeader()
+std::string ReferenceGenome::getContigHeader() const
 {
+    std::shared_lock<std::shared_mutex> lock(this->shared_mutex);
     std::string contig_header = "";
 
     // Sort the chromosomes
@@ -144,12 +149,10 @@ std::string FASTAQuery::getContigHeader()
         chromosomes.push_back(chr_seq.first);
     }
     std::sort(chromosomes.begin(), chromosomes.end());
-
-    // Iterate over the chromosomes and add them to the contig header
     for (auto const& chr : chromosomes)
     {
         // Add the contig header line
-        contig_header += "##contig=<ID=" + chr + ",length=" + std::to_string(this->chr_to_seq[chr].length()) + ">\n";
+        contig_header += "##contig=<ID=" + chr + ",length=" + std::to_string(this->chr_to_seq.at(chr).length()) + ">\n";
     }
 
     // Remove the last newline character
@@ -158,12 +161,20 @@ std::string FASTAQuery::getContigHeader()
     return contig_header;
 }
 
-std::vector<std::string> FASTAQuery::getChromosomes()
+std::vector<std::string> ReferenceGenome::getChromosomes() const
 {
     return this->chromosomes;
 }
 
-int64_t FASTAQuery::getChromosomeLength(std::string chr)
+uint32_t ReferenceGenome::getChromosomeLength(std::string chr) const
 {
-    return this->chr_to_seq[chr].length();
+    try
+    {
+        return this->chr_to_length.at(chr);
+    }
+    catch (const std::out_of_range& e)
+    {
+        printError("Chromosome " + chr + " not found in reference genome");
+        return 0;
+    }
 }

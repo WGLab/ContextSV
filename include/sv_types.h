@@ -7,50 +7,152 @@
 #include <set>
 #include <unordered_map>
 #include <tuple>
+#include <bitset>
 /// @endcond
 
 namespace sv_types {
+
     // Define constants for SV types
-    static const int DEL = 0;
-    static const int DUP = 1;
-    static const int INV = 2;
-    static const int INS = 3;
-    static const int BND = 4;
-    static const int TANDUP = 5;  // Tandem duplication
-    static const int UNKNOWN = -1;
-
-    // Define SVTypeString for SV types
-    static const std::string SVTypeString[] = {"DEL", "DUP", "INV", "INS", "BND", "DUP"};
-
-    // Create a struct for storing SV information
-    struct SVInfo {
-        int sv_type;
-        int read_support;  // Number of reads supporting the SV breakpoints
-        int read_depth;  // Read depth at the SV start position
-        std::set<std::string> data_type;  // Alignment type used to call the SV
-        int sv_length;
-        std::string genotype = "./.";  // Default genotype (no call)
-        double hmm_likelihood = 0.0;  // HMM likelihood score for the state sequence
-
-        SVInfo() :
-            sv_type(-1), read_support(0), read_depth(0), data_type({}), sv_length(0), genotype("./."), hmm_likelihood(0.0){}
-            
-        SVInfo(int sv_type, int read_support, int read_depth, std::string data_type, int sv_length, std::string genotype, double hmm_likelihood) :
-            sv_type(sv_type), read_support(read_support), read_depth(read_depth), data_type({data_type}), sv_length(sv_length), genotype(genotype), hmm_likelihood(hmm_likelihood) {}
+    enum class SVType {
+        UNKNOWN = -1,
+        DEL = 0,
+        DUP = 1,
+        INV = 2,
+        INS = 3,
+        BND = 4,
+        NEUTRAL = 5,  // Neutral copy number with unknown type
+        LOH = 6  // Loss of heterozygosity
     };
 
-    // SV (start, end, alt_allele)
-    using SVCandidate = std::tuple<int64_t, int64_t, std::string>;
-    
-    // Chromosome to SV candidate to read depth map
-    using SVDepthMap = std::unordered_map<std::string, std::map<SVCandidate, SVInfo>>;
+    // Mapping of SV types to strings
+    const std::unordered_map<SVType, std::string> SVTypeString = {
+        {SVType::UNKNOWN, "UNKNOWN"},
+        {SVType::DEL, "DEL"},
+        {SVType::DUP, "DUP"},
+        {SVType::INV, "INV"},
+        {SVType::INS, "INS"},
+        {SVType::BND, "BND"},
+        {SVType::NEUTRAL, "NEUTRAL"},
+        {SVType::LOH, "LOH"}
+    };
 
-    // Define a map for storing copy number calls by SV candidate
-    using SVCopyNumberMap = std::map<SVCandidate, std::tuple<int, std::string, std::string>>;
+    // Mapping of SV types to symbols
+    const std::unordered_map<SVType, std::string> SVTypeSymbol = {
+        {SVType::UNKNOWN, "."},
+        {SVType::DEL, "<DEL>"},
+        {SVType::DUP, "<DUP>"},
+        {SVType::INV, "<INV>"},
+        {SVType::INS, "<INS>"},
+        {SVType::BND, "<BND>"},
+    };
 
-    // Create a type for storing SV update information from copy number caller
-    // (SVCandidate, SV type, genotype, data type)
-    using SVUpdate = std::tuple<SVCandidate, int, std::string, std::string>;
+    // Define constants for genotypes
+    enum class Genotype {
+        HOMOZYGOUS_REF = 0,
+        HETEROZYGOUS = 1,
+        HOMOZYGOUS_ALT = 2,
+        UNKNOWN = 3
+    };
+
+    // Mapping of genotypes to strings
+    const std::unordered_map<Genotype, std::string> GenotypeString = {
+        {Genotype::HOMOZYGOUS_REF, "0/0"},
+        {Genotype::HETEROZYGOUS, "0/1"},
+        {Genotype::HOMOZYGOUS_ALT, "1/1"},
+        {Genotype::UNKNOWN, "./."}
+    };
+
+    // Define constants for SV data types (evidence types)
+    enum class SVDataType {
+        CIGARINS = 0,
+        CIGARDEL = 1,
+        CIGARCLIP = 2,
+        SPLIT = 3,
+        SPLITDIST1 = 4,
+        SPLITDIST2 = 5,
+        SPLITINV = 6,
+        SUPPINV = 7,
+        HMM = 8,
+        UNKNOWN = 9
+    };
+
+    using SVEvidenceFlags = std::bitset<10>;  // Bitset for SV data types
+
+    // Mapping of SV data types to strings
+    const std::unordered_map<SVDataType, std::string> SVDataTypeString = {
+        {SVDataType::CIGARINS, "CIGARINS"},
+        {SVDataType::CIGARDEL, "CIGARDEL"},
+        {SVDataType::CIGARCLIP, "CIGARCLIP"},
+        {SVDataType::SPLIT, "SPLIT"},
+        {SVDataType::SPLITDIST1, "SPLITDIST1"},
+        {SVDataType::SPLITDIST2, "SPLITDIST2"},
+        {SVDataType::SPLITINV, "SPLITINV"},
+        {SVDataType::SUPPINV, "SUPPINV"},
+        {SVDataType::HMM, "HMM"},
+        {SVDataType::UNKNOWN, "UNKNOWN"}
+    };
+
+    // Mapping of 6 copy number states to SV types
+    const std::unordered_map<int, SVType> CNVTypeMap = {
+        {0, SVType::UNKNOWN},
+        {1, SVType::DEL},
+        {2, SVType::DEL},
+        {3, SVType::NEUTRAL},
+        {4, SVType::LOH},
+        {5, SVType::DUP},
+        {6, SVType::DUP}
+    };
+
+    // Function to get the SV type string
+    inline std::string getSVTypeString(SVType sv_type) {
+        return SVTypeString.at(sv_type);
+    }
+
+    // Function to get the SV alignment type string from the bitset
+    inline std::string getSVAlignmentTypeString(SVEvidenceFlags aln_type) {
+        std::string result;
+        for (size_t i = 0; i < SVDataTypeString.size(); ++i) {
+            if (aln_type.test(i)) {
+                result += SVDataTypeString.at(static_cast<SVDataType>(i)) + ",";
+            }
+        }
+        if (!result.empty()) {
+            result.pop_back();  // Remove the trailing comma
+        }
+        return result;
+    }
+
+    // Function to get the SV type from the CNV state
+    inline SVType getSVTypeFromCNState(int cn_state) {
+        return CNVTypeMap.at(cn_state);
+    }
+
+    // Function to get the genotype string
+    inline std::string getGenotypeString(Genotype genotype) {
+        return GenotypeString.at(genotype);
+    }
+
+    // Function to get the SV data type string
+    // inline std::string getSVDataTypeString(SVDataType data_type) {
+    //     return SVDataTypeString.at(data_type);
+    // }
+
+    // Function to get the SV type symbol
+    inline std::string getSVTypeSymbol(SVType sv_type) {
+        return SVTypeSymbol.at(sv_type);
+    }
+
+    // Function to check if an SV type is a valid update from copy number predictions
+    inline bool isValidCopyNumberUpdate(SVType sv_type, SVType updated_sv_type) {
+        if (updated_sv_type == SVType::UNKNOWN) {
+            return false;
+        } else if (sv_type == SVType::DEL && updated_sv_type != SVType::DEL) {
+            return false;
+        } else if (sv_type == SVType::INS && updated_sv_type != SVType::DUP) {
+            return false;
+        }
+        return true;
+    }
 }
 
 #endif // SV_TYPES_H

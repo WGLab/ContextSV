@@ -7,19 +7,15 @@
 #define CONTEXTSV_H
 
 #include "input_data.h"
-#include "cnv_data.h"
-#include "sv_data.h"
 
 
 class ContextSV {
-	private:
-		InputData* input_data;
-
 	public:
-		ContextSV(InputData& input_data);
+		// explicit ContextSV(InputData& input_data);
+		ContextSV() = default;
 
 		// Entry point
-		int run();
+		int run(const InputData& input_data) const;
 };
 
 #endif  // CONTEXTSV_H

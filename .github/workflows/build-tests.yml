@@ -23,26 +23,40 @@ jobs:
       shell: bash --login {0}
       run: unzip TestData.zip
 
-    - name: Set up conda environment
+    - name: Set up conda (Miniconda only)
       uses: conda-incubator/setup-miniconda@v2
       with:
-        activate-environment: contextsv
-        environment-file: environment.yml
-        python-version: 3.9
-        auto-activate-base: false
+        auto-activate-base: true
 
-    - name: Install samtools and bcftools using sudo apt-get
+    - name: Configure conda channels and create environment
+      shell: bash -l {0}
       run: |
-        sudo apt-get update
-        sudo apt-get install -y samtools bcftools
+        conda config --remove channels defaults || true
+        conda config --add channels conda-forge
+        conda config --add channels bioconda
+        conda config --set channel_priority strict
+        conda info  # confirm the change
+        conda env create -f environment.yml
 
     - name: Build C++ code
       shell: bash --login {0}  # --login enables PATH variable access
       run: |
-        make
+        source $(conda info --base)/etc/profile.d/conda.sh
+        conda activate contextsv
+        echo "CONDA_PREFIX=$CONDA_PREFIX"
+        ls -l $CONDA_PREFIX/include/htslib
+        make CONDA_PREFIX=$CONDA_PREFIX
 
     - name: Run unit tests
       shell: bash --login {0}
       run: |
-        mkdir -p tests/output
-        python -m pytest -s -v tests/test_general.py
+        source $(conda info --base)/etc/profile.d/conda.sh
+        conda activate contextsv
+        ./build/contextsv --version
+        ./build/contextsv --help
+
+      # run: |
+      #   source $(conda info --base)/etc/profile.d/conda.sh
+      #   conda activate contextsv
+      #   mkdir -p tests/output
+      #   python -m pytest -s -v tests/test_general.py

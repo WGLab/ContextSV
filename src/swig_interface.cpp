@@ -1,7 +1,3 @@
-//
-// Created by jperdomo on 1/8/2023.
-//
-
 #include "swig_interface.h"
 #include "contextsv.h"
 
@@ -11,14 +7,13 @@
 
 
 // Run the CLI with the given parameters
-int run(InputData input_data)
+int run(const InputData& input_data)
 {
-
 	// Run ContextSV
-	ContextSV contextsv(input_data);
+	ContextSV contextsv;
 	try
 	{	
-		contextsv.run();
+		contextsv.run(input_data);
 	}
 
 	catch (std::exception& e)

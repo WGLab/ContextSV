@@ -214,7 +214,6 @@ def main():
     # Set input parameters
     input_data = contextsv.InputData()
     input_data.setVerbose(args.debug)
-    input_data.setShortReadBam(args.short_read)
     input_data.setLongReadBam(args.long_read)
     input_data.setRefGenome(args.reference)
     input_data.setSNPFilepath(args.snps)

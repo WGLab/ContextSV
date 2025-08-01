@@ -89,6 +89,12 @@ def update_support(record, cluster_size):
 
     return record
 
+def weighted_score(sv_len, hmm_score, weight_hmm):
+    """
+    Calculate a weighted score based on read support and HMM score.
+    """
+    return (1 - weight_hmm) * sv_len + weight_hmm * hmm_score
+
 def cluster_breakpoints(vcf_df, sv_type, cluster_size_min):
     """
     Cluster SV breakpoints using HDBSCAN.
@@ -124,88 +130,103 @@ def cluster_breakpoints(vcf_df, sv_type, cluster_size_min):
     # Get the HMM likelihood scores
     hmm_scores = vcf_df['INFO'].str.extract(r'HMM=(-?\d+\.?\d*)', expand=False).astype(float)
 
-    # Set all 0 values to NaN
-    hmm_scores[hmm_scores == 0] = np.nan
+    # Set all 0 values to a low negative value
+    hmm_scores[hmm_scores == 0] = -1e-100
+    # hmm_scores[hmm_scores == 0] = np.nan
 
     # Cluster SV breakpoints using HDBSCAN
     cluster_labels = []
 
     # dbscan = DBSCAN(eps=30000, min_samples=3)
-    dbscan = HDBSCAN(min_cluster_size=cluster_size_min, min_samples=3)
+    
+    if len(breakpoints) == 1:
+        return merged_records
+    
+    logging.info("Clustering %d SV breakpoints with parameters: min_cluster_size=%d", len(breakpoints), cluster_size_min)
+    dbscan = HDBSCAN(min_cluster_size=cluster_size_min, min_samples=2)
     if len(breakpoints) > 0:
         logging.info("Clustering %d SV breakpoints...", len(breakpoints))
         cluster_labels = dbscan.fit_predict(breakpoints)
 
         logging.info("Label counts: %d", len(np.unique(cluster_labels)))
-
-    # Set all 0 values to NaN
-    hmm_scores[hmm_scores == 0] = np.nan
+       
 
     # Merge SVs with the same label
     unique_labels = np.unique(cluster_labels)
+    #logging.info("Unique labels: %s", unique_labels)
+
     for label in unique_labels:
 
-        # Skip label -1 (outliers)
-        if label == -1:
-            # # Print the positions if any are within a certain range
-            # pos_min = 180915940
-            # pos_max = 180950356
-
-            # Debug if position is found
-            target_pos = 180949217
-
-            idx = cluster_labels == label
-            pos_values = breakpoints[idx][:, 0]
-            if target_pos in pos_values:
-                logging.info(f"Outlier deletion positions: {pos_values}")
-
-            # if (np.any(pos_values >= pos_min) and np.any(pos_values <= pos_max)):
-                # Print all within range
-                # pos_within_range = pos_values[(pos_values >= pos_min) & (pos_values <= pos_max)]
-                # logging.info(f"Outlier deletion positions: {pos_within_range}")
-                # logging.info(f"Outlier deletion positions: {pos_values}")
-
+        # Skip label -1 (outliers) only if there are no other clusters
+        if label == -1 and len(unique_labels) > 1:
             continue
 
         # Get the indices of SVs with the same label
         idx = cluster_labels == label
 
         # Get HMM and read support values for the cluster
-        max_score_idx = 0  # Default to the first SV in the cluster
+        # max_score_idx = 0  # Default to the first SV in the cluster
         cluster_hmm_scores = np.array(hmm_scores[idx])
-        cluster_depth_scores = np.array(sv_support[idx])
-        max_hmm = None
-        max_support = None
-        max_hmm_idx = None
-        max_support_idx = None
+        # cluster_depth_scores = np.array(sv_support[idx])
+        cluster_sv_lengths = np.array(breakpoints[idx][:, 1] - breakpoints[idx][:, 0] + 1)
+        # max_hmm = None
+        # max_support = None
+        # max_hmm_idx = None
+        # max_support_idx = None
 
         # Find the maximum HMM score
-        if len(np.unique(cluster_hmm_scores)) > 1:
-            max_hmm_idx = np.nanargmax(cluster_hmm_scores)
-            max_hmm = cluster_hmm_scores[max_hmm_idx]
+        # if len(np.unique(cluster_hmm_scores)) > 1:
+        #     max_hmm_idx = np.nanargmax(cluster_hmm_scores)
+        #     max_hmm = cluster_hmm_scores[max_hmm_idx]
 
         # Find the maximum read alignment and clipped base support
-        if len(np.unique(cluster_depth_scores)) > 1:
-            max_support_idx = np.argmax(cluster_depth_scores)
-            max_support = cluster_depth_scores[max_support_idx]
+        # if len(np.unique(cluster_depth_scores)) > 1:
+        #     max_support_idx = np.argmax(cluster_depth_scores)
+        #     max_support = cluster_depth_scores[max_support_idx]
 
-        # For deletions, choose the SV with the highest HMM score if available
-        if sv_type == 'DEL':
-            if max_hmm is not None:
-                max_score_idx = max_hmm_idx
-            elif max_support is not None:
-                max_score_idx = max_support_idx
+        # Normalize the HMM scores. Since the HMM scores are negative (log lh), we
+        # normalize them to the range [0, 1] by subtracting the minimum value
+        cluster_hmm_norm = (cluster_hmm_scores - np.min(cluster_hmm_scores)) / (np.max(cluster_hmm_scores) - np.min(cluster_hmm_scores))
 
-        # For insertions and duplications, choose the SV with the highest read
-        # support if available
-        elif sv_type == 'INS/DUP':
-            if max_support is not None:
-                max_score_idx = max_support_idx
-            elif max_hmm is not None:
-                max_score_idx = max_hmm_idx
+        # Normalize the SV lengths to the range [0, 1]
+        cluster_sv_lengths_norm = (cluster_sv_lengths - np.min(cluster_sv_lengths)) / (np.max(cluster_sv_lengths) - np.min(cluster_sv_lengths))
+
+        # Use a weighted approach to choose the best SV based on HMM and
+        # support. Deletions have higher priority for HMM scores, while
+        # insertions and duplications have higher priority for read alignment
+        # support.
+        # hmm_weight = 0.7 if sv_type == 'DEL' else 0.3
+        hmm_weight = 0.5
+        max_score_idx = 0  # Default to the first SV in the cluster
+        max_score = weighted_score(cluster_hmm_norm[max_score_idx], cluster_sv_lengths_norm[max_score_idx], hmm_weight)
+        # max_score = weighted_score(cluster_sv_lengths[max_score_idx], cluster_hmm_scores[max_score_idx], hmm_weight)
+        for k, hmm_norm in enumerate(cluster_hmm_norm):
+            svlen_norm = cluster_sv_lengths_norm[k]
+            score = weighted_score(svlen_norm, hmm_norm, hmm_weight)
+            if score > max_score:
+                max_score = score
+                max_score_idx = k
+
+        # Get the VCF record with the highest score
+        max_record = vcf_df.iloc[idx, :].iloc[max_score_idx, :]
+
+        # # For deletions, choose the SV with the highest HMM score if available
+        # if sv_type == 'DEL':
+        #     if max_hmm is not None:
+        #         max_score_idx = max_hmm_idx
+        #     elif max_support is not None:
+        #         max_score_idx = max_support_idx
+
+        # # For insertions and duplications, choose the SV with the highest read
+        # # support if available
+        # elif sv_type == 'INS/DUP':
+        #     if max_support is not None:
+        #         max_score_idx = max_support_idx
+        #     elif max_hmm is not None:
+        #         max_score_idx = max_hmm_idx
 
         # Get the VCF record with the highest depth score
-        max_record = vcf_df.iloc[idx, :].iloc[max_score_idx, :]
+        # max_record = vcf_df.iloc[idx, :].iloc[max_score_idx, :]
 
         # Get the number of SVs in this cluster
         cluster_size = np.sum(idx)
@@ -213,30 +234,7 @@ def cluster_breakpoints(vcf_df, sv_type, cluster_size_min):
 
         # Update the SUPPORT field in the INFO column
         max_record = update_support(max_record, cluster_size)
-
-        # Get all position values in the cluster
-        pos_values = breakpoints[idx][:, 0]
-
-        # Debug if position is found
-        target_pos = 180949217
-        if target_pos in pos_values:
-            logging.info(f"Cluster size: {cluster_size}")
-            logging.info(f"Pos values:")
-            for k, pos in enumerate(pos_values):
-                logging.info(f"Row {k+1} - Pos: {pos}, HMM: {cluster_hmm_scores[k]}, support: {cluster_depth_scores[k]}")
-
-            logging.info(f"Chosen position: {max_record['POS']} - HMM: {max_hmm}, support: {max_support}")
-
-        # # If the POS value is a certain value, plot the support
-        # pos_min = 180915940
-        # pos_max = 180950356
-        # # if (np.any(pos_values >= pos_min) and np.any(pos_values <= pos_max)) or cluster_size > 1000:
-        # if (np.any(pos_values >= pos_min) and np.any(pos_values <= pos_max)):
-        #     logging.info(f"Cluster size: {cluster_size}")
-        #     logging.info(f"Pos values:")
-        #     for k, pos in enumerate(pos_values):
-        #         logging.info(f"Row {k+1} - Pos: {pos}, HMM: {cluster_hmm_scores[k]}, support: {cluster_depth_scores[k]}")
-
+        # pos_values = breakpoints[idx][:, 0]
 
         # Append the chosen record to the dataframe of records that will
         # form the merged VCF file
@@ -289,16 +287,19 @@ def sv_merger(vcf_file_path, cluster_size_min=3, suffix='.merged'):
         del chr_del_df
 
         # Cluster insertions and duplications
-        logging.info("Clustering insertions and duplications on chromosome %s...", chromosome)
-        chr_ins_dup_df = vcf_df[(vcf_df['CHROM'] == chromosome) & ((vcf_df['INFO'].str.contains('SVTYPE=INS')) | (vcf_df['INFO'].str.contains('SVTYPE=DUP')))]
-        ins_dup_records = cluster_breakpoints(chr_ins_dup_df, 'INS/DUP', cluster_size_min)
-        del chr_ins_dup_df
+        logging.info("Clustering all other SVs on chromosome %s...", chromosome)
+        # chr_ins_dup_df = vcf_df[(vcf_df['CHROM'] == chromosome) &
+        # ((vcf_df['INFO'].str.contains('SVTYPE=INS')) |
+        # (vcf_df['INFO'].str.contains('SVTYPE=DUP')))]
+        chr_non_del_df = vcf_df[(vcf_df['CHROM'] == chromosome) & (~vcf_df['INFO'].str.contains('SVTYPE=DEL'))]
+        ins_dup_records = cluster_breakpoints(chr_non_del_df, 'INS/DUP', cluster_size_min)
+        del chr_non_del_df
 
         # Summarize the number of deletions and insertions/duplications
         del_count = del_records.shape[0]
         ins_dup_count = ins_dup_records.shape[0]
         records_processed += del_count + ins_dup_count
-        logging.info("Chromosome %s - %d deletions, %d insertions, and duplications merged.", chromosome, del_count, ins_dup_count)
+        logging.info("Chromosome %s - %d deletions, %d other types merged.", chromosome, del_count, ins_dup_count)
 
         # Append the deletion and insertion/duplication records to the merged
         # records DataFrame

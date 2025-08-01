@@ -40,7 +40,6 @@ def test_run():
     
     # Set input parameters.
     input_data = contextsv.InputData()
-    input_data.setShortReadBam(TEST_BAM_FILE)
     input_data.setLongReadBam(TEST_BAM_FILE)
     input_data.setRefGenome(TEST_REF_FILE)
     input_data.setSNPFilepath(TEST_SNPS_FILE)
@@ -64,11 +63,11 @@ def test_run():
 
     # Check that the VCF file has the correct number of lines.
     with open(output_file, 'r', encoding='utf-8') as f:
-        assert len(f.readlines()) == 21
+        assert len(f.readlines()) == 22
 
     # Check that the VCF file has the correct header, and the correct
     # VCF CHROM, POS, and INFO fields in the next 2 lines.
-    header_line = 18
+    header_line = 17
     with open(output_file, 'r', encoding='utf-8') as f:
         for i, line in enumerate(f):
             if i == header_line:
@@ -78,11 +77,11 @@ def test_run():
                 fields = line.strip().split('\t')
                 assert fields[0] == "21"
                 assert fields[1] == "14458394"
-                assert fields[7] == "END=14458394;SVTYPE=INS;SVLEN=1341;SUPPORT=1;SVMETHOD=CONTEXTSVv0.1;ALN=CIGARINS,;CLIPSUP=0;REPTYPE=NA;HMM=0.000000"
+                assert fields[7] == "END=14458394;SVTYPE=INS;SVLEN=1344;SUPPORT=1;SVMETHOD=CONTEXTSVv0.1;ALN=CIGARINS;CLIPSUP=0;REPTYPE=NA;HMM=0.000000"
             elif i == header_line + 2:
                 fields = line.strip().split('\t')
                 assert fields[0] == "21"
-                assert fields[1] == "14458394"
-                assert fields[7] == "END=14458394;SVTYPE=INS;SVLEN=1344;SUPPORT=1;SVMETHOD=CONTEXTSVv0.1;ALN=CIGARINS,;CLIPSUP=0;REPTYPE=NA;HMM=0.000000"
+                assert fields[1] == "14502888"
+                assert fields[7] == "END=14502953;SVTYPE=BOUNDARY;SVLEN=65;SUPPORT=1;SVMETHOD=CONTEXTSVv0.1;ALN=BOUNDARY;CLIPSUP=0;REPTYPE=NA;HMM=-4.606171"
                 break
             
