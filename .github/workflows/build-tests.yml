@@ -23,18 +23,23 @@ jobs:
       shell: bash --login {0}
       run: unzip TestData.zip
 
-    - name: Set up conda environment
+    - name: Set up conda (miniconda)
       uses: conda-incubator/setup-miniconda@v2
       with:
-        activate-environment: contextsv
-        environment-file: environment.yml
-        python-version: 3.10
-        auto-activate-base: false
+          auto-activate-base: true
+          miniforge-variant: Mambaforge
+          miniforge-version: latest
+          use-mamba: true  # Use mamba natively
 
-    - name: Install samtools and bcftools using sudo apt-get
+    - name: Configure conda channels and create environment with mamba
+      shell: bash --login {0}
       run: |
-        sudo apt-get update
-        sudo apt-get install -y samtools bcftools
+        conda config --remove channels defaults || true
+        conda config --add channels conda-forge
+        conda config --add channels bioconda
+        conda config --set channel_priority strict
+        mamba env create -f environment.yml
+        conda activate contextsv
 
     - name: Build C++ code
       shell: bash --login {0}  # --login enables PATH variable access
