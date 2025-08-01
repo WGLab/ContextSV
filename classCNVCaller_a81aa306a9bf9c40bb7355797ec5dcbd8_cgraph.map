@@ -1,0 +1,23 @@
+<map id="CNVCaller::runCopyNumberPrediction" name="CNVCaller::runCopyNumberPrediction">
+<area shape="rect" id="Node000001" title=" " alt="" coords="5,189,192,229"/>
+<area shape="rect" id="Node000002" href="$classInputData.html#a4c1799a264b868fc58f971af25f47702" title=" " alt="" coords="257,5,449,31"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="109,187,129,154,159,115,195,75,239,41,254,33,256,38,241,46,199,79,163,118,134,157,114,190"/>
+<area shape="rect" id="Node000003" href="$classCNVCaller.html#a1f92873e81303b99b60b6c651018ac61" title=" " alt="" coords="256,55,451,95"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="124,186,176,149,239,112,271,98,273,103,241,116,178,154,127,191"/>
+<area shape="rect" id="Node000004" href="$utils_8cpp.html#ab79682cb72f9274d417b80846628f58f" title=" " alt="" coords="527,92,602,117"/>
+<area shape="poly" id="edge7_Node000001_Node000004" title=" " alt="" coords="148,186,239,155,388,125,513,107,514,113,389,130,241,161,149,191"/>
+<area shape="rect" id="Node000005" href="$classInputData.html#aa5680a4aa211e827a5285acd5f2ee2d3" title=" " alt="" coords="259,171,448,196"/>
+<area shape="poly" id="edge4_Node000001_Node000005" title=" " alt="" coords="192,197,245,191,245,197,192,202"/>
+<area shape="rect" id="Node000006" href="$namespacesv__types.html#a86a199f957855fbfd605eeebbf98cde1" title=" " alt="" coords="240,220,467,245"/>
+<area shape="poly" id="edge5_Node000001_Node000006" title=" " alt="" coords="192,215,226,218,226,223,192,220"/>
+<area shape="rect" id="Node000007" href="$namespacesv__types.html#ad957273e6aba2cbf76c70fe175cb06b7" title=" " alt="" coords="263,269,443,295"/>
+<area shape="poly" id="edge6_Node000001_Node000007" title=" " alt="" coords="155,226,241,254,277,264,276,269,239,259,153,231"/>
+<area shape="rect" id="Node000008" href="$utils_8cpp.html#a754db22f0193bc2ee549308eca04d898" title=" " alt="" coords="515,324,615,349"/>
+<area shape="poly" id="edge8_Node000001_Node000008" title=" " alt="" coords="123,227,174,267,207,288,241,303,308,322,378,333,444,337,501,337,501,343,444,342,378,338,307,327,239,309,204,292,171,272,120,231"/>
+<area shape="rect" id="Node000009" href="$classCNVCaller.html#a4ce68d4664cda42611a4c8cfc0a21868" title=" " alt="" coords="248,370,459,410"/>
+<area shape="poly" id="edge9_Node000001_Node000009" title=" " alt="" coords="117,227,168,287,203,320,241,349,266,362,264,367,239,354,200,324,164,291,113,231"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="451,86,514,95,513,100,451,92"/>
+<area shape="poly" id="edge11_Node000009_Node000008" title=" " alt="" coords="432,367,501,350,502,355,434,373"/>
+<area shape="rect" id="Node000010" href="$utils_8cpp.html#a7e25b2613ca8ee7212bc46e81a517980" title=" " alt="" coords="519,377,610,403"/>
+<area shape="poly" id="edge10_Node000009_Node000010" title=" " alt="" coords="459,387,506,387,506,393,459,393"/>
+</map>

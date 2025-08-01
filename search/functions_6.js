@@ -1,25 +1,10 @@
 var searchData=
 [
-  ['gammln_0',['gammln',['../kc_8cpp.html#a69cc1b545a83a4d9f187e131500aee45',1,'gammln(double x):&#160;kc.cpp'],['../kc_8h.html#a69cc1b545a83a4d9f187e131500aee45',1,'gammln(double x):&#160;kc.cpp']]],
-  ['gammp_1',['gammp',['../kc_8cpp.html#aa1745417f9696825bc7cc68538800b5b',1,'gammp(double a, double x):&#160;kc.cpp'],['../kc_8h.html#aa1745417f9696825bc7cc68538800b5b',1,'gammp(double a, double x):&#160;kc.cpp']]],
-  ['gammq_2',['gammq',['../kc_8h.html#a3875415d74d3aaf6f58d9e58fc061efd',1,'gammq(double a, double x):&#160;kc.cpp'],['../kc_8cpp.html#a3875415d74d3aaf6f58d9e58fc061efd',1,'gammq(double a, double x):&#160;kc.cpp']]],
-  ['gcf_3',['gcf',['../kc_8h.html#a5b446e3e8ec13c8e2383ac156f0cf77f',1,'gcf(double *gammcf, double a, double x, double *gln):&#160;kc.cpp'],['../kc_8cpp.html#a5b446e3e8ec13c8e2383ac156f0cf77f',1,'gcf(double *gammcf, double a, double x, double *gln):&#160;kc.cpp']]],
-  ['getbamfilepath_4',['getBAMFilepath',['../class_input_data.html#a25f727c1d41c775b4c136c3c5a7ed11c',1,'InputData']]],
-  ['getchrcov_5',['getChrCov',['../class_input_data.html#af7a013cc30faa2b30a06209e8370c11b',1,'InputData']]],
-  ['getcontigheader_6',['getContigHeader',['../class_f_a_s_t_a_query.html#af2d3ec8e4632c309e0873d342d883d5e',1,'FASTAQuery']]],
-  ['getfilepath_7',['getFilepath',['../class_f_a_s_t_a_query.html#ae494167badd31359e71ee4a44656511f',1,'FASTAQuery']]],
-  ['getmostcommoncnv_8',['getMostCommonCNV',['../class_c_n_v_data.html#a032114475ecbdec45d0ef4e2064aa03d',1,'CNVData']]],
-  ['getoutputdir_9',['getOutputDir',['../class_input_data.html#a3751e2c1c68b0dd0edf0a774f4ec60e3',1,'InputData']]],
-  ['getpfbfilepath_10',['getPFBFilepath',['../class_input_data.html#a2400ca80dbf8146aba6c04a6341cc94f',1,'InputData']]],
-  ['getrefgenome_11',['getrefgenome',['../class_s_v_data.html#a1b61cb9e6d918d67edd608f33d69512d',1,'SVData::getRefGenome()'],['../class_input_data.html#acfa7764396b5cc4692b460afe66c0b4a',1,'InputData::getRefGenome()']]],
-  ['getregion_12',['getRegion',['../class_input_data.html#a7017092982665dbd46128bbf69f9e096',1,'InputData']]],
-  ['getregionchr_13',['getRegionChr',['../class_input_data.html#a77960f595c62556bb7d0ac5f091d8f59',1,'InputData']]],
-  ['getregionend_14',['getRegionEnd',['../class_input_data.html#a699d2da48f9573630ee0bc6baa3a4509',1,'InputData']]],
-  ['getregionset_15',['getRegionSet',['../class_input_data.html#a9fd17a113b232b81eb32b8182cd25ee7',1,'InputData']]],
-  ['getregionstart_16',['getRegionStart',['../class_input_data.html#ad8c9fdf8a3053610ee119ba7002b1f4e',1,'InputData']]],
-  ['getsequence_17',['getsequence',['../class_input_data.html#aaf9f8a1147a4a2c206d06f7c77b4f6ca',1,'InputData::getSequence()'],['../class_s_v_data.html#ac3e39c567ee56b403c30c3b9739fdef6',1,'SVData::getSequence()']]],
-  ['getsnpfilepath_18',['getSNPFilepath',['../class_input_data.html#a286bed06763459714fa8a46d8980019e',1,'InputData']]],
-  ['getsnppopulationfrequencies_19',['getSNPPopulationFrequencies',['../class_c_n_v_caller.html#a86849c0439b84dfc1eb3fab7a4b4b6a0',1,'CNVCaller']]],
-  ['getwindowsize_20',['getWindowSize',['../class_input_data.html#a62fa5522dcccf80e66b3708d4e700acb',1,'InputData']]],
-  ['gser_21',['gser',['../kc_8h.html#a5277079b0c65d166db9553deb8a92de2',1,'gser(double *gamser, double a, double x, double *gln):&#160;kc.cpp'],['../kc_8cpp.html#a5277079b0c65d166db9553deb8a92de2',1,'gser(double *gamser, double a, double x, double *gln):&#160;kc.cpp']]]
+  ['inputdata_0',['InputData',['../classInputData.html#aff34c47ca0f425fb36c988f0e827a525',1,'InputData']]],
+  ['insert_1',['insert',['../classSVCaller.html#a27fb3a31ddf82751c7e1f5c523162c56',1,'SVCaller']]],
+  ['ischrnotation_2',['ischrnotation',['../utils_8h.html#a637a4a3c608552015092b0df0999275e',1,'isChrNotation(std::string vcf_filepath):&#160;utils.cpp'],['../utils_8cpp.html#a637a4a3c608552015092b0df0999275e',1,'isChrNotation(std::string vcf_filepath):&#160;utils.cpp']]],
+  ['isfileempty_3',['isfileempty',['../utils_8h.html#a7e25b2613ca8ee7212bc46e81a517980',1,'isFileEmpty(const std::string &amp;filepath):&#160;utils.cpp'],['../utils_8cpp.html#a7e25b2613ca8ee7212bc46e81a517980',1,'isFileEmpty(const std::string &amp;filepath):&#160;utils.cpp']]],
+  ['isregionset_4',['isRegionSet',['../classInputData.html#a5a423e3eddb09d2b2959f510dff2704c',1,'InputData']]],
+  ['issinglechr_5',['isSingleChr',['../classInputData.html#a125835864986daa2f17779985ba53f70',1,'InputData']]],
+  ['isvalidcopynumberupdate_6',['isValidCopyNumberUpdate',['../namespacesv__types.html#a8c716343a3862b3e6329df8f32ede4d7',1,'sv_types']]]
 ];

@@ -1,6 +1,5 @@
 var searchData=
 [
-  ['labelcnvs_0',['labelCNVs',['../class_context_s_v.html#a05067e8fd4aa4df5ac986f5edc9d9ad3',1,'ContextSV']]],
-  ['lnbico_1',['lnbico',['../kc_8h.html#aa25b6ecd23d45f7dcaa2932138388c74',1,'lnbico(int n, int k):&#160;kc.cpp'],['../kc_8cpp.html#aa25b6ecd23d45f7dcaa2932138388c74',1,'lnbico(int n, int k):&#160;kc.cpp']]],
-  ['lnfactorial_2',['lnfactorial',['../kc_8h.html#a1b8ed1e5e0530035c186d182ebe747b3',1,'lnfactorial(double x):&#160;kc.cpp'],['../kc_8cpp.html#a1b8ed1e5e0530035c186d182ebe747b3',1,'lnfactorial(double x):&#160;kc.cpp']]]
+  ['log2_5fcov_0',['log2_cov',['../structSNPData.html#a4232e2224b657f969cec2f247989c2d8',1,'SNPData']]],
+  ['loh_1',['LOH',['../namespacesv__types.html#a4d740369845a1bc6f02d486d6981477fafd712e85b2d9a7ed1c8335eaaef9c7b7',1,'sv_types']]]
 ];

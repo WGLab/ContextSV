@@ -1,4 +1,6 @@
 var searchData=
 [
-  ['a_0',['A',['../struct_c_h_m_m.html#aca286a485b0b6d37c1fa688d4c10f473',1,'CHMM']]]
+  ['aln_5foffset_0',['aln_offset',['../structSVCall.html#a9b77aacaf20c8c03dec64e967b4af9be',1,'SVCall']]],
+  ['aln_5ftype_1',['aln_type',['../structSVCall.html#a438105236a25fc239683cc097f5cc7ac',1,'SVCall']]],
+  ['alt_5fallele_2',['alt_allele',['../structSVCall.html#af6f39afc3353469453a553bd194d0e7c',1,'SVCall']]]
 ];

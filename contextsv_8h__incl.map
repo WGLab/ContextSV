@@ -1,15 +1,7 @@
 <map id="include/contextsv.h" name="include/contextsv.h">
-<area shape="rect" id="Node000001" title=" " alt="" coords="95,5,230,31"/>
-<area shape="rect" id="Node000002" href="$input__data_8h.html" title=" " alt="" coords="5,79,99,104"/>
-<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="146,33,83,73,80,69,143,28"/>
-<area shape="rect" id="Node000004" href="$cnv__data_8h.html" title=" " alt="" coords="226,79,313,104"/>
-<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="181,28,242,69,239,73,178,33"/>
-<area shape="rect" id="Node000006" href="$sv__data_8h.html" title=" " alt="" coords="123,79,202,104"/>
-<area shape="poly" id="edge5_Node000001_Node000006" title=" " alt="" coords="165,31,165,65,160,65,160,31"/>
-<area shape="rect" id="Node000003" href="$fasta__query_8h.html" title=" " alt="" coords="56,152,157,177"/>
-<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="63,103,92,140,87,143,59,106"/>
-<area shape="rect" id="Node000005" href="$types_8h.html" title=" " alt="" coords="183,152,249,177"/>
-<area shape="poly" id="edge4_Node000004_Node000005" title=" " alt="" coords="263,106,235,143,231,140,258,103"/>
-<area shape="poly" id="edge6_Node000006_Node000003" title=" " alt="" coords="156,106,126,143,122,140,151,103"/>
-<area shape="poly" id="edge7_Node000006_Node000005" title=" " alt="" coords="174,103,201,140,197,143,169,106"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="5,5,140,31"/>
+<area shape="rect" id="Node000002" href="$input__data_8h.html" title=" " alt="" coords="26,79,119,104"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="75,31,75,65,70,65,70,31"/>
+<area shape="rect" id="Node000003" href="$fasta__query_8h.html" title=" " alt="" coords="22,152,123,177"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="75,104,75,138,70,138,70,104"/>
 </map>

@@ -1,7 +1,0 @@
-<map id="FreeCHMM" name="FreeCHMM">
-<area shape="rect" id="Node000001" title="Free the memory allocated for an HMM." alt="" coords="5,31,95,56"/>
-<area shape="rect" id="Node000002" href="$kc_8cpp.html#a04fbc9bc53e6303830eb4338bc1f3259" title=" " alt="" coords="143,5,237,31"/>
-<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="94,33,129,26,130,32,95,38"/>
-<area shape="rect" id="Node000003" href="$kc_8cpp.html#ac7ec1a76a4b8d3d8423246676977c919" title=" " alt="" coords="143,55,237,80"/>
-<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="95,48,130,54,129,60,94,54"/>
-</map>

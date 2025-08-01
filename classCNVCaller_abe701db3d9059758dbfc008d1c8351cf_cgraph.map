@@ -1,0 +1,14 @@
+<map id="CNVCaller::runCIGARCopyNumberPrediction" name="CNVCaller::runCIGARCopyNumberPrediction">
+<area shape="rect" id="Node000001" title=" " alt="" coords="5,113,233,153"/>
+<area shape="rect" id="Node000002" href="$classCNVCaller.html#a1f92873e81303b99b60b6c651018ac61" title=" " alt="" coords="297,5,492,45"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="164,111,280,62,319,47,321,52,282,66,166,116"/>
+<area shape="rect" id="Node000003" href="$utils_8cpp.html#ab79682cb72f9274d417b80846628f58f" title=" " alt="" coords="556,42,631,67"/>
+<area shape="poly" id="edge6_Node000001_Node000003" title=" " alt="" coords="233,112,542,60,543,66,234,117"/>
+<area shape="rect" id="Node000004" href="$classInputData.html#a831d7db7a34a1971649c6c78d2bfe3b2" title=" " alt="" coords="298,121,491,146"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="234,131,284,131,284,136,234,136"/>
+<area shape="rect" id="Node000005" href="$namespacesv__types.html#a86a199f957855fbfd605eeebbf98cde1" title=" " alt="" coords="281,170,508,195"/>
+<area shape="poly" id="edge4_Node000001_Node000005" title=" " alt="" coords="232,151,310,165,309,170,231,156"/>
+<area shape="rect" id="Node000006" href="$namespacesv__types.html#a8c716343a3862b3e6329df8f32ede4d7" title=" " alt="" coords="295,220,494,260"/>
+<area shape="poly" id="edge5_Node000001_Node000006" title=" " alt="" coords="162,151,282,204,308,213,307,218,280,209,160,156"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="493,37,543,45,542,50,492,42"/>
+</map>

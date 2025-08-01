@@ -25,9 +25,8 @@
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">ContextSV<span id="projectnumber">&#160;0.0.1</span>
+   <div id="projectname">ContextSV<span id="projectnumber">&#160;v1.0.0</span>
    </div>
-   <div id="projectbrief">Integrative SV calling.</div>
   </td>
  </tr>
  </tbody>
@@ -94,12 +93,56 @@ $(document).ready(function(){initNavTree('cnv__caller_8cpp.html',''); initResiza
 </div><!--header-->
 <div class="contents">
 <div class="textblock"><code>#include &quot;<a class="el" href="cnv__caller_8h_source.html">cnv_caller.h</a>&quot;</code><br />
-<code>#include &quot;<a class="el" href="utils_8h_source.html">utils.h</a>&quot;</code><br />
 <code>#include &lt;htslib/sam.h&gt;</code><br />
+<code>#include &lt;htslib/vcf.h&gt;</code><br />
+<code>#include &lt;htslib/hts.h&gt;</code><br />
+<code>#include &lt;htslib/synced_bcf_reader.h&gt;</code><br />
 </div><div class="textblock"><div class="dynheader">
 Include dependency graph for cnv_caller.cpp:</div>
 <div class="dyncontent">
-<div class="center"><iframe scrolling="no" frameborder="0" src="cnv__caller_8cpp__incl.svg" width="396" height="256"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+<div class="center"><img src="cnv__caller_8cpp__incl.png" border="0" usemap="#asrc_2cnv__caller_8cpp" alt=""/></div>
+<map name="asrc_2cnv__caller_8cpp" id="asrc_2cnv__caller_8cpp">
+<area shape="rect" title=" " alt="" coords="980,5,1108,31"/>
+<area shape="rect" href="cnv__caller_8h.html" title=" " alt="" coords="429,79,521,104"/>
+<area shape="poly" title=" " alt="" coords="980,30,535,85,535,80,979,25"/>
+<area shape="rect" title=" " alt="" coords="913,225,1007,251"/>
+<area shape="poly" title=" " alt="" coords="1042,32,972,213,967,211,1037,30"/>
+<area shape="rect" title=" " alt="" coords="1031,225,1209,251"/>
+<area shape="poly" title=" " alt="" coords="1050,30,1072,103,1113,212,1108,214,1067,105,1045,32"/>
+<area shape="rect" title=" " alt="" coords="1082,79,1166,104"/>
+<area shape="poly" title=" " alt="" coords="1059,29,1103,68,1099,72,1055,33"/>
+<area shape="rect" title=" " alt="" coords="1190,79,1277,104"/>
+<area shape="poly" title=" " alt="" coords="1075,28,1190,71,1189,76,1073,33"/>
+<area shape="rect" title=" " alt="" coords="209,152,279,177"/>
+<area shape="poly" title=" " alt="" coords="438,107,292,151,291,146,437,101"/>
+<area shape="rect" href="input__data_8h.html" title=" " alt="" coords="303,152,396,177"/>
+<area shape="poly" title=" " alt="" coords="456,106,383,147,380,143,453,102"/>
+<area shape="rect" href="sv__types_8h.html" title=" " alt="" coords="131,225,218,251"/>
+<area shape="poly" title=" " alt="" coords="471,106,448,142,430,163,409,180,339,202,232,227,231,222,338,196,407,175,426,159,443,139,466,103"/>
+<area shape="rect" href="sv__object_8h.html" title=" " alt="" coords="471,152,559,177"/>
+<area shape="poly" title=" " alt="" coords="484,103,504,139,499,141,479,106"/>
+<area shape="rect" href="utils_8h.html" title=" " alt="" coords="898,152,955,177"/>
+<area shape="poly" title=" " alt="" coords="521,97,885,154,884,159,521,103"/>
+<area shape="rect" href="fasta__query_8h.html" title=" " alt="" coords="5,225,107,251"/>
+<area shape="poly" title=" " alt="" coords="303,180,117,225,116,219,302,175"/>
+<area shape="poly" title=" " alt="" coords="471,178,232,227,231,222,470,173"/>
+<area shape="rect" title=" " alt="" coords="355,225,413,251"/>
+<area shape="poly" title=" " alt="" coords="495,180,418,221,416,216,492,175"/>
+<area shape="rect" title=" " alt="" coords="437,225,507,251"/>
+<area shape="poly" title=" " alt="" coords="510,179,488,215,484,212,505,176"/>
+<area shape="rect" title=" " alt="" coords="531,225,586,251"/>
+<area shape="poly" title=" " alt="" coords="524,176,547,212,542,215,520,179"/>
+<area shape="rect" title=" " alt="" coords="611,225,651,251"/>
+<area shape="poly" title=" " alt="" coords="535,175,601,216,599,220,532,180"/>
+<area shape="rect" title=" " alt="" coords="675,225,754,251"/>
+<area shape="poly" title=" " alt="" coords="548,175,670,218,668,223,546,180"/>
+<area shape="rect" title=" " alt="" coords="778,225,889,251"/>
+<area shape="poly" title=" " alt="" coords="560,173,769,220,768,225,558,178"/>
+<area shape="rect" title=" " alt="" coords="243,225,331,251"/>
+<area shape="poly" title=" " alt="" coords="479,180,338,224,336,219,477,175"/>
+<area shape="poly" title=" " alt="" coords="935,177,951,212,946,214,930,179"/>
+<area shape="poly" title=" " alt="" coords="957,174,1077,218,1075,223,955,179"/>
+</map>
 </div>
 </div></div><!-- contents -->
 </div><!-- doc-content -->

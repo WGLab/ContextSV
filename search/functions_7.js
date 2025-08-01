@@ -1,8 +1,6 @@
 var searchData=
 [
-  ['imatrix_0',['imatrix',['../kc_8h.html#abf1b4d8302f62d6a4c71bfc56c4e0527',1,'imatrix(long nrl, long nrh, long ncl, long nch):&#160;kc.cpp'],['../kc_8cpp.html#abf1b4d8302f62d6a4c71bfc56c4e0527',1,'imatrix(long nrl, long nrh, long ncl, long nch):&#160;kc.cpp']]],
-  ['inputdata_1',['InputData',['../class_input_data.html#aff34c47ca0f425fb36c988f0e827a525',1,'InputData']]],
-  ['inverff_2',['inverff',['../kc_8h.html#aec2bb078b76a5c291f8bac42c63c153d',1,'inverff(double x):&#160;kc.cpp'],['../kc_8cpp.html#aec2bb078b76a5c291f8bac42c63c153d',1,'inverff(double x):&#160;kc.cpp']]],
-  ['invnormal_3',['invnormal',['../kc_8h.html#a760799d47f2410b689c0c9f35907a118',1,'invnormal(double x):&#160;kc.cpp'],['../kc_8cpp.html#a760799d47f2410b689c0c9f35907a118',1,'invnormal(double x):&#160;kc.cpp']]],
-  ['ivector_4',['ivector',['../kc_8h.html#aa80706cb014e1b52634f8c88adc0cc28',1,'ivector(long nl, long nh):&#160;kc.cpp'],['../kc_8cpp.html#aa80706cb014e1b52634f8c88adc0cc28',1,'ivector(long nl, long nh):&#160;kc.cpp']]]
+  ['main_0',['main',['../main_8cpp.html#a0ddf1224851353fc92bfbff6f499fa97',1,'main.cpp']]],
+  ['mergeduplicatesvs_1',['mergeduplicatesvs',['../sv__object_8h.html#a8ac4e27c4cd2105465ca60338fd68136',1,'mergeDuplicateSVs(std::vector&lt; SVCall &gt; &amp;sv_calls):&#160;sv_object.cpp'],['../sv__object_8cpp.html#a8ac4e27c4cd2105465ca60338fd68136',1,'mergeDuplicateSVs(std::vector&lt; SVCall &gt; &amp;sv_calls):&#160;sv_object.cpp']]],
+  ['mergesvs_2',['mergesvs',['../sv__object_8h.html#ab164c8572db9f597fdc868f7d3b29e06',1,'mergeSVs(std::vector&lt; SVCall &gt; &amp;sv_calls, double epsilon, int min_pts, bool keep_noise, const std::string &amp;json_filepath=&quot;&quot;):&#160;sv_object.cpp'],['../sv__object_8cpp.html#a91b12d5b605ff209f4efa89513b8b932',1,'mergeSVs(std::vector&lt; SVCall &gt; &amp;sv_calls, double epsilon, int min_pts, bool keep_noise, const std::string &amp;json_filepath):&#160;sv_object.cpp']]]
 ];

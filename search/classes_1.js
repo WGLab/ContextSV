@@ -1,4 +1,5 @@
 var searchData=
 [
-  ['fastaquery_0',['FASTAQuery',['../class_f_a_s_t_a_query.html',1,'']]]
+  ['dbscan_0',['DBSCAN',['../classDBSCAN.html',1,'']]],
+  ['dbscan1d_1',['DBSCAN1D',['../classDBSCAN1D.html',1,'']]]
 ];

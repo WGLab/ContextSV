@@ -1,0 +1,7 @@
+<map id="CNVCaller::runCIGARCopyNumberPrediction" name="CNVCaller::runCIGARCopyNumberPrediction">
+<area shape="rect" id="Node000001" title=" " alt="" coords="309,5,537,45"/>
+<area shape="rect" id="Node000002" href="$classSVCaller.html#af1d745175a116b8b0e26c5a4c50de688" title=" " alt="" coords="164,13,261,38"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="295,28,262,28,262,23,295,23"/>
+<area shape="rect" id="Node000003" href="$classContextSV.html#ad398977f01cfca4dbc610676563583e9" title=" " alt="" coords="5,13,116,38"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="150,28,116,28,116,23,150,23"/>
+</map>

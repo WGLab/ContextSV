@@ -25,9 +25,8 @@
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">ContextSV<span id="projectnumber">&#160;0.0.1</span>
+   <div id="projectname">ContextSV<span id="projectnumber">&#160;v1.0.0</span>
    </div>
-   <div id="projectbrief">Integrative SV calling.</div>
   </td>
  </tr>
  </tbody>
@@ -91,7 +90,8 @@ $(document).ready(function(){initNavTree('utils_8cpp.html',''); initResizable();
 
 <div class="header">
   <div class="summary">
-<a href="#func-members">Functions</a>  </div>
+<a href="#func-members">Functions</a> &#124;
+<a href="#var-members">Variables</a>  </div>
   <div class="headertitle"><div class="title">utils.cpp File Reference</div></div>
 </div><!--header-->
 <div class="contents">
@@ -99,15 +99,312 @@ $(document).ready(function(){initNavTree('utils_8cpp.html',''); initResizable();
 </div><div class="textblock"><div class="dynheader">
 Include dependency graph for utils.cpp:</div>
 <div class="dyncontent">
-<div class="center"><iframe scrolling="no" frameborder="0" src="utils_8cpp__incl.svg" width="104" height="110"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+<div class="center"><img src="utils_8cpp__incl.png" border="0" usemap="#asrc_2utils_8cpp" alt=""/></div>
+<map name="asrc_2utils_8cpp" id="asrc_2utils_8cpp">
+<area shape="rect" title=" " alt="" coords="85,5,179,31"/>
+<area shape="rect" href="utils_8h.html" title=" " alt="" coords="103,79,161,104"/>
+<area shape="poly" title=" " alt="" coords="135,31,135,65,129,65,129,31"/>
+<area shape="rect" title=" " alt="" coords="5,152,99,177"/>
+<area shape="poly" title=" " alt="" coords="121,106,77,145,73,141,117,102"/>
+<area shape="rect" title=" " alt="" coords="123,152,301,177"/>
+<area shape="poly" title=" " alt="" coords="147,102,191,141,187,145,143,106"/>
+</map>
 </div>
 </div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
 <tr class="memitem:a94bd78faf212464ede8144a4be0e8cf8" id="r_a94bd78faf212464ede8144a4be0e8cf8"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="utils_8cpp.html#a94bd78faf212464ede8144a4be0e8cf8">printProgress</a> (int progress, int total)</td></tr>
 <tr class="separator:a94bd78faf212464ede8144a4be0e8cf8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a637a4a3c608552015092b0df0999275e" id="r_a637a4a3c608552015092b0df0999275e"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="utils_8cpp.html#a637a4a3c608552015092b0df0999275e">isChrNotation</a> (std::string vcf_filepath)</td></tr>
+<tr class="separator:a637a4a3c608552015092b0df0999275e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a754db22f0193bc2ee549308eca04d898" id="r_a754db22f0193bc2ee549308eca04d898"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="utils_8cpp.html#a754db22f0193bc2ee549308eca04d898">printMessage</a> (std::string message)</td></tr>
+<tr class="separator:a754db22f0193bc2ee549308eca04d898"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab79682cb72f9274d417b80846628f58f" id="r_ab79682cb72f9274d417b80846628f58f"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="utils_8cpp.html#ab79682cb72f9274d417b80846628f58f">printError</a> (std::string message)</td></tr>
+<tr class="separator:ab79682cb72f9274d417b80846628f58f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae38909c756cbc09eb92df9ba566c1c6d" id="r_ae38909c756cbc09eb92df9ba566c1c6d"><td class="memItemLeft" align="right" valign="top">std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="utils_8cpp.html#ae38909c756cbc09eb92df9ba566c1c6d">getElapsedTime</a> (std::chrono::high_resolution_clock::time_point start, std::chrono::high_resolution_clock::time_point end)</td></tr>
+<tr class="separator:ae38909c756cbc09eb92df9ba566c1c6d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a53e4863064a0c73c48f283f4462caffe" id="r_a53e4863064a0c73c48f283f4462caffe"><td class="memItemLeft" align="right" valign="top">std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="utils_8cpp.html#a53e4863064a0c73c48f283f4462caffe">removeChrPrefix</a> (std::string chr)</td></tr>
+<tr class="separator:a53e4863064a0c73c48f283f4462caffe"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a32cb592046e31d098fe600f69ccde166" id="r_a32cb592046e31d098fe600f69ccde166"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="utils_8cpp.html#a32cb592046e31d098fe600f69ccde166">printMemoryUsage</a> (const std::string &amp;functionName)</td></tr>
+<tr class="separator:a32cb592046e31d098fe600f69ccde166"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7a68bf1ee8736c7499c78ab0f5e64da8" id="r_a7a68bf1ee8736c7499c78ab0f5e64da8"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="utils_8cpp.html#a7a68bf1ee8736c7499c78ab0f5e64da8">fileExists</a> (const std::string &amp;filepath)</td></tr>
+<tr class="separator:a7a68bf1ee8736c7499c78ab0f5e64da8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7e25b2613ca8ee7212bc46e81a517980" id="r_a7e25b2613ca8ee7212bc46e81a517980"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="utils_8cpp.html#a7e25b2613ca8ee7212bc46e81a517980">isFileEmpty</a> (const std::string &amp;filepath)</td></tr>
+<tr class="separator:a7e25b2613ca8ee7212bc46e81a517980"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afacf4d9ffa84316689e27ba66854a8fa" id="r_afacf4d9ffa84316689e27ba66854a8fa"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="utils_8cpp.html#afacf4d9ffa84316689e27ba66854a8fa">closeJSON</a> (const std::string &amp;filepath)</td></tr>
+<tr class="separator:afacf4d9ffa84316689e27ba66854a8fa"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="var-members" name="var-members"></a>
+Variables</h2></td></tr>
+<tr class="memitem:ae6e7488d597702f717dcc4bf8b058e29" id="r_ae6e7488d597702f717dcc4bf8b058e29"><td class="memItemLeft" align="right" valign="top">std::mutex&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="utils_8cpp.html#ae6e7488d597702f717dcc4bf8b058e29">print_mtx</a></td></tr>
+<tr class="separator:ae6e7488d597702f717dcc4bf8b058e29"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Function Documentation</h2>
+<a id="afacf4d9ffa84316689e27ba66854a8fa" name="afacf4d9ffa84316689e27ba66854a8fa"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#afacf4d9ffa84316689e27ba66854a8fa">&#9670;&#160;</a></span>closeJSON()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void closeJSON </td>
+          <td>(</td>
+          <td class="paramtype">const std::string &amp;&#160;</td>
+          <td class="paramname"><em>filepath</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<div class="dynheader">
+Here is the caller graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><img src="utils_8cpp_afacf4d9ffa84316689e27ba66854a8fa_icgraph.png" border="0" usemap="#autils_8cpp_afacf4d9ffa84316689e27ba66854a8fa_icgraph" alt=""/></div>
+<map name="autils_8cpp_afacf4d9ffa84316689e27ba66854a8fa_icgraph" id="autils_8cpp_afacf4d9ffa84316689e27ba66854a8fa_icgraph">
+<area shape="rect" title=" " alt="" coords="309,5,399,31"/>
+<area shape="rect" href="classSVCaller.html#af1d745175a116b8b0e26c5a4c50de688" title=" " alt="" coords="164,5,261,31"/>
+<area shape="poly" title=" " alt="" coords="296,21,262,21,262,15,296,15"/>
+<area shape="rect" href="classContextSV.html#ad398977f01cfca4dbc610676563583e9" title=" " alt="" coords="5,5,116,31"/>
+<area shape="poly" title=" " alt="" coords="150,21,116,21,116,15,150,15"/>
+</map>
+</div>
+
+</div>
+</div>
+<a id="a7a68bf1ee8736c7499c78ab0f5e64da8" name="a7a68bf1ee8736c7499c78ab0f5e64da8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7a68bf1ee8736c7499c78ab0f5e64da8">&#9670;&#160;</a></span>fileExists()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool fileExists </td>
+          <td>(</td>
+          <td class="paramtype">const std::string &amp;&#160;</td>
+          <td class="paramname"><em>filepath</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<div class="dynheader">
+Here is the caller graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><img src="utils_8cpp_a7a68bf1ee8736c7499c78ab0f5e64da8_icgraph.png" border="0" usemap="#autils_8cpp_a7a68bf1ee8736c7499c78ab0f5e64da8_icgraph" alt=""/></div>
+<map name="autils_8cpp_a7a68bf1ee8736c7499c78ab0f5e64da8_icgraph" id="autils_8cpp_a7a68bf1ee8736c7499c78ab0f5e64da8_icgraph">
+<area shape="rect" title=" " alt="" coords="637,31,713,56"/>
+<area shape="rect" href="sv__object_8cpp.html#a91b12d5b605ff209f4efa89513b8b932" title=" " alt="" coords="309,5,392,31"/>
+<area shape="poly" title=" " alt="" coords="626,29,589,21,536,15,483,14,392,17,392,12,483,9,536,10,590,15,627,24"/>
+<area shape="rect" href="main_8cpp.html#aaf8c0a506436b8f41962bf740264d1cb" title=" " alt="" coords="463,80,566,105"/>
+<area shape="poly" title=" " alt="" coords="625,62,557,83,556,77,623,56"/>
+<area shape="rect" href="sv__object_8cpp.html#ad952d28fcd453cf9f3473954bc2c116b" title=" " alt="" coords="440,31,589,56"/>
+<area shape="poly" title=" " alt="" coords="623,46,589,46,589,41,623,41"/>
+<area shape="rect" href="classSVCaller.html#af1d745175a116b8b0e26c5a4c50de688" title=" " alt="" coords="164,5,261,31"/>
+<area shape="poly" title=" " alt="" coords="296,21,261,21,261,15,296,15"/>
+<area shape="rect" href="classContextSV.html#ad398977f01cfca4dbc610676563583e9" title=" " alt="" coords="5,5,116,31"/>
+<area shape="poly" title=" " alt="" coords="150,21,116,21,116,15,150,15"/>
+<area shape="rect" href="main_8cpp.html#a0ddf1224851353fc92bfbff6f499fa97" title=" " alt="" coords="325,80,376,105"/>
+<area shape="poly" title=" " alt="" coords="450,95,376,95,376,90,450,90"/>
+<area shape="poly" title=" " alt="" coords="426,32,392,27,393,22,427,27"/>
+</map>
+</div>
+
+</div>
+</div>
+<a id="ae38909c756cbc09eb92df9ba566c1c6d" name="ae38909c756cbc09eb92df9ba566c1c6d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae38909c756cbc09eb92df9ba566c1c6d">&#9670;&#160;</a></span>getElapsedTime()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::string getElapsedTime </td>
+          <td>(</td>
+          <td class="paramtype">std::chrono::high_resolution_clock::time_point&#160;</td>
+          <td class="paramname"><em>start</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">std::chrono::high_resolution_clock::time_point&#160;</td>
+          <td class="paramname"><em>end</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a637a4a3c608552015092b0df0999275e" name="a637a4a3c608552015092b0df0999275e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a637a4a3c608552015092b0df0999275e">&#9670;&#160;</a></span>isChrNotation()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool isChrNotation </td>
+          <td>(</td>
+          <td class="paramtype">std::string&#160;</td>
+          <td class="paramname"><em>vcf_filepath</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a7e25b2613ca8ee7212bc46e81a517980" name="a7e25b2613ca8ee7212bc46e81a517980"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7e25b2613ca8ee7212bc46e81a517980">&#9670;&#160;</a></span>isFileEmpty()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool isFileEmpty </td>
+          <td>(</td>
+          <td class="paramtype">const std::string &amp;&#160;</td>
+          <td class="paramname"><em>filepath</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<div class="dynheader">
+Here is the caller graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><img src="utils_8cpp_a7e25b2613ca8ee7212bc46e81a517980_icgraph.png" border="0" usemap="#autils_8cpp_a7e25b2613ca8ee7212bc46e81a517980_icgraph" alt=""/></div>
+<map name="autils_8cpp_a7e25b2613ca8ee7212bc46e81a517980_icgraph" id="autils_8cpp_a7e25b2613ca8ee7212bc46e81a517980_icgraph">
+<area shape="rect" title=" " alt="" coords="499,13,589,38"/>
+<area shape="rect" href="classCNVCaller.html#a4ce68d4664cda42611a4c8cfc0a21868" title=" " alt="" coords="240,5,451,45"/>
+<area shape="poly" title=" " alt="" coords="485,28,451,28,451,23,485,23"/>
+<area shape="rect" href="classCNVCaller.html#a81aa306a9bf9c40bb7355797ec5dcbd8" title=" " alt="" coords="5,5,192,45"/>
+<area shape="poly" title=" " alt="" coords="226,28,192,28,192,23,226,23"/>
+</map>
+</div>
+
+</div>
+</div>
+<a id="ab79682cb72f9274d417b80846628f58f" name="ab79682cb72f9274d417b80846628f58f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab79682cb72f9274d417b80846628f58f">&#9670;&#160;</a></span>printError()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void printError </td>
+          <td>(</td>
+          <td class="paramtype">std::string&#160;</td>
+          <td class="paramname"><em>message</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<div class="dynheader">
+Here is the caller graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><img src="utils_8cpp_ab79682cb72f9274d417b80846628f58f_icgraph.png" border="0" usemap="#autils_8cpp_ab79682cb72f9274d417b80846628f58f_icgraph" alt=""/></div>
+<map name="autils_8cpp_ab79682cb72f9274d417b80846628f58f_icgraph" id="autils_8cpp_ab79682cb72f9274d417b80846628f58f_icgraph">
+<area shape="rect" title=" " alt="" coords="835,233,909,259"/>
+<area shape="rect" href="sv__object_8cpp.html#ae133e3d660ebb5e3592ab6606b352a1f" title=" " alt="" coords="649,5,730,31"/>
+<area shape="poly" title=" " alt="" coords="864,220,855,182,840,137,817,92,785,52,759,35,729,26,731,21,761,31,788,48,821,89,845,135,860,181,869,219"/>
+<area shape="rect" href="classCNVCaller.html#a7d855191115944b9b45533f97b27139f" title=" " alt="" coords="339,42,514,82"/>
+<area shape="poly" title=" " alt="" coords="861,221,851,192,835,159,813,128,785,103,754,86,720,72,649,56,578,51,514,53,514,48,578,46,649,51,722,67,756,81,788,98,817,125,839,157,856,190,866,219"/>
+<area shape="rect" href="classSVCaller.html#af1d745175a116b8b0e26c5a4c50de688" title=" " alt="" coords="164,201,261,227"/>
+<area shape="poly" title=" " alt="" coords="856,223,828,181,808,162,785,147,749,132,711,122,632,112,552,115,474,127,400,145,335,166,242,204,240,199,334,161,399,140,473,122,551,110,632,107,712,117,750,127,788,142,812,158,832,178,861,220"/>
+<area shape="rect" href="classReferenceGenome.html#af992007ee8a1fb036e88d66d3190ecb8" title=" " alt="" coords="595,157,783,183"/>
+<area shape="poly" title=" " alt="" coords="836,229,786,204,733,185,735,180,788,200,838,224"/>
+<area shape="rect" href="classReferenceGenome.html#aa5ddc18625fa1b1571e47d0488510283" title=" " alt="" coords="309,194,544,234"/>
+<area shape="poly" title=" " alt="" coords="821,245,544,225,544,220,821,240"/>
+<area shape="rect" href="classCNVCaller.html#a1f92873e81303b99b60b6c651018ac61" title=" " alt="" coords="592,309,787,349"/>
+<area shape="poly" title=" " alt="" coords="837,268,788,292,744,311,742,306,786,288,835,263"/>
+<area shape="rect" href="classCNVCaller.html#abe701db3d9059758dbfc008d1c8351cf" title=" " alt="" coords="313,258,541,298"/>
+<area shape="poly" title=" " alt="" coords="821,252,541,273,541,267,821,247"/>
+<area shape="rect" href="classCNVCaller.html#a81aa306a9bf9c40bb7355797ec5dcbd8" title=" " alt="" coords="333,341,520,381"/>
+<area shape="poly" title=" " alt="" coords="863,273,835,321,814,345,788,363,754,377,718,387,644,395,572,392,509,383,510,378,573,387,644,390,717,382,752,372,785,358,810,341,830,318,858,270"/>
+<area shape="rect" href="classCNVCaller.html#a4eedadd5405acf61fe5d59641d705cd0" title=" " alt="" coords="602,423,777,463"/>
+<area shape="poly" title=" " alt="" coords="866,273,838,339,816,375,788,407,760,425,757,421,785,403,812,372,834,336,861,271"/>
+<area shape="rect" href="sv__object_8cpp.html#ad952d28fcd453cf9f3473954bc2c116b" title=" " alt="" coords="615,488,764,513"/>
+<area shape="poly" title=" " alt="" coords="871,273,865,317,851,372,826,429,809,455,788,477,766,492,763,487,785,473,805,451,822,426,846,371,860,316,866,272"/>
+<area shape="poly" title=" " alt="" coords="334,90,311,103,282,127,258,154,224,203,219,200,253,151,279,123,308,98,332,85"/>
+<area shape="rect" href="classContextSV.html#ad398977f01cfca4dbc610676563583e9" title=" " alt="" coords="5,201,116,227"/>
+<area shape="poly" title=" " alt="" coords="150,217,116,217,116,211,150,211"/>
+<area shape="poly" title=" " alt="" coords="296,217,261,217,261,211,296,211"/>
+<area shape="poly" title=" " alt="" coords="578,310,530,301,531,295,579,305"/>
+<area shape="poly" title=" " alt="" coords="579,345,521,352,520,347,578,339"/>
+<area shape="poly" title=" " alt="" coords="337,257,309,249,250,229,251,224,310,243,338,252"/>
+<area shape="rect" href="sv__object_8cpp.html#a91b12d5b605ff209f4efa89513b8b932" title=" " alt="" coords="385,452,468,477"/>
+<area shape="poly" title=" " alt="" coords="601,491,468,473,469,468,601,486"/>
+<area shape="poly" title=" " alt="" coords="383,448,344,425,307,395,274,351,247,303,216,228,221,226,252,301,278,348,311,391,347,421,386,444"/>
+</map>
+</div>
+
+</div>
+</div>
+<a id="a32cb592046e31d098fe600f69ccde166" name="a32cb592046e31d098fe600f69ccde166"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a32cb592046e31d098fe600f69ccde166">&#9670;&#160;</a></span>printMemoryUsage()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void printMemoryUsage </td>
+          <td>(</td>
+          <td class="paramtype">const std::string &amp;&#160;</td>
+          <td class="paramname"><em>functionName</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a754db22f0193bc2ee549308eca04d898" name="a754db22f0193bc2ee549308eca04d898"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a754db22f0193bc2ee549308eca04d898">&#9670;&#160;</a></span>printMessage()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void printMessage </td>
+          <td>(</td>
+          <td class="paramtype">std::string&#160;</td>
+          <td class="paramname"><em>message</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<div class="dynheader">
+Here is the caller graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><img src="utils_8cpp_a754db22f0193bc2ee549308eca04d898_icgraph.png" border="0" usemap="#autils_8cpp_a754db22f0193bc2ee549308eca04d898_icgraph" alt=""/></div>
+<map name="autils_8cpp_a754db22f0193bc2ee549308eca04d898_icgraph" id="autils_8cpp_a754db22f0193bc2ee549308eca04d898_icgraph">
+<area shape="rect" title=" " alt="" coords="803,171,903,197"/>
+<area shape="rect" href="classCNVCaller.html#a7d855191115944b9b45533f97b27139f" title=" " alt="" coords="315,5,490,45"/>
+<area shape="poly" title=" " alt="" coords="837,161,804,111,781,86,753,66,689,40,619,25,551,20,490,20,490,14,552,14,620,20,690,35,756,62,784,82,808,107,841,158"/>
+<area shape="rect" href="classSVCaller.html#af1d745175a116b8b0e26c5a4c50de688" title=" " alt="" coords="164,70,261,95"/>
+<area shape="poly" title=" " alt="" coords="829,163,795,134,754,110,687,90,618,77,548,69,480,66,355,69,262,78,261,73,355,64,480,60,549,64,619,71,689,85,756,106,798,130,832,159"/>
+<area shape="rect" href="sv__object_8cpp.html#a8ac4e27c4cd2105465ca60338fd68136" title=" " alt="" coords="581,121,718,146"/>
+<area shape="poly" title=" " alt="" coords="789,171,700,149,702,143,790,166"/>
+<area shape="rect" href="sv__object_8cpp.html#a91b12d5b605ff209f4efa89513b8b932" title=" " alt="" coords="361,171,444,197"/>
+<area shape="poly" title=" " alt="" coords="789,187,444,187,444,181,789,181"/>
+<area shape="rect" href="classCNVCaller.html#a81aa306a9bf9c40bb7355797ec5dcbd8" title=" " alt="" coords="309,293,496,333"/>
+<area shape="poly" title=" " alt="" coords="831,208,797,237,756,261,690,284,622,299,556,309,496,314,496,309,555,304,621,294,689,279,754,256,794,232,828,204"/>
+<area shape="rect" href="sv__object_8cpp.html#ad952d28fcd453cf9f3473954bc2c116b" title=" " alt="" coords="575,222,724,247"/>
+<area shape="poly" title=" " alt="" coords="790,202,702,225,700,219,789,197"/>
+<area shape="rect" href="classCNVCaller.html#a4ce68d4664cda42611a4c8cfc0a21868" title=" " alt="" coords="544,323,755,363"/>
+<area shape="poly" title=" " alt="" coords="839,210,805,258,782,284,756,306,722,325,719,320,753,302,779,280,801,255,835,207"/>
+<area shape="poly" title=" " alt="" coords="323,52,257,72,255,67,322,47"/>
+<area shape="rect" href="classContextSV.html#ad398977f01cfca4dbc610676563583e9" title=" " alt="" coords="5,70,116,95"/>
+<area shape="poly" title=" " alt="" coords="150,85,116,85,116,80,150,80"/>
+<area shape="poly" title=" " alt="" coords="364,167,236,98,239,93,367,162"/>
+<area shape="poly" title=" " alt="" coords="572,222,444,195,445,190,574,216"/>
+<area shape="poly" title=" " alt="" coords="530,331,496,327,497,322,531,326"/>
+</map>
+</div>
+
+</div>
+</div>
 <a id="a94bd78faf212464ede8144a4be0e8cf8" name="a94bd78faf212464ede8144a4be0e8cf8"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a94bd78faf212464ede8144a4be0e8cf8">&#9670;&#160;</a></span>printProgress()</h2>
 
@@ -133,11 +430,39 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-<div class="dynheader">
-Here is the caller graph for this function:</div>
-<div class="dyncontent">
-<div class="center"><iframe scrolling="no" frameborder="0" src="utils_8cpp_a94bd78faf212464ede8144a4be0e8cf8_icgraph.svg" width="772" height="51"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+
 </div>
+</div>
+<a id="a53e4863064a0c73c48f283f4462caffe" name="a53e4863064a0c73c48f283f4462caffe"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a53e4863064a0c73c48f283f4462caffe">&#9670;&#160;</a></span>removeChrPrefix()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::string removeChrPrefix </td>
+          <td>(</td>
+          <td class="paramtype">std::string&#160;</td>
+          <td class="paramname"><em>chr</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<h2 class="groupheader">Variable Documentation</h2>
+<a id="ae6e7488d597702f717dcc4bf8b058e29" name="ae6e7488d597702f717dcc4bf8b058e29"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae6e7488d597702f717dcc4bf8b058e29">&#9670;&#160;</a></span>print_mtx</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::mutex print_mtx</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
 
 </div>
 </div>
