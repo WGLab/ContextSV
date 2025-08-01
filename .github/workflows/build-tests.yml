@@ -43,7 +43,7 @@ jobs:
       run: |
         source $(conda info --base)/etc/profile.d/conda.sh
         conda activate contextsv
-        make
+        make CONDA_PREFIX=$CONDA_PREFIX
 
     - name: Run unit tests
       shell: bash --login {0}
