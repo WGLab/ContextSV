@@ -141,6 +141,7 @@ void printUsage(const std::string& programName) {
                 << "     --min-pts-pct <min_pts_pct> Percentage of mean chr. coverage to use for DBSCAN minimum points\n"
                 << "  -e, --eth <eth_file>          ETH file\n"
                 << "  -p, --pfb <pfb_file>          PFB file\n"
+                << "     --assembly-gaps <gaps_file> Assembly gaps file\n"
                 << "     --save-cnv                 Save CNV data\n"
                 << "     --debug                    Debug mode with verbose logging\n"
                 << "     --version                  Print version and exit\n"

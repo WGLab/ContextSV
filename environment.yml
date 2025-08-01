@@ -1,5 +1,6 @@
 name: contextsv
 channels:
+  - defaults
   - bioconda
   - conda-forge
 dependencies:
