@@ -43,6 +43,8 @@ jobs:
       run: |
         source $(conda info --base)/etc/profile.d/conda.sh
         conda activate contextsv
+        echo "CONDA_PREFIX=$CONDA_PREFIX"
+        ls -l $CONDA_PREFIX/include/htslib
         make CONDA_PREFIX=$CONDA_PREFIX
 
     - name: Run unit tests
