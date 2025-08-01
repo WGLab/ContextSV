@@ -116,11 +116,6 @@ void runContextSV(const std::unordered_map<std::string, std::string>& args)
         if (fileExists(json_filepath)) {
             remove(json_filepath.c_str());
         }
-        // int json_file_count = 1;
-        // while (fileExists(json_filepath)) {
-        //     json_filepath = output_dir + "/CNVCalls_" + std::to_string(json_file_count) + ".json";
-        //     json_file_count++;
-        // }
         input_data.setCNVOutputFile(json_filepath);
         std::cout << "Saving CNV data to: " << json_filepath << std::endl;
     }

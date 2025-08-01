@@ -1,11 +1,16 @@
+import os
+import argparse
+import json
+import numpy as np
 import plotly
 from plotly.subplots import make_subplots
-import json
-import argparse
+
+min_sv_length = 200000 # Minimum SV length in base pairs
 
 # Set up argument parser
 parser = argparse.ArgumentParser(description='Generate CNV plots from JSON data.')
 parser.add_argument('json_file', type=str, help='Path to the JSON file containing SV data')
+parser.add_argument('chromosome', type=str, help='Chromosome to filter the SVs by (e.g., "chr3")', nargs='?', default=None)
 args = parser.parse_args()
 
 # Load your JSON data
@@ -31,6 +36,15 @@ sv_type_dict = {
 
 # Loop through each SV (assuming your JSON contains multiple SVs)
 for sv in sv_data:
+
+    # If a chromosome is specified, filter the SVs by that chromosome
+    if args.chromosome and sv['chromosome'] != args.chromosome:
+        continue
+
+    # Filter out SVs that are smaller than the minimum length
+    if np.abs(sv['size']) < min_sv_length:
+        print(f"Skipping SV {sv['chromosome']}:{sv['start']}-{sv['end']} of type {sv['sv_type']} with size {sv['size']} bp (smaller than {min_sv_length} bp)")
+        continue
 
     # Extract data for plotting
     positions_before = sv['before_sv']['positions']
@@ -61,9 +75,13 @@ for sv in sv_data:
         b_allele_freq = sv[section]['b_allele_freq']
         population_freq = sv[section]['population_freq']
         log2_ratio = sv[section]['log2_ratio']
+        is_snp = sv[section]['is_snp']
+
+        # Set all b-allele frequencies to NaN if not SNPs
+        b_allele_freq = [freq if is_snp_val else float('nan') for freq, is_snp_val in zip(b_allele_freq, is_snp)]
 
         if section == "sv":
-            is_snp = sv[section]['is_snp']
+            # is_snp = sv[section]['is_snp']
             states = sv[section]['states']
             state_colors = [state_colors_dict[str(state)] for state in states]
             marker_symbols = ['circle' if is_snp_val else 'circle-open' for is_snp_val in is_snp]
@@ -81,7 +99,7 @@ for sv in sv_data:
                     f"Population Frequency: {population_freq[i]}<br>"
                 )
         else:
-            is_snp = sv[section]['is_snp']
+            # is_snp = sv[section]['is_snp']
             state_colors = ['black'] * len(positions)
             # marker_symbols = ['circle-open'] * len(positions)
             marker_symbols = ['circle' if is_snp_val else 'circle-open' for is_snp_val in is_snp]
@@ -105,7 +123,7 @@ for sv in sv_data:
             hoverinfo='text',
             marker=dict(
                 color=state_colors,
-                size=10,
+                size=5,
                 symbol=marker_symbols,
             ),
             line=dict(
@@ -125,7 +143,7 @@ for sv in sv_data:
             hoverinfo='text',
             marker=dict(
                 color=state_colors,
-                size=10,
+                size=5,
                 symbol=marker_symbols,
             ),
             line=dict(
@@ -214,6 +232,10 @@ for sv in sv_data:
     #     width = 800
     # )
     # Save the plot to an HTML file (use a unique filename per SV)
-    file_name = f"output/SV_{chromosome}_{start}_{end}.html"
-    fig.write_html(file_name)
-    print(f"Plot saved as {file_name}")
+    # Use the input filepath directory as the output directory
+    output_dir = os.path.dirname(args.json_file)
+    svlen_kb = sv_length // 1000
+    file_name = f"SV_{chromosome}_{start}_{end}_{sv_type}_{svlen_kb}kb.html"
+    file_path = os.path.join(output_dir, file_name)
+    fig.write_html(file_path)
+    print(f"Plot saved as {file_path}")

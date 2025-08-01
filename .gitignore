@@ -55,6 +55,7 @@ CMakeSettings.json
 
 # Output folder
 output/
+python/
 
 # Doxygen
 docs/html/
