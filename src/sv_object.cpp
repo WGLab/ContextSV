@@ -53,9 +53,6 @@ void mergeSVs(std::vector<SVCall>& sv_calls, double epsilon, int min_pts, bool k
     // Set this to print cluster information for a specific SV call for debugging
     // This is useful for debugging purposes to see how the SVs are merged
     bool debug_mode = false;
-    int debug_start = 10414914;  // Set to -1 to disable
-    int debug_svlen_min = 15000;
-    int debug_svlen_max = 16000;
     SVType debug_sv_type = SVType::INV;
 
     // Cluster SVs using DBSCAN for each SV type
@@ -124,30 +121,6 @@ void mergeSVs(std::vector<SVCall>& sv_calls, double epsilon, int min_pts, bool k
         for (auto& cluster : cluster_map) {
             int cluster_id = cluster.first;
             std::vector<SVCall>& cluster_sv_calls = cluster.second;
-
-            // Continue unless the debug SV call is in the cluster
-            // if (debug_mode && cluster_id >= 0) {
-            //     if (!cluster_sv_calls.empty() &&
-            //         std::any_of(cluster_sv_calls.begin(), cluster_sv_calls.end(),
-            //             [debug_start, debug_sv_type, debug_svlen_min, debug_svlen_max](const SVCall& sv_call) {
-            //                 const int len = std::abs(static_cast<int>(sv_call.end - sv_call.start));
-
-            //                 const bool start_ok = (debug_start < 0 || static_cast<int>(sv_call.start) == debug_start);
-
-            //                 const bool len_ok = (debug_svlen_min == -1 || len >= debug_svlen_min) &&
-            //                                     (debug_svlen_max == -1 || len <= debug_svlen_max);
-
-            //                 const bool type_ok = (debug_sv_type == SVType::UNKNOWN || sv_call.sv_type == debug_sv_type);
-
-            //                 return start_ok && len_ok && type_ok;
-            //             }
-            //         )) {
-            //         DEBUG_PRINT("DEBUG: Found SV call in noise cluster " + std::to_string(cluster_id) + " with type " + getSVTypeString(debug_sv_type));
-
-            //     } else {
-            //         continue;
-            //     }
-            // }
 
             // Continue if fewer than 2 SV calls in the cluster (due to CIGARCLIP filter)
             if (cluster_sv_calls.size() < 2) {
@@ -278,7 +251,6 @@ void mergeSVs(std::vector<SVCall>& sv_calls, double epsilon, int min_pts, bool k
         if (debug_mode && sv_type == debug_sv_type) {
             DEBUG_PRINT("DEBUG: Merged SV calls for " + getSVTypeString(sv_type) + ":");
             for (const auto& sv_call : merged_sv_type_calls) {
-                // if ((int)sv_call.start == debug_start) {
                 if ((sv_call.end - sv_call.start) > 10000) {
                     DEBUG_PRINT("DEBUG: SV call at " + std::to_string(sv_call.start) + "-" + std::to_string(sv_call.end) +
                                 ", type: " + getSVTypeString(sv_call.sv_type) +
@@ -288,51 +260,6 @@ void mergeSVs(std::vector<SVCall>& sv_calls, double epsilon, int min_pts, bool k
                 }
             }
         }
-
-        /*
-        // Merge overlapping SVs by SV length
-        std::sort(merged_sv_type_calls.begin(), merged_sv_type_calls.end(), [](const SVCall& a, const SVCall& b) {
-            return a.start < b.start || (a.start == b.start && a.end < b.end);
-        });
-        std::vector<SVCall> merged_sv_calls_final;
-        for (size_t i = 0; i < merged_sv_type_calls.size(); i++) {
-            SVCall& sv_call = merged_sv_type_calls[i];
-
-            // Merge cluster sizes if they overlap
-            if (i > 0 && sv_call.start <= merged_sv_type_calls[i - 1].end) {
-                // Keep the larger SV call (end - start) if they overlap
-                if ((sv_call.end - sv_call.start) > (merged_sv_type_calls[i - 1].end - merged_sv_type_calls[i - 1].start)) {
-                    merged_sv_type_calls[i - 1] = sv_call; // Replace the previous SV call with the current one
-                }
-                // Keep the larger cluster size
-                // if (sv_call.cluster_size > merged_sv_type_calls[i - 1].cluster_size) {
-                //     merged_sv_calls_final.push_back(sv_call);
-                // }
-            } else {
-                merged_sv_calls_final.push_back(sv_call);
-            }
-        }
-        DEBUG_PRINT("Merged " + std::to_string(merged_sv_type_calls.size()) + " overlapping SV calls into " + std::to_string(merged_sv_calls_final.size()) + " merged SV calls");
-        
-        // Print merged SV calls for debugging
-        if (debug_mode) {
-            DEBUG_PRINT("DEBUG: Final merged SV calls for " + getSVTypeString(sv_type) + ":");
-            for (const auto& sv_call : merged_sv_calls_final) {
-                // if ((int)sv_call.start == debug_start) {
-                if (sv_call.sv_type == SVType::DUP) {
-                    DEBUG_PRINT("DEBUG: SV call at " + std::to_string(sv_call.start) + "-" + std::to_string(sv_call.end) +
-                                ", type: " + getSVTypeString(sv_call.sv_type) +
-                                ", length: " + std::to_string(sv_call.end - sv_call.start) +
-                                ", cluster size: " + std::to_string(sv_call.cluster_size) +
-                                ", likelihood: " + std::to_string(sv_call.hmm_likelihood));
-                }
-            }
-        }
-
-        // Insert merged SV calls into the final list
-        merged_sv_calls.insert(merged_sv_calls.end(),
-        merged_sv_calls_final.begin(), merged_sv_calls_final.end());
-        */
         merged_sv_calls.insert(merged_sv_calls.end(),
                                merged_sv_type_calls.begin(), merged_sv_type_calls.end());
     }

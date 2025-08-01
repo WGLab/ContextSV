@@ -20,25 +20,15 @@ CONDA_LIB_DIR := $(CONDA_PREFIX)/lib
 CXX := g++
 CXXFLAGS := -std=c++17 -g -I$(INCL_DIR) -I$(CONDA_INCL_DIR) -Wall -Wextra -pedantic
 
-# ifdef DEBUG
-# 	CXXFLAGS += -DDEBUG
-# endif
-
+# Linker Flags
+# Ensure that the library paths are set correctly for linking
 LDFLAGS := -L$(LIB_DIR) -L$(CONDA_LIB_DIR) -Wl,-rpath=$(CONDA_LIB_DIR)  # Add rpath for shared libraries
 LDLIBS := -lhts  # Link with libhts.a or libhts.so
 
-# Enable thread sanitizer (TSan)
-# ifeq ($(TSAN),1)
-# TSAN_FLAGS := -fsanitize=thread -fPIE -pie -g
-# CXXFLAGS += $(TSAN_FLAGS)
-# LDFLAGS += $(TSAN_FLAGS)
-# endif
-
 # Sources and Output
-# SOURCES := $(wildcard $(SRC_DIR)/*.cpp)
 SOURCES := $(filter-out $(SRC_DIR)/swig_wrapper.cpp, $(wildcard $(SRC_DIR)/*.cpp))  # Filter out the SWIG wrapper from the sources
 OBJECTS := $(patsubst $(SRC_DIR)/%.cpp,$(BUILD_DIR)/%.o,$(SOURCES))
-TARGET := $(BUILD_DIR)/cpp_module
+TARGET := $(BUILD_DIR)/contextsv
 
 # Default target
 all: $(TARGET)

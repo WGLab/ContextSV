@@ -24,11 +24,11 @@ InputData::InputData()
     this->start_end = std::make_pair(0, 0);
     this->region_set = false;
     this->output_dir = "";
-    this->sample_size = 100;
-    this->min_cnv_length = 1000;
+    this->sample_size = 20;
+    this->min_cnv_length = 2000;  // Default minimum CNV length
     this->min_reads = 5;
-    this->dbscan_epsilon = 0.99;
-    this->dbscan_min_pts_pct = 0.0;
+    this->dbscan_epsilon = 0.1;
+    this->dbscan_min_pts_pct = 0.1;
     this->thread_count = 1;
     this->hmm_filepath = "data/wgs.hmm";
     this->verbose = false;

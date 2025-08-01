@@ -1,12 +1,9 @@
 name: contextsv
 channels:
-  - defaults
-  - anaconda
-  - conda-forge
   - bioconda
+  - conda-forge
 dependencies:
-  - python
-  - numpy
+  - python=3.11
+  - numpy=1.26
   - htslib
   - pytest
-  - plotly
