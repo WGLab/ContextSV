@@ -41,10 +41,14 @@ jobs:
     - name: Build C++ code
       shell: bash --login {0}  # --login enables PATH variable access
       run: |
+        source $(conda info --base)/etc/profile.d/conda.sh
+        conda activate contextsv
         make
 
     - name: Run unit tests
       shell: bash --login {0}
       run: |
+        source $(conda info --base)/etc/profile.d/conda.sh
+        conda activate contextsv
         mkdir -p tests/output
         python -m pytest -s -v tests/test_general.py
