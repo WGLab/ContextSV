@@ -415,23 +415,6 @@ void SVCaller::findSplitSVSignatures(std::unordered_map<std::string, std::vector
                 supp_end = true;
             }
 
-            // Store the inversion as the supplementary start and end positions
-            // if (inversion && supp_positions.size() > 1) {
-            //     std::sort(supp_positions.begin(), supp_positions.end());
-            //     int supp_start = supp_positions.front();
-            //     int supp_end = supp_positions.back();
-            //     int sv_length = std::abs(supp_start - supp_end);
-
-            //     // Use 50bp as the minimum length for an inversion
-            //     if (sv_length >= 50 && sv_length <= max_length) {
-            //         SVEvidenceFlags aln_type;
-            //         aln_type.set(static_cast<size_t>(SVDataType::SUPPINV));
-            //         SVCall sv_candidate(supp_start, supp_end, SVType::INV, getSVTypeSymbol(SVType::INV), aln_type, Genotype::UNKNOWN, 0.0, 0, 0, supp_cluster_size);
-            //         // SVCall sv_candidate(supp_start, supp_end, SVType::INV, getSVTypeSymbol(SVType::INV), SVDataType::SUPPINV, Genotype::UNKNOWN, 0.0, 0, 0, supp_cluster_size);
-            //         addSVCall(chr_sv_calls, sv_candidate);
-            //     }
-            // }
-
             // -------------------------------
             // SPLIT INSERTION CALLS
             int read_distance = 0;

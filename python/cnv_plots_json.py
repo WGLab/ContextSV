@@ -5,7 +5,7 @@ import numpy as np
 import plotly
 from plotly.subplots import make_subplots
 
-min_sv_length = 200000 # Minimum SV length in base pairs
+min_sv_length = 60000 # Minimum SV length in base pairs
 
 # Set up argument parser
 parser = argparse.ArgumentParser(description='Generate CNV plots from JSON data.')
@@ -20,12 +20,12 @@ with open(args.json_file) as f:
 # State marker colors
 # https://community.plotly.com/t/plotly-colours-list/11730/6
 state_colors_dict = {
-    '1': 'red',
-    '2': 'darkred',
-    '3': 'darkgreen',
+    '1': 'darkred',
+    '2': 'red',
+    '3': 'gray',
     '4': 'green',
-    '5': 'darkblue',
-    '6': 'blue',
+    '5': 'blue',
+    '6': 'darkblue',
 }
 
 sv_type_dict = {
@@ -39,6 +39,7 @@ for sv in sv_data:
 
     # If a chromosome is specified, filter the SVs by that chromosome
     if args.chromosome and sv['chromosome'] != args.chromosome:
+        print(f"Skipping SV {sv['chromosome']}:{sv['start']}-{sv['end']} of type {sv['sv_type']} (not on chromosome {args.chromosome})")
         continue
 
     # Filter out SVs that are smaller than the minimum length
@@ -224,7 +225,7 @@ for sv in sv_data:
 
     # Set the title of the plot.
     fig.update_layout(
-        title_text = f"{sv_type_dict[sv_type]} at {chromosome}:{start}-{end} ({sv_length} bp) (LLH={likelihood})",
+        title_text = f"{sv_type_dict[sv_type]} at {chromosome}:{start}-{end} ({sv_length} bp)",
         title_x = 0.5,
         showlegend = False,
     )
