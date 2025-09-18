@@ -7,7 +7,10 @@ LIB_DIR := $(CURDIR)/lib
 # Version header
 VERSION := $(shell git describe --tags --always)
 VERSION_HEADER := $(INCL_DIR)/version.h
-.PHONY: $(VERSION_HEADER)
+.PHONY: $(VERSION_HEADER) clean all debug]
+$(VERSION_HEADER):
+	@echo "Updating version header with: $(VERSION)"
+	@mkdir -p $(INCL_DIR)
 	@echo "#pragma once" > $@
 	@echo "#define VERSION \"$(VERSION)\"" >> $@
 
@@ -31,19 +34,19 @@ OBJECTS := $(patsubst $(SRC_DIR)/%.cpp,$(BUILD_DIR)/%.o,$(SOURCES))
 TARGET := $(BUILD_DIR)/contextsv
 
 # Default target
-all: $(TARGET)
+all: $(VERSION_HEADER) $(TARGET)
 
 # Debug target
 debug: CXXFLAGS += -DDEBUG
 debug: all
 
 # Link the executable
-$(TARGET): $(OBJECTS)
+$(TARGET): $(OBJECTS) $(VERSION_HEADER)
 	@mkdir -p $(BUILD_DIR)
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(LDFLAGS) $(LDLIBS)
 
 # Compile source files
-$(BUILD_DIR)/%.o: $(SRC_DIR)/%.cpp
+$(BUILD_DIR)/%.o: $(SRC_DIR)/%.cpp $(VERSION_HEADER)
 	@mkdir -p $(BUILD_DIR)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 

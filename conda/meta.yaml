@@ -1,46 +1,45 @@
-{% set version = "1.0.0" %}
-{% set sha256 = "" %}
+{% set version = environ.get('GIT_DESCRIBE_TAG').lstrip('v') %}
+{% set revision = environ.get('GIT_FULL_HASH') %}
 
 package:
-  name: longreadsum
+  name: contextsv
   version: {{ version }}
 
 source:
-  url: https://github.com/WGLab/LongReadSum/archive/refs/tags/v{{ version }}.tar.gz
-  sha256: '{{ sha256 }}'
+  path: ../
+  git_lfs: false
+
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
 
 build:
   number: 0
-  skip: true  # [py2k]
-  entry_points:
-    - contextsv = entry_point:main
 
 requirements:
   build:
     - {{ compiler('cxx') }}
     - make
   host:
-    - python
-    - swig
-    - htslib
+    - htslib=1.20
   run:
-    - python
-    - numpy
-    - htslib
-    - swig
-    - plotly
-    - pandas
-    - scikit-learn
-    - joblib
+    - htslib=1.20
 
 test:
     commands:
         - contextsv --help
+        - test -f $PREFIX/bin/contextsv
+        - contextsv --version
 about:
   home: https://github.com/WGLab/ContextSV
   license: MIT
-  summary: 'Long read structural variant calling tool'
+  license_family: MIT
+  license_file: LICENSE
+  summary: 'Long-read structural variant caller'
   description: |
-    An alignment-based, generalized structural variant caller for long-read sequencing/mapping data.
+    ContextSV is a tool for calling structural variants from long read
+    sequencing data that integrates important copy number and single-nucleotide
+    allele frequency information to improve accuracy.
   dev_url: https://github.com/WGLab/ContextSV
   doc_url: https://github.com/WGLab/ContextSV#readme
