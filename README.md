@@ -13,8 +13,32 @@ Class documentation is available at <a href="https://wglab.openbioinformatics.or
 </p>
 
 ## Installation
+### Anaconda
+First, install [Anaconda](https://www.anaconda.com/).
 
-### Building from source (for testing/development)
+Next, create a new environment. This installation has been tested with Python 3.9, Linux 64-bit.
+
+```
+conda create -n contextsv python=3.9
+conda activate contextsv
+```
+
+ContextSV and its dependencies can then be installed using the following command:
+
+```
+conda install -c wglab -c conda-forge -c bioconda contextsv
+```
+
+### Docker
+First, install [Docker](https://docs.docker.com/engine/install/).
+Pull the latest image from Docker hub, which contains the latest release and its dependencies.
+
+```
+docker pull genomicslab/longreadsum
+```
+
+
+## Building from source (for testing/development)
 ContextSV requires HTSLib as a dependency that can be installed using  [Anaconda](https://www.anaconda.com/). Create an environment
 containing HTSLib: 
 
