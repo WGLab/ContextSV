@@ -16,7 +16,11 @@ local_dir = os.path.expanduser("~/github/ContextSV")
 if os.getcwd() == local_dir:
     TEST_DATA_DIR = os.path.join(local_dir, 'tests/data')
 else:
-    TEST_DATA_DIR = os.path.abspath(str("SampleData"))
+    TEST_DATA_DIR = os.path.abspath(str("tests/data"))
+
+print("Current working directory:", os.getcwd())
+print("Test data directory:", TEST_DATA_DIR)
+print("Contents of test data directory:", os.listdir(TEST_DATA_DIR) if os.path.exists(TEST_DATA_DIR) else "Directory does not exist")
 
 TEST_DATA_DIR = os.path.join(os.path.dirname(__file__), 'data')
 BAM_FILE = os.path.join(TEST_DATA_DIR, 'chr3_test.bam')
