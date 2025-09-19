@@ -126,4 +126,28 @@ def test_run_basic():
                 break
     assert found_dup, "Expected duplication not found in VCF output"
 
-    
+    # Find the large duplication in the CNVCalls.json output
+    # [
+        # {
+        # "chromosome": "chr3",
+        # "start": 61149366,
+        # "end": 61925600,
+        # "sv_type": "DUP",
+        # "likelihood": -2533.54,
+        # "size": 776235,
+
+    json_file = os.path.join(out_dir, 'CNVCalls.json')
+    found_dup_json = False
+    import json
+    with open(json_file, 'r') as jf:
+        cnv_data = json.load(jf)
+        for entry in cnv_data:
+            if (entry.get('chromosome') == 'chr3' and
+                entry.get('start') == 61149366 and
+                entry.get('end') == 61925600 and
+                entry.get('sv_type') == 'DUP'):
+                found_dup_json = True
+                assert abs(entry.get('likelihood', 0) + 2533.54) < 0.1, f"Likelihood is not -2533.54, got {entry.get('likelihood')}"
+                assert entry.get('size') == 776235, f"Size is not 776235, got {entry.get('size')}"
+                break
+    assert found_dup_json, "Expected duplication not found in CNVCalls.json output" 
