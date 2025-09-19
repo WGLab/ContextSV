@@ -79,6 +79,15 @@ def test_run_basic():
     out_dir = os.path.join(TEST_OUTDIR, 'test_run_basic')
     os.makedirs(out_dir, exist_ok=True)
 
+    print("Input parameters:")
+    print(f"BAM_FILE: {BAM_FILE}")
+    print(f"REF_FILE: {REF_FILE}")
+    print(f"SNPS_FILE: {SNPS_FILE}")
+    print(f"PFB_FILE: {PFB_FILE}")
+    print(f"HMM_FILE: {HMM_FILE}")
+    print(f"Output directory: {out_dir}")
+    print("GAP_FILE:", GAP_FILE)
+
     result = subprocess.run(
         ["./build/contextsv",
          "--bam", BAM_FILE,
