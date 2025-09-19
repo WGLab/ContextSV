@@ -133,6 +133,8 @@ def test_run_basic():
     found_dup = False
     with open(vcf_file, 'r') as vf:
         for line in vf:
+            print("VCF Line:", line.strip())  # Print each line for debugging
+
             if line.startswith('#'):
                 continue
             fields = line.strip().split('\t')
