@@ -47,13 +47,19 @@ jobs:
         ls -l $CONDA_PREFIX/include/htslib
         make CONDA_PREFIX=$CONDA_PREFIX
 
-    - name: Run unit tests
+    - name: Test installation
       shell: bash --login {0}
       run: |
         source $(conda info --base)/etc/profile.d/conda.sh
         conda activate contextsv
         ./build/contextsv --version
         ./build/contextsv --help
+        
+    - name: Run tests
+      shell: bash --login {0}
+      run: |
+        mkdir -p output
+        python -m pytest -s -v
 
       # run: |
       #   source $(conda info --base)/etc/profile.d/conda.sh
