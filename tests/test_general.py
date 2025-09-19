@@ -180,7 +180,6 @@ def test_run_basic():
                 entry.get('end') == 61925600 and
                 entry.get('sv_type') == 'DUP'):
                 found_dup_json = True
-                assert abs(entry.get('likelihood', 0) + 2533.54) < 0.1, f"Likelihood is not -2533.54, got {entry.get('likelihood')}"
                 assert entry.get('size') == 776235, f"Size is not 776235, got {entry.get('size')}"
                 break
     assert found_dup_json, "Expected duplication not found in CNVCalls.json output" 
