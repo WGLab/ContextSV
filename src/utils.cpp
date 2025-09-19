@@ -4,6 +4,7 @@
 #include <sys/resource.h>  // getrusage
 #include <iomanip>
 #include <stdio.h>
+#include <array>
 #include <string>
 #include <iostream>
 #include <fstream>
