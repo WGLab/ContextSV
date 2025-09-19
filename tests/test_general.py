@@ -34,7 +34,7 @@ PFB_FILE = os.path.join(TEST_DATA_DIR, 'chr3_pfb.txt')
 # Remove any existing PFB file to avoid conflicts
 if os.path.exists(PFB_FILE):
     os.remove(PFB_FILE)
-    
+
 PFB_SNP_FILE = os.path.join(TEST_DATA_DIR, 'chr3_gnomad_snps.vcf.gz')
 with open(PFB_FILE, 'w', encoding='utf-8') as pf:
     pf.write(f"3={PFB_SNP_FILE}\n")
@@ -130,6 +130,10 @@ def test_run_basic():
             if len(fields) < 8:
                 continue
             chrom, pos, id, ref, alt, qual, filter, info = fields[:8]
+
+            # Print each VCF record for debugging
+            print(f"VCF Record: {chrom}, {pos}, {id}, {ref}, {alt}, {qual}, {filter}, {info}")
+
             if (chrom == 'chr3' and pos == '61149366' and alt == '<DUP>'):
                 found_dup = True
                 info_dict = dict(item.split('=') for item in info.split(';') if '=' in item)
