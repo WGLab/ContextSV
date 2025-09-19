@@ -21,7 +21,7 @@ jobs:
 
     - name: Unzip assets
       shell: bash --login {0}
-      run: unzip SampleData.zip
+      run: unzip SampleData.zip -d tests/data
 
     - name: Set up conda (Miniconda only)
       uses: conda-incubator/setup-miniconda@v2
@@ -54,7 +54,7 @@ jobs:
         conda activate contextsv
         ./build/contextsv --version
         ./build/contextsv --help
-        
+
     - name: Run tests
       shell: bash --login {0}
       run: |
