@@ -5,16 +5,17 @@
 #include <iostream>
 #include <string>
 #include <ctime>
+#include <array>
+#include <cstdio>
+#include <memory>
 
 // For signal handling
 #include <signal.h>
 #include <execinfo.h>
 
-// #include <optional>
 /// @endcond
 
 #include "input_data.h"
-#include "version.h"
 #include "utils.h"
 
 
@@ -37,10 +38,11 @@ void printBanner()
 {
     std::time_t now = std::time(nullptr);
     char date_str[100];
+    std::string version = currentVersion();
     std::strftime(date_str, sizeof(date_str), "%Y-%m-%d", std::localtime(&now));
     std::cout << "═══════════════════════════════════════════════════════════════" << std::endl;
     std::cout << "  ContextSV - Long-read Structural Variant Caller" << std::endl;
-    std::cout << "      Version: " << VERSION << std::endl;
+    std::cout << "      Version: " << version << std::endl;
     std::cout << "      Date: " << date_str << std::endl;
     std::cout << "═══════════════════════════════════════════════════════════════" << std::endl;
 }
@@ -125,7 +127,8 @@ void runContextSV(const std::unordered_map<std::string, std::string>& args)
 }
 
 void printUsage(const std::string& programName) {
-    std::cerr << "Usage: " << programName << " [options]\n"
+    std::cout << "ContextSV version " << currentVersion() << std::endl;
+    std::cout << "Usage: " << programName << " [options]\n"
                 << "Options:\n"
                 << "  -b, --bam <bam_file>          Long-read BAM file (required)\n"
                 << "  -r, --ref <ref_file>          Reference genome FASTA file (required)\n"
@@ -191,7 +194,7 @@ std::unordered_map<std::string, std::string> parseArguments(int argc, char* argv
         } else if (arg == "--debug") {
             args["debug"] = "true";
         } else if ((arg == "-v" || arg == "--version")) {
-            std::cout << "ContextSV version " << VERSION << std::endl;
+            std::cout << "ContextSV version " << currentVersion() << std::endl;
             exit(0);
         } else if (arg == "-h" || arg == "--help") {
             printUsage(argv[0]);
@@ -218,6 +221,7 @@ std::unordered_map<std::string, std::string> parseArguments(int argc, char* argv
 int main(int argc, char* argv[]) {
     auto args = parseArguments(argc, argv);
     runContextSV(args);
+    std::cout << "ContextSV finished successfully!" << std::endl;
 
     return 0;
 }

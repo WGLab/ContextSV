@@ -26,7 +26,6 @@
 #include "ThreadPool.h"
 #include "utils.h"
 #include "sv_types.h"
-#include "version.h"
 #include "fasta_query.h"
 #include "dbscan.h"
 #include "dbscan1d.h"
@@ -149,7 +148,7 @@ void SVCaller::findSplitSVSignatures(std::unordered_map<std::string, std::vector
             // reverse)
             std::pair<int, int> qpos = getAlignmentReadPositions(bam1);
 
-            primary_map[bam1->core.tid][qname] = PrimaryAlignment{bam1->core.pos + 1, bam_endpos(bam1), qpos.first, qpos.second, !(bam1->core.flag & BAM_FREVERSE), 0};
+            primary_map[bam1->core.tid][qname] = PrimaryAlignment{static_cast<int>(bam1->core.pos + 1), static_cast<int>(bam_endpos(bam1)), static_cast<int>(qpos.first), static_cast<int>(qpos.second), !(bam1->core.flag & BAM_FREVERSE), 0};
             alignment_tids.insert(bam1->core.tid);
             primary_count++;
 
@@ -159,7 +158,7 @@ void SVCaller::findSplitSVSignatures(std::unordered_map<std::string, std::vector
             // supplementary alignment, and the strand (true for forward, false
             // for reverse)
             std::pair<int, int> qpos = getAlignmentReadPositions(bam1);
-            supp_map[qname].push_back(SuppAlignment{bam1->core.tid, bam1->core.pos + 1, bam_endpos(bam1), qpos.first, qpos.second, !(bam1->core.flag & BAM_FREVERSE)});
+            supp_map[qname].push_back(SuppAlignment{bam1->core.tid, static_cast<int>(bam1->core.pos + 1), static_cast<int>(bam_endpos(bam1)), static_cast<int>(qpos.first), static_cast<int>(qpos.second), !(bam1->core.flag & BAM_FREVERSE)});
             alignment_tids.insert(bam1->core.tid);
             supp_qnames.insert(qname);
             supplementary_count++;
@@ -738,13 +737,6 @@ void SVCaller::processChromosome(const std::string& chr, std::vector<SVCall>& ch
     bam_hdr_destroy(bamHdr);
 
     printMessage(chr + ": Merging CIGAR...");
-    // Save JSON if chr21
-    // if (chr == "chr21") {
-    //     std::string json_fp = input_data.getOutputDir() + "/" + chr + ".json";
-    //     mergeSVs(chr_sv_calls, dbscan_epsilon, dbscan_min_pts, true, json_fp);
-    // } else {
-    //     mergeSVs(chr_sv_calls, dbscan_epsilon, dbscan_min_pts, false);
-    // }
     mergeSVs(chr_sv_calls, dbscan_epsilon, dbscan_min_pts, false);
 
     int region_sv_count = getSVCount(chr_sv_calls);
@@ -1168,7 +1160,7 @@ void SVCaller::saveToVCF(const std::unordered_map<std::string, std::vector<SVCal
     vcf_stream << "##fileDate=" << buffer << std::endl;
 
     // Add source
-    std::string sv_method = "ContextSV" + std::string(VERSION);
+    std::string sv_method = "ContextSV" + std::string(currentVersion());
     std::string source = "##source=" + sv_method;
     vcf_stream << source << std::endl;
 

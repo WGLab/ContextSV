@@ -4,16 +4,6 @@ SRC_DIR := $(CURDIR)/src
 BUILD_DIR := $(CURDIR)/build
 LIB_DIR := $(CURDIR)/lib
 
-# Version header
-VERSION := $(shell git describe --tags --always)
-VERSION_HEADER := $(INCL_DIR)/version.h
-.PHONY: $(VERSION_HEADER) clean all debug]
-$(VERSION_HEADER):
-	@echo "Updating version header with: $(VERSION)"
-	@mkdir -p $(INCL_DIR)
-	@echo "#pragma once" > $@
-	@echo "#define VERSION \"$(VERSION)\"" >> $@
-
 # Conda environment directories
 CONDA_PREFIX := $(shell echo $$CONDA_PREFIX)
 CONDA_INCL_DIR := $(CONDA_PREFIX)/include
@@ -34,23 +24,22 @@ OBJECTS := $(patsubst $(SRC_DIR)/%.cpp,$(BUILD_DIR)/%.o,$(SOURCES))
 TARGET := $(BUILD_DIR)/contextsv
 
 # Default target
-all: $(VERSION_HEADER) $(TARGET)
+all: $(TARGET)
 
 # Debug target
 debug: CXXFLAGS += -DDEBUG
 debug: all
 
 # Link the executable
-$(TARGET): $(OBJECTS) $(VERSION_HEADER)
+$(TARGET): $(OBJECTS)
 	@mkdir -p $(BUILD_DIR)
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(LDFLAGS) $(LDLIBS)
 
 # Compile source files
-$(BUILD_DIR)/%.o: $(SRC_DIR)/%.cpp $(VERSION_HEADER)
+$(BUILD_DIR)/%.o: $(SRC_DIR)/%.cpp
 	@mkdir -p $(BUILD_DIR)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 # Clean the build directory
 clean:
 	rm -rf $(BUILD_DIR)
-	

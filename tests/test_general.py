@@ -3,22 +3,10 @@ test_general.py: Test the general module.
 """
 
 import os
+import subprocess
 import sys
 import pytest
 
-# Import lib from the parent directory
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
-from lib import contextsv
-
-# Get the path to the test data directory.
-TEST_DATA_DIR = os.path.join(os.path.dirname(__file__), 'data')
-
-# Get the path to the test data files.
-TEST_BAM_FILE = os.path.join(TEST_DATA_DIR, 'test.bam')
-TEST_REF_FILE = ""
-TEST_SNPS_FILE = os.path.join(TEST_DATA_DIR, 'snps.vcf.gz')
-TEST_PFB_FILE = ""
 
 # Set the output directory.
 TEST_OUTDIR = os.path.join(os.path.dirname(__file__), 'output')
@@ -26,62 +14,116 @@ TEST_OUTDIR = os.path.join(os.path.dirname(__file__), 'output')
 # Check if running unit tests on GitHub Actions
 local_dir = os.path.expanduser("~/github/ContextSV")
 if os.getcwd() == local_dir:
-    test_dir_path = os.path.join(local_dir, 'tests/data')
+    TEST_DATA_DIR = os.path.join(local_dir, 'tests/data')
 else:
-    test_dir_path = os.path.abspath(str("TestData"))
+    TEST_DATA_DIR = os.path.abspath(str("SampleData"))
 
-TEST_REF_FILE = os.path.join(test_dir_path, 'GRCh37_21.fa')
-TEST_BAM_FILE = os.path.join(test_dir_path, 'ONT_Kit14_21.bam')
-TEST_SNPS_FILE = os.path.join(test_dir_path, 'snps_21.vcf.gz')
+TEST_DATA_DIR = os.path.join(os.path.dirname(__file__), 'data')
+BAM_FILE = os.path.join(TEST_DATA_DIR, 'chr3_test.bam')
+REF_FILE = os.path.join(TEST_DATA_DIR, 'GRCh38_noalts_chr3.fa')
+SNPS_FILE = os.path.join(TEST_DATA_DIR, 'chr3_test.snps.vcf.gz')
+PFB_FILE = os.path.join(TEST_DATA_DIR, 'chr3_pfb.txt')
+GAP_FILE = os.path.join(TEST_DATA_DIR, 'Gaps-HG38-UCSC-chr3.bed')
+HMM_FILE = os.path.join(TEST_DATA_DIR, 'wgs_test.hmm')
 
+def test_run_help():
+    """Ensure the binary runs with --help and exits cleanly."""
+    result = subprocess.run(
+        ["./build/contextsv", "--help"],
+        capture_output=True,
+        text=True,
+        check=True
+    )
 
-def test_run():
-    """Test the run function of the contextsv module with a small dataset."""
-    
-    # Set input parameters.
-    input_data = contextsv.InputData()
-    input_data.setLongReadBam(TEST_BAM_FILE)
-    input_data.setRefGenome(TEST_REF_FILE)
-    input_data.setSNPFilepath(TEST_SNPS_FILE)
-    input_data.setChromosome("21")
-    input_data.setRegion("14486099-14515105")
-    input_data.setThreadCount(1)
-    input_data.setAlleleFreqFilepaths("")
-    input_data.setHMMFilepath("")
-    input_data.setOutputDir(TEST_OUTDIR)
-    input_data.saveCNVData(True)
-    
-    # Run the analysis.
-    contextsv.run(input_data)
+    # Print output for debugging purposes
+    print("STDOUT:", result.stdout)
 
-    # Check that the output file exists.
-    output_file = os.path.join(TEST_OUTDIR, 'output.vcf')
-    assert os.path.exists(output_file)
+    # Check process exited successfully
+    assert result.returncode == 0, f"Non-zero exit: {result.returncode}\n{result.stderr}"
+    assert result.stdout, "No output from --help"
+    assert "Usage:" in result.stdout, "Help text missing 'Usage:'"
+    assert "Options:" in result.stdout, "Help text missing 'Options:'"
 
-    # Check that the VCF file is not empty.
-    assert os.path.getsize(output_file) > 0
+def test_run_version():
+    """Ensure the binary runs with --version and exits cleanly."""
+    result = subprocess.run(
+        ["./build/contextsv", "--version"],
+        capture_output=True,
+        text=True,
+        check=True
+    )
 
-    # Check that the VCF file has the correct number of lines.
-    with open(output_file, 'r', encoding='utf-8') as f:
-        assert len(f.readlines()) == 22
+    # Print output for debugging purposes
+    print("STDOUT:", result.stdout)
 
-    # Check that the VCF file has the correct header, and the correct
-    # VCF CHROM, POS, and INFO fields in the next 2 lines.
-    header_line = 17
-    with open(output_file, 'r', encoding='utf-8') as f:
-        for i, line in enumerate(f):
-            if i == header_line:
-                assert line.strip() == "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tSAMPLE"
-            elif i == header_line + 1:
-                # Get the first, second, and eighth fields from the line
-                fields = line.strip().split('\t')
-                assert fields[0] == "21"
-                assert fields[1] == "14458394"
-                assert fields[7] == "END=14458394;SVTYPE=INS;SVLEN=1344;SUPPORT=1;SVMETHOD=CONTEXTSVv0.1;ALN=CIGARINS;CLIPSUP=0;REPTYPE=NA;HMM=0.000000"
-            elif i == header_line + 2:
-                fields = line.strip().split('\t')
-                assert fields[0] == "21"
-                assert fields[1] == "14502888"
-                assert fields[7] == "END=14502953;SVTYPE=BOUNDARY;SVLEN=65;SUPPORT=1;SVMETHOD=CONTEXTSVv0.1;ALN=BOUNDARY;CLIPSUP=0;REPTYPE=NA;HMM=-4.606171"
+    # Check process exited successfully
+    assert result.returncode == 0, f"Non-zero exit: {result.returncode}\n{result.stderr}"
+    assert result.stdout, "No output from --version"
+    assert "ContextSV version" in result.stdout, "Version text missing 'ContextSV version'"
+
+def test_run_basic():
+    """Run ContextSV with basic required parameters."""
+    out_dir = os.path.join(TEST_OUTDIR, 'test_run_basic')
+    os.makedirs(out_dir, exist_ok=True)
+
+    result = subprocess.run(
+        ["./build/contextsv",
+         "--bam", BAM_FILE,
+         "--ref", REF_FILE,
+         "--snp", SNPS_FILE,
+         "--outdir", out_dir,
+         "--hmm", HMM_FILE,
+         "--eth", "nfe",
+         "--pfb", PFB_FILE,
+         "--sample-size", "20",
+         "--min-cnv", "2000",
+         "--eps", "0.1",
+         "--min-pts-pct", "0.1",
+         "--assembly-gaps", GAP_FILE,
+         "--chr", "chr3",
+         "--save-cnv",
+         "--debug"
+        ],
+        capture_output=True,
+        text=True,
+        check=True
+    )
+
+    # Print output for debugging purposes
+    print("STDOUT:", result.stdout)
+    print("STDERR:", result.stderr)
+
+    # Check process exited successfully
+    assert result.returncode == 0, f"Non-zero exit: {result.returncode}\n{result.stderr}"
+    assert "ContextSV finished successfully!" in result.stdout, "Did not complete successfully"
+
+    # Check for expected output files
+    expected_files = [
+        os.path.join(out_dir, 'CNVCalls.json'),
+        os.path.join(out_dir, 'output.vcf')
+    ]
+    for ef in expected_files:
+        assert os.path.isfile(ef), f"Expected output file not found: {ef}"
+
+    # Find the large duplication in the VCF output
+    # chr3	61149366	.	N	<DUP>	.	PASS	END=61925600;SVTYPE=DUP;SVLEN=776235;SVMETHOD=ContextSVv1.0.0-1-g4bd038c;ALN=SPLIT,HMM;HMM=-2533.541937;SUPPORT=63;CLUSTER=23;ALNOFFSET=0;CN=6	GT:DP	1/1:63
+    vcf_file = os.path.join(out_dir, 'output.vcf')
+    found_dup = False
+    with open(vcf_file, 'r') as vf:
+        for line in vf:
+            if line.startswith('#'):
+                continue
+            fields = line.strip().split('\t')
+            if len(fields) < 8:
+                continue
+            chrom, pos, id, ref, alt, qual, filter, info = fields[:8]
+            if (chrom == 'chr3' and pos == '61149366' and alt == '<DUP>'):
+                found_dup = True
+                info_dict = dict(item.split('=') for item in info.split(';') if '=' in item)
+                assert info_dict.get('SVTYPE') == 'DUP', "SVTYPE is not DUP"
+                assert int(info_dict.get('SVLEN', 0)) == 776235, f"SVLEN is not 776235, got {info_dict.get('SVLEN')}"
+                assert int(info_dict.get('CN', 0)) == 6, f"CN is not 6, got {info_dict.get('CN')}"
                 break
-            
+    assert found_dup, "Expected duplication not found in VCF output"
+
+    

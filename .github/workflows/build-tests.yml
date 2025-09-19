@@ -17,11 +17,11 @@ jobs:
       with:
         repo: 'WGLab/ContextSV'
         version: 'tags/v0.1.0'
-        file: 'TestData.zip'
+        file: 'SampleData.zip'
 
     - name: Unzip assets
       shell: bash --login {0}
-      run: unzip TestData.zip
+      run: unzip SampleData.zip
 
     - name: Set up conda (Miniconda only)
       uses: conda-incubator/setup-miniconda@v2

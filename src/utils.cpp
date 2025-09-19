@@ -10,71 +10,28 @@
 #include <filesystem>
 /// @endcond
 
+#ifndef VERSION
+#define VERSION "vUNKNOWN"
+#endif
 
-// Define print mutex
+
 std::mutex print_mtx;
 
-// Print a progress bar
-void printProgress(int progress, int total)
-{
-    float percent = (float)progress / (float)total * 100.0;
-    int num_hashes = (int)(percent / 2.0);
 
-    // Print the progress bar
-    printf("\r[");
-    for (int i = 0; i < num_hashes; i++)
-    {
-        printf("#");
-    }
-    for (int i = 0; i < 50 - num_hashes; i++)
-    {
-        printf(" ");
-    }
-    printf("] %3.2f%%", percent);
-    fflush(stdout);
-
-    // Print a new line if finished
-    if (progress == total)
-    {
-        printf("\n");
-    }
+static std::string run_cmd(const char* cmd) {
+    std::array<char, 256> buffer;
+    std::string result;
+    std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(cmd, "r"), pclose);
+    if (!pipe) return {};
+    while (fgets(buffer.data(), buffer.size(), pipe.get())) result += buffer.data();
+    if (!result.empty() && result.back() == '\n') result.pop_back();
+    return result;
 }
 
-// Run bcftools to determine the chr notation of a VCF file
-bool isChrNotation(std::string vcf_filepath)
-{
-    // Create the command to extract the chromosomes from the VCF
-    std::string cmd = "bcftools query -f '%CHROM\n' " + vcf_filepath + " 2>/dev/null";
-
-    // Open the pipe
-    FILE* pipe = popen(cmd.c_str(), "r");
-    if (pipe == NULL)
-    {
-        std::cerr << "Error: could not open pipe" << std::endl;
-        return false;
-    }
-
-    // Read the first line
-    const int line_size = 256;
-    char buffer[line_size];
-    if (!fgets(buffer, line_size, pipe))
-    {
-        std::cerr << "Error reading from pipe" << std::endl;
-        return false;
-    }
-
-    // Check if the first line contains "chr" using std::string::find
-    bool is_chr_notation = false;
-    std::string line(buffer);
-    if (line.find("chr") != std::string::npos)
-    {
-        is_chr_notation = true;
-    }
-    
-    // Close the pipe
-    pclose(pipe);
-
-    return is_chr_notation;
+std::string currentVersion() {
+    auto gitv = run_cmd("git describe --tags --always 2>/dev/null");
+    if (!gitv.empty()) return gitv;
+    return VERSION;
 }
 
 // Thread-safe print message function
@@ -100,15 +57,6 @@ std::string getElapsedTime(std::chrono::high_resolution_clock::time_point start,
     int seconds = elapsed.count() - (hours * 3600) - (minutes * 60);
     std::string elapsed_time = std::to_string(hours) + ":" + std::to_string(minutes) + ":" + std::to_string(seconds);
     return elapsed_time;
-}
-
-// Function to remove the 'chr' prefix from chromosome names
-std::string removeChrPrefix(std::string chr)
-{
-    if (chr.find("chr") != std::string::npos) {
-        return chr.substr(3);
-    }
-    return chr;
 }
 
 void printMemoryUsage(const std::string& functionName) {
@@ -141,3 +89,5 @@ void closeJSON(const std::string &filepath)
     json_file << "]";  // Close the JSON array
     json_file.close();
 }
+
+

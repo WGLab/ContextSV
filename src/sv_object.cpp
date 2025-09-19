@@ -73,7 +73,6 @@ void mergeSVs(std::vector<SVCall>& sv_calls, double epsilon, int min_pts, bool k
             continue;
         }
 
-        DEBUG_PRINT("Merging SV type: " + getSVTypeString(sv_type) + " (epsilon=" + std::to_string(epsilon) + ", min_pts=" + std::to_string(min_pts) + ", num SVs=" + std::to_string(sv_calls.size()) + ")");
         std::vector<SVCall> merged_sv_type_calls;
 
         // Create a vector of SV calls for the current SV type and size interval
@@ -81,12 +80,13 @@ void mergeSVs(std::vector<SVCall>& sv_calls, double epsilon, int min_pts, bool k
         std::copy_if(sv_calls.begin(), sv_calls.end(), std::back_inserter(sv_type_calls), [sv_type](const SVCall& sv_call) {
             return sv_call.sv_type == sv_type;
         });
+        DEBUG_PRINT("Merging SV type: " + getSVTypeString(sv_type) + " (epsilon=" + std::to_string(epsilon) + ", min_pts=" + std::to_string(min_pts) + ", num SVs=" + std::to_string(sv_type_calls.size()) + ")");
 
         if (sv_type_calls.size() < 2) {
             // Add all unclustered points to the merged list
             for (const auto& sv_call : sv_type_calls) {
                 SVCall noise_sv_call = sv_call;
-                merged_sv_type_calls.push_back(noise_sv_call);
+                merged_sv_calls.push_back(noise_sv_call);
             }
             continue;
         }

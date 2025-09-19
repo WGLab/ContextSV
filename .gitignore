@@ -93,7 +93,6 @@ upset_plot*.png
 # Temporary files
 lib/.nfs*
 valgrind.log
-include/version.h
 
 # Log files
 *.log
