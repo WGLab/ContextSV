@@ -26,9 +26,18 @@ TEST_DATA_DIR = os.path.join(os.path.dirname(__file__), 'data')
 BAM_FILE = os.path.join(TEST_DATA_DIR, 'chr3_test.bam')
 REF_FILE = os.path.join(TEST_DATA_DIR, 'GRCh38_noalts_chr3.fa')
 SNPS_FILE = os.path.join(TEST_DATA_DIR, 'chr3_test.snps.vcf.gz')
-PFB_FILE = os.path.join(TEST_DATA_DIR, 'chr3_pfb.txt')
 GAP_FILE = os.path.join(TEST_DATA_DIR, 'Gaps-HG38-UCSC-chr3.bed')
 HMM_FILE = os.path.join(TEST_DATA_DIR, 'wgs_test.hmm')
+
+# Create a PFB file pointing to the SNP file in the test data directory
+PFB_FILE = os.path.join(TEST_DATA_DIR, 'chr3_pfb.txt')
+# Remove any existing PFB file to avoid conflicts
+if os.path.exists(PFB_FILE):
+    os.remove(PFB_FILE)
+    
+PFB_SNP_FILE = os.path.join(TEST_DATA_DIR, 'chr3_gnomad_snps.vcf.gz')
+with open(PFB_FILE, 'w', encoding='utf-8') as pf:
+    pf.write(f"3={PFB_SNP_FILE}\n")
 
 def test_run_help():
     """Ensure the binary runs with --help and exits cleanly."""
