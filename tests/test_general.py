@@ -35,7 +35,7 @@ PFB_FILE = os.path.join(TEST_DATA_DIR, 'chr3_pfb.txt')
 if os.path.exists(PFB_FILE):
     os.remove(PFB_FILE)
 
-PFB_SNP_FILE = os.path.join(TEST_DATA_DIR, 'chr3_gnomad_snps.vcf.gz')
+PFB_SNP_FILE = os.path.join(TEST_DATA_DIR, 'chr3_gnomad_snps_isec.vcf.gz')
 with open(PFB_FILE, 'w', encoding='utf-8') as pf:
     pf.write(f"3={PFB_SNP_FILE}\n")
 
@@ -78,6 +78,13 @@ def test_run_basic():
     """Run ContextSV with basic required parameters."""
     out_dir = os.path.join(TEST_OUTDIR, 'test_run_basic')
     os.makedirs(out_dir, exist_ok=True)
+
+    vcf_file = os.path.join(out_dir, 'output.vcf')
+    if os.path.exists(vcf_file):
+        os.remove(vcf_file)
+    json_file = os.path.join(out_dir, 'CNVCalls.json')
+    if os.path.exists(json_file):
+        os.remove(json_file)
 
     print("Input parameters:")
     print(f"BAM_FILE: {BAM_FILE}")
@@ -129,7 +136,6 @@ def test_run_basic():
 
     # Find the large duplication in the VCF output
     # chr3	61149366	.	N	<DUP>	.	PASS	END=61925600;SVTYPE=DUP;SVLEN=776235;SVMETHOD=ContextSVv1.0.0-1-g4bd038c;ALN=SPLIT,HMM;HMM=-2533.541937;SUPPORT=63;CLUSTER=23;ALNOFFSET=0;CN=6	GT:DP	1/1:63
-    vcf_file = os.path.join(out_dir, 'output.vcf')
     found_dup = False
     with open(vcf_file, 'r') as vf:
         for line in vf:
@@ -164,7 +170,6 @@ def test_run_basic():
         # "likelihood": -2533.54,
         # "size": 776235,
 
-    json_file = os.path.join(out_dir, 'CNVCalls.json')
     found_dup_json = False
     import json
     with open(json_file, 'r') as jf:
