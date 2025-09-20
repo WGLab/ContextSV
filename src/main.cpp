@@ -68,9 +68,6 @@ void runContextSV(const std::unordered_map<std::string, std::string>& args)
     if (args.find("chr") != args.end()) {
         input_data.setChromosome(args.at("chr"));
     }
-    if (args.find("region") != args.end()) {
-        input_data.setRegion(args.at("region"));
-    }
     if (args.find("thread-count") != args.end()) {
         input_data.setThreadCount(std::stoi(args.at("thread-count")));
     }
@@ -134,7 +131,6 @@ void printUsage(const std::string& programName) {
                 << "  -s, --snp <vcf_file>          SNPs VCF file (required)\n"
                 << "  -o, --outdir <output_dir>     Output directory (required)\n"
                 << "  -c, --chr <chromosome>        Chromosome\n"
-                << "  -r, --region <region>         Region (start-end)\n"
                 << "  -t, --threads <thread_count>  Number of threads\n"
                 << "  -h, --hmm <hmm_file>          HMM file\n"
                 << "  -n, --sample-size <size>      Sample size for HMM predictions\n"

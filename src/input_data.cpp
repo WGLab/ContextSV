@@ -21,8 +21,6 @@ InputData::InputData()
     this->ref_filepath = "";
     this->snp_vcf_filepath = "";
     this->chr = "";
-    this->start_end = std::make_pair(0, 0);
-    this->region_set = false;
     this->output_dir = "";
     this->sample_size = 20;
     this->min_cnv_length = 2000;  // Default minimum CNV length
@@ -49,14 +47,6 @@ void InputData::printParameters() const
     DEBUG_PRINT("Minimum CNV length: " << this->min_cnv_length);
     DEBUG_PRINT("DBSCAN epsilon: " << this->dbscan_epsilon);
     DEBUG_PRINT("DBSCAN minimum points percentage: " << this->dbscan_min_pts_pct * 100.0f << "%");
-    if (this->region_set)
-    {
-        DEBUG_PRINT("Region set to: chr" + this->chr + ":" + std::to_string(this->start_end.first) + "-" + std::to_string(this->start_end.second));
-    }
-    else
-    {
-        DEBUG_PRINT("Running on whole genome");
-    }
 }
 
 std::string InputData::getLongReadBam() const
@@ -218,47 +208,6 @@ bool InputData::isSingleChr() const
     return this->single_chr;
 }
 
-void InputData::setRegion(std::string region)
-{
-    // Check if the region is valid
-    if (region != "")
-    {
-        // Split the region by colon
-        std::istringstream ss(region);
-        std::string token;
-        std::vector<std::string> region_tokens;
-
-        while (std::getline(ss, token, '-'))
-        {
-            region_tokens.push_back(token);
-        }
-
-        // Check if the region is valid
-        if (region_tokens.size() == 2)
-        {
-            // Get the start and end positions
-            int32_t start = std::stoi(region_tokens[0]);
-            int32_t end = std::stoi(region_tokens[1]);
-
-            // Set the region
-            this->start_end = std::make_pair(start, end);
-            this->region_set = true;
-
-            std::cout << "Region set to " << this->chr << ":" << start << "-" << end << std::endl;
-        }
-    }
-}
-
-std::pair<int32_t, int32_t> InputData::getRegion() const
-{
-    return this->start_end;
-}
-
-bool InputData::isRegionSet() const
-{
-    return this->region_set;
-}
-
 void InputData::setAlleleFreqFilepaths(std::string filepath)
 {
     // Check if empty string
@@ -275,19 +224,18 @@ void InputData::setAlleleFreqFilepaths(std::string filepath)
             exit(1);
         }
 
-        // If a region is set, load only the chromosome in the region
+        // If a chr is specified, load only the file for that chromosome
         std::string target_chr;
         if (this->chr != "")
         {
             target_chr = this->chr;
 
-            // Check if the region is in chr notation
+            // Check if in chr notation
             if (target_chr.find("chr") != std::string::npos)
             {
                 // Remove the chr notation
                 target_chr = target_chr.substr(3, target_chr.size() - 3);
             }
-            //std::cout << "Loading population allele frequency file for chromosome " << target_chr << std::endl;
         }
 
         // Load the file and create a map of chromosome -> VCF file
