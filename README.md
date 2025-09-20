@@ -34,7 +34,7 @@ First, install [Docker](https://docs.docker.com/engine/install/).
 Pull the latest image from Docker hub, which contains the latest release and its dependencies.
 
 ```
-docker pull genomicslab/longreadsum
+docker pull genomicslab/contextsv
 ```
 
 
@@ -66,7 +66,6 @@ Options:
   -s, --snp <vcf_file>          SNPs VCF file (required)
   -o, --outdir <output_dir>     Output directory (required)
   -c, --chr <chromosome>        Chromosome
-  -r, --region <region>         Region (start-end)
   -t, --threads <thread_count>  Number of threads
   -h, --hmm <hmm_file>          HMM file
   -n, --sample-size <size>      Sample size for HMM predictions
