@@ -77,11 +77,6 @@ class InputData {
         std::string getChromosome() const;
         bool isSingleChr() const;
 
-        // Set the region to analyze.
-        void setRegion(std::string region);
-        std::pair<int32_t, int32_t> getRegion() const;
-        bool isRegionSet() const;
-
         // Set the output directory where the results will be written.
         void setOutputDir(std::string dirpath);
         std::string getOutputDir() const;
@@ -116,7 +111,6 @@ class InputData {
         double dbscan_min_pts_pct;
         std::string chr;  // Chromosome to analyze
         std::pair<int32_t, int32_t> start_end;  // Region to analyze
-        bool region_set;  // True if a region is set
         int thread_count;
         std::string hmm_filepath;
         std::string cnv_filepath;

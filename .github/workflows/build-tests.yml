@@ -17,11 +17,11 @@ jobs:
       with:
         repo: 'WGLab/ContextSV'
         version: 'tags/v0.1.0'
-        file: 'TestData.zip'
+        file: 'SampleData.zip'
 
     - name: Unzip assets
       shell: bash --login {0}
-      run: unzip TestData.zip
+      run: unzip SampleData.zip -d tests
 
     - name: Set up conda (Miniconda only)
       uses: conda-incubator/setup-miniconda@v2
@@ -47,13 +47,21 @@ jobs:
         ls -l $CONDA_PREFIX/include/htslib
         make CONDA_PREFIX=$CONDA_PREFIX
 
-    - name: Run unit tests
+    - name: Test installation
       shell: bash --login {0}
       run: |
         source $(conda info --base)/etc/profile.d/conda.sh
         conda activate contextsv
         ./build/contextsv --version
         ./build/contextsv --help
+
+    - name: Run tests
+      shell: bash --login {0}
+      run: |
+        source $(conda info --base)/etc/profile.d/conda.sh
+        conda activate contextsv
+        mkdir -p output
+        python -m pytest -s -v
 
       # run: |
       #   source $(conda info --base)/etc/profile.d/conda.sh

@@ -105,9 +105,6 @@ class CNVCaller {
 
         void readSNPAlleleFrequencies(std::string chr, uint32_t start_pos, uint32_t end_pos, std::vector<uint32_t>& snp_pos, std::unordered_map<uint32_t, double>& snp_baf, std::unordered_map<uint32_t, double>& snp_pfb, const InputData& input_data) const;
 
-        // Save a TSV with B-allele frequencies, log2 ratios, and copy number predictions
-        void saveSVCopyNumberToTSV(SNPData& snp_data, std::string filepath, std::string chr, uint32_t start, uint32_t end, std::string sv_type, double likelihood) const;
-
         void saveSVCopyNumberToJSON(SNPData& before_sv, SNPData& after_sv, SNPData& snp_data, std::string chr, uint32_t start, uint32_t end, std::string sv_type, double likelihood, const std::string& filepath) const;
 };
 

@@ -26,11 +26,11 @@
 #include "ThreadPool.h"
 #include "utils.h"
 #include "sv_types.h"
-#include "version.h"
 #include "fasta_query.h"
 #include "dbscan.h"
 #include "dbscan1d.h"
 #include "debug.h"
+#include "version.h"
 /// @endcond
 
 # define DUP_SEQSIM_THRESHOLD 0.9  // Sequence similarity threshold for duplication detection
@@ -149,7 +149,7 @@ void SVCaller::findSplitSVSignatures(std::unordered_map<std::string, std::vector
             // reverse)
             std::pair<int, int> qpos = getAlignmentReadPositions(bam1);
 
-            primary_map[bam1->core.tid][qname] = PrimaryAlignment{bam1->core.pos + 1, bam_endpos(bam1), qpos.first, qpos.second, !(bam1->core.flag & BAM_FREVERSE), 0};
+            primary_map[bam1->core.tid][qname] = PrimaryAlignment{static_cast<int>(bam1->core.pos + 1), static_cast<int>(bam_endpos(bam1)), static_cast<int>(qpos.first), static_cast<int>(qpos.second), !(bam1->core.flag & BAM_FREVERSE), 0};
             alignment_tids.insert(bam1->core.tid);
             primary_count++;
 
@@ -159,7 +159,7 @@ void SVCaller::findSplitSVSignatures(std::unordered_map<std::string, std::vector
             // supplementary alignment, and the strand (true for forward, false
             // for reverse)
             std::pair<int, int> qpos = getAlignmentReadPositions(bam1);
-            supp_map[qname].push_back(SuppAlignment{bam1->core.tid, bam1->core.pos + 1, bam_endpos(bam1), qpos.first, qpos.second, !(bam1->core.flag & BAM_FREVERSE)});
+            supp_map[qname].push_back(SuppAlignment{bam1->core.tid, static_cast<int>(bam1->core.pos + 1), static_cast<int>(bam_endpos(bam1)), static_cast<int>(qpos.first), static_cast<int>(qpos.second), !(bam1->core.flag & BAM_FREVERSE)});
             alignment_tids.insert(bam1->core.tid);
             supp_qnames.insert(qname);
             supplementary_count++;
@@ -414,23 +414,6 @@ void SVCaller::findSplitSVSignatures(std::unordered_map<std::string, std::vector
                 supp_cluster_size = std::max(supp_cluster_size, (int) supp_end_cluster.size());
                 supp_end = true;
             }
-
-            // Store the inversion as the supplementary start and end positions
-            // if (inversion && supp_positions.size() > 1) {
-            //     std::sort(supp_positions.begin(), supp_positions.end());
-            //     int supp_start = supp_positions.front();
-            //     int supp_end = supp_positions.back();
-            //     int sv_length = std::abs(supp_start - supp_end);
-
-            //     // Use 50bp as the minimum length for an inversion
-            //     if (sv_length >= 50 && sv_length <= max_length) {
-            //         SVEvidenceFlags aln_type;
-            //         aln_type.set(static_cast<size_t>(SVDataType::SUPPINV));
-            //         SVCall sv_candidate(supp_start, supp_end, SVType::INV, getSVTypeSymbol(SVType::INV), aln_type, Genotype::UNKNOWN, 0.0, 0, 0, supp_cluster_size);
-            //         // SVCall sv_candidate(supp_start, supp_end, SVType::INV, getSVTypeSymbol(SVType::INV), SVDataType::SUPPINV, Genotype::UNKNOWN, 0.0, 0, 0, supp_cluster_size);
-            //         addSVCall(chr_sv_calls, sv_candidate);
-            //     }
-            // }
 
             // -------------------------------
             // SPLIT INSERTION CALLS
@@ -755,13 +738,6 @@ void SVCaller::processChromosome(const std::string& chr, std::vector<SVCall>& ch
     bam_hdr_destroy(bamHdr);
 
     printMessage(chr + ": Merging CIGAR...");
-    // Save JSON if chr21
-    // if (chr == "chr21") {
-    //     std::string json_fp = input_data.getOutputDir() + "/" + chr + ".json";
-    //     mergeSVs(chr_sv_calls, dbscan_epsilon, dbscan_min_pts, true, json_fp);
-    // } else {
-    //     mergeSVs(chr_sv_calls, dbscan_epsilon, dbscan_min_pts, false);
-    // }
     mergeSVs(chr_sv_calls, dbscan_epsilon, dbscan_min_pts, false);
 
     int region_sv_count = getSVCount(chr_sv_calls);
@@ -1185,7 +1161,7 @@ void SVCaller::saveToVCF(const std::unordered_map<std::string, std::vector<SVCal
     vcf_stream << "##fileDate=" << buffer << std::endl;
 
     // Add source
-    std::string sv_method = "ContextSV" + std::string(VERSION);
+    std::string sv_method = "ContextSV v" + std::to_string(VERSION_MAJOR) + "." + std::to_string(VERSION_MINOR) + "." + std::to_string(VERSION_PATCH);
     std::string source = "##source=" + sv_method;
     vcf_stream << source << std::endl;
 

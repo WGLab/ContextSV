@@ -171,22 +171,6 @@ std::tuple<double, SVType, Genotype, int> CNVCaller::runCopyNumberPrediction(std
         printError("ERROR: Invalid SV region for copy number prediction: " + chr + ":" + std::to_string((int)start_pos) + "-" + std::to_string((int)end_pos));
         return std::make_tuple(0.0, SVType::UNKNOWN, Genotype::UNKNOWN, 0);
     }
-    /*
-    // Check that there is no large number of zero-depth positions in the region
-    int zero_depth_count = 0;
-    for (uint32_t pos = start_pos; pos <= end_pos; pos++)
-    {
-        if (pos < pos_depth_map.size() && pos_depth_map[pos] == 0)
-        {
-            zero_depth_count++;
-        }
-    }
-    if (zero_depth_count > 0.1 * (end_pos - start_pos + 1))
-    {
-        printError("WARNING: Too many zero-depth positions in the SV region for copy number prediction, skipping: " + chr + ":" + std::to_string((int)start_pos) + "-" + std::to_string((int)end_pos));
-        return std::make_tuple(0.0, SVType::UNKNOWN, Genotype::UNKNOWN, 0);
-    }
-    */
    
     // Run the Viterbi algorithm on SNPs in the SV region
     // Only extend the region if "save CNV data" is enabled
@@ -226,27 +210,34 @@ std::tuple<double, SVType, Genotype, int> CNVCaller::runCopyNumberPrediction(std
     std::vector<int>& state_sequence = prediction.first;
     double likelihood = prediction.second;
 
-    // Determine if there is a majority state within the SV region
-    int max_state = 0;
-    int max_count = 0;
+    // Get state percentages
+    std::unordered_map<int, double> state_pct;
+    double state_count = (double) state_sequence.size();
+    double largest_non_neutral_pct = 0.0;
+    int non_neutral_state = 0;
     for (int i = 0; i < 6; i++)
     {
-        int state_count = std::count(state_sequence.begin(), state_sequence.end(), i+1);
-        if (state_count > max_count)
+        state_pct[i+1] = (double)std::count(state_sequence.begin(), state_sequence.end(), i+1) / state_count;
+        if (i+1 != 3 && state_pct[i+1] > largest_non_neutral_pct)
         {
-            max_state = i+1;
-            max_count = state_count;
+            largest_non_neutral_pct = state_pct[i+1];
+            non_neutral_state = i+1;
         }
     }
 
-    // If there is no majority state, then set the state to unknown
-    double pct_threshold = 0.50;
-    int state_count = (int) state_sequence.size();
-    if ((double) max_count / (double) state_count < pct_threshold)
+    // Use the state exceeding the threshold if non-neutral
+    double pct_threshold = 0.3;
+    int max_state = 0;  // Unknown state
+    if (largest_non_neutral_pct > pct_threshold)
     {
-        max_state = 0;
+        max_state = non_neutral_state;
+
+    // Use the neutral state if it exceeds the threshold
+    } else if (state_pct[3] > pct_threshold) {
+        max_state = 3;
     }
 
+    // Determine the genotype and SV type
     Genotype genotype = getGenotypeFromCNState(max_state);
     SVType predicted_cnv_type = getSVTypeFromCNState(max_state);
 
@@ -815,88 +806,6 @@ void CNVCaller::readSNPAlleleFrequencies(std::string chr, uint32_t start_pos, ui
     // Clean up
     bcf_sr_destroy(snp_reader);
     bcf_sr_destroy(pfb_reader);
-}
-
-void CNVCaller::saveSVCopyNumberToTSV(SNPData& snp_data, std::string filepath, std::string chr, uint32_t start, uint32_t end, std::string sv_type, double likelihood) const
-{
-    // Open the TSV file for writing
-    std::ofstream tsv_file(filepath);
-    if (!tsv_file.is_open())
-    {
-        std::cerr << "ERROR: Could not open TSV file for writing: " << filepath << std::endl;
-        exit(1);
-    }
-
-    // Ensure all values are valid, and print an error message if not
-    if (chr == "" || start == 0 || end == 0 || sv_type == "")
-    {
-        std::cerr << "ERROR: Invalid SV information for TSV file: " << chr << ":" << start << "-" << end << " " << sv_type << std::endl;
-        exit(1);
-    }
-
-    if (snp_data.pos.size() == 0)
-    {
-        std::cerr << "ERROR: No SNP data available for TSV file: " << chr << ":" << start << "-" << end << " " << sv_type << std::endl;
-        exit(1);
-    }
-
-    if (likelihood == 0.0)
-    {
-        std::cerr << "ERROR: Invalid likelihood value for TSV file: " << chr << ":" << start << "-" << end << " " << sv_type << std::endl;
-        exit(1);
-    }
-
-    if (sv_type.empty())
-    {
-        std::cerr << "ERROR: Invalid SV type for TSV file: " << chr << ":" << start << "-" << end << " " << sv_type << std::endl;
-        exit(1);
-    }
-
-    // Format the size string in kb
-    std::stringstream ss;
-    ss << std::fixed << std::setprecision(6) << likelihood;
-    std::string likelihood_str = ss.str();
-
-    // Print SV information to the TSV file
-    tsv_file << "SVTYPE=" << sv_type << std::endl;
-    tsv_file << "POS=" << chr << ":" << start << "-" << end << std::endl;
-    tsv_file << "HMM_LOGLH=" << likelihood_str << std::endl;
-
-    // Write the header
-    tsv_file << "chromosome\tposition\tsnp\tb_allele_freq\tlog2_ratio\tcnv_state\tpopulation_freq" << std::endl;
-
-    // Write the data
-    int snp_count = (int) snp_data.pos.size();
-    for (int i = 0; i < snp_count; i++)
-    {
-        // Get the SNP data
-        uint32_t pos        = snp_data.pos[i];
-        bool    is_snp     = snp_data.is_snp[i];
-        double  pfb        = snp_data.pfb[i];
-        double  baf        = snp_data.baf[i];
-        double  log2_ratio = snp_data.log2_cov[i];
-        int     cn_state   = snp_data.state_sequence[i];
-
-        // If the SNP is not a SNP, then set the BAF to 0.0
-        if (!is_snp)
-        {
-            baf = 0.0;
-        }
-
-        // Write the TSV line (chrom, pos, baf, lrr, state)
-        tsv_file << \
-            chr          << "\t" << \
-            pos          << "\t" << \
-            is_snp       << "\t" << \
-            baf          << "\t" << \
-            log2_ratio   << "\t" << \
-            cn_state     << "\t" << \
-            pfb          << \
-        std::endl;
-    }
-
-    // Close the file
-    tsv_file.close();
 }
 
 void CNVCaller::saveSVCopyNumberToJSON(SNPData &before_sv, SNPData &after_sv, SNPData &snp_data, std::string chr, uint32_t start, uint32_t end, std::string sv_type, double likelihood, const std::string& filepath) const

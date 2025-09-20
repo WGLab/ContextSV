@@ -174,7 +174,7 @@ uint32_t ReferenceGenome::getChromosomeLength(std::string chr) const
     }
     catch (const std::out_of_range& e)
     {
-        printError("Chromosome " + chr + " not found in reference genome");
+        printError("Length for chromosome " + chr + " not found in reference genome");
         return 0;
     }
 }

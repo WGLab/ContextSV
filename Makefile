@@ -4,13 +4,6 @@ SRC_DIR := $(CURDIR)/src
 BUILD_DIR := $(CURDIR)/build
 LIB_DIR := $(CURDIR)/lib
 
-# Version header
-VERSION := $(shell git describe --tags --always)
-VERSION_HEADER := $(INCL_DIR)/version.h
-.PHONY: $(VERSION_HEADER)
-	@echo "#pragma once" > $@
-	@echo "#define VERSION \"$(VERSION)\"" >> $@
-
 # Conda environment directories
 CONDA_PREFIX := $(shell echo $$CONDA_PREFIX)
 CONDA_INCL_DIR := $(CONDA_PREFIX)/include
@@ -50,4 +43,3 @@ $(BUILD_DIR)/%.o: $(SRC_DIR)/%.cpp
 # Clean the build directory
 clean:
 	rm -rf $(BUILD_DIR)
-	
