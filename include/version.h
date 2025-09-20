@@ -1,0 +1,9 @@
+// version.h
+#ifndef CONTEXTSV_VERSION_H
+#define CONTEXTSV_VERSION_H
+
+#define VERSION_MAJOR 1
+#define VERSION_MINOR 0
+#define VERSION_PATCH 0
+
+#endif // CONTEXTSV_VERSION_H

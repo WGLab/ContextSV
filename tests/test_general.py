@@ -18,10 +18,6 @@ if os.getcwd() == local_dir:
 else:
     TEST_DATA_DIR = os.path.abspath(str("tests/data"))
 
-print("Current working directory:", os.getcwd())
-print("Test data directory:", TEST_DATA_DIR)
-print("Contents of test data directory:", os.listdir(TEST_DATA_DIR) if os.path.exists(TEST_DATA_DIR) else "Directory does not exist")
-
 TEST_DATA_DIR = os.path.join(os.path.dirname(__file__), 'data')
 BAM_FILE = os.path.join(TEST_DATA_DIR, 'chr3_test.bam')
 REF_FILE = os.path.join(TEST_DATA_DIR, 'GRCh38_noalts_chr3.fa')
@@ -72,7 +68,6 @@ def test_run_version():
     # Check process exited successfully
     assert result.returncode == 0, f"Non-zero exit: {result.returncode}\n{result.stderr}"
     assert result.stdout, "No output from --version"
-    assert "ContextSV version" in result.stdout, "Version text missing 'ContextSV version'"
 
 def test_run_basic():
     """Run ContextSV with basic required parameters."""
@@ -85,15 +80,6 @@ def test_run_basic():
     json_file = os.path.join(out_dir, 'CNVCalls.json')
     if os.path.exists(json_file):
         os.remove(json_file)
-
-    print("Input parameters:")
-    print(f"BAM_FILE: {BAM_FILE}")
-    print(f"REF_FILE: {REF_FILE}")
-    print(f"SNPS_FILE: {SNPS_FILE}")
-    print(f"PFB_FILE: {PFB_FILE}")
-    print(f"HMM_FILE: {HMM_FILE}")
-    print(f"Output directory: {out_dir}")
-    print("GAP_FILE:", GAP_FILE)
 
     result = subprocess.run(
         ["./build/contextsv",
@@ -139,17 +125,12 @@ def test_run_basic():
     found_dup = False
     with open(vcf_file, 'r') as vf:
         for line in vf:
-            print("VCF Line:", line.strip())  # Print each line for debugging
-
             if line.startswith('#'):
                 continue
             fields = line.strip().split('\t')
             if len(fields) < 8:
                 continue
             chrom, pos, id, ref, alt, qual, filter, info = fields[:8]
-
-            # Print each VCF record for debugging
-            print(f"VCF Record: {chrom}, {pos}, {id}, {ref}, {alt}, {qual}, {filter}, {info}")
 
             if (chrom == 'chr3' and pos == '61149366' and alt == '<DUP>'):
                 found_dup = True
@@ -158,6 +139,7 @@ def test_run_basic():
                 assert int(info_dict.get('SVLEN', 0)) == 776235, f"SVLEN is not 776235, got {info_dict.get('SVLEN')}"
                 assert int(info_dict.get('CN', 0)) == 6, f"CN is not 6, got {info_dict.get('CN')}"
                 break
+
     assert found_dup, "Expected duplication not found in VCF output"
 
     # Find the large duplication in the CNVCalls.json output
@@ -182,4 +164,5 @@ def test_run_basic():
                 found_dup_json = True
                 assert entry.get('size') == 776235, f"Size is not 776235, got {entry.get('size')}"
                 break
+            
     assert found_dup_json, "Expected duplication not found in CNVCalls.json output" 

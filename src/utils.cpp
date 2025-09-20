@@ -11,29 +11,8 @@
 #include <filesystem>
 /// @endcond
 
-#ifndef VERSION
-#define VERSION "vUNKNOWN"
-#endif
-
 
 std::mutex print_mtx;
-
-
-static std::string run_cmd(const char* cmd) {
-    std::array<char, 256> buffer;
-    std::string result;
-    std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(cmd, "r"), pclose);
-    if (!pipe) return {};
-    while (fgets(buffer.data(), buffer.size(), pipe.get())) result += buffer.data();
-    if (!result.empty() && result.back() == '\n') result.pop_back();
-    return result;
-}
-
-std::string currentVersion() {
-    auto gitv = run_cmd("git describe --tags --always 2>/dev/null");
-    if (!gitv.empty()) return gitv;
-    return VERSION;
-}
 
 // Thread-safe print message function
 void printMessage(std::string message)

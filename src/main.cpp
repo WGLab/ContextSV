@@ -17,7 +17,7 @@
 
 #include "input_data.h"
 #include "utils.h"
-
+#include "version.h"
 
 void printStackTrace(int sig)
 {
@@ -38,11 +38,10 @@ void printBanner()
 {
     std::time_t now = std::time(nullptr);
     char date_str[100];
-    std::string version = currentVersion();
     std::strftime(date_str, sizeof(date_str), "%Y-%m-%d", std::localtime(&now));
     std::cout << "═══════════════════════════════════════════════════════════════" << std::endl;
     std::cout << "  ContextSV - Long-read Structural Variant Caller" << std::endl;
-    std::cout << "      Version: " << version << std::endl;
+    std::cout << "      Version: " << VERSION_MAJOR << "." << VERSION_MINOR << "." << VERSION_PATCH << std::endl;
     std::cout << "      Date: " << date_str << std::endl;
     std::cout << "═══════════════════════════════════════════════════════════════" << std::endl;
 }
@@ -127,7 +126,7 @@ void runContextSV(const std::unordered_map<std::string, std::string>& args)
 }
 
 void printUsage(const std::string& programName) {
-    std::cout << "ContextSV version " << currentVersion() << std::endl;
+    std::cout << "ContextSV v" << VERSION_MAJOR << "." << VERSION_MINOR << "." << VERSION_PATCH << std::endl;
     std::cout << "Usage: " << programName << " [options]\n"
                 << "Options:\n"
                 << "  -b, --bam <bam_file>          Long-read BAM file (required)\n"
@@ -194,7 +193,7 @@ std::unordered_map<std::string, std::string> parseArguments(int argc, char* argv
         } else if (arg == "--debug") {
             args["debug"] = "true";
         } else if ((arg == "-v" || arg == "--version")) {
-            std::cout << "ContextSV version " << currentVersion() << std::endl;
+            std::cout << "ContextSV v" << VERSION_MAJOR << "." << VERSION_MINOR << "." << VERSION_PATCH << std::endl;
             exit(0);
         } else if (arg == "-h" || arg == "--help") {
             printUsage(argv[0]);

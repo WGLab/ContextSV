@@ -12,7 +12,6 @@
 #include <chrono>
 /// @endcond
 
-std::string currentVersion();
 
 // Print a message to stdout in a thread-safe manner
 void printMessage(std::string message);

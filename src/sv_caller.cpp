@@ -30,6 +30,7 @@
 #include "dbscan.h"
 #include "dbscan1d.h"
 #include "debug.h"
+#include "version.h"
 /// @endcond
 
 # define DUP_SEQSIM_THRESHOLD 0.9  // Sequence similarity threshold for duplication detection
@@ -1160,7 +1161,7 @@ void SVCaller::saveToVCF(const std::unordered_map<std::string, std::vector<SVCal
     vcf_stream << "##fileDate=" << buffer << std::endl;
 
     // Add source
-    std::string sv_method = "ContextSV" + std::string(currentVersion());
+    std::string sv_method = "ContextSV v" + std::to_string(VERSION_MAJOR) + "." + std::to_string(VERSION_MINOR) + "." + std::to_string(VERSION_PATCH);
     std::string source = "##source=" + sv_method;
     vcf_stream << source << std::endl;
 
