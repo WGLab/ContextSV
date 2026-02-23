@@ -791,11 +791,13 @@ void SVCaller::run(const InputData& input_data)
     int chr_thread_count = input_data.getThreadCount();
 
     // Initialize the chromosome position depth map and mean coverage map
+    std::unordered_set<std::string> invalid_chr;  // Track chromosomes not found in the reference genome
     for (const auto& chr : chromosomes) {
         uint32_t chr_len = ref_genome.getChromosomeLength(chr);
         if (chr_len == 0) {
-            printError("Chromosome " + chr + " not found in reference genome");
-            return;
+            // printError("Chromosome " + chr + " not found in reference genome");
+            invalid_chr.insert(chr);
+            continue;
             // continue;
         }
         chr_pos_depth_map[chr] = std::vector<uint32_t>(chr_len+1, 0);  // 1-based index
@@ -803,14 +805,38 @@ void SVCaller::run(const InputData& input_data)
     }
     cnv_caller.calculateMeanChromosomeCoverage(chromosomes, chr_pos_depth_map, chr_mean_cov_map, bam_filepath, chr_thread_count);
 
-    // Remove chromosomes with no reads (mean coverage is zero)
+    // Remove invalid chromosomes that are not found in the reference genome
+    if (!invalid_chr.empty()) {
+        printMessage("Removing chromosomes not found in the reference genome...");
+        std::vector<std::string> valid_chr;
+        for (const auto& chr : chromosomes) {
+            if (invalid_chr.find(chr) == invalid_chr.end()) {
+                valid_chr.push_back(chr);
+            }
+        }
+        if (valid_chr.empty()) {
+            printError("No valid chromosomes found for analysis. Exiting.");
+            return;
+        } else {
+            chromosomes = valid_chr;
+        }
+    }
+
+    // Remove chromosomes with no reads (mean coverage is zero) or not found in the reference genome
     printMessage("Removing chromosomes with no reads...");
     std::vector<std::string> valid_chr;
     for (const auto& chr : chromosomes) {
     	if (chr_mean_cov_map.find(chr) != chr_mean_cov_map.end()) {
     		valid_chr.push_back(chr);
-	}
-	chromosomes = valid_chr;
+        } else {
+            printError("Chromosome " + chr + " has no coverage and will be removed from analysis");
+        }
+    }
+    if (valid_chr.empty()) {
+        printError("No valid chromosomes found for analysis. Exiting.");
+        return;
+    } else {
+	    chromosomes = valid_chr;
     }
     std::unordered_map<std::string, std::vector<SVCall>> whole_genome_sv_calls;
     int current_chr = 0;
