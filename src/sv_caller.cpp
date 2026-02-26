@@ -109,21 +109,12 @@ void SVCaller::findSplitSVSignatures(std::unordered_map<std::string, std::vector
     
     // Set the region to the whole genome, or a user-specified chromosome
     hts_itr_t *itr = nullptr;
-    if (input_data.isSingleChr()) {
-        std::string chr = input_data.getChromosome();
-        itr = sam_itr_querys(idx, bamHdr, chr.c_str());
-        if (!itr) {
-            bam_destroy1(bam1);
-            printError("ERROR: failed to create iterator for " + chr);
-            return;
-        }
-    } else {
-        itr = sam_itr_queryi(idx, HTS_IDX_START, 0, 0);
-        if (!itr) {
-            bam_destroy1(bam1);
-            printError("ERROR: failed to create iterator for the whole genome");
-            return;
-        }
+
+    itr = sam_itr_queryi(idx, HTS_IDX_START, 0, 0);
+    if (!itr) {
+        bam_destroy1(bam1);
+        printError("ERROR: failed to create iterator for the whole genome");
+        return;
     }
 
     uint32_t primary_count = 0;
@@ -760,17 +751,10 @@ void SVCaller::run(const InputData& input_data)
     const std::string ref_filepath = input_data.getRefGenome();
     std::shared_mutex ref_mutex;  // Dummy mutex (remove later)
     ReferenceGenome ref_genome(ref_mutex);
-    ref_genome.setFilepath(ref_filepath);
+    ref_genome.read(ref_filepath);
 
     // Get the chromosomes
-    std::vector<std::string> chromosomes;
-    if (input_data.isSingleChr()) {
-        // Get the chromosome from the user input argument
-        chromosomes.push_back(input_data.getChromosome());
-    } else {
-        // Get the chromosomes from the input BAM file
-        chromosomes = this->getChromosomes(input_data.getLongReadBam());
-    }
+    std::vector<std::string> chromosomes = this->getChromosomes(input_data.getLongReadBam());
     
     // Read the HMM from the file
     std::string hmm_filepath = input_data.getHMMFilepath();
@@ -791,13 +775,11 @@ void SVCaller::run(const InputData& input_data)
     int chr_thread_count = input_data.getThreadCount();
 
     // Initialize the chromosome position depth map and mean coverage map
-    std::unordered_set<std::string> invalid_chr;  // Track chromosomes not found in the reference genome
     for (const auto& chr : chromosomes) {
         uint32_t chr_len = ref_genome.getChromosomeLength(chr);
         if (chr_len == 0) {
-            // printError("Chromosome " + chr + " not found in reference genome");
-            invalid_chr.insert(chr);
-            continue;
+            printError("Chromosome " + chr + " not found in reference genome");
+            return;
             // continue;
         }
         chr_pos_depth_map[chr] = std::vector<uint32_t>(chr_len+1, 0);  // 1-based index
@@ -805,38 +787,14 @@ void SVCaller::run(const InputData& input_data)
     }
     cnv_caller.calculateMeanChromosomeCoverage(chromosomes, chr_pos_depth_map, chr_mean_cov_map, bam_filepath, chr_thread_count);
 
-    // Remove invalid chromosomes that are not found in the reference genome
-    if (!invalid_chr.empty()) {
-        printMessage("Removing chromosomes not found in the reference genome...");
-        std::vector<std::string> valid_chr;
-        for (const auto& chr : chromosomes) {
-            if (invalid_chr.find(chr) == invalid_chr.end()) {
-                valid_chr.push_back(chr);
-            }
-        }
-        if (valid_chr.empty()) {
-            printError("No valid chromosomes found for analysis. Exiting.");
-            return;
-        } else {
-            chromosomes = valid_chr;
-        }
-    }
-
-    // Remove chromosomes with no reads (mean coverage is zero) or not found in the reference genome
+    // Remove chromosomes with no reads (mean coverage is zero)
     printMessage("Removing chromosomes with no reads...");
     std::vector<std::string> valid_chr;
     for (const auto& chr : chromosomes) {
     	if (chr_mean_cov_map.find(chr) != chr_mean_cov_map.end()) {
     		valid_chr.push_back(chr);
-        } else {
-            printError("Chromosome " + chr + " has no coverage and will be removed from analysis");
-        }
-    }
-    if (valid_chr.empty()) {
-        printError("No valid chromosomes found for analysis. Exiting.");
-        return;
-    } else {
-	    chromosomes = valid_chr;
+	}
+	chromosomes = valid_chr;
     }
     std::unordered_map<std::string, std::vector<SVCall>> whole_genome_sv_calls;
     int current_chr = 0;
@@ -845,11 +803,8 @@ void SVCaller::run(const InputData& input_data)
     if (cigar_svs) {
         // Use multi-threading across chromosomes. If a single chromosome is
         // specified, use a single main thread (multi-threading is used for file I/O)
-        int thread_count = 1;
-        if (!input_data.isSingleChr()) {
-            thread_count = input_data.getThreadCount();
-            std::cout << "Using " << thread_count << " threads for chr processing..." << std::endl;
-        }
+        int thread_count = input_data.getThreadCount();
+        std::cout << "Using " << thread_count << " threads for chr processing..." << std::endl;
         ThreadPool pool(thread_count);
         auto process_chr = [&](const std::string& chr) {
             try {

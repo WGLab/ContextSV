@@ -24,7 +24,7 @@ class ReferenceGenome {
     public:
 	    ReferenceGenome(std::shared_mutex& shared_mutex) : shared_mutex(shared_mutex) {}
     
-        int setFilepath(std::string fasta_filepath);
+        int read(std::string fasta_filepath);
         std::string getFilepath() const;
         std::string_view query(const std::string& chr, uint32_t pos_start, uint32_t pos_end) const;
         bool compare(const std::string& chr, uint32_t pos_start, uint32_t pos_end, const std::string& compare_seq, float match_threshold) const;

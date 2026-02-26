@@ -192,22 +192,6 @@ double InputData::getDBSCAN_MinPtsPct() const
     return this->dbscan_min_pts_pct;
 }
 
-void InputData::setChromosome(std::string chr)
-{
-    this->chr = chr;
-    this->single_chr = true;
-}
-
-std::string InputData::getChromosome() const
-{
-    return this->chr;
-}
-
-bool InputData::isSingleChr() const
-{
-    return this->single_chr;
-}
-
 void InputData::setAlleleFreqFilepaths(std::string filepath)
 {
     // Check if empty string

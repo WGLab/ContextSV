@@ -72,11 +72,6 @@ class InputData {
         void setDBSCAN_MinPtsPct(double min_pts_pct);
         double getDBSCAN_MinPtsPct() const;
 
-        // Set the chromosome to analyze.
-        void setChromosome(std::string chr);
-        std::string getChromosome() const;
-        bool isSingleChr() const;
-
         // Set the output directory where the results will be written.
         void setOutputDir(std::string dirpath);
         std::string getOutputDir() const;

@@ -65,9 +65,6 @@ void runContextSV(const std::unordered_map<std::string, std::string>& args)
     input_data.setRefGenome(args.at("ref-file"));
     input_data.setSNPFilepath(args.at("snps-file"));
     input_data.setOutputDir(args.at("output-dir"));
-    if (args.find("chr") != args.end()) {
-        input_data.setChromosome(args.at("chr"));
-    }
     if (args.find("thread-count") != args.end()) {
         input_data.setThreadCount(std::stoi(args.at("thread-count")));
     }
@@ -130,7 +127,6 @@ void printUsage(const std::string& programName) {
                 << "  -r, --ref <ref_file>          Reference genome FASTA file (required)\n"
                 << "  -s, --snp <vcf_file>          SNPs VCF file (required)\n"
                 << "  -o, --outdir <output_dir>     Output directory (required)\n"
-                << "  -c, --chr <chromosome>        Chromosome\n"
                 << "  -t, --threads <thread_count>  Number of threads\n"
                 << "  -h, --hmm <hmm_file>          HMM file\n"
                 << "  -n, --sample-size <size>      Sample size for HMM predictions\n"
