@@ -55,7 +55,6 @@ CMakeSettings.json
 
 # Output folder
 output/
-python/
 
 # Doxygen
 docs/html/
@@ -64,8 +63,6 @@ docs/html/
 *.sif
 
 # Test directories
-python/dbscan
-python/agglo
 linktoscripts
 tests/data
 tests/cpp_module_out
@@ -84,11 +81,6 @@ data/sv_scoring_dataset/
 # Chain files
 data/hg38ToHg19.over.chain.gz
 data/hg19ToHg38.over.chain.gz
-
-# Test images
-python/dbscan_clustering*.png
-python/dist_plots
-upset_plot*.png
 
 # Temporary files
 lib/.nfs*
