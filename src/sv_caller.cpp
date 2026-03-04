@@ -1005,7 +1005,7 @@ void SVCaller::runSplitReadCopyNumberPredictions(const std::string& chr, std::ve
                 // For insertions predicted as duplications, update all information
                 } else if (sv_candidate.sv_type == SVType::INS && supp_type == SVType::DUP) {
                     sv_candidate.sv_type = supp_type;
-                    sv_candidate.alt_allele = getSVTypeSymbol(supp_type);  // Update the ALT allele format
+                    sv_candidate.alt_allele = "<DUP>";  // Explicitly set to <DUP>
                     sv_candidate.aln_type.set(static_cast<size_t>(SVDataType::HMM));
                     sv_candidate.hmm_likelihood = supp_lh;
                     sv_candidate.genotype = genotype;
@@ -1269,6 +1269,10 @@ void SVCaller::saveToVCF(const std::unordered_map<std::string, std::vector<SVCal
 
                 } else {
                     ref_allele = "N";  // Convention for INV and DUP
+                    // Ensure DUP entries have the correct symbolic ALT allele
+                    if (sv_type == SVType::DUP) {
+                        alt_allele = "<DUP>";
+                    }
                 }
             }
 
