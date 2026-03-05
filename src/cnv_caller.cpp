@@ -75,6 +75,8 @@ void CNVCaller::querySNPRegion(std::string chr, uint32_t start_pos, uint32_t end
     // Loop through evenly spaced positions in the region and get the log2 ratio
     double pos_step = static_cast<double>(end_pos - start_pos + 1) / static_cast<double>(sample_size);
     std::unordered_map<std::string, double> window_log2_map;
+    size_t depth_map_size = pos_depth_map.size();  // Cache size for bounds checking
+    
     for (int i = 0; i < sample_size; i++)
     {
         uint32_t window_start = (uint32_t) (start_pos + i * pos_step);
@@ -83,18 +85,16 @@ void CNVCaller::querySNPRegion(std::string chr, uint32_t start_pos, uint32_t end
         // Calculate the mean depth for the window
         double cov_sum = 0.0;
         int pos_count = 0;
-        for (int j = 0; j < pos_step; j++)
+        int max_steps = (int)pos_step + 1;  // Convert double to int with safety margin
+        for (int j = 0; j < max_steps; j++)
         {
             uint32_t pos = (uint32_t) (start_pos + i * pos_step + j);
-            if (pos > end_pos)
+            if (pos > end_pos || pos >= depth_map_size)
             {
                 break;
             }
-            if (pos < pos_depth_map.size()) {
-                cov_sum += pos_depth_map[pos];
-                pos_count++;
-            }
-
+            cov_sum += pos_depth_map[pos];
+            pos_count++;
         }
         double log2_cov = 0.0;
         if (pos_count > 0)

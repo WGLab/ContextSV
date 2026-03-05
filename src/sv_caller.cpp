@@ -689,7 +689,6 @@ void SVCaller::processChromosome(const std::string& chr, std::vector<SVCall>& ch
         printError("ERROR: failed to open " + bam_filepath);
         return;
     }
-    hts_set_threads(fp_in, 1);
 
     // Load the header
     bam_hdr_t *bamHdr = sam_hdr_read(fp_in);
@@ -698,6 +697,10 @@ void SVCaller::processChromosome(const std::string& chr, std::vector<SVCall>& ch
         printError("ERROR: failed to read header from " + bam_filepath);
         return;
     }
+
+    // Single-threaded I/O in worker threads to prevent index contention
+    // (ThreadPool already provides parallelism across chromosomes)
+    hts_set_threads(fp_in, 1);
 
     // Load the index
     hts_idx_t *idx = sam_index_load(fp_in, bam_filepath.c_str());
@@ -1261,8 +1264,7 @@ void SVCaller::saveToVCF(const std::unordered_map<std::string, std::vector<SVCal
                             std::cerr << "Warning: Reference allele is empty for insertion at " << chr << ":" << start << "-" << end << std::endl;
                         }
                     } else {
-                        // Throw an error if the insertion is at the first position
-                        std::cerr << "Error: Insertion at the first position " << chr << ":" << start << "-" << end << std::endl;
+                        // std::cerr << "Warning: Insertion at the first position " << chr << ":" << start << "-" << end << std::endl;
                         continue;
                     }
                     end = start;  // Update the end position to the same base

@@ -6,6 +6,7 @@
 #include <iostream>
 #include <sstream>
 #include <thread>
+#include <sys/stat.h>
 
 #include "utils.h"
 #include "debug.h"  // For DEBUG_PRINT
@@ -71,6 +72,40 @@ void InputData::setLongReadBam(std::string filepath)
             throw std::runtime_error("Long read BAM file does not exist: " + filepath);
         } else {
             fclose(fp);
+        }
+
+        // Check if pgbam file is being used and warn user
+        if (filepath.find(".pgbam") != std::string::npos)
+        {
+            std::cerr << "================================================================================\n"
+                      << "WARNING: Using PetaGene-compressed BAM file (.pgbam)\n"
+                      << "         This format does NOT support safe concurrent decompression.\n"
+                      << "         Multi-threaded access may cause CRC32 checksum errors.\n"
+                      << "\n"
+                      << "RECOMMENDED: Decompress the pgbam file to standard BAM format using:\n"
+                      << "  petasuite --decompress input.pgbam\n"
+                      << "================================================================================\n";
+        }
+
+        // Check if BAM index file exists and is newer than BAM file
+        std::string index_filepath = filepath + ".bai";
+        struct stat bam_stat, index_stat;
+        if (stat(filepath.c_str(), &bam_stat) == 0)
+        {
+            if (stat(index_filepath.c_str(), &index_stat) == 0)
+            {
+                if (index_stat.st_mtime < bam_stat.st_mtime)
+                {
+                    std::cerr << "================================================================================\n"
+                              << "WARNING: BAM index file is older than BAM file\n"
+                              << "         BAM: " << filepath << "\n"
+                              << "         Index: " << index_filepath << "\n"
+                              << "\n"
+                              << "RECOMMENDED: Rebuild the BAM index using:\n"
+                              << "  samtools index " << filepath << "\n"
+                              << "================================================================================\n";
+                }
+            }
         }
     }
 }
