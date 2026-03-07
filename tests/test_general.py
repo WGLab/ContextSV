@@ -93,7 +93,6 @@ def test_run_basic():
          "--eps", "0.1",
          "--min-pts-pct", "0.1",
          "--assembly-gaps", GAP_FILE,
-         "--chr", "chr3",
          "--save-cnv",
          "--debug"
         ],
