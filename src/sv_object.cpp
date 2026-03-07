@@ -27,9 +27,8 @@ void addSVCall(std::vector<SVCall>& sv_calls, SVCall& sv_call)
         return;
     }
 
-    // Insert the SV call in sorted order
-    auto it = std::lower_bound(sv_calls.begin(), sv_calls.end(), sv_call);
-    sv_calls.insert(it, sv_call);
+    // Append and defer sorting/merging to downstream steps
+    sv_calls.push_back(sv_call);
 }
 
 uint32_t getSVCount(const std::vector<SVCall>& sv_calls)

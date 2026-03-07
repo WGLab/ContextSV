@@ -80,6 +80,9 @@ void runContextSV(const std::unordered_map<std::string, std::string>& args)
     if (args.find("assembly-gaps") != args.end()) {
         input_data.setAssemblyGaps(args.at("assembly-gaps"));
     }
+    if (args.find("chr") != args.end()) {
+        input_data.setChromosome(args.at("chr"));
+    }
     if (args.find("save-cnv") != args.end()) {
         input_data.saveCNVData(true);
     }

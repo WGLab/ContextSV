@@ -37,9 +37,7 @@
 
 int SVCaller::readNextAlignment(samFile *fp_in, hts_itr_t *itr, bam1_t *bam1)
 {
-    std::shared_lock<std::shared_mutex> lock(this->shared_mutex);
-    int ret = sam_itr_next(fp_in, itr, bam1);
-    return ret;
+    return sam_itr_next(fp_in, itr, bam1);
 }
 
 std::vector<std::string> SVCaller::getChromosomes(const std::string &bam_filepath)
@@ -97,110 +95,108 @@ void SVCaller::findSplitSVSignatures(std::unordered_map<std::string, std::vector
         return;
     }
 
-    // Alignment data structures
-    std::unordered_map<int, std::unordered_map<std::string, PrimaryAlignment>> primary_map;  // TID-> qname -> primary alignment
-    std::unordered_map<std::string, std::vector<SuppAlignment>> supp_map;  // qname -> supplementary alignment
-
     bam1_t *bam1 = bam_init1();
     if (!bam1) {
         printError("ERROR: failed to initialize BAM record");
+        bam_hdr_destroy(bamHdr);
+        hts_idx_destroy(idx);
+        sam_close(fp_in);
         return;
     }
-    
-    // Set the region to the whole genome, or a user-specified chromosome
-    hts_itr_t *itr = nullptr;
-
-    itr = sam_itr_queryi(idx, HTS_IDX_START, 0, 0);
-    if (!itr) {
-        bam_destroy1(bam1);
-        printError("ERROR: failed to create iterator for the whole genome");
-        return;
+    // Build chromosome list (single chromosome if requested)
+    std::vector<std::string> chromosomes;
+    const std::string target_chr = input_data.getChromosome();
+    if (!target_chr.empty()) {
+        if (bam_name2id(bamHdr, target_chr.c_str()) < 0) {
+            printError("ERROR: Requested chromosome " + target_chr + " not found in BAM header");
+            bam_destroy1(bam1);
+            bam_hdr_destroy(bamHdr);
+            hts_idx_destroy(idx);
+            sam_close(fp_in);
+            return;
+        }
+        chromosomes.push_back(target_chr);
+    } else {
+        chromosomes.reserve(static_cast<size_t>(bamHdr->n_targets));
+        for (int i = 0; i < bamHdr->n_targets; i++) {
+            chromosomes.push_back(bamHdr->target_name[i]);
+        }
     }
 
-    uint32_t primary_count = 0;
-    uint32_t supplementary_count = 0;
+    printMessage("Processing split-read alignments from " + bam_filepath);
+    int current_chr = 0;
+    int total_chr = static_cast<int>(chromosomes.size());
 
-    // Main loop to process the alignments
-    printMessage("Processing alignments from " + bam_filepath);
-    uint32_t num_alignments = 0;
-    std::unordered_set<int> alignment_tids;  // All unique chromosome IDs
-    std::unordered_set<std::string> supp_qnames;  // All unique query names
-    while (readNextAlignment(fp_in, itr, bam1) >= 0) {
-
-        // Skip secondary and unmapped alignments, duplicates, QC failures, and low mapping quality
-        if (bam1->core.flag & BAM_FSECONDARY || bam1->core.flag & BAM_FUNMAP || bam1->core.flag & BAM_FDUP || bam1->core.flag & BAM_FQCFAIL || bam1->core.qual < this->min_mapq) {
+    for (const auto& chr_name : chromosomes) {
+        current_chr++;
+        int primary_tid = bam_name2id(bamHdr, chr_name.c_str());
+        if (primary_tid < 0) {
+            printError("ERROR: Chromosome " + chr_name + " not found in BAM header");
             continue;
         }
-        const std::string qname = bam_get_qname(bam1);  // Query template name
 
-        // Process primary alignments
-        if (!(bam1->core.flag & BAM_FSUPPLEMENTARY)) {
-            // Store chromosome (TID), start, and end positions (1-based) of the
-            // primary alignment, and the strand (true for forward, false for
-            // reverse)
+        // Per-chromosome maps to avoid whole-genome materialization
+        std::unordered_map<std::string, PrimaryAlignment> chr_primary_map;
+        std::unordered_map<std::string, std::vector<SuppAlignment>> supp_map;
+        std::unordered_set<std::string> supp_qnames;
+
+        hts_itr_t* itr = sam_itr_querys(idx, bamHdr, chr_name.c_str());
+        if (!itr) {
+            printError("ERROR: failed to query chromosome " + chr_name);
+            continue;
+        }
+
+        uint32_t num_alignments = 0;
+        while (readNextAlignment(fp_in, itr, bam1) >= 0) {
+
+            // Skip secondary and unmapped alignments, duplicates, QC failures, and low mapping quality
+            if (bam1->core.flag & BAM_FSECONDARY || bam1->core.flag & BAM_FUNMAP || bam1->core.flag & BAM_FDUP || bam1->core.flag & BAM_FQCFAIL || bam1->core.qual < this->min_mapq) {
+                continue;
+            }
+            const std::string qname = bam_get_qname(bam1);  // Query template name
+
             std::pair<int, int> qpos = getAlignmentReadPositions(bam1);
 
-            primary_map[bam1->core.tid][qname] = PrimaryAlignment{static_cast<int>(bam1->core.pos + 1), static_cast<int>(bam_endpos(bam1)), static_cast<int>(qpos.first), static_cast<int>(qpos.second), !(bam1->core.flag & BAM_FREVERSE), 0};
-            alignment_tids.insert(bam1->core.tid);
-            primary_count++;
+            // Process primary alignments
+            if (!(bam1->core.flag & BAM_FSUPPLEMENTARY)) {
+                chr_primary_map[qname] = PrimaryAlignment{static_cast<int>(bam1->core.pos + 1), static_cast<int>(bam_endpos(bam1)), static_cast<int>(qpos.first), static_cast<int>(qpos.second), !(bam1->core.flag & BAM_FREVERSE), 0};
 
-        // Process supplementary alignments
-        } else if (bam1->core.flag & BAM_FSUPPLEMENTARY) {
-            // Store chromosome (TID), start, and end positions (1-based) of the
-            // supplementary alignment, and the strand (true for forward, false
-            // for reverse)
-            std::pair<int, int> qpos = getAlignmentReadPositions(bam1);
-            supp_map[qname].push_back(SuppAlignment{bam1->core.tid, static_cast<int>(bam1->core.pos + 1), static_cast<int>(bam_endpos(bam1)), static_cast<int>(qpos.first), static_cast<int>(qpos.second), !(bam1->core.flag & BAM_FREVERSE)});
-            alignment_tids.insert(bam1->core.tid);
-            supp_qnames.insert(qname);
-            supplementary_count++;
-        }
-        num_alignments++;
+            // Process supplementary alignments
+            } else {
+                supp_map[qname].push_back(SuppAlignment{bam1->core.tid, static_cast<int>(bam1->core.pos + 1), static_cast<int>(bam_endpos(bam1)), static_cast<int>(qpos.first), static_cast<int>(qpos.second), !(bam1->core.flag & BAM_FREVERSE)});
+                supp_qnames.insert(qname);
+            }
+            num_alignments++;
 
-        if (num_alignments % 1000000 == 0) {
-            printMessage("Processed " + std::to_string(num_alignments) + " alignments");
-        }
-    }
-
-    // Clean up the iterator and alignment
-    hts_itr_destroy(itr);
-    bam_destroy1(bam1);
-
-    // Clean up the BAM file and index
-    sam_close(fp_in);
-    hts_idx_destroy(idx);
-    // bam_hdr_destroy(bamHdr);
-    
-    // Remove primary alignments without supplementary alignments
-    std::unordered_map<int, std::unordered_set<std::string>> to_remove;
-    for (auto& chr_primary : primary_map) {
-        std::unordered_set<std::string> qnames;
-        for (const auto& entry : chr_primary.second) {
-            if (supp_qnames.find(entry.first) == supp_qnames.end()) {
-                to_remove[chr_primary.first].insert(entry.first);
+            if (num_alignments % 1000000 == 0) {
+                printMessage("(" + std::to_string(current_chr) + "/" + std::to_string(total_chr) + ") " + chr_name + ": Processed " + std::to_string(num_alignments) + " alignments");
             }
         }
-    }
+        hts_itr_destroy(itr);
 
-    int total_removed = 0;
-    for (auto& chr_primary : primary_map) {
-        // Remove the qnames from the primary map
-        total_removed += to_remove[chr_primary.first].size();
-        for (const auto& qname : to_remove[chr_primary.first]) {
-            chr_primary.second.erase(qname);
+        // Remove primary alignments without supplementary alignments
+        int removed = 0;
+        for (auto it = chr_primary_map.begin(); it != chr_primary_map.end();) {
+            if (supp_qnames.find(it->first) == supp_qnames.end()) {
+                it = chr_primary_map.erase(it);
+                removed++;
+            } else {
+                ++it;
+            }
         }
-    }
-    printMessage("Removed " + std::to_string(total_removed) + " primary alignments without supplementary alignments");
 
-    // Process the primary alignments and find SVs
-    for (const auto& chr_primary : primary_map) {
-        int primary_tid = chr_primary.first;
-        std::string chr_name = bamHdr->target_name[primary_tid];
-        printMessage("Processing chromosome " + chr_name + " with " + std::to_string(chr_primary.second.size()) + " primary alignments");
+        if (removed > 0) {
+            printMessage(chr_name + ": Removed " + std::to_string(removed) + " primary alignments without supplementary alignments");
+        }
+
+        printMessage("(" + std::to_string(current_chr) + "/" + std::to_string(total_chr) + ") Processing chromosome " + chr_name + " with " + std::to_string(chr_primary_map.size()) + " primary alignments");
+
+        if (chr_primary_map.empty()) {
+            continue;
+        }
 
         std::vector<SVCall> chr_sv_calls;
         chr_sv_calls.reserve(1000);
-        const std::unordered_map<std::string, PrimaryAlignment>& chr_primary_map = chr_primary.second;
 
         // Identify overlapping primary alignments and cluster endpoints
         std::unique_ptr<IntervalNode> root = nullptr;
@@ -240,7 +236,11 @@ void SVCaller::findSplitSVSignatures(std::unordered_map<std::string, std::vector
             int num_primary = (int) primary_cluster.size();
             int num_supp_opposite_strand = 0;
             for (const std::string& qname : primary_cluster) {
-                const std::vector<SuppAlignment>& supp_alns = supp_map[qname];
+                auto supp_it = supp_map.find(qname);
+                if (supp_it == supp_map.end()) {
+                    continue;
+                }
+                const std::vector<SuppAlignment>& supp_alns = supp_it->second;
                 bool primary_strand = chr_primary_map.at(qname).strand;
                 bool has_opposite_strand = false;
                 for (const SuppAlignment& supp_aln : supp_alns) {
@@ -292,7 +292,11 @@ void SVCaller::findSplitSVSignatures(std::unordered_map<std::string, std::vector
             std::vector<int> ref_distances;
             for (const std::string& qname : primary_cluster) {
                 const PrimaryAlignment& primary_aln = chr_primary_map.at(qname);
-                const std::vector<SuppAlignment>& supp_alns = supp_map.at(qname);
+                auto supp_it = supp_map.find(qname);
+                if (supp_it == supp_map.end()) {
+                    continue;
+                }
+                const std::vector<SuppAlignment>& supp_alns = supp_it->second;
                 for (const SuppAlignment& supp_aln : supp_alns) {
                     if (supp_aln.tid == primary_tid) {
                         // Same chromosome
@@ -494,8 +498,11 @@ void SVCaller::findSplitSVSignatures(std::unordered_map<std::string, std::vector
         printMessage(chr_name + ": Found " + std::to_string(sv_calls[chr_name].size()) + " SV candidates");
     }
 
-    // Clean up the BAM header
+    // Clean up the BAM file and index
+    bam_destroy1(bam1);
     bam_hdr_destroy(bamHdr);
+    hts_idx_destroy(idx);
+    sam_close(fp_in);
 }
 
 void SVCaller::findCIGARSVs(samFile* fp_in, hts_idx_t* idx, bam_hdr_t* bamHdr, const std::string& region, std::vector<SVCall>& sv_calls, const std::vector<uint32_t>& pos_depth_map)
@@ -762,6 +769,17 @@ void SVCaller::run(const InputData& input_data)
 
     // Get the chromosomes
     std::vector<std::string> chromosomes = this->getChromosomes(input_data.getLongReadBam());
+
+    // Restrict to a single chromosome if requested
+    const std::string target_chr = input_data.getChromosome();
+    if (!target_chr.empty()) {
+        auto chr_it = std::find(chromosomes.begin(), chromosomes.end(), target_chr);
+        if (chr_it == chromosomes.end()) {
+            printError("Requested chromosome " + target_chr + " not found in BAM header");
+            return;
+        }
+        chromosomes = {target_chr};
+    }
     
     // Read the HMM from the file
     std::string hmm_filepath = input_data.getHMMFilepath();
@@ -782,15 +800,23 @@ void SVCaller::run(const InputData& input_data)
     int chr_thread_count = input_data.getThreadCount();
 
     // Initialize the chromosome position depth map and mean coverage map
+    // (skip chromosomes missing from the reference instead of aborting)
+    std::vector<std::string> ref_valid_chromosomes;
     for (const auto& chr : chromosomes) {
         uint32_t chr_len = ref_genome.getChromosomeLength(chr);
         if (chr_len == 0) {
-            printError("Chromosome " + chr + " not found in reference genome");
-            return;
-            // continue;
+            printError("Chromosome " + chr + " not found in reference genome, skipping");
+            continue;
         }
         chr_pos_depth_map[chr] = std::vector<uint32_t>(chr_len+1, 0);  // 1-based index
         chr_mean_cov_map[chr] = 0.0;
+        ref_valid_chromosomes.push_back(chr);
+    }
+
+    chromosomes = std::move(ref_valid_chromosomes);
+    if (chromosomes.empty()) {
+        printError("No chromosomes with reference sequence were available for processing");
+        return;
     }
     cnv_caller.calculateMeanChromosomeCoverage(chromosomes, chr_pos_depth_map, chr_mean_cov_map, bam_filepath, chr_thread_count);
 
@@ -820,7 +846,7 @@ void SVCaller::run(const InputData& input_data)
                 InputData chr_input_data = input_data;  // Use a thread-local copy
                 this->processChromosome(chr, sv_calls, chr_input_data, chr_pos_depth_map[chr], chr_mean_cov_map[chr]);
                 {
-                    std::shared_lock<std::shared_mutex> lock(this->shared_mutex);
+                    std::unique_lock<std::shared_mutex> lock(this->shared_mutex);
                     whole_genome_sv_calls[chr] = std::move(sv_calls);
                 }
             } catch (const std::exception& e) {
@@ -945,8 +971,9 @@ void SVCaller::findOverlaps(const std::unique_ptr<IntervalNode> &root, const Pri
     if (root->left && root->left->max_end >= query.start)
         findOverlaps(root->left, query, result);
 
-    // Always check the right subtree
-    findOverlaps(root->right, query, result);
+    // Check right subtree only when the query can overlap intervals there
+    if (root->right && query.end >= root->region.start)
+        findOverlaps(root->right, query, result);
 }
 
 void SVCaller::insert(std::unique_ptr<IntervalNode> &root, const PrimaryAlignment &region, std::string qname)

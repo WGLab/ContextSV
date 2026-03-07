@@ -11,7 +11,7 @@ CONDA_LIB_DIR := $(CONDA_PREFIX)/lib
 
 # Compiler and Flags
 CXX := g++
-CXXFLAGS := -std=c++17 -g -I$(INCL_DIR) -I$(CONDA_INCL_DIR) -Wall -Wextra -pedantic
+CXXFLAGS := -std=c++17 -O3 -DNDEBUG -I$(INCL_DIR) -I$(CONDA_INCL_DIR) -Wall -Wextra -pedantic
 
 # Linker Flags
 # Ensure that the library paths are set correctly for linking
@@ -27,7 +27,7 @@ TARGET := $(BUILD_DIR)/contextsv
 all: $(TARGET)
 
 # Debug target
-debug: CXXFLAGS += -DDEBUG
+debug: CXXFLAGS := -std=c++17 -g -O0 -DDEBUG -I$(INCL_DIR) -I$(CONDA_INCL_DIR) -Wall -Wextra -pedantic
 debug: all
 
 # Link the executable

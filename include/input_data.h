@@ -55,6 +55,10 @@ class InputData {
         void setAssemblyGaps(std::string filepath);
         std::string getAssemblyGaps() const;
 
+        // Set/get a target chromosome for single-chromosome analysis.
+        void setChromosome(std::string chr);
+        std::string getChromosome() const;
+
         // Set the epsilon parameter for DBSCAN clustering.
         void setDBSCAN_Epsilon(double epsilon);
         double getDBSCAN_Epsilon() const;

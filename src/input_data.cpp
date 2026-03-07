@@ -183,6 +183,16 @@ std::string InputData::getAssemblyGaps() const
     return this->assembly_gaps;
 }
 
+void InputData::setChromosome(std::string chr)
+{
+    this->chr = chr;
+}
+
+std::string InputData::getChromosome() const
+{
+    return this->chr;
+}
+
 void InputData::setDBSCAN_Epsilon(double epsilon)
 {
     this->dbscan_epsilon = epsilon;
