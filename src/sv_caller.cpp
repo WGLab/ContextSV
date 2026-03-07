@@ -231,7 +231,7 @@ void SVCaller::findSplitSVSignatures(std::unordered_map<std::string, std::vector
         // For each primary alignment cluster the supplementary alignment start and
         // end positions, keeping the median of the largest cluster
         int current_group = 0;
-        int min_length = 2000;
+        int min_length = 50;  // Lowered from 2000 to detect small inversions
         int max_length = 1000000;
         for (const auto& primary_cluster : primary_clusters) {
             // Determine if the primary alignments are mostly on opposite strands to
@@ -468,6 +468,10 @@ void SVCaller::findSplitSVSignatures(std::unordered_map<std::string, std::vector
                     int sv_end = std::max(primary_pos, supp_pos) - 1;
                     int sv_length = sv_end - sv_start + 1;
                     if (sv_length >= min_length && sv_length <= max_length) {
+                        // Require higher cluster size for large SVs (>100kb) to reduce false positives
+                        if (sv_length > 100000 && cluster_size < 10) {
+                            continue;
+                        }
                         SVEvidenceFlags aln_type;
                         aln_type.set(static_cast<size_t>(SVDataType::SPLIT));
                         SVCall sv_candidate(sv_start, sv_end, sv_type, alt, aln_type, Genotype::UNKNOWN, 0.0, 0, 0, cluster_size);
@@ -587,7 +591,7 @@ void SVCaller::processCIGARRecord(bam_hdr_t *header, bam1_t *alignment, std::vec
                 cigar_sv_calls.emplace_back(sv_call);
             
             // Process clipped bases as potential insertions
-            } else if (op == BAM_CSOFT_CLIP) {
+            } else if (op == BAM_CSOFT_CLIP && op_len >= 100) {  // Increased from 50 to reduce false positives
                 // Soft-clipped bases are considered as potential insertions
                 // Skip if the position exceeds the reference genome length
                 if (pos + 1 >= pos_depth_map.size()) {
@@ -797,8 +801,8 @@ void SVCaller::run(const InputData& input_data)
     	if (chr_mean_cov_map.find(chr) != chr_mean_cov_map.end()) {
     		valid_chr.push_back(chr);
 	}
-	chromosomes = valid_chr;
     }
+    chromosomes = valid_chr;
     std::unordered_map<std::string, std::vector<SVCall>> whole_genome_sv_calls;
     int current_chr = 0;
     int total_chr_count = chromosomes.size();

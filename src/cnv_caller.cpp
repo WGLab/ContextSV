@@ -52,8 +52,8 @@ void CNVCaller::runViterbi(const CHMM& hmm, SNPData& snp_data, std::pair<std::ve
 // Function to obtain SNP information for a region
 void CNVCaller::querySNPRegion(std::string chr, uint32_t start_pos, uint32_t end_pos, const std::vector<uint32_t>& pos_depth_map, double mean_chr_cov, SNPData& snp_data, const InputData& input_data) const
 {
-    // Initialize the SNP data with default values and sample size length
-    int sample_size = input_data.getSampleSize();
+    // Initialize SNP sampling using recommended fixed sample size
+    int sample_size = 20;
     std::vector<uint32_t> snp_pos;
     std::unordered_map<uint32_t, double> snp_baf_map;
     std::unordered_map<uint32_t, double> snp_pfb_map;
@@ -61,8 +61,10 @@ void CNVCaller::querySNPRegion(std::string chr, uint32_t start_pos, uint32_t end
     this->readSNPAlleleFrequencies(chr, start_pos, end_pos, snp_pos, snp_baf_map, snp_pfb_map, input_data);
 
     // Get the log2 ratio for <sample_size> evenly spaced positions in the
-    // region
-    sample_size = std::max((int) snp_pos.size(), sample_size);
+    // region. Scale sample size with region length to ensure sufficient
+    // observations for large SVs (minimum 1 observation per 1kb for better resolution)
+    int region_based_samples = (int)((end_pos - start_pos + 1) / 1000);
+    sample_size = std::max({(int) snp_pos.size(), sample_size, region_based_samples});
 
     // Print an error if the end position is less than or equal to the start
     // position
@@ -226,7 +228,9 @@ std::tuple<double, SVType, Genotype, int> CNVCaller::runCopyNumberPrediction(std
     }
 
     // Use the state exceeding the threshold if non-neutral
-    double pct_threshold = 0.3;
+    // Adaptive threshold: regions >5kb are noisier due to coverage fragmentation
+    uint32_t region_length = end_pos - start_pos;
+    double pct_threshold = (region_length > 5000) ? 0.25 : 0.3;
     int max_state = 0;  // Unknown state
     if (largest_non_neutral_pct > pct_threshold)
     {
@@ -242,7 +246,7 @@ std::tuple<double, SVType, Genotype, int> CNVCaller::runCopyNumberPrediction(std
     SVType predicted_cnv_type = getSVTypeFromCNState(max_state);
 
     // Save the SV calls if enabled
-    uint32_t min_length = 30000;
+    uint32_t min_length = 10000;  // Lowered from 30kb to include 10-30kb SVs
     bool copy_number_change = (predicted_cnv_type != SVType::UNKNOWN && predicted_cnv_type != SVType::NEUTRAL);
     if (input_data.getSaveCNVData() && copy_number_change && (end_pos - start_pos) >= min_length)
     {
@@ -311,8 +315,8 @@ void CNVCaller::runCIGARCopyNumberPrediction(std::string chr, std::vector<SVCall
         	continue;
         }
 
-        // Skip if not the minimum length for CNV predictions
-        if ((end_pos - start_pos) < input_data.getMinCNVLength())
+        // Skip if not the minimum length for CNV predictions (recommended: 2000 bp)
+        if ((end_pos - start_pos) < 2000)
         {
             continue;
         }

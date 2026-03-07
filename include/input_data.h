@@ -55,14 +55,6 @@ class InputData {
         void setAssemblyGaps(std::string filepath);
         std::string getAssemblyGaps() const;
 
-        // Set the sample size for HMM predictions.
-        void setSampleSize(int sample_size);
-        int getSampleSize() const;
-
-        // Set the minimum CNV length to use for copy number predictions.
-        void setMinCNVLength(int min_cnv_length);
-        uint32_t getMinCNVLength() const;
-
         // Set the epsilon parameter for DBSCAN clustering.
         void setDBSCAN_Epsilon(double epsilon);
         double getDBSCAN_Epsilon() const;
@@ -99,8 +91,6 @@ class InputData {
         std::string ethnicity;
         std::unordered_map<std::string, std::string> pfb_filepaths;  // Map of population frequency VCF filepaths by chromosome
         std::string output_dir;
-        int sample_size;
-        uint32_t min_cnv_length;
         int min_reads;
         double dbscan_epsilon;
         double dbscan_min_pts_pct;

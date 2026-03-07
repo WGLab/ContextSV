@@ -68,8 +68,6 @@ Options:
   -c, --chr <chromosome>        Chromosome
   -t, --threads <thread_count>  Number of threads
   -h, --hmm <hmm_file>          HMM file
-  -n, --sample-size <size>      Sample size for HMM predictions
-     --min-cnv <min_length>     Minimum CNV length
      --eps <epsilon>             DBSCAN epsilon
      --min-pts-pct <min_pts_pct> Percentage of mean chr. coverage to use for DBSCAN minimum points
   -e, --eth <eth_file>          ETH file

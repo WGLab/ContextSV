@@ -23,8 +23,6 @@ InputData::InputData()
     this->snp_vcf_filepath = "";
     this->chr = "";
     this->output_dir = "";
-    this->sample_size = 20;
-    this->min_cnv_length = 2000;  // Default minimum CNV length
     this->min_reads = 5;
     this->dbscan_epsilon = 0.1;
     this->dbscan_min_pts_pct = 0.1;
@@ -44,8 +42,6 @@ void InputData::printParameters() const
     DEBUG_PRINT("Reference genome: " << this->ref_filepath);
     DEBUG_PRINT("SNP VCF: " << this->snp_vcf_filepath);
     DEBUG_PRINT("Output directory: " << this->output_dir);
-    DEBUG_PRINT("Sample size: " << this->sample_size);
-    DEBUG_PRINT("Minimum CNV length: " << this->min_cnv_length);
     DEBUG_PRINT("DBSCAN epsilon: " << this->dbscan_epsilon);
     DEBUG_PRINT("DBSCAN minimum points percentage: " << this->dbscan_min_pts_pct * 100.0f << "%");
 }
@@ -139,16 +135,6 @@ void InputData::setOutputDir(std::string dirpath)
     }
 }
 
-int InputData::getSampleSize() const
-{
-    return this->sample_size;
-}
-
-void InputData::setSampleSize(int sample_size)
-{
-    this->sample_size = sample_size;
-}
-
 std::string InputData::getSNPFilepath() const
 {
     return this->snp_vcf_filepath;
@@ -195,16 +181,6 @@ void InputData::setAssemblyGaps(std::string filepath)
 std::string InputData::getAssemblyGaps() const
 {
     return this->assembly_gaps;
-}
-
-uint32_t InputData::getMinCNVLength() const
-{
-    return this->min_cnv_length;
-}
-
-void InputData::setMinCNVLength(int min_cnv_length)
-{
-    this->min_cnv_length = (uint32_t) min_cnv_length;
 }
 
 void InputData::setDBSCAN_Epsilon(double epsilon)
@@ -360,7 +336,6 @@ void InputData::setHMMFilepath(std::string filepath)
             exit(1);
         } else {
             this->hmm_filepath = filepath;
-            std::cout << "Using HMM file: " << this->hmm_filepath << std::endl;
         }
     }
 }
