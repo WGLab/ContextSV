@@ -370,6 +370,7 @@ void CNVCaller::runCIGARCopyNumberPrediction(std::string chr, std::vector<SVCall
         // Get the SV candidate
         uint32_t start_pos = sv_call.start;
         uint32_t end_pos = sv_call.end;
+        uint32_t sv_length = end_pos - start_pos + 1;
         
         // Error if start > end
         if (start_pos > end_pos)
@@ -435,8 +436,16 @@ void CNVCaller::runCIGARCopyNumberPrediction(std::string chr, std::vector<SVCall
             }
         }
 
-        // If there is no majority state, then set the state to unknown
+        // If there is no majority state, then set the state to unknown.
+        // Use stricter HMM majority for INS->DUP conversion in 10-50kb,
+        // where depth-driven relabeling is noisier.
         double pct_threshold = 0.50;
+        if (sv_call.sv_type == SVType::INS &&
+            (max_state == 5 || max_state == 6) &&
+            sv_length >= 10000 && sv_length <= 50000)
+        {
+            pct_threshold = 0.65;
+        }
         if ((double) max_count / (double) state_count < pct_threshold)
         {
             max_state = 0;
@@ -451,6 +460,14 @@ void CNVCaller::runCIGARCopyNumberPrediction(std::string chr, std::vector<SVCall
         // printMessage("Updating SV call for " + chr + ":" + std::to_string((int)start_pos) + "-" + std::to_string((int)end_pos) + " with predicted CNV type: " + getSVTypeString(updated_sv_type));
         updated_sv_type = (updated_sv_type == SVType::LOH) ? sv_call.sv_type : updated_sv_type;
         bool is_valid_update = isValidCopyNumberUpdate(sv_call.sv_type, updated_sv_type);
+        if (sv_call.sv_type == SVType::INS && updated_sv_type == SVType::DUP)
+        {
+            const uint32_t DUP_MIN_SIZE = 10000;
+            if (sv_length < DUP_MIN_SIZE)
+            {
+                is_valid_update = false;
+            }
+        }
         if (is_valid_update)
         {
             sv_call.sv_type = updated_sv_type;
@@ -492,7 +509,6 @@ std::vector<std::string> CNVCaller::splitRegionIntoChunks(std::string chr, uint3
 void CNVCaller::calculateMeanChromosomeCoverage(const std::vector<std::string>& chromosomes, std::unordered_map<std::string, std::vector<uint32_t>>& chr_pos_depth_map, std::unordered_map<std::string, double>& chr_mean_cov_map, const std::string& bam_filepath, int thread_count) const
 {
     // Open the BAM file
-    printMessage("Opening BAM file: " + bam_filepath);
     samFile *bam_file = sam_open(bam_filepath.c_str(), "r");
     if (!bam_file)
     {
@@ -535,6 +551,7 @@ void CNVCaller::calculateMeanChromosomeCoverage(const std::vector<std::string>& 
     }
 
     // Iterate through each chromosome and update the depth map
+    printMessage("Calculating mean chromosome coverage for copy number prediction...");
     int current_chr = 0;
     int total_chr_count = chromosomes.size();
     for (const std::string& chr : chromosomes)
@@ -547,7 +564,7 @@ void CNVCaller::calculateMeanChromosomeCoverage(const std::vector<std::string>& 
             continue;
         }
 
-        printMessage("(" + std::to_string(++current_chr) + "/" + std::to_string(total_chr_count) + ") Reading BAM file for chromosome: " + chr);
+        printMessage("(" + std::to_string(++current_chr) + "/" + std::to_string(total_chr_count) + ") Processing chromosome: " + chr);
         std::vector<uint32_t>& pos_depth_map = chr_pos_depth_map[chr];
         int tid = bam_name2id(bam_header, chr.c_str());
         if (tid < 0)
@@ -641,14 +658,12 @@ void CNVCaller::calculateMeanChromosomeCoverage(const std::vector<std::string>& 
 
         // Calculate the mean coverage for the chromosome
         double mean_chr_cov = (pos_count > 0) ? static_cast<double>(cum_depth) / static_cast<double>(pos_count) : 0.0;
-        printMessage("Mean coverage for chromosome " + chr + ": " + std::to_string(mean_chr_cov));
         if (mean_chr_cov != 0.0) {
         	chr_mean_cov_map[chr] = mean_chr_cov;
     	}
     }
 
     // Clean up the BAM file and index
-    printMessage("Closing BAM file " + bam_filepath);
     bam_destroy1(bam_record);
     hts_idx_destroy(bam_index);
     bam_hdr_destroy(bam_header);
@@ -657,7 +672,6 @@ void CNVCaller::calculateMeanChromosomeCoverage(const std::vector<std::string>& 
     bam_index = nullptr;
     bam_header = nullptr;
     bam_file = nullptr;
-    printMessage("BAM file closed.");
 }
 
 void CNVCaller::readSNPAlleleFrequencies(std::string chr, uint32_t start_pos, uint32_t end_pos, std::vector<uint32_t>& snp_pos, std::unordered_map<uint32_t, double>& snp_baf, std::unordered_map<uint32_t, double>& snp_pfb, const InputData& input_data) const
