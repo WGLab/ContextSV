@@ -218,7 +218,8 @@ void SVCaller::findSplitSVSignatures(std::unordered_map<std::string, std::vector
         // end positions, keeping the median of the largest cluster
         int current_group = 0;
         int min_length = 50;  // Lowered from 2000 to detect small inversions
-        int max_length = 1000000;
+        const int max_length_noninv = 1000000;    // Keep 1Mb ceiling for non-inversion split events
+        const int max_length_inv = 100000000;     // Allow large inversions up to 100Mb
         for (const auto& primary_cluster : primary_clusters) {
             // Determine if the primary alignments are mostly on opposite strands to
             // the corresponding supplementary alignments (potential inversions)
@@ -450,13 +451,13 @@ void SVCaller::findSplitSVSignatures(std::unordered_map<std::string, std::vector
                 if (split_candidate_sv) {
                     int aln_offset = static_cast<int>(ref_distance - read_distance);
                     
-                    if (read_distance > ref_distance && read_distance >= min_length && read_distance <= max_length) {
+                    if (read_distance > ref_distance && read_distance >= min_length && read_distance <= max_length_noninv) {
                         // Add an insertion SV call at the 5'-most primary position
                         SVType sv_type = SVType::INS;
                         SVCall sv_candidate(sv_start, sv_start + (read_distance-1), sv_type, getSVTypeSymbol(sv_type), aln_type, Genotype::UNKNOWN, 0.0, 0, aln_offset, primary_cluster_size);
                         addSVCall(chr_sv_calls, sv_candidate);
                         // }  
-                    } else if (ref_distance > read_distance && ref_distance >= min_length && ref_distance <= max_length) {
+                    } else if (ref_distance > read_distance && ref_distance >= min_length && ref_distance <= max_length_noninv) {
 
                         // Set it to unknown, SV type will be determined by the
                         // HMM prediction
@@ -476,7 +477,8 @@ void SVCaller::findSplitSVSignatures(std::unordered_map<std::string, std::vector
                     int sv_start = std::min(primary_pos, supp_pos);
                     int sv_end = std::max(primary_pos, supp_pos) - 1;
                     int sv_length = sv_end - sv_start + 1;
-                    if (sv_length >= min_length && sv_length <= max_length) {
+                    int max_allowed_length = (sv_type == SVType::INV) ? max_length_inv : max_length_noninv;
+                    if (sv_length >= min_length && sv_length <= max_allowed_length) {
                         // Use balanced support for inversions.
                         // For non-inversions, keep large events even with sparse
                         // split-read support because >100kb SVs often have few
@@ -1012,6 +1014,12 @@ void SVCaller::runSplitReadCopyNumberPredictions(const std::string& chr, std::ve
 {
     std::vector<SVCall> additional_calls;
     for (auto& sv_candidate : split_sv_calls) {
+        const uint32_t MAX_INV_HMM_LENGTH = 1000000;  // Avoid expensive CNV/HMM over very large inversion spans
+        uint32_t sv_length = sv_candidate.end - sv_candidate.start + 1;
+        if (sv_candidate.sv_type == SVType::INV && sv_length > MAX_INV_HMM_LENGTH) {
+            // Keep split-read inversion call as-is; skip CNV/HMM refinement for very large regions.
+            continue;
+        }
 
         std::tuple<double, SVType, Genotype, int> result = cnv_caller.runCopyNumberPrediction(chr, hmm, sv_candidate.start, sv_candidate.end, mean_chr_cov, pos_depth_map, input_data);
         double supp_lh = std::get<0>(result);
