@@ -1296,8 +1296,8 @@ void SVCaller::saveToVCF(const std::unordered_map<std::string, std::vector<SVCal
                     }
                 }
                 
-                // Check cluster support for inversions
-                bool low_cluster_support = (sv_type == SVType::INV && cluster_size < 5);
+                // Check cluster support for inversions (unreliable with low support, except for large events where depth evidence may be weak)
+                bool low_cluster_support = (sv_type == SVType::INV && cluster_size < 5 && sv_length < 100000);
                 
                 if (has_conflict || low_cluster_support) {
                     filter = "LowQual";
