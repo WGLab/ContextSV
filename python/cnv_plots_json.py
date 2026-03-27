@@ -5,7 +5,7 @@ import numpy as np
 import plotly
 from plotly.subplots import make_subplots
 
-min_sv_length = 60000 # Minimum SV length in base pairs
+min_sv_length = 50000 # Minimum SV length in base pairs
 
 # Set up argument parser
 parser = argparse.ArgumentParser(description='Generate CNV plots from JSON data.')
