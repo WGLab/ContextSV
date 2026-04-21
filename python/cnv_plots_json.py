@@ -1,3 +1,6 @@
+"""
+pip install plotly kaleido==0.2.1
+"""
 import os
 import argparse
 import json
@@ -11,7 +14,17 @@ min_sv_length = 50000 # Minimum SV length in base pairs
 parser = argparse.ArgumentParser(description='Generate CNV plots from JSON data.')
 parser.add_argument('json_file', type=str, help='Path to the JSON file containing SV data')
 parser.add_argument('chromosome', type=str, help='Chromosome to filter the SVs by (e.g., "chr3")', nargs='?', default=None)
+parser.add_argument('--formats', type=str, default='html,svg', help='Comma-separated output formats (e.g., html,svg,pdf,png)')
+parser.add_argument('--width', type=int, default=1800, help='Figure width in pixels for static exports')
+parser.add_argument('--height', type=int, default=1200, help='Figure height in pixels for static exports')
+parser.add_argument('--scale', type=float, default=2.0, help='Scale factor for raster exports (png,jpg,webp)')
 args = parser.parse_args()
+
+output_formats = [fmt.strip().lower() for fmt in args.formats.split(',') if fmt.strip()]
+
+repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+output_dir = os.path.join(repo_root, 'linktoscripts', 'CNV_Plots')
+os.makedirs(output_dir, exist_ok=True)
 
 # Load your JSON data
 with open(args.json_file) as f:
@@ -35,16 +48,19 @@ sv_type_dict = {
 }
 
 # Loop through each SV (assuming your JSON contains multiple SVs)
+skip_count_chrom = 0
+skip_count_length = 0
+save_count = 0
 for sv in sv_data:
 
     # If a chromosome is specified, filter the SVs by that chromosome
     if args.chromosome and sv['chromosome'] != args.chromosome:
-        print(f"Skipping SV {sv['chromosome']}:{sv['start']}-{sv['end']} of type {sv['sv_type']} (not on chromosome {args.chromosome})")
+        skip_count_chrom += 1
         continue
 
     # Filter out SVs that are smaller than the minimum length
     if np.abs(sv['size']) < min_sv_length:
-        print(f"Skipping SV {sv['chromosome']}:{sv['start']}-{sv['end']} of type {sv['sv_type']} with size {sv['size']} bp (smaller than {min_sv_length} bp)")
+        skip_count_length += 1
         continue
 
     # Extract data for plotting
@@ -228,15 +244,41 @@ for sv in sv_data:
         title_text = f"{sv_type_dict[sv_type]} at {chromosome}:{start}-{end} ({sv_length} bp)",
         title_x = 0.5,
         showlegend = False,
+        template = 'simple_white',
+        font = dict(family='Arial', size=20, color='black'),
+        width = args.width,
+        height = args.height,
+        margin = dict(l=100, r=30, t=120, b=90)
     )
+
+    fig.update_xaxes(showline=True, linewidth=2, linecolor='black', mirror=True, ticks='outside')
+    fig.update_yaxes(showline=True, linewidth=2, linecolor='black', mirror=True, ticks='outside')
     #     height = 800,
     #     width = 800
     # )
-    # Save the plot to an HTML file (use a unique filename per SV)
-    # Use the input filepath directory as the output directory
-    output_dir = os.path.dirname(args.json_file)
+    # Save plots into a dedicated repository output directory.
     svlen_kb = sv_length // 1000
-    file_name = f"SV_{chromosome}_{start}_{end}_{sv_type}_{svlen_kb}kb.html"
-    file_path = os.path.join(output_dir, file_name)
-    fig.write_html(file_path)
-    print(f"Plot saved as {file_path}")
+    base_name = f"SV_{chromosome}_{start}_{end}_{sv_type}_{svlen_kb}kb"
+
+    if 'html' in output_formats:
+        html_path = os.path.join(output_dir, f"{base_name}.html")
+        fig.write_html(html_path)
+        print(f"Plot saved as {html_path}")
+
+    static_formats = {'svg', 'pdf', 'png', 'jpg', 'jpeg', 'webp', 'eps'}
+    requested_static_formats = [fmt for fmt in output_formats if fmt in static_formats]
+
+    if requested_static_formats:
+        try:
+            for fmt in requested_static_formats:
+                out_path = os.path.join(output_dir, f"{base_name}.{fmt}")
+                fig.write_image(out_path, format=fmt, width=args.width, height=args.height, scale=args.scale)
+                print(f"Plot saved as {out_path}")
+        except ValueError as e:
+            print("Static image export requires Kaleido. Install with: pip install -U kaleido")
+            raise e
+
+    save_count += 1
+
+print(f"Finished processing {save_count} SVs. Skipped {skip_count_chrom} SVs due to chromosome filter and {skip_count_length} SVs due to length filter.")
+
