@@ -9,21 +9,23 @@ import plotly
 from plotly.subplots import make_subplots
 
 min_sv_length = 50000 # Minimum SV length in base pairs
+marker_size = 8
 
 # Set up argument parser
 parser = argparse.ArgumentParser(description='Generate CNV plots from JSON data.')
 parser.add_argument('json_file', type=str, help='Path to the JSON file containing SV data')
 parser.add_argument('chromosome', type=str, help='Chromosome to filter the SVs by (e.g., "chr3")', nargs='?', default=None)
 parser.add_argument('--formats', type=str, default='html,svg', help='Comma-separated output formats (e.g., html,svg,pdf,png)')
-parser.add_argument('--width', type=int, default=1800, help='Figure width in pixels for static exports')
-parser.add_argument('--height', type=int, default=1200, help='Figure height in pixels for static exports')
+parser.add_argument('--width', type=int, default=1200, help='Figure width in pixels for static exports')
+parser.add_argument('--height', type=int, default=800, help='Figure height in pixels for static exports')
 parser.add_argument('--scale', type=float, default=2.0, help='Scale factor for raster exports (png,jpg,webp)')
+parser.add_argument('--output-dir', type=str, default=None, help='Directory to save the output plots (default: linktoscripts/CNV_Plots)')
 args = parser.parse_args()
 
 output_formats = [fmt.strip().lower() for fmt in args.formats.split(',') if fmt.strip()]
 
 repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-output_dir = os.path.join(repo_root, 'linktoscripts', 'CNV_Plots')
+output_dir = args.output_dir if args.output_dir else os.path.join(repo_root, 'linktoscripts', 'CNV_Plots')
 os.makedirs(output_dir, exist_ok=True)
 
 # Load your JSON data
@@ -140,7 +142,7 @@ for sv in sv_data:
             hoverinfo='text',
             marker=dict(
                 color=state_colors,
-                size=5,
+                size=marker_size,
                 symbol=marker_symbols,
             ),
             line=dict(
@@ -160,7 +162,7 @@ for sv in sv_data:
             hoverinfo='text',
             marker=dict(
                 color=state_colors,
-                size=5,
+                size=marker_size,
                 symbol=marker_symbols,
             ),
             line=dict(
@@ -253,9 +255,7 @@ for sv in sv_data:
 
     fig.update_xaxes(showline=True, linewidth=2, linecolor='black', mirror=True, ticks='outside')
     fig.update_yaxes(showline=True, linewidth=2, linecolor='black', mirror=True, ticks='outside')
-    #     height = 800,
-    #     width = 800
-    # )
+
     # Save plots into a dedicated repository output directory.
     svlen_kb = sv_length // 1000
     base_name = f"SV_{chromosome}_{start}_{end}_{sv_type}_{svlen_kb}kb"
