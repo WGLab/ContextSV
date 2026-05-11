@@ -22,6 +22,8 @@ LDLIBS := -lhts  # Link with libhts.a or libhts.so
 SOURCES := $(wildcard $(SRC_DIR)/*.cpp)
 OBJECTS := $(patsubst $(SRC_DIR)/%.cpp,$(BUILD_DIR)/%.o,$(SOURCES))
 TARGET := $(BUILD_DIR)/contextsv
+PREFIX ?= $(CONDA_PREFIX)
+BINDIR ?= $(PREFIX)/bin
 
 # Default target
 all: $(TARGET)
@@ -43,3 +45,13 @@ $(BUILD_DIR)/%.o: $(SRC_DIR)/%.cpp
 # Clean the build directory
 clean:
 	rm -rf $(BUILD_DIR)
+
+# Install binaries and helper scripts
+install: $(TARGET)
+	@if [ -z "$(PREFIX)" ]; then \
+		echo "Error: PREFIX is empty. Activate a conda env or run 'make install PREFIX=/your/prefix'."; \
+		exit 1; \
+	fi
+	install -d $(BINDIR)
+	install -m 755 $(TARGET) $(BINDIR)/contextsv
+	install -m 755 python/cnv_plots_json.py $(BINDIR)/contextsv-cnv-plot

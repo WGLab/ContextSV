@@ -29,6 +29,19 @@ ContextSV and its dependencies can then be installed using the following command
 conda install -c wglab -c conda-forge -c bioconda contextsv
 ```
 
+After installation, two commands are available:
+
+- `contextsv`: the main SV caller
+- `contextsv-cnv-plot`: utility to generate CNV plots from ContextSV JSON output
+
+Example plotting usage:
+
+```
+contextsv-cnv-plot ./output/sv_calls.json chr3 --formats html,svg --output-dir ./CNV_Plots
+```
+
+You can run `contextsv-cnv-plot --help` to see all plotting options.
+
 ### Docker
 First, install [Docker](https://docs.docker.com/engine/install/).
 Pull the latest image from Docker hub, which contains the latest release and its dependencies.

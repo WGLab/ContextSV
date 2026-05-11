@@ -17,6 +17,9 @@ channels:
 
 build:
   number: 0
+  script:
+    - make
+    - make install PREFIX=$PREFIX
 
 requirements:
   build:
@@ -27,11 +30,16 @@ requirements:
   run:
     - htslib=1.20
     - contextscore
+    - python >=3.9
+    - plotly
+    - python-kaleido
 
 test:
     commands:
         - contextsv --help
         - test -f $PREFIX/bin/contextsv
+        - contextsv-cnv-plot --help
+        - test -f $PREFIX/bin/contextsv-cnv-plot
         - contextsv --version
 about:
   home: https://github.com/WGLab/ContextSV
