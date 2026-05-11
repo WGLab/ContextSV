@@ -103,7 +103,7 @@ Collaboration diagram for CNVCaller:</div>
 <div class="dyncontent">
 <div class="center"><img src="classCNVCaller__coll__graph.png" border="0" usemap="#aCNVCaller_coll__map" alt="Collaboration graph"/></div>
 <map name="aCNVCaller_coll__map" id="aCNVCaller_coll__map">
-<area shape="rect" title=" " alt="" coords="5,5,256,211"/>
+<area shape="rect" title=" " alt="" coords="5,5,256,191"/>
 </map>
 </div>
 <table class="memberdecls">
@@ -121,8 +121,6 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a7d855191115944b9b45533f97b27139f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4eedadd5405acf61fe5d59641d705cd0" id="r_a4eedadd5405acf61fe5d59641d705cd0"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classCNVCaller.html#a4eedadd5405acf61fe5d59641d705cd0">readSNPAlleleFrequencies</a> (std::string chr, uint32_t start_pos, uint32_t end_pos, std::vector&lt; uint32_t &gt; &amp;snp_pos, std::unordered_map&lt; uint32_t, double &gt; &amp;snp_baf, std::unordered_map&lt; uint32_t, double &gt; &amp;snp_pfb, const <a class="el" href="classInputData.html">InputData</a> &amp;input_data) const</td></tr>
 <tr class="separator:a4eedadd5405acf61fe5d59641d705cd0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2d3733b152c63ce532a526b0aee598dd" id="r_a2d3733b152c63ce532a526b0aee598dd"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classCNVCaller.html#a2d3733b152c63ce532a526b0aee598dd">saveSVCopyNumberToTSV</a> (<a class="el" href="structSNPData.html">SNPData</a> &amp;snp_data, std::string filepath, std::string chr, uint32_t start, uint32_t end, std::string sv_type, double likelihood) const</td></tr>
-<tr class="separator:a2d3733b152c63ce532a526b0aee598dd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4ce68d4664cda42611a4c8cfc0a21868" id="r_a4ce68d4664cda42611a4c8cfc0a21868"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classCNVCaller.html#a4ce68d4664cda42611a4c8cfc0a21868">saveSVCopyNumberToJSON</a> (<a class="el" href="structSNPData.html">SNPData</a> &amp;before_sv, <a class="el" href="structSNPData.html">SNPData</a> &amp;after_sv, <a class="el" href="structSNPData.html">SNPData</a> &amp;snp_data, std::string chr, uint32_t start, uint32_t end, std::string sv_type, double likelihood, const std::string &amp;filepath) const</td></tr>
 <tr class="separator:a4ce68d4664cda42611a4c8cfc0a21868"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
@@ -219,11 +217,15 @@ Here is the caller graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="classCNVCaller_a7d855191115944b9b45533f97b27139f_icgraph.png" border="0" usemap="#aclassCNVCaller_a7d855191115944b9b45533f97b27139f_icgraph" alt=""/></div>
 <map name="aclassCNVCaller_a7d855191115944b9b45533f97b27139f_icgraph" id="aclassCNVCaller_a7d855191115944b9b45533f97b27139f_icgraph">
-<area shape="rect" title=" " alt="" coords="309,5,484,45"/>
-<area shape="rect" href="classSVCaller.html#af1d745175a116b8b0e26c5a4c50de688" title=" " alt="" coords="164,13,261,38"/>
-<area shape="poly" title=" " alt="" coords="295,28,262,28,262,23,295,23"/>
-<area shape="rect" href="classContextSV.html#ad398977f01cfca4dbc610676563583e9" title=" " alt="" coords="5,13,116,38"/>
-<area shape="poly" title=" " alt="" coords="150,28,116,28,116,23,150,23"/>
+<area shape="rect" title=" " alt="" coords="559,5,733,45"/>
+<area shape="rect" href="classSVCaller.html#af1d745175a116b8b0e26c5a4c50de688" title=" " alt="" coords="413,13,511,38"/>
+<area shape="poly" title=" " alt="" coords="545,28,511,28,511,23,545,23"/>
+<area shape="rect" href="classContextSV.html#ad398977f01cfca4dbc610676563583e9" title=" " alt="" coords="255,13,365,38"/>
+<area shape="poly" title=" " alt="" coords="400,28,366,28,366,23,400,23"/>
+<area shape="rect" href="main_8cpp.html#aaf8c0a506436b8f41962bf740264d1cb" title=" " alt="" coords="104,13,207,38"/>
+<area shape="poly" title=" " alt="" coords="241,28,207,28,207,23,241,23"/>
+<area shape="rect" href="main_8cpp.html#a0ddf1224851353fc92bfbff6f499fa97" title=" " alt="" coords="5,13,56,38"/>
+<area shape="poly" title=" " alt="" coords="90,28,57,28,57,23,90,23"/>
 </map>
 </div>
 
@@ -267,15 +269,19 @@ Here is the caller graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="classCNVCaller_a1f92873e81303b99b60b6c651018ac61_icgraph.png" border="0" usemap="#aclassCNVCaller_a1f92873e81303b99b60b6c651018ac61_icgraph" alt=""/></div>
 <map name="aclassCNVCaller_a1f92873e81303b99b60b6c651018ac61_icgraph" id="aclassCNVCaller_a1f92873e81303b99b60b6c651018ac61_icgraph">
-<area shape="rect" title=" " alt="" coords="585,37,780,77"/>
-<area shape="rect" href="classCNVCaller.html#abe701db3d9059758dbfc008d1c8351cf" title=" " alt="" coords="309,5,537,45"/>
-<area shape="poly" title=" " alt="" coords="571,46,537,42,538,37,572,41"/>
-<area shape="rect" href="classCNVCaller.html#a81aa306a9bf9c40bb7355797ec5dcbd8" title=" " alt="" coords="330,69,517,109"/>
-<area shape="poly" title=" " alt="" coords="572,74,517,80,517,75,571,68"/>
-<area shape="rect" href="classSVCaller.html#af1d745175a116b8b0e26c5a4c50de688" title=" " alt="" coords="164,13,261,38"/>
-<area shape="poly" title=" " alt="" coords="295,28,262,28,262,23,295,23"/>
-<area shape="rect" href="classContextSV.html#ad398977f01cfca4dbc610676563583e9" title=" " alt="" coords="5,13,116,38"/>
-<area shape="poly" title=" " alt="" coords="150,28,116,28,116,23,150,23"/>
+<area shape="rect" title=" " alt="" coords="835,37,1029,77"/>
+<area shape="rect" href="classCNVCaller.html#abe701db3d9059758dbfc008d1c8351cf" title=" " alt="" coords="559,5,787,45"/>
+<area shape="poly" title=" " alt="" coords="820,46,787,42,787,37,821,41"/>
+<area shape="rect" href="classCNVCaller.html#a81aa306a9bf9c40bb7355797ec5dcbd8" title=" " alt="" coords="579,69,766,109"/>
+<area shape="poly" title=" " alt="" coords="821,74,766,80,766,75,820,68"/>
+<area shape="rect" href="classSVCaller.html#af1d745175a116b8b0e26c5a4c50de688" title=" " alt="" coords="413,13,511,38"/>
+<area shape="poly" title=" " alt="" coords="545,28,511,28,511,23,545,23"/>
+<area shape="rect" href="classContextSV.html#ad398977f01cfca4dbc610676563583e9" title=" " alt="" coords="255,13,365,38"/>
+<area shape="poly" title=" " alt="" coords="400,28,366,28,366,23,400,23"/>
+<area shape="rect" href="main_8cpp.html#aaf8c0a506436b8f41962bf740264d1cb" title=" " alt="" coords="104,13,207,38"/>
+<area shape="poly" title=" " alt="" coords="241,28,207,28,207,23,241,23"/>
+<area shape="rect" href="main_8cpp.html#a0ddf1224851353fc92bfbff6f499fa97" title=" " alt="" coords="5,13,56,38"/>
+<area shape="poly" title=" " alt="" coords="90,28,57,28,57,23,90,23"/>
 </map>
 </div>
 
@@ -411,17 +417,15 @@ Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="classCNVCaller_abe701db3d9059758dbfc008d1c8351cf_cgraph.png" border="0" usemap="#aclassCNVCaller_abe701db3d9059758dbfc008d1c8351cf_cgraph" alt=""/></div>
 <map name="aclassCNVCaller_abe701db3d9059758dbfc008d1c8351cf_cgraph" id="aclassCNVCaller_abe701db3d9059758dbfc008d1c8351cf_cgraph">
-<area shape="rect" title=" " alt="" coords="5,113,233,153"/>
+<area shape="rect" title=" " alt="" coords="5,88,233,128"/>
 <area shape="rect" href="classCNVCaller.html#a1f92873e81303b99b60b6c651018ac61" title=" " alt="" coords="297,5,492,45"/>
-<area shape="poly" title=" " alt="" coords="164,111,280,62,319,47,321,52,282,66,166,116"/>
+<area shape="poly" title=" " alt="" coords="186,85,313,47,315,52,187,91"/>
 <area shape="rect" href="utils_8cpp.html#ab79682cb72f9274d417b80846628f58f" title=" " alt="" coords="556,42,631,67"/>
-<area shape="poly" title=" " alt="" coords="233,112,542,60,543,66,234,117"/>
-<area shape="rect" href="classInputData.html#a831d7db7a34a1971649c6c78d2bfe3b2" title=" " alt="" coords="298,121,491,146"/>
-<area shape="poly" title=" " alt="" coords="234,131,284,131,284,136,234,136"/>
-<area shape="rect" href="namespacesv__types.html#a86a199f957855fbfd605eeebbf98cde1" title=" " alt="" coords="281,170,508,195"/>
-<area shape="poly" title=" " alt="" coords="232,151,310,165,309,170,231,156"/>
-<area shape="rect" href="namespacesv__types.html#a8c716343a3862b3e6329df8f32ede4d7" title=" " alt="" coords="295,220,494,260"/>
-<area shape="poly" title=" " alt="" coords="162,151,282,204,308,213,307,218,280,209,160,156"/>
+<area shape="poly" title=" " alt="" coords="233,93,542,58,542,63,234,98"/>
+<area shape="rect" href="namespacesv__types.html#a86a199f957855fbfd605eeebbf98cde1" title=" " alt="" coords="281,121,508,146"/>
+<area shape="poly" title=" " alt="" coords="234,116,268,119,267,124,233,121"/>
+<area shape="rect" href="namespacesv__types.html#a8c716343a3862b3e6329df8f32ede4d7" title=" " alt="" coords="295,171,494,211"/>
+<area shape="poly" title=" " alt="" coords="186,126,282,155,314,164,312,169,281,160,185,131"/>
 <area shape="poly" title=" " alt="" coords="493,37,543,45,542,50,492,42"/>
 </map>
 </div>
@@ -430,11 +434,15 @@ Here is the caller graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="classCNVCaller_abe701db3d9059758dbfc008d1c8351cf_icgraph.png" border="0" usemap="#aclassCNVCaller_abe701db3d9059758dbfc008d1c8351cf_icgraph" alt=""/></div>
 <map name="aclassCNVCaller_abe701db3d9059758dbfc008d1c8351cf_icgraph" id="aclassCNVCaller_abe701db3d9059758dbfc008d1c8351cf_icgraph">
-<area shape="rect" title=" " alt="" coords="309,5,537,45"/>
-<area shape="rect" href="classSVCaller.html#af1d745175a116b8b0e26c5a4c50de688" title=" " alt="" coords="164,13,261,38"/>
-<area shape="poly" title=" " alt="" coords="295,28,262,28,262,23,295,23"/>
-<area shape="rect" href="classContextSV.html#ad398977f01cfca4dbc610676563583e9" title=" " alt="" coords="5,13,116,38"/>
-<area shape="poly" title=" " alt="" coords="150,28,116,28,116,23,150,23"/>
+<area shape="rect" title=" " alt="" coords="559,5,787,45"/>
+<area shape="rect" href="classSVCaller.html#af1d745175a116b8b0e26c5a4c50de688" title=" " alt="" coords="413,13,511,38"/>
+<area shape="poly" title=" " alt="" coords="545,28,511,28,511,23,545,23"/>
+<area shape="rect" href="classContextSV.html#ad398977f01cfca4dbc610676563583e9" title=" " alt="" coords="255,13,365,38"/>
+<area shape="poly" title=" " alt="" coords="400,28,366,28,366,23,400,23"/>
+<area shape="rect" href="main_8cpp.html#aaf8c0a506436b8f41962bf740264d1cb" title=" " alt="" coords="104,13,207,38"/>
+<area shape="poly" title=" " alt="" coords="241,28,207,28,207,23,241,23"/>
+<area shape="rect" href="main_8cpp.html#a0ddf1224851353fc92bfbff6f499fa97" title=" " alt="" coords="5,13,56,38"/>
+<area shape="poly" title=" " alt="" coords="90,28,57,28,57,23,90,23"/>
 </map>
 </div>
 
@@ -615,64 +623,6 @@ Here is the caller graph for this function:</div>
 <area shape="poly" title=" " alt="" coords="226,28,192,28,192,23,226,23"/>
 </map>
 </div>
-
-</div>
-</div>
-<a id="a2d3733b152c63ce532a526b0aee598dd" name="a2d3733b152c63ce532a526b0aee598dd"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2d3733b152c63ce532a526b0aee598dd">&#9670;&#160;</a></span>saveSVCopyNumberToTSV()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">void CNVCaller::saveSVCopyNumberToTSV </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="structSNPData.html">SNPData</a> &amp;&#160;</td>
-          <td class="paramname"><em>snp_data</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">std::string&#160;</td>
-          <td class="paramname"><em>filepath</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">std::string&#160;</td>
-          <td class="paramname"><em>chr</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">uint32_t&#160;</td>
-          <td class="paramname"><em>start</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">uint32_t&#160;</td>
-          <td class="paramname"><em>end</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">std::string&#160;</td>
-          <td class="paramname"><em>sv_type</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">double&#160;</td>
-          <td class="paramname"><em>likelihood</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td> const</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
 
 </div>
 </div>

@@ -1,4 +1,4 @@
-<map id="InputData::setDBSCAN_Epsilon" name="InputData::setDBSCAN_Epsilon">
+<map id="InputData::getDBSCAN_MinPtsPct" name="InputData::getDBSCAN_MinPtsPct">
 <area shape="rect" id="Node000001" title=" " alt="" coords="255,5,415,45"/>
 <area shape="rect" id="Node000002" href="$main_8cpp.html#aaf8c0a506436b8f41962bf740264d1cb" title=" " alt="" coords="104,13,207,38"/>
 <area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="241,28,207,28,207,23,241,23"/>

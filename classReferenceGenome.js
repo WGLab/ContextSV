@@ -7,5 +7,5 @@ var classReferenceGenome =
     [ "getContigHeader", "classReferenceGenome.html#a24d682515eca08c225bad6635c2026f9", null ],
     [ "getFilepath", "classReferenceGenome.html#a0752cb4773bb0a8e1cc3724cfa9db947", null ],
     [ "query", "classReferenceGenome.html#ab56f56b49990dced50a861b3cd410737", null ],
-    [ "setFilepath", "classReferenceGenome.html#a11dab556e40addb2ac509beb1488a863", null ]
+    [ "read", "classReferenceGenome.html#adeedb71faf5debe8445b78f4b6e6af48", null ]
 ];

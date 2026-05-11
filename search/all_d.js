@@ -9,7 +9,6 @@ var searchData=
   ['printmemoryusage_6',['printmemoryusage',['../utils_8h.html#a32cb592046e31d098fe600f69ccde166',1,'printMemoryUsage(const std::string &amp;functionName):&#160;utils.cpp'],['../utils_8cpp.html#a32cb592046e31d098fe600f69ccde166',1,'printMemoryUsage(const std::string &amp;functionName):&#160;utils.cpp']]],
   ['printmessage_7',['printmessage',['../utils_8h.html#a754db22f0193bc2ee549308eca04d898',1,'printMessage(std::string message):&#160;utils.cpp'],['../utils_8cpp.html#a754db22f0193bc2ee549308eca04d898',1,'printMessage(std::string message):&#160;utils.cpp']]],
   ['printparameters_8',['printParameters',['../classInputData.html#a91adcbc0ca7712912fbd8e4a0ece7639',1,'InputData']]],
-  ['printprogress_9',['printprogress',['../utils_8h.html#a94bd78faf212464ede8144a4be0e8cf8',1,'printProgress(int progress, int total):&#160;utils.cpp'],['../utils_8cpp.html#a94bd78faf212464ede8144a4be0e8cf8',1,'printProgress(int progress, int total):&#160;utils.cpp']]],
-  ['printstacktrace_10',['printStackTrace',['../main_8cpp.html#ae0d5b71fd0be400003f5ce965900c878',1,'main.cpp']]],
-  ['printusage_11',['printUsage',['../main_8cpp.html#a99cfd7f582dfad8278b8ebaddcaa9e41',1,'main.cpp']]]
+  ['printstacktrace_9',['printStackTrace',['../main_8cpp.html#ae0d5b71fd0be400003f5ce965900c878',1,'main.cpp']]],
+  ['printusage_10',['printUsage',['../main_8cpp.html#a99cfd7f582dfad8278b8ebaddcaa9e41',1,'main.cpp']]]
 ];

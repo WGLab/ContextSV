@@ -7,6 +7,5 @@ var classCNVCaller =
     [ "runCIGARCopyNumberPrediction", "classCNVCaller.html#abe701db3d9059758dbfc008d1c8351cf", null ],
     [ "runCopyNumberPrediction", "classCNVCaller.html#a81aa306a9bf9c40bb7355797ec5dcbd8", null ],
     [ "saveSVCopyNumberToJSON", "classCNVCaller.html#a4ce68d4664cda42611a4c8cfc0a21868", null ],
-    [ "saveSVCopyNumberToTSV", "classCNVCaller.html#a2d3733b152c63ce532a526b0aee598dd", null ],
     [ "StateGenotypeMap", "classCNVCaller.html#ac48e9354e2ff05759220fd9691480de3", null ]
 ];
