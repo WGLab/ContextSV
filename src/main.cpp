@@ -182,8 +182,6 @@ std::unordered_map<std::string, std::string> parseArguments(int argc, char* argv
             args["thread-count"] = argv[++i];
         } else if ((arg == "-h" || arg == "--hmm") && i + 1 < argc) {
             args["hmm-file"] = argv[++i];
-        } else if (arg == "--min-reads" && i + 1 < argc) {
-            args["min-reads"] = argv[++i];
         } else if ((arg == "-e" || arg == "--eth") && i + 1 < argc) {
             args["eth"] = argv[++i];
         } else if ((arg == "-p" || arg == "--pfb") && i + 1 < argc) {
