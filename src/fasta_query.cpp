@@ -15,7 +15,7 @@
 #include "utils.h"
 
 
-int ReferenceGenome::setFilepath(std::string fasta_filepath)
+int ReferenceGenome::read(std::string fasta_filepath)
 {
     if (fasta_filepath == "")
     {
@@ -45,10 +45,10 @@ int ReferenceGenome::setFilepath(std::string fasta_filepath)
             // Header line, indicating a new chromosome
             // Store the previous chromosome and sequence
             if (current_chr != "")
-            {
-                this->chromosomes.push_back(current_chr);  // Add the chromosome to the list
-                this->chr_to_seq[current_chr] = sequence;  // Add the sequence to the map
-                this->chr_to_length[current_chr] = sequence.length();  // Add the sequence length to the map
+                {
+                    this->chromosomes.push_back(current_chr);  // Add the chromosome to the list
+                    this->chr_to_seq[current_chr] = sequence;  // Add the sequence to the map
+                    this->chr_to_length[current_chr] = sequence.length();  // Add the sequence length to the map
                 sequence = "";  // Reset the sequence
             }
 

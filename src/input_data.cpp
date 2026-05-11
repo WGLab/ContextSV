@@ -6,6 +6,7 @@
 #include <iostream>
 #include <sstream>
 #include <thread>
+#include <sys/stat.h>
 
 #include "utils.h"
 #include "debug.h"  // For DEBUG_PRINT
@@ -22,8 +23,6 @@ InputData::InputData()
     this->snp_vcf_filepath = "";
     this->chr = "";
     this->output_dir = "";
-    this->sample_size = 20;
-    this->min_cnv_length = 2000;  // Default minimum CNV length
     this->min_reads = 5;
     this->dbscan_epsilon = 0.1;
     this->dbscan_min_pts_pct = 0.1;
@@ -43,8 +42,6 @@ void InputData::printParameters() const
     DEBUG_PRINT("Reference genome: " << this->ref_filepath);
     DEBUG_PRINT("SNP VCF: " << this->snp_vcf_filepath);
     DEBUG_PRINT("Output directory: " << this->output_dir);
-    DEBUG_PRINT("Sample size: " << this->sample_size);
-    DEBUG_PRINT("Minimum CNV length: " << this->min_cnv_length);
     DEBUG_PRINT("DBSCAN epsilon: " << this->dbscan_epsilon);
     DEBUG_PRINT("DBSCAN minimum points percentage: " << this->dbscan_min_pts_pct * 100.0f << "%");
 }
@@ -71,6 +68,40 @@ void InputData::setLongReadBam(std::string filepath)
             throw std::runtime_error("Long read BAM file does not exist: " + filepath);
         } else {
             fclose(fp);
+        }
+
+        // Check if pgbam file is being used and warn user
+        if (filepath.find(".pgbam") != std::string::npos)
+        {
+            std::cerr << "================================================================================\n"
+                      << "WARNING: Using PetaGene-compressed BAM file (.pgbam)\n"
+                      << "         This format does NOT support safe concurrent decompression.\n"
+                      << "         Multi-threaded access may cause CRC32 checksum errors.\n"
+                      << "\n"
+                      << "RECOMMENDED: Decompress the pgbam file to standard BAM format using:\n"
+                      << "  petasuite --decompress input.pgbam\n"
+                      << "================================================================================\n";
+        }
+
+        // Check if BAM index file exists and is newer than BAM file
+        std::string index_filepath = filepath + ".bai";
+        struct stat bam_stat, index_stat;
+        if (stat(filepath.c_str(), &bam_stat) == 0)
+        {
+            if (stat(index_filepath.c_str(), &index_stat) == 0)
+            {
+                if (index_stat.st_mtime < bam_stat.st_mtime)
+                {
+                    std::cerr << "================================================================================\n"
+                              << "WARNING: BAM index file is older than BAM file\n"
+                              << "         BAM: " << filepath << "\n"
+                              << "         Index: " << index_filepath << "\n"
+                              << "\n"
+                              << "RECOMMENDED: Rebuild the BAM index using:\n"
+                              << "  samtools index " << filepath << "\n"
+                              << "================================================================================\n";
+                }
+            }
         }
     }
 }
@@ -102,16 +133,6 @@ void InputData::setOutputDir(std::string dirpath)
         std::cerr << "Error creating output directory: " << e.what() << std::endl;
         exit(1);
     }
-}
-
-int InputData::getSampleSize() const
-{
-    return this->sample_size;
-}
-
-void InputData::setSampleSize(int sample_size)
-{
-    this->sample_size = sample_size;
 }
 
 std::string InputData::getSNPFilepath() const
@@ -162,14 +183,14 @@ std::string InputData::getAssemblyGaps() const
     return this->assembly_gaps;
 }
 
-uint32_t InputData::getMinCNVLength() const
+void InputData::setChromosome(std::string chr)
 {
-    return this->min_cnv_length;
+    this->chr = chr;
 }
 
-void InputData::setMinCNVLength(int min_cnv_length)
+std::string InputData::getChromosome() const
 {
-    this->min_cnv_length = (uint32_t) min_cnv_length;
+    return this->chr;
 }
 
 void InputData::setDBSCAN_Epsilon(double epsilon)
@@ -190,22 +211,6 @@ void InputData::setDBSCAN_MinPtsPct(double min_pts_pct)
 double InputData::getDBSCAN_MinPtsPct() const
 {
     return this->dbscan_min_pts_pct;
-}
-
-void InputData::setChromosome(std::string chr)
-{
-    this->chr = chr;
-    this->single_chr = true;
-}
-
-std::string InputData::getChromosome() const
-{
-    return this->chr;
-}
-
-bool InputData::isSingleChr() const
-{
-    return this->single_chr;
 }
 
 void InputData::setAlleleFreqFilepaths(std::string filepath)
@@ -341,7 +346,6 @@ void InputData::setHMMFilepath(std::string filepath)
             exit(1);
         } else {
             this->hmm_filepath = filepath;
-            std::cout << "Using HMM file: " << this->hmm_filepath << std::endl;
         }
     }
 }

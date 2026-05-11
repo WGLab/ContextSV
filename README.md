@@ -16,25 +16,85 @@ Class documentation is available at <a href="https://wglab.openbioinformatics.or
 ### Anaconda
 First, install [Anaconda](https://www.anaconda.com/).
 
-Next, create a new environment. This installation has been tested with Python 3.9, Linux 64-bit.
+Next, create a new environment. This installation has been tested with Python 3.10, Linux 64-bit.
 
-```
-conda create -n contextsv python=3.9
+```bash
+conda create -n contextsv python=3.10
 conda activate contextsv
 ```
 
 ContextSV and its dependencies can then be installed using the following command:
 
-```
+```bash
 conda install -c wglab -c conda-forge -c bioconda contextsv
+
+# Or using mamba (faster dependency resolution):
+mamba install -c wglab contextsv
+```
+
+After installation, you should have access to the following commands in your terminal:
+
+- `contextsv`: the main SV caller
+- `contextsv-cnv-plot`: utility to generate CNV plots from ContextSV JSON output
+- `contextscore`: [ContextScore](https://github.com/WGLab/ContextScore) utility for post-filtering of low-confidence SV calls
+
+Example usage:
+
+```bash
+# SV calling example:
+contextsv \
+  --bam sample.bam \
+  --ref hg38.fa \
+  --outdir output/ \
+  --threads 4 \
+  --snp snps.vcf \
+  --eth nfe \
+  --pfb gnomadv4_filepaths.txt \
+  --assembly-gaps hg38-gaps.bed \   # optional: assembly gaps file
+  --save-cnv                        # optional: save CNV calls in JSON
+
+# SV post-filtering example:
+contextscore \
+  --input input.vcf \
+  --output scored.vcf \
+  --sample-coverage 30 \
+  --buildver hg38 \
+  --threshold 0.2 \
+  --annovar /path/to/annovar \
+  --annovar-db /path/to/humandb
+
+
+# CNV plotting example:
+contextsv-cnv-plot ./output/CNVCalls.json chr3 --formats html,svg --output-dir ./CNV_Plots
 ```
 
 ### Docker
 First, install [Docker](https://docs.docker.com/engine/install/).
 Pull the latest image from Docker hub, which contains the latest release and its dependencies.
 
-```
+```bash
 docker pull genomicslab/contextsv
+```
+
+Example usage:
+
+```bash
+# SV calling:
+docker run --rm genomicslab/contextsv --help
+
+# SV post-filtering:
+docker run --rm \
+  -v /path/to/data:/mnt \
+  genomicslab/contextsv \
+  contextscore \
+  --help
+
+# CNV plotting:
+docker run --rm \
+  -v /path/to/data:/mnt \
+  genomicslab/contextsv \
+  contextsv-cnv-plot \
+  --help
 ```
 
 
@@ -42,39 +102,34 @@ docker pull genomicslab/contextsv
 ContextSV requires HTSLib as a dependency that can be installed using  [Anaconda](https://www.anaconda.com/). Create an environment
 containing HTSLib: 
 
-```
+```bash
 conda create -n htsenv -c bioconda -c conda-forge htslib
 conda activate htsenv
 ```
 
 Then follow the instructions below to build ContextSV:
 
-```
+```bash
 git clone https://github.com/WGLab/ContextSV
 cd ContextSV
 make
 ```
 
 ContextSV can then be run:
-```
+```bash
 ./build/contextsv --help
 
-Usage: ./build/contextsv [options]
 Options:
   -b, --bam <bam_file>          Long-read BAM file (required)
   -r, --ref <ref_file>          Reference genome FASTA file (required)
-  -s, --snp <vcf_file>          SNPs VCF file (required)
+  -s, --snp <vcf_file>          Long-read SNP VCF file (required)
   -o, --outdir <output_dir>     Output directory (required)
-  -c, --chr <chromosome>        Chromosome
-  -t, --threads <thread_count>  Number of threads
-  -h, --hmm <hmm_file>          HMM file
-  -n, --sample-size <size>      Sample size for HMM predictions
-     --min-cnv <min_length>     Minimum CNV length
-     --eps <epsilon>             DBSCAN epsilon
-     --min-pts-pct <min_pts_pct> Percentage of mean chr. coverage to use for DBSCAN minimum points
-  -e, --eth <eth_file>          ETH file
-  -p, --pfb <pfb_file>          PFB file
-     --save-cnv                 Save CNV data
+  -t, --threads <thread_count>  Number of threads, chromosome-level parallelization (default: 1)
+  -h, --hmm <hmm_file>          HMM parameter file for copy number predictions (included in the repository)
+  -e, --eth <eth_file>          Ethnicity as used in gnomAD (e.g. "asj" for Ashkenazi Jewish, "nfe" for Non-Finnish European, etc.)
+  -p, --pfb <pfb_file>          File containing per-chromosome population allele frequency filepaths as described in this documentation
+     --assembly-gaps <gaps_file> Assembly gaps file in BED format available from UCSC Genome Browser (https://hgdownload.soe.ucsc.edu/goldenPath/hg38/database/gap.txt.gz for GRCh38)
+     --save-cnv                 Save CNV data in JSON for downstream plotting with contextsv-cnv-plot
      --debug                    Debug mode with verbose logging
      --version                  Print version and exit
   -h, --help                    Print usage and exit
@@ -95,7 +150,7 @@ Download links for genome VCF files are located here (last updated April 3,
 
 
 ### Script for downloading gnomAD VCFs
-```
+```bash
 download_dir="~/data/gnomad/v4.0.0/"
 
 chr_list=("1" "2" "3" "4" "5" "6" "7" "8" "9" "10" "11" "12" "13" "14" "15" "16" "17" "18" "19" "20" "21" "22" "X" "Y")
@@ -110,7 +165,7 @@ Finally, create a text file that specifies the chromosome and its corresponding
 gnomAD filepath. This file will be passed in as an argument:
 
 **gnomadv4_filepaths.txt**
-```
+```bash
 1=~/data/gnomad/v4.0.0/gnomad.genomes.v4.0.sites.chr1.vcf.bgz
 2=~/data/gnomad/v4.0.0/gnomad.genomes.v4.0.sites.chr2.vcf.bgz
 3=~/data/gnomad/v4.0.0/gnomad.genomes.v4.0.sites.chr3.vcf.bgz

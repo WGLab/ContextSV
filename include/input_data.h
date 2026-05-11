@@ -55,13 +55,9 @@ class InputData {
         void setAssemblyGaps(std::string filepath);
         std::string getAssemblyGaps() const;
 
-        // Set the sample size for HMM predictions.
-        void setSampleSize(int sample_size);
-        int getSampleSize() const;
-
-        // Set the minimum CNV length to use for copy number predictions.
-        void setMinCNVLength(int min_cnv_length);
-        uint32_t getMinCNVLength() const;
+        // Set/get a target chromosome for single-chromosome analysis.
+        void setChromosome(std::string chr);
+        std::string getChromosome() const;
 
         // Set the epsilon parameter for DBSCAN clustering.
         void setDBSCAN_Epsilon(double epsilon);
@@ -71,11 +67,6 @@ class InputData {
         // minimum points.
         void setDBSCAN_MinPtsPct(double min_pts_pct);
         double getDBSCAN_MinPtsPct() const;
-
-        // Set the chromosome to analyze.
-        void setChromosome(std::string chr);
-        std::string getChromosome() const;
-        bool isSingleChr() const;
 
         // Set the output directory where the results will be written.
         void setOutputDir(std::string dirpath);
@@ -104,8 +95,6 @@ class InputData {
         std::string ethnicity;
         std::unordered_map<std::string, std::string> pfb_filepaths;  // Map of population frequency VCF filepaths by chromosome
         std::string output_dir;
-        int sample_size;
-        uint32_t min_cnv_length;
         int min_reads;
         double dbscan_epsilon;
         double dbscan_min_pts_pct;

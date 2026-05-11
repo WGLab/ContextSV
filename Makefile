@@ -11,7 +11,7 @@ CONDA_LIB_DIR := $(CONDA_PREFIX)/lib
 
 # Compiler and Flags
 CXX := g++
-CXXFLAGS := -std=c++17 -g -I$(INCL_DIR) -I$(CONDA_INCL_DIR) -Wall -Wextra -pedantic
+CXXFLAGS := -std=c++17 -O3 -DNDEBUG -I$(INCL_DIR) -I$(CONDA_INCL_DIR) -Wall -Wextra -pedantic
 
 # Linker Flags
 # Ensure that the library paths are set correctly for linking
@@ -19,15 +19,17 @@ LDFLAGS := -L$(LIB_DIR) -L$(CONDA_LIB_DIR) -Wl,-rpath=$(CONDA_LIB_DIR)  # Add rp
 LDLIBS := -lhts  # Link with libhts.a or libhts.so
 
 # Sources and Output
-SOURCES := $(filter-out $(SRC_DIR)/swig_wrapper.cpp, $(wildcard $(SRC_DIR)/*.cpp))  # Filter out the SWIG wrapper from the sources
+SOURCES := $(wildcard $(SRC_DIR)/*.cpp)
 OBJECTS := $(patsubst $(SRC_DIR)/%.cpp,$(BUILD_DIR)/%.o,$(SOURCES))
 TARGET := $(BUILD_DIR)/contextsv
+PREFIX ?= $(CONDA_PREFIX)
+BINDIR ?= $(PREFIX)/bin
 
 # Default target
 all: $(TARGET)
 
 # Debug target
-debug: CXXFLAGS += -DDEBUG
+debug: CXXFLAGS := -std=c++17 -g -O0 -DDEBUG -I$(INCL_DIR) -I$(CONDA_INCL_DIR) -Wall -Wextra -pedantic
 debug: all
 
 # Link the executable
@@ -43,3 +45,13 @@ $(BUILD_DIR)/%.o: $(SRC_DIR)/%.cpp
 # Clean the build directory
 clean:
 	rm -rf $(BUILD_DIR)
+
+# Install binaries and helper scripts
+install: $(TARGET)
+	@if [ -z "$(PREFIX)" ]; then \
+		echo "Error: PREFIX is empty. Activate a conda env or run 'make install PREFIX=/your/prefix'."; \
+		exit 1; \
+	fi
+	install -d $(BINDIR)
+	install -m 755 $(TARGET) $(BINDIR)/contextsv
+	install -m 755 python/cnv_plots_json.py $(BINDIR)/contextsv-cnv-plot

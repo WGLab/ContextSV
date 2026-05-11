@@ -1,5 +1,5 @@
 
-#include "swig_interface.h"
+#include "contextsv.h"
 
 /// @cond DOXYGEN_IGNORE
 #include <iostream>
@@ -65,20 +65,11 @@ void runContextSV(const std::unordered_map<std::string, std::string>& args)
     input_data.setRefGenome(args.at("ref-file"));
     input_data.setSNPFilepath(args.at("snps-file"));
     input_data.setOutputDir(args.at("output-dir"));
-    if (args.find("chr") != args.end()) {
-        input_data.setChromosome(args.at("chr"));
-    }
     if (args.find("thread-count") != args.end()) {
         input_data.setThreadCount(std::stoi(args.at("thread-count")));
     }
     if (args.find("hmm-file") != args.end()) {
         input_data.setHMMFilepath(args.at("hmm-file"));
-    }
-    if (args.find("sample-size") != args.end()) {
-        input_data.setSampleSize(std::stoi(args.at("sample-size")));
-    }
-    if (args.find("min-cnv") != args.end()) {
-        input_data.setMinCNVLength(std::stoi(args.at("min-cnv")));
     }
     if (args.find("eth") != args.end()) {
         input_data.setEthnicity(args.at("eth"));
@@ -89,20 +80,14 @@ void runContextSV(const std::unordered_map<std::string, std::string>& args)
     if (args.find("assembly-gaps") != args.end()) {
         input_data.setAssemblyGaps(args.at("assembly-gaps"));
     }
+    if (args.find("chr") != args.end()) {
+        input_data.setChromosome(args.at("chr"));
+    }
     if (args.find("save-cnv") != args.end()) {
         input_data.saveCNVData(true);
     }
     if (args.find("debug") != args.end()) {
         input_data.setVerbose(true);
-    }
-
-    // DBSCAN parameters
-    if (args.find("epsilon") != args.end()) {
-        input_data.setDBSCAN_Epsilon(std::stod(args.at("epsilon")));
-    }
-
-    if (args.find("min-pts-pct") != args.end()) {
-        input_data.setDBSCAN_MinPtsPct(std::stod(args.at("min-pts-pct")));
     }
 
     // Set up the CNV JSON file if enabled
@@ -118,8 +103,42 @@ void runContextSV(const std::unordered_map<std::string, std::string>& args)
         std::cout << "Saving CNV data to: " << json_filepath << std::endl;
     }
     
+    // Print all parameters being used
+    std::cout << "\n========================================" << std::endl;
+    std::cout << "ContextSV Parameters:" << std::endl;
+    std::cout << "========================================" << std::endl;
+    std::cout << "Input BAM:          " << input_data.getLongReadBam() << std::endl;
+    std::cout << "Reference genome:   " << input_data.getRefGenome() << std::endl;
+    std::cout << "SNP VCF file:       " << input_data.getSNPFilepath() << std::endl;
+    std::cout << "Output directory:   " << input_data.getOutputDir() << std::endl;
+    std::cout << "HMM file:           " << input_data.getHMMFilepath() << std::endl;
+    std::cout << "Thread count:       " << input_data.getThreadCount() << std::endl;
+    std::cout << "DBSCAN epsilon:     " << input_data.getDBSCAN_Epsilon() << std::endl;
+    std::cout << "DBSCAN min pts pct: " << input_data.getDBSCAN_MinPtsPct() << std::endl;
+    if (!input_data.getEthnicity().empty()) {
+        std::cout << "Ethnicity:          " << input_data.getEthnicity() << std::endl;
+    }
+    if (args.find("pfb-file") != args.end()) {
+        std::cout << "PFB file:           " << args.at("pfb-file") << std::endl;
+    }
+    if (!input_data.getAssemblyGaps().empty()) {
+        std::cout << "Assembly gaps:      " << input_data.getAssemblyGaps() << std::endl;
+    }
+    std::cout << "Save CNV data:      " << (input_data.getSaveCNVData() ? "true" : "false") << std::endl;
+    std::cout << "Verbose mode:       " << (input_data.getVerbose() ? "true" : "false") << std::endl;
+    std::cout << "========================================\n" << std::endl;
+    
     // Run ContextSV
-    run(input_data);
+    ContextSV contextsv;
+    try
+    {
+        contextsv.run(input_data);
+    }
+    catch (std::exception& e)
+    {
+        std::cerr << e.what() << std::endl;
+        exit(1);
+    }
 }
 
 void printUsage(const std::string& programName) {
@@ -130,14 +149,9 @@ void printUsage(const std::string& programName) {
                 << "  -r, --ref <ref_file>          Reference genome FASTA file (required)\n"
                 << "  -s, --snp <vcf_file>          SNPs VCF file (required)\n"
                 << "  -o, --outdir <output_dir>     Output directory (required)\n"
-                << "  -c, --chr <chromosome>        Chromosome\n"
                 << "  -t, --threads <thread_count>  Number of threads\n"
                 << "  -h, --hmm <hmm_file>          HMM file\n"
-                << "  -n, --sample-size <size>      Sample size for HMM predictions\n"
-                << "     --min-cnv <min_length>     Minimum CNV length\n"
-                << "     --eps <epsilon>             DBSCAN epsilon\n"
-                << "     --min-pts-pct <min_pts_pct> Percentage of mean chr. coverage to use for DBSCAN minimum points\n"
-                << "  -e, --eth <eth_file>          ETH file\n"
+                << "  -e, --eth <eth>               Ethnicity identifier (e.g. nfe, asj)\n"
                 << "  -p, --pfb <pfb_file>          PFB file\n"
                 << "     --assembly-gaps <gaps_file> Assembly gaps file\n"
                 << "     --save-cnv                 Save CNV data\n"
@@ -168,16 +182,6 @@ std::unordered_map<std::string, std::string> parseArguments(int argc, char* argv
             args["thread-count"] = argv[++i];
         } else if ((arg == "-h" || arg == "--hmm") && i + 1 < argc) {
             args["hmm-file"] = argv[++i];
-        } else if ((arg == "-n" || arg == "--sample-size") && i + 1 < argc) {
-            args["sample-size"] = argv[++i];
-        } else if (arg == "--min-cnv" && i + 1 < argc) {
-            args["min-cnv"] = argv[++i];
-        } else if (arg == "--min-reads" && i + 1 < argc) {
-            args["min-reads"] = argv[++i];
-        } else if (arg == "--eps" && i + 1 < argc) {
-            args["epsilon"] = argv[++i];
-        } else if (arg == "--min-pts-pct" && i + 1 < argc) {
-            args["min-pts-pct"] = argv[++i];
         } else if ((arg == "-e" || arg == "--eth") && i + 1 < argc) {
             args["eth"] = argv[++i];
         } else if ((arg == "-p" || arg == "--pfb") && i + 1 < argc) {
