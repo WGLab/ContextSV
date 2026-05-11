@@ -18,14 +18,14 @@ First, install [Anaconda](https://www.anaconda.com/).
 
 Next, create a new environment. This installation has been tested with Python 3.10, Linux 64-bit.
 
-```
+```bash
 conda create -n contextsv python=3.10
 conda activate contextsv
 ```
 
 ContextSV and its dependencies can then be installed using the following command:
 
-```
+```bash
 conda install -c wglab -c conda-forge -c bioconda contextsv
 
 # Or using mamba (faster dependency resolution):
@@ -38,19 +38,41 @@ After installation, you should have access to the following commands in your ter
 - `contextsv-cnv-plot`: utility to generate CNV plots from ContextSV JSON output
 - `contextscore`: [ContextScore](https://github.com/WGLab/ContextScore) utility for post-filtering of low-confidence SV calls
 
-Example plotting usage:
+Example usage:
 
-```
+```bash
+# SV calling example:
+contextsv \
+  --bam sample.bam \
+  --ref hg38.fa \
+  --outdir output/ \
+  --threads 4 \
+  --snp snps.vcf \
+  --eth nfe \
+  --pfb gnomadv4_filepaths.txt \
+  --assembly-gaps hg38-gaps.bed \   # optional: assembly gaps file
+  --save-cnv                        # optional: save CNV calls in JSON
+
+# SV post-filtering example:
+contextscore \
+  --input input.vcf \
+  --output scored.vcf \
+  --sample-coverage 30 \
+  --buildver hg38 \
+  --threshold 0.2 \
+  --annovar /path/to/annovar \
+  --annovar-db /path/to/humandb
+
+
+# CNV plotting example:
 contextsv-cnv-plot ./output/sv_calls.json chr3 --formats html,svg --output-dir ./CNV_Plots
 ```
-
-You can run `contextsv-cnv-plot --help` to see all plotting options.
 
 ### Docker
 First, install [Docker](https://docs.docker.com/engine/install/).
 Pull the latest image from Docker hub, which contains the latest release and its dependencies.
 
-```
+```bash
 docker pull genomicslab/contextsv
 ```
 
@@ -59,21 +81,21 @@ docker pull genomicslab/contextsv
 ContextSV requires HTSLib as a dependency that can be installed using  [Anaconda](https://www.anaconda.com/). Create an environment
 containing HTSLib: 
 
-```
+```bash
 conda create -n htsenv -c bioconda -c conda-forge htslib
 conda activate htsenv
 ```
 
 Then follow the instructions below to build ContextSV:
 
-```
+```bash
 git clone https://github.com/WGLab/ContextSV
 cd ContextSV
 make
 ```
 
 ContextSV can then be run:
-```
+```bash
 ./build/contextsv --help
 
 Options:
@@ -107,7 +129,7 @@ Download links for genome VCF files are located here (last updated April 3,
 
 
 ### Script for downloading gnomAD VCFs
-```
+```bash
 download_dir="~/data/gnomad/v4.0.0/"
 
 chr_list=("1" "2" "3" "4" "5" "6" "7" "8" "9" "10" "11" "12" "13" "14" "15" "16" "17" "18" "19" "20" "21" "22" "X" "Y")
@@ -122,7 +144,7 @@ Finally, create a text file that specifies the chromosome and its corresponding
 gnomAD filepath. This file will be passed in as an argument:
 
 **gnomadv4_filepaths.txt**
-```
+```bash
 1=~/data/gnomad/v4.0.0/gnomad.genomes.v4.0.sites.chr1.vcf.bgz
 2=~/data/gnomad/v4.0.0/gnomad.genomes.v4.0.sites.chr2.vcf.bgz
 3=~/data/gnomad/v4.0.0/gnomad.genomes.v4.0.sites.chr3.vcf.bgz
