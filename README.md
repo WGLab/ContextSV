@@ -65,7 +65,7 @@ contextscore \
 
 
 # CNV plotting example:
-contextsv-cnv-plot ./output/sv_calls.json chr3 --formats html,svg --output-dir ./CNV_Plots
+contextsv-cnv-plot ./output/CNVCalls.json chr3 --formats html,svg --output-dir ./CNV_Plots
 ```
 
 ### Docker
