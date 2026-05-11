@@ -19,6 +19,8 @@ echo "Installing ContextSV..."
 mkdir -p ${PREFIX}/bin
 cp build/contextsv ${PREFIX}/bin/
 chmod +x ${PREFIX}/bin/contextsv
+cp python/cnv_plots_json.py ${PREFIX}/bin/contextsv-cnv-plot
+chmod +x ${PREFIX}/bin/contextsv-cnv-plot
 
 echo "Verifying ContextSV installation..."
 $PREFIX/bin/contextsv --help
