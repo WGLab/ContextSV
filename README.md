@@ -76,6 +76,27 @@ Pull the latest image from Docker hub, which contains the latest release and its
 docker pull genomicslab/contextsv
 ```
 
+Example usage:
+
+```bash
+# SV calling:
+docker run --rm genomicslab/contextsv --help
+
+# SV post-filtering:
+docker run --rm \
+  -v /path/to/data:/mnt \
+  genomicslab/contextsv \
+  contextscore \
+  --help
+
+# CNV plotting:
+docker run --rm \
+  -v /path/to/data:/mnt \
+  genomicslab/contextsv \
+  contextsv-cnv-plot \
+  --help
+```
+
 
 ## Building from source (for testing/development)
 ContextSV requires HTSLib as a dependency that can be installed using  [Anaconda](https://www.anaconda.com/). Create an environment
