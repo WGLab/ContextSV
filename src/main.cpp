@@ -90,15 +90,6 @@ void runContextSV(const std::unordered_map<std::string, std::string>& args)
         input_data.setVerbose(true);
     }
 
-    // DBSCAN parameters
-    if (args.find("epsilon") != args.end()) {
-        input_data.setDBSCAN_Epsilon(std::stod(args.at("epsilon")));
-    }
-
-    if (args.find("min-pts-pct") != args.end()) {
-        input_data.setDBSCAN_MinPtsPct(std::stod(args.at("min-pts-pct")));
-    }
-
     // Set up the CNV JSON file if enabled
     if (input_data.getSaveCNVData()) {
         const std::string output_dir = input_data.getOutputDir();
@@ -160,8 +151,6 @@ void printUsage(const std::string& programName) {
                 << "  -o, --outdir <output_dir>     Output directory (required)\n"
                 << "  -t, --threads <thread_count>  Number of threads\n"
                 << "  -h, --hmm <hmm_file>          HMM file\n"
-                << "     --eps <epsilon>             DBSCAN epsilon\n"
-                << "     --min-pts-pct <min_pts_pct> Percentage of mean chr. coverage to use for DBSCAN minimum points\n"
                 << "  -e, --eth <eth_file>          ETH file\n"
                 << "  -p, --pfb <pfb_file>          PFB file\n"
                 << "     --assembly-gaps <gaps_file> Assembly gaps file\n"
@@ -195,10 +184,6 @@ std::unordered_map<std::string, std::string> parseArguments(int argc, char* argv
             args["hmm-file"] = argv[++i];
         } else if (arg == "--min-reads" && i + 1 < argc) {
             args["min-reads"] = argv[++i];
-        } else if (arg == "--eps" && i + 1 < argc) {
-            args["epsilon"] = argv[++i];
-        } else if (arg == "--min-pts-pct" && i + 1 < argc) {
-            args["min-pts-pct"] = argv[++i];
         } else if ((arg == "-e" || arg == "--eth") && i + 1 < argc) {
             args["eth"] = argv[++i];
         } else if ((arg == "-p" || arg == "--pfb") && i + 1 < argc) {
