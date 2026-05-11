@@ -25,3 +25,7 @@ chmod +x ${PREFIX}/bin/contextsv-cnv-plot
 echo "Verifying ContextSV installation..."
 $PREFIX/bin/contextsv --help
 $PREFIX/bin/contextsv --version
+
+echo "Verifying CNV plotting command installation..."
+test -x ${PREFIX}/bin/contextsv-cnv-plot
+${PREFIX}/bin/contextsv-cnv-plot --help

@@ -33,11 +33,11 @@ requirements:
 
 test:
     commands:
-        - contextsv --help
-        - test -f $PREFIX/bin/contextsv
-        - contextsv-cnv-plot --help
-        - test -f $PREFIX/bin/contextsv-cnv-plot
-        - contextsv --version
+    - test -x $PREFIX/bin/contextsv
+    - $PREFIX/bin/contextsv --help
+    - $PREFIX/bin/contextsv --version
+    - test -x $PREFIX/bin/contextsv-cnv-plot
+    - $PREFIX/bin/contextsv-cnv-plot --help
 about:
   home: https://github.com/WGLab/ContextSV
   license: MIT
