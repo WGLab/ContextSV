@@ -16,10 +16,10 @@ Class documentation is available at <a href="https://wglab.openbioinformatics.or
 ### Anaconda
 First, install [Anaconda](https://www.anaconda.com/).
 
-Next, create a new environment. This installation has been tested with Python 3.9, Linux 64-bit.
+Next, create a new environment. This installation has been tested with Python 3.10, Linux 64-bit.
 
 ```
-conda create -n contextsv python=3.9
+conda create -n contextsv python=3.10
 conda activate contextsv
 ```
 
@@ -27,12 +27,16 @@ ContextSV and its dependencies can then be installed using the following command
 
 ```
 conda install -c wglab -c conda-forge -c bioconda contextsv
+
+# Or using mamba (faster dependency resolution):
+mamba install -c wglab contextsv
 ```
 
-After installation, two commands are available:
+After installation, you should have access to the following commands in your terminal:
 
 - `contextsv`: the main SV caller
 - `contextsv-cnv-plot`: utility to generate CNV plots from ContextSV JSON output
+- `contextscore`: [ContextScore](https://github.com/WGLab/ContextScore) utility for post-filtering of low-confidence SV calls
 
 Example plotting usage:
 
@@ -72,20 +76,17 @@ ContextSV can then be run:
 ```
 ./build/contextsv --help
 
-Usage: ./build/contextsv [options]
 Options:
   -b, --bam <bam_file>          Long-read BAM file (required)
   -r, --ref <ref_file>          Reference genome FASTA file (required)
-  -s, --snp <vcf_file>          SNPs VCF file (required)
+  -s, --snp <vcf_file>          Long-read SNP VCF file (required)
   -o, --outdir <output_dir>     Output directory (required)
-  -c, --chr <chromosome>        Chromosome
-  -t, --threads <thread_count>  Number of threads
-  -h, --hmm <hmm_file>          HMM file
-     --eps <epsilon>             DBSCAN epsilon
-     --min-pts-pct <min_pts_pct> Percentage of mean chr. coverage to use for DBSCAN minimum points
-  -e, --eth <eth_file>          ETH file
-  -p, --pfb <pfb_file>          PFB file
-     --save-cnv                 Save CNV data
+  -t, --threads <thread_count>  Number of threads, chromosome-level parallelization (default: 1)
+  -h, --hmm <hmm_file>          HMM parameter file for copy number predictions (included in the repository)
+  -e, --eth <eth_file>          Ethnicity as used in gnomAD (e.g. "asj" for Ashkenazi Jewish, "nfe" for Non-Finnish European, etc.)
+  -p, --pfb <pfb_file>          File containing per-chromosome population allele frequency filepaths as described in this documentation
+     --assembly-gaps <gaps_file> Assembly gaps file in BED format available from UCSC Genome Browser (https://hgdownload.soe.ucsc.edu/goldenPath/hg38/database/gap.txt.gz for GRCh38)
+     --save-cnv                 Save CNV data in JSON for downstream plotting with contextsv-cnv-plot
      --debug                    Debug mode with verbose logging
      --version                  Print version and exit
   -h, --help                    Print usage and exit
