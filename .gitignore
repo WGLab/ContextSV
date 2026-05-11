@@ -46,9 +46,6 @@ __pycache__/
 *.code-workspace
 CMakeSettings.json
 
-# Shell scripts
-*.sh
-
 # Output folder
 output/
 
