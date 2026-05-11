@@ -151,7 +151,7 @@ void printUsage(const std::string& programName) {
                 << "  -o, --outdir <output_dir>     Output directory (required)\n"
                 << "  -t, --threads <thread_count>  Number of threads\n"
                 << "  -h, --hmm <hmm_file>          HMM file\n"
-                << "  -e, --eth <eth_file>          ETH file\n"
+                << "  -e, --eth <eth>               Ethnicity identifier (e.g. nfe, asj)\n"
                 << "  -p, --pfb <pfb_file>          PFB file\n"
                 << "     --assembly-gaps <gaps_file> Assembly gaps file\n"
                 << "     --save-cnv                 Save CNV data\n"
