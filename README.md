@@ -5,12 +5,10 @@ tests](https://github.com/WGLab/ContextSV/actions/workflows/build-tests.yml/badg
 
 <p>
 <img src="https://github.com/user-attachments/assets/03603ad1-df9d-438d-911c-81af0cf612e3" alt="ContextSV" align="left" style="width:100px;"/>
-A long-read, whole-genome structural variant (SV) caller. It takes as input long read alignments (BAM), the 
-corresponding reference genome (FASTA), a VCF with high-quality SNPs 
- (e.g. via GATK, Deepvariant, <a href="https://github.com/WGLab/NanoCaller">NanoCaller</a>, and <a href="https://gnomad.broadinstitute.org/downloads">gnomAD</a> database
- VCF files with SNP population frequencies for each chromosome.
-Class documentation is available at <a href="https://wglab.openbioinformatics.org/ContextSV">https://wglab.openbioinformatics.org/ContextSV</a>
+A long-read, whole-genome structural variant (SV) caller with copy number predictions from coverage and SNP B-allele frequency. Inputs are long read alignments (BAM) and reference genome (FASTA), a VCF with high-quality SNPs 
+ (e.g. via <a href="https://github.com/HKU-BAL/Clair3">Clair3</a>, <a href="https://github.com/WGLab/NanoCaller">NanoCaller</a>), and per-chromosome VCF files with SNP population frequencies (e.g. from <a href="https://gnomad.broadinstitute.org/downloads">gnomAD</a>). Class documentation is available at <a href="https://wglab.openbioinformatics.org/ContextSV">https://wglab.openbioinformatics.org/ContextSV</a>
 </p>
+<br clear="left"/>
 
 ## Installation
 ### Anaconda
