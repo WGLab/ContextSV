@@ -17,9 +17,6 @@ channels:
 
 build:
   number: 0
-  script:
-    - make
-    - make install PREFIX=$PREFIX
 
 requirements:
   build:
