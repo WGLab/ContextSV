@@ -78,7 +78,7 @@ Example usage:
 
 ```bash
 # SV calling:
-docker run --rm genomicslab/contextsv --help
+docker run --rm genomicslab/contextsv contextsv --help
 
 # SV post-filtering:
 docker run --rm \
